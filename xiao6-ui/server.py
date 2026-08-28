@@ -923,6 +923,8 @@ def main():
         print(f"[网络] 仅监听本机 http://{bind_host}:{port}")
     if not config.AGNES_KEY:
         print("[WARN] 未检测到 AGNES_API_KEY，请在 .env 或设置面板中配置后重启。")
+    else:
+        print(f"[AGNES_CONFIG] source=.env length={len(config.AGNES_KEY)} fingerprint=sk-{config.AGNES_KEY[-4:]}...")
     db_conn().close()
     n = recover_tasks()  # Phase 3.1：把上次 running 被中断的任务翻回 open，使其可续跑
     if n:

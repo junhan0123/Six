@@ -205,7 +205,7 @@ APP_VERSION: str = "1.4.0"
 
 
 def load_env(path=".env"):
-    """读取同目录 .env（若存在），仅 setdefault，不覆盖已存在的环境变量。"""
+    """读取同目录 .env（若存在），强制覆盖环境变量，确保 .env 是唯一真相源。"""
     try:
         with open(path, encoding="utf-8") as f:
             for line in f:
@@ -214,7 +214,7 @@ def load_env(path=".env"):
                     continue
                 k, v = line.split("=", 1)
                 k, v = k.strip(), v.strip().strip('"').strip("'")
-                os.environ.setdefault(k, v)
+                os.environ[k] = v  # force override — .env is source of truth
     except FileNotFoundError:
         pass
 
