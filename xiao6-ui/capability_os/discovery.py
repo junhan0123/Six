@@ -23,9 +23,13 @@ def list_executable_capabilities() -> list:
     return []
 
 
-def dispatch_tool_list(handler) -> list:
-    """Dispatch tool list request. Returns empty list (stub)."""
-    return []
+def dispatch_tool_list(handler=None) -> list:
+    """Dispatch tool list request. Returns list of tool names."""
+    try:
+        from tools import TOOL_FUNCS
+        return sorted(TOOL_FUNCS.keys())
+    except Exception:
+        return []
 
 
 def ensure_external_capabilities() -> None:
