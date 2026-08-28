@@ -5,6 +5,7 @@ Re-exports all handler mixins for backward compatibility.
 from server_handlers_chat import ChatMixin
 from server_handlers_memory import MemoryMixin
 from server_handlers_system import SystemMixin
+from server_handlers_session_trace import SessionTraceMixin
 
 # Check what else is available
 try:
@@ -31,4 +32,5 @@ __all__ = [
     'ChatMixin',
     'CapabilityMixin',
     'SocialMixin',
+    'SessionTraceMixin',
 ]

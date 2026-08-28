@@ -187,11 +187,11 @@ def _resolve_cors_origins(bind_host, port):
 from server_globals import *
 from server_globals import _PROVIDER_PROBE_CACHE, _is_local_peer, _sse_put, _sse_use_eventbus, _proactive_dnd_state, _remote_allowed_tools, _hotspot_modal_payload, _resolve_cors_origins, _ACCESS_LOG_REDACT_RE, _REMOTE_FORBIDDEN, _CORS_ALLOWED_ORIGINS, BRIEFING_LOCK
 import server_handlers
-from server_handlers import SystemMixin, MemoryMixin, TasksMixin, ChatMixin, CapabilityMixin, SocialMixin
+from server_handlers import SystemMixin, MemoryMixin, TasksMixin, ChatMixin, CapabilityMixin, SocialMixin, SessionTraceMixin
 
 
 
-class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, ChatMixin, CapabilityMixin, SocialMixin):
+class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, ChatMixin, CapabilityMixin, SocialMixin, SessionTraceMixin):
     protocol_version = "HTTP/1.1"
 
     def _send(self, code, body, ctype="application/json; charset=utf-8", headers=None):
@@ -461,6 +461,20 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_memory_audit()
         if path == "/api/learnings":
             return self._handle_learnings()
+        if path == "/api/sessions":
+            return self._handle_sessions_get()
+        if path == "/api/session":
+            if self.command == "GET":
+                return self._handle_session_get()
+            elif self.command == "POST":
+                return self._handle_session_post()
+            elif self.command == "DELETE":
+                return self._handle_session_delete()
+            return self._send(405, json.dumps({"error": "method not allowed"}))
+        if path == "/api/trace":
+            return self._handle_trace_get()
+        if path == "/api/activity":
+            return self._handle_activity_get()
         if path == "/api/social/inbound":
             return self._handle_social_inbound_get()
         if path == "/api/system-prompt":
@@ -777,6 +791,14 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_kws()
         if ppath == "/api/social/inbound":
             return self._handle_social_inbound_post()
+        if ppath == "/api/sessions":
+            return self._handle_sessions_get()
+        if ppath == "/api/session":
+            return self._handle_session_post()
+        if ppath == "/api/trace":
+            return self._handle_trace_get()
+        if ppath == "/api/activity":
+            return self._handle_activity_get()
         if ppath == "/api/knowledge":
             return self._handle_knowledge()
         if ppath == "/api/devices":
