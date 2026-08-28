@@ -122,7 +122,8 @@ def handle_inbound(channel, sender, text, temperature=0.7):
         if missed:
             tool_results = []
             for n, a in missed:
-                res = _execution_run(n, a)
+                # R8-P0：参数契约 run(task, context={"args": args})，工具参数不得丢失
+                res = _execution_run(n, {"args": a})
                 tool_results.append((n, res))
             if len(tool_results) == 1:
                 content = tool_results[0][1]

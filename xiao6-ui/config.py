@@ -200,8 +200,21 @@ WEB_SEARCH_SERPER_KEY: str = ""
 WEB_SEARCH_JINA_KEY: str = ""
 WEB_SEARCH_BRAVE_KEY: str = ""
 WEB_SEARCH_SEARXNG_URL: str = ""
-# 应用版本（对应参考实现「更新」设置）
-APP_VERSION: str = "1.4.0"
+# 应用版本（R8 Release Closure：VERSION 文件为唯一来源）
+def _read_version() -> str:
+    """从同目录 VERSION 文件读取版本（唯一来源）；缺失时回退 rc1 占位。"""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION"),
+                  encoding="utf-8") as _f:
+            _v = _f.read().strip()
+            if _v:
+                return _v
+    except Exception:
+        pass
+    return "1.0.0-rc1"
+
+
+APP_VERSION: str = _read_version()
 
 
 def load_env(path=".env"):
@@ -461,7 +474,9 @@ def reload():
     WEB_SEARCH_BRAVE_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_BRAVE_KEY", "")
     WEB_SEARCH_SEARXNG_URL = os.environ.get("ZHUANGZHOU_WEB_SEARCH_SEARXNG_URL", "")
 
-    PORT = int(os.environ.get("ZhuangZhou_PORT", "8000"))
+    # R8 Release Closure：PORT 统一来源——XIAO6_PORT（官方启动器标准）优先，
+    # ZhuangZhou_PORT 为向后兼容别名，默认 8000
+    PORT = int(os.environ.get("XIAO6_PORT") or os.environ.get("ZhuangZhou_PORT") or "8000")
     BIND_HOST = (os.environ.get("BIND_HOST", "127.0.0.1") or "127.0.0.1").strip()
 
 

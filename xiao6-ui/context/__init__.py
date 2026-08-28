@@ -1,10 +1,11 @@
-"""context.__init__ — Context Engine Package (S79.7 minimal compat)
+"""context.__init__ — Context Engine Package (S79.7 minimal compat + R8-P4 facade)
 Minimal compatibility layer to allow server startup.
 """
 
 from __future__ import annotations
 
 from .budget import ContextBudget, BudgetTier
+from .facade import build_cognitive_context
 from .models import (
     BudgetTier,
     BuildContext,
@@ -29,6 +30,7 @@ __all__ = [
     "ContextSource",
     "ContextBudget",
     "build_context_prompt",
+    "build_cognitive_context",
 ]
 
 # Feature flag

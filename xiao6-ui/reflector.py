@@ -86,10 +86,11 @@ def _feed_memory(goal_id: int, report: dict, lessons: list) -> None:
         }, source="reflector")
         text = "Agent 闭环经验（目标 #%d）：\n" % goal_id + "\n".join(f"- {l}" for l in lessons)
         # Phase 3：统一经 Execution.run（单一执行入口；行为等价于 execute_tool）
-        _execution_run("add_knowledge", {
+        # R8-P0：参数契约 run(task, context={"args": args})，add_knowledge 参数不得丢失
+        _execution_run("add_knowledge", {"args": {
             "text": text,
             "title": title,
             "memory_id": memory_id,
-        })
+        }})
     except Exception as e:
         print(f"[reflector] 经验回灌失败（非致命）: {e}")

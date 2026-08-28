@@ -581,12 +581,17 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(
                     200,
                     json.dumps(
-                        {"docs": knowledge.list_docs(), "stats": knowledge.stats()},
+                        {"docs": knowledge.list_docs() or [], "stats": knowledge.stats() or {}},
                         ensure_ascii=False,
                     ),
                 )
             except Exception as e:
-                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+                # R8-UI：知识后端未就绪（S79.7 stub 缺口）时优雅返回空列表，不 500
+                #（UI fetchSnapshot 契约：{docs: [...]}）
+                return self._send(
+                    200,
+                    json.dumps({"docs": [], "stats": {}, "error": str(e)}, ensure_ascii=False),
+                )
         if path == "/api/devices":
             if not getattr(config, "FEATURE_MULTI_DEVICE", True):
                 return self._send(404, json.dumps({"ok": False, "disabled": True, "error": "多端同步未启用"}))
@@ -694,7 +699,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                                                    "error": "Memory Truth Layer 未启用"}, ensure_ascii=False))
             try:
                 from memory_intelligence import verify_and_tag
-                from db import db_conn
+                # R8-UI：移除局部 `from db import db_conn`（会遮蔽 do_GET 全函数的 db_conn，
+                # 导致 GET /api/memory 分支 UnboundLocalError）；模块级已导入 db_conn。
                 stats = verify_and_tag(dry_run=True)
                 conn = db_conn()
                 by_status = {}
@@ -719,10 +725,31 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
         if path.startswith("/static/"):
             return self._serve_file(path[len("/static/") :])
-        fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), path.lstrip("/"))
-        if os.path.isfile(fp):
+        if self._resolve_static(path):
             return self._serve_file(path.lstrip("/"))
         self._send(404, json.dumps({"error": "not found"}))
+
+    def _resolve_static(self, name):
+        """R8 Release Closure · 静态文件安全解析（realpath 校验）：
+        - 禁止任何 ".." 路径分量 / 绝对路径 / NUL（防路径穿越）
+        - 禁止 .env / .git（凭证与仓库元数据）
+        - 禁止服务目录外文件（realpath 归一符号链接/大小写）
+        返回绝对路径；非法返回 None（调用方回 404）。"""
+        name = (name or "").replace("\\", "/").lstrip("/")
+        if not name or name.startswith("/") or "\x00" in name:
+            return None
+        if ".." in name.split("/"):
+            return None
+        base = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
+        fp = os.path.realpath(os.path.join(base, name))
+        if not (fp == base or fp.startswith(base + os.sep)):
+            return None
+        bn = os.path.basename(fp)
+        if bn == ".env" or ".env" in bn or ".git" in bn:
+            return None
+        if not os.path.isfile(fp):
+            return None
+        return fp
 
     def _send_head(self, code, ctype="application/json; charset=utf-8", clen=0):
         self.send_response(code)
@@ -732,8 +759,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
         self.end_headers()
 
     def _serve_file_head(self, name):
-        fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
-        if not os.path.isfile(fp):
+        fp = self._resolve_static(name)
+        if not fp:
             return self._send_head(404)
         ext = os.path.splitext(name)[1].lower()
         clen = os.path.getsize(fp)
@@ -749,14 +776,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._send_head(200)
         if path.startswith("/static/"):
             return self._serve_file_head(path[len("/static/") :])
-        fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), path.lstrip("/"))
-        if os.path.isfile(fp):
+        if self._resolve_static(path):
             return self._serve_file_head(path.lstrip("/"))
         self._send_head(404)
 
     def _serve_file(self, name):
-        fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
-        if not os.path.isfile(fp):
+        fp = self._resolve_static(name)
+        if not fp:
             return self._send(404, json.dumps({"error": "missing " + name}))
         ext = os.path.splitext(name)[1].lower()
         with open(fp, "rb") as f:
@@ -767,6 +793,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
         if not self._remote_gate():
             return
         ppath = self.path.split("?", 1)[0]  # 去掉查询串后再路由（与 do_GET 一致）
+        # R8 Release Closure · API 基础安全收口：
+        # 这三个端点必须带 application/json Content-Type，且 Origin 必须命中 CORS 白名单
+        # （浏览器跨站表单只能发 text/plain / form-urlencoded / multipart，无法伪造 JSON 头）
+        if ppath in self._JSON_POST_ENDPOINTS:
+            _denied = self._require_json_post()
+            if _denied is not None:
+                return _denied
         if ppath == "/api/chat":
             return self._handle_chat()
         if ppath == "/api/speak":
@@ -881,6 +914,23 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
         return self._send(404, json.dumps({"error": "unknown"}))
 
     # —— Phase 23 · Capability OS 薄处理器（只读/咨询，不执行）——
+    _JSON_POST_ENDPOINTS = {"/api/agent/goal", "/api/agent/intent", "/api/chat"}
+
+    def _require_json_post(self):
+        """R8 Release Closure · 防跨站/畸形 POST（返回 None=放行，否则为已发送的响应）。"""
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return self._send(
+                415,
+                json.dumps({"error": "Content-Type 必须为 application/json"}, ensure_ascii=False),
+            )
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin and origin not in _CORS_ALLOWED_ORIGINS:
+            return self._send(
+                403, json.dumps({"error": "跨站请求被拒绝"}, ensure_ascii=False),
+            )
+        return None
+
     def _read_json(self):
         try:
             length = int(self.headers.get("Content-Length", 0) or 0)

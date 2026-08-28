@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .api import run, Execution
 from .events import ExecutionEvent
+from .policy import ExecutionPolicy
 
 # Context and session models
 from context.models import BuildContext, ContextItem, ContextBundle
@@ -101,13 +102,6 @@ class ExecutionState:
     IDLE = "idle"
     BUSY = "busy"
     BLOCKED = "blocked"
-
-
-class ExecutionPolicy:
-    """Execution policy holder."""
-    
-    def __init__(self, default_deny: bool = True):
-        self.default_deny = default_deny
 
 
 class ExecutionMetrics:

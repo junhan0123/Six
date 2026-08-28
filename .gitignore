@@ -98,3 +98,8 @@ zz-space/_verify/
 *.png.prev.bak
 # 归档的旧 UI（2026-08-16 迁移，磁盘保留不入库）
 zhuangzhou-ui/_legacy/
+
+# ----- R8 Release Closure: runtime artifacts (never committed) -----
+*.pid
+logs/execution_trace/
+*.jsonl

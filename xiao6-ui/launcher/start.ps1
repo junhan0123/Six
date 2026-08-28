@@ -1,16 +1,41 @@
-# start.ps1 - 小6桌面数字人启动器核心逻辑 (Phase 31.1)
-# 仅做：检查路径 -> 查后端 -> 按需起后端 -> 等健康 -> 起 Electron -> 写日志与 PID
-# 不修改系统设置/注册表/自启/环境变量，不自动安装依赖。
+# start.ps1 - Xiao6 launcher core (Phase 31.1 + R8 Release Closure)
+# Only: resolve paths -> check backend -> start backend if needed -> wait health -> start Electron (skip if missing) -> logs/PID
+# No system setting changes / no registry / no autostart / no dependency install.
+# NOTE: this script is intentionally ASCII-only so PowerShell 5.1 (ANSI default) parses it correctly.
 $ErrorActionPreference = 'Continue'
 $LauncherDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ConfigPath  = Join-Path $LauncherDir 'launcher_config.json'
 $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
-# 读配置
-try {
-    $cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
-} catch {
-    Write-Error "无法读取配置: $ConfigPath"; exit 1
+# -- R8 Release Closure: built-in default config. Missing launcher_config.json no longer exits;
+#    backend starts with defaults (Electron optional) so a fresh git clone runs out of the box. --
+$DefaultCfg = [ordered]@{
+    version   = '1.0.0-rc1'
+    project   = [ordered]@{ root = '..' }
+    logs      = [ordered]@{ dir = 'logs'; startup_log = 'logs/startup.log' }
+    pid_files = [ordered]@{ backend = 'backend.pid'; electron = 'electron.pid' }
+    backend   = [ordered]@{
+        host = '127.0.0.1'; port = 8000; script = 'server.py'; python_bin = ''
+        health_endpoint = '/api/health'; health_timeout_sec = 60
+        log_file = 'logs/backend.out.log'
+    }
+    electron  = [ordered]@{
+        bin = 'electron-bin/electron.exe'; args = ''; url = 'http://127.0.0.1:8000'
+        log_file = 'logs/electron.out.log'
+    }
+}
+
+$cfg = $null
+if (Test-Path $ConfigPath) {
+    try {
+        $cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        Write-Warning "Config parse failed ($ConfigPath), falling back to built-in defaults: $_"
+    }
+}
+if ($null -eq $cfg) {
+    Write-Warning "Missing $ConfigPath - using built-in default config (will NOT exit)"
+    $cfg = [PSCustomObject]$DefaultCfg
 }
 
 $ProjRoot  = Resolve-Path (Join-Path $LauncherDir $cfg.project.root)
@@ -27,10 +52,10 @@ function Log($msg) {
     Add-Content -Path $StartLog -Value $line -Encoding UTF8
 }
 
-"$ts [START] 小6启动器 v$($cfg.version)" | Set-Content -Path $StartLog -Encoding UTF8
-Log "项目根: $ProjRoot"
+"$ts [START] Xiao6 launcher v$($cfg.version)" | Set-Content -Path $StartLog -Encoding UTF8
+Log "Project root: $ProjRoot"
 
-# 端口：环境变量优先于配置
+# Port: environment variable overrides config
 $Port = $cfg.backend.port
 if ($env:XIAO6_PORT) { $Port = $env:XIAO6_PORT }
 $HealthURL = "http://$($cfg.backend.host):$Port$($cfg.backend.health_endpoint)"
@@ -44,42 +69,41 @@ function Test-Backend {
     } catch { return $false }
 }
 
-# ---- 0.5 清除可能被外部注入的错误 AGNES_API_KEY，确保使用 .env 中的正确密钥 ----
-# 与 start_xiao6.sh 保持一致：unset AGNES_API_KEY 后由 load_env() 从 .env 读取
+# -- 0.5 Clear possibly-injected wrong AGNES keys so .env stays the single source of truth --
 Remove-Item Env:\AGNES_API_KEY -ErrorAction SilentlyContinue
 Remove-Item Env:\AGNES_BASE_URL -ErrorAction SilentlyContinue
 Remove-Item Env:\AGNES_MODEL -ErrorAction SilentlyContinue
-Log "已清除环境变量 AGNES_API_KEY/AGNES_BASE_URL/AGNES_MODEL，将使用 .env 配置"
+Log "Cleared env AGNES_API_KEY/AGNES_BASE_URL/AGNES_MODEL; .env will be used"
 
-# ---- 1. 检查后端 ----
+# -- 1. Check backend --
 $backendRunning = Test-Backend
 if ($backendRunning) {
-    Log "后端已运行 (HTTP 200 @ $HealthURL)，跳过启动"
+    Log "Backend already running (HTTP 200 @ $HealthURL), skip start"
 } else {
-    # ---- 2. 解析 python ----
+    # -- 2. Resolve python --
     $py = $cfg.backend.python_bin
     if (-not $py) {
         $py = (Get-Command python3 -ErrorAction SilentlyContinue).Source
         if (-not $py) { $py = (Get-Command python -ErrorAction SilentlyContinue).Source }
     }
     if (-not $py) {
-        Log "ERROR: 未找到 python (python3/python)，请安装 Python 或在 launcher_config.json 配置 backend.python_bin"
+        Log "ERROR: python not found (python3/python); install Python or set backend.python_bin in launcher_config.json"
         exit 1
     }
-    Log "Python 解释器: $py"
-    # ---- 3. 启动 backend ----
+    Log "Python interpreter: $py"
+    # -- 3. Start backend --
     try {
         $p = Start-Process -FilePath $py -ArgumentList $cfg.backend.script `
             -WorkingDirectory $ProjRoot `
             -RedirectStandardOutput $BackendLog -RedirectStandardError (Join-Path $ErrDir 'backend.err') `
             -PassThru
         $p.Id | Set-Content -Path $BackendPIDFile -Encoding ascii
-        Log "后端已启动 PID=$($p.Id)"
+        Log "Backend started PID=$($p.Id)"
     } catch {
-        Log "ERROR: 启动后端失败: $_"
+        Log "ERROR: backend start failed: $_"
         exit 1
     }
-    # ---- 4. 等待健康检查 ----
+    # -- 4. Wait for health --
     $deadline = (Get-Date).AddSeconds($cfg.backend.health_timeout_sec)
     $ok = $false
     while ((Get-Date) -lt $deadline) {
@@ -87,30 +111,33 @@ if ($backendRunning) {
         Start-Sleep -Seconds 1
     }
     if (-not $ok) {
-        Log "ERROR: 后端健康检查超时 ($HealthURL)，详见 $BackendLog"
+        Log "ERROR: backend health timeout ($HealthURL); see $BackendLog"
         exit 1
     }
-    Log "后端健康检查通过 ($HealthURL)"
+    Log "Backend health OK ($HealthURL)"
 }
 
-# ---- 5. 启动 Electron Avatar 窗口 ----
-# ⚠️ Phase 34 Beta 修复：清除可能由外部工具（如 WorkBuddy 运行时）注入、会导致 electron
-# 进入 Node 模式或拒绝启动的环境变量。ELECTRON_RUN_AS_NODE=1 会令 electron 以 Node 兼容模式
-# 运行（require('electron') 不可用、process.type 为 undefined）；NODE_OPTIONS 含 --use-system-ca
-# 时 electron 直接拒绝启动。彻底移除（而非置空）以保证桌面分身可正常加载。
+# -- 5. Start Electron avatar window (R8 Release Closure: skip gracefully when runtime OR app entry missing) --
 Remove-Item Env:\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
 Remove-Item Env:\NODE_OPTIONS -ErrorAction SilentlyContinue
-try {
-    $ebin = (Resolve-Path (Join-Path $LauncherDir $cfg.electron.bin)).Path
-    $p = Start-Process -FilePath $ebin -ArgumentList $cfg.electron.args `
-        -WorkingDirectory $ProjRoot `
-        -RedirectStandardOutput $ElectronLog -RedirectStandardError (Join-Path $ErrDir 'electron.err') `
-        -PassThru
-    $p.Id | Set-Content -Path $ElectronPIDFile -Encoding ascii
-    Log "Electron 已启动 PID=$($p.Id) -> $($cfg.electron.url)"
-} catch {
-    Log "ERROR: 启动 Electron 失败: $_"
-    exit 1
+$EbinPath = Join-Path $LauncherDir $cfg.electron.bin
+$EappPath = $null
+if ($cfg.electron.args) { $EappPath = Join-Path $ProjRoot $cfg.electron.args }
+if ((Test-Path $EbinPath) -and $EappPath -and (Test-Path $EappPath)) {
+    try {
+        $ebin = (Resolve-Path $EbinPath).Path
+        $p = Start-Process -FilePath $ebin -ArgumentList @($EappPath) `
+            -WorkingDirectory $ProjRoot `
+            -RedirectStandardOutput $ElectronLog -RedirectStandardError (Join-Path $ErrDir 'electron.err') `
+            -PassThru
+        $p.Id | Set-Content -Path $ElectronPIDFile -Encoding ascii
+        Log "Electron started PID=$($p.Id) -> $($cfg.electron.url)"
+    } catch {
+        Log "ERROR: Electron start failed: $_"
+        exit 1
+    }
+} else {
+    Log "WARN: Electron skipped (runtime binary or app entry missing: $EbinPath / $EappPath) - backend-only mode, API still served"
 }
 
-Log "[DONE] 小6桌面数字人已启动（后端: $(if($backendRunning){'已存在'}else{'已拉起'})，Electron PID=$(if(Test-Path $ElectronPIDFile){(Get-Content $ElectronPIDFile -Raw).Trim()}else{'-'})）"
+Log "[DONE] Backend: $(if($backendRunning){'already-running'}else{'started'}), Electron: $(if(Test-Path $ElectronPIDFile){(Get-Content $ElectronPIDFile -Raw).Trim()}else{'skipped(optional)'})"

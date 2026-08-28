@@ -155,8 +155,10 @@ def execute(name: str, args: Any = None, *, allowed: Optional[Any] = None,
     - 所有路径最终都过 ai_core.execution.run 的 policy 门（default_deny=True）。
     """
     if not _feature_enabled():
-        from tools import execute_tool
-        raw = execute_tool(name, args or {}, allowed=allowed)
+        # R8-P0：回退开关只影响能力选择，不再允许直连 execute_tool 绕过 Policy；
+        # 统一经 ai_core.execution.run（policy 门，default_deny）执行。
+        from ai_core.execution import run as _execution_run
+        raw = _execution_run(name, {"args": args or {}}, allowed=allowed)
         from capability_os import tool_to_capability
         return CapabilityResult.from_raw(name, tool_to_capability(name), raw)
 
@@ -178,5 +180,6 @@ def execute(name: str, args: Any = None, *, allowed: Optional[Any] = None,
     #    capability_os.invoke_capability 亦委派 execute_tool，会跳过该 policy 门，
     #    故默认 Chat 执行统一走 _execution_run（唯一 policy 门），不在此分叉。
     from ai_core.execution import run as _execution_run
-    raw = _execution_run(name, args or {}, allowed=allowed)
+    # R8-P0：参数契约 run(task, context={"args": args})，工具参数不得丢失
+    raw = _execution_run(name, {"args": args or {}}, allowed=allowed)
     return CapabilityResult.from_raw(name, cap_id, raw)

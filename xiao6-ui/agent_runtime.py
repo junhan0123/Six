@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+import time
 from datetime import date
 from typing import Optional
 
@@ -550,38 +551,85 @@ class AgentRuntime:
         # Phase 3：权限经统一 ExecutionPolicy 门面（委托既有 PolicyEngine，无第二套权限）
         from ai_core.execution.policy import ExecutionPolicy
         from ai_core.execution import run as _execution_run
+        from ai_core.execution import trace as _trace
         policy = ExecutionPolicy.get()
         task_id = task.get("id")
+        step_id = str(task.get("step") or task_id or "")
         for attempt in range(self._MAX_RETRIES + 1):
             dec = policy.evaluate(tool, args, goal_id=goal_id, default_deny=True)
             if dec["decision"] == "block":
+                _trace.record(goal_id=goal_id, task_id=task_id, step_id=step_id,
+                               tool_name=tool, args=args, start_time=time.time(),
+                               end_time=time.time(), status=_trace.STATUS_BLOCKED,
+                               error=dec["reason"], recovery_action=_trace.RECOVERY_POLICY_BLOCKED,
+                               attempt=attempt)
                 return {"task_id": task_id, "ok": False, "blocked": True, "reason": dec["reason"], "tool": tool}
             if dec["decision"] == "confirm":
                 self._emit_agent_domain("AGENT_WAITING", goal_id, taskId=task_id)  # Order 3：等待用户确认
                 d = policy.request_approval(tool, args, summary=f"任务「{task.get('title')}」需执行 {tool}", goal_id=goal_id, default_deny=True)
                 if d != "approve":
+                    _trace.record(goal_id=goal_id, task_id=task_id, step_id=step_id,
+                                   tool_name=tool, args=args, start_time=time.time(),
+                                   end_time=time.time(), status=_trace.STATUS_REJECTED,
+                                   error=f"approval {d}", recovery_action=_trace.RECOVERY_FAIL_CLOSED,
+                                   attempt=attempt)
                     return {"task_id": task_id, "ok": False, "rejected": True, "decision": d, "tool": tool}
+            _t0 = time.time()
             try:
                 # Phase 3：统一经 Execution.run（单一执行入口；行为等价于 execute_tool）
-                result = _execution_run(tool, args)
-                self._consecutive_failures = 0  # 成功重置
-                return {"task_id": task_id, "ok": True, "tool": tool, "args": args, "result": str(result)[:2000]}
+                # R8-P0：参数契约 run(task, context={"args": args})，工具参数不得丢失
+                # R8-P1：透传 task_id / step_id 供 Execution Trace 串联
+                result = _execution_run(tool, {"args": args, "goal_id": goal_id,
+                                                "task_id": task_id, "step_id": step_id})
             except Exception as e:
+                # 运行核心级异常（基础设施/策略内核崩溃）——原异常对象分类保真
                 category = self._classify_error(e, tool)
-                if attempt < self._MAX_RETRIES:
-                    if category == "network":
-                        import time; time.sleep(0.1 * (attempt + 1))  # 短退避
+                err_msg = str(e)
+            else:
+                # —— R8-P2 Failure Truthfulness ——
+                # run() 返回 success=False（工具异常 / 未知工具 / 权限拒绝 / 执行失败 /
+                # timeout 全部落在失败串或 error 字段）必须如实进入失败/恢复路由，
+                # 严禁不检查 success 标志而把失败任务记为成功。
+                if isinstance(result, dict) and result.get("success") is False:
+                    err_msg = result.get("error") or result.get("result") or "execution failed"
+                    category = self._classify_error(RuntimeError(str(err_msg)), tool)
+                else:
+                    self._consecutive_failures = 0  # 成功重置
+                    return {"task_id": task_id, "ok": True, "tool": tool, "args": args, "result": str(result)[:2000]}
+            # —— Recovery Router（统一处理 run 级异常与 run 返回的失败）——
+            if attempt < self._MAX_RETRIES:
+                if category == "network":
+                    time.sleep(0.1 * (attempt + 1))  # 短退避
+                    _trace.record(goal_id=goal_id, task_id=task_id, step_id=step_id,
+                                   tool_name=tool, args=args, start_time=_t0, end_time=time.time(),
+                                   status=_trace.STATUS_FAILED, error=err_msg,
+                                   recovery_action=_trace.RECOVERY_RETRY_BACKOFF, attempt=attempt)
+                    continue
+                if category == "file":
+                    _trace.record(goal_id=goal_id, task_id=task_id, step_id=step_id,
+                                   tool_name=tool, args=args, start_time=_t0, end_time=time.time(),
+                                   status=_trace.STATUS_FAILED, error=err_msg,
+                                   recovery_action=_trace.RECOVERY_RETRY_ALTERNATIVE, attempt=attempt)
+                    tool, args = self._try_alternative_tool(task, excluded=tool)
+                    if tool:
                         continue
-                    if category == "file":
-                        tool, args = self._try_alternative_tool(task, excluded=tool)
-                        if tool:
-                            continue
-                        # 无替代工具，标记并退出
-                        return {"task_id": task_id, "ok": False, "error": str(e), "tool": tool, "category": category, "attempts": attempt + 1}
-                    # unknown/permission/tool：直接标记，不重试（避免无意义等待）
-                    return {"task_id": task_id, "ok": False, "error": str(e), "tool": tool, "category": category, "attempts": attempt + 1}
-                # 重试耗尽
-                return {"task_id": task_id, "ok": False, "error": str(e), "tool": tool, "category": category, "attempts": attempt + 1}
+                    # 无替代工具，标记并退出
+                    return {"task_id": task_id, "ok": False, "error": str(err_msg)[:500], "tool": tool,
+                            "category": category, "attempts": attempt + 1}
+                # unknown/permission/tool_missing/timeout 等：直接标记，不重试（避免无意义等待）
+                _trace.record(goal_id=goal_id, task_id=task_id, step_id=step_id,
+                               tool_name=tool, args=args, start_time=_t0, end_time=time.time(),
+                               status=_trace.STATUS_FAILED, error=err_msg,
+                               recovery_action=_trace.RECOVERY_FAIL_CLOSED, attempt=attempt)
+                return {"task_id": task_id, "ok": False, "error": str(err_msg)[:500], "tool": tool,
+                        "category": category, "attempts": attempt + 1}
+            # 重试耗尽
+            _trace.record(goal_id=goal_id, task_id=task_id, step_id=step_id,
+                           tool_name=tool, args=args, start_time=_t0, end_time=time.time(),
+                           status=_trace.STATUS_FAILED, error=err_msg,
+                           recovery_action=_trace.RECOVERY_FAIL_CLOSED, attempt=attempt)
+            return {"task_id": task_id, "ok": False, "error": str(err_msg)[:500], "tool": tool,
+                    "category": category, "attempts": attempt + 1}
         return {"task_id": task_id, "ok": False, "error": "未知错误", "tool": tool}
 
     def _execute_computer_task(self, goal_id: int, task, capability: str, parameters) -> dict:
@@ -725,8 +773,16 @@ class AgentRuntime:
         纪律红线：Agent Runtime 不拥有技能执行权、不新建第二执行器。
         """
         task_id = task.get("id") if isinstance(task, dict) else None
-        from tools import execute_tool
-        result = execute_tool(skill_handle, args or {})
+        # R8-P0：消除 execute_tool 直连绕过 —— skill 统一经 ai_core.execution.run
+        # （Policy 闸门先裁决；skill: 分支由 run → tools.execute_tool → skills.execute_skill 完成）。
+        from ai_core.execution import run as _execution_run
+        res = _execution_run(skill_handle, {"args": args or {}, "goal_id": goal_id})
+        if not isinstance(res, dict) or not res.get("success"):
+            # FAIL CLOSED：policy block / 审批拒绝 / 执行异常一律按失败处理
+            return {"task_id": task_id, "ok": False, "blocked": True,
+                    "reason": (res.get("error") if isinstance(res, dict) else str(res)) or "skill execution blocked",
+                    "tool": skill_handle, "category": "skill"}
+        result = res.get("result") or ""
         # FAIL CLOSED：未知技能经 execute_tool 返回「未知技能：...」
         if isinstance(result, str) and result.startswith("未知技能"):
             return {"task_id": task_id, "ok": False, "error": result,
@@ -748,7 +804,11 @@ class AgentRuntime:
         "parse_error", "serialization", "validation", "resource", "unknown",
     }
     # FAIL-CLOSED 致命类：未知 / 预算耗尽 / 深度超限 / 注入阻断 / 策略阻断 等一律拒绝，
-    # 仅 network / timeout / file 视作可重试的瞬时类（其余均终止本次执行）。
+    # 不重试（其余均终止本次执行）。
+    # R8-P4 timeout 策略审查：timeout 归入非致命瞬时类（设计意图为可重试），但 Recovery
+    # Router 当前仅对 network（退避重试）/ file（换替代工具）实施重试；timeout 保持
+    # FAIL CLOSED 快速失败（attempts=1）。行为安全（宁拒勿挂），按 R8-P4 结论保持现状
+    # 并记为已知限制，不扩大 Recovery 改造。
     _FATAL_ERROR_CATEGORIES = {
         "unknown", "budget_exhausted", "depth_exceeded", "injection_blocked",
         "policy_blocked", "skill_error", "validation", "serialization",
@@ -775,6 +835,17 @@ class AgentRuntime:
         if isinstance(error, TimeoutError):
             return "timeout"
         if isinstance(error, ConnectionError):
+            return "network"
+        # —— 失败字符串中的异常类名快路径（R8-P2 Failure Truthfulness：
+        #     execute_tool 失败串携带 type(e).__name__，据此恢复被字符串包装
+        #     丢失的异常类型语义，避免 FileNotFoundError 被 not_found 抢匹配等）——
+        if "filenotfounderror" in msg or "isadirectoryerror" in msg or "notadirectoryerror" in msg:
+            return "file"
+        if "permissionerror" in msg:
+            return "permission"
+        if "timeouterror" in msg:
+            return "timeout"
+        if "connectionerror" in msg:
             return "network"
         # —— 合成标记（由各 FAIL-CLOSED 路径显式嵌入消息）——
         if "budget_exhausted" in msg or ("budget" in msg and "exhaust" in msg):
@@ -908,8 +979,15 @@ class AgentRuntime:
             prompt = dispatch_instruction
         try:
             import llm
+            # R8-P4：修复无 suggested_tool 派发失败——LLM 请求必须带 user 消息
+            #（Agnes 端点对仅 system 消息返回 400 "No user query found in messages."）。
+            # 派发消息只含「调度规格」即时契约（非知识上下文），不构成第二套 Context 组装。
             with llm.agnes_completion(
-                [{"role": "system", "content": prompt}],
+                [
+                    {"role": "system", "content": prompt},
+                    {"role": "user",
+                     "content": f"请为任务「{task.get('title') or ''}」选择最合适的工具并给出参数（只输出 JSON）。"},
+                ],
                 stream=False, temperature=0.3, reasoning=None,
             ) as resp:
                 data = json.loads(resp.read().decode("utf-8"))

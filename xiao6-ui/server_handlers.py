@@ -6,14 +6,9 @@ from server_handlers_chat import ChatMixin
 from server_handlers_memory import MemoryMixin
 from server_handlers_system import SystemMixin
 from server_handlers_session_trace import SessionTraceMixin
+from server_handlers_tasks import TasksMixin
 
 # Check what else is available
-try:
-    from server_handlers_system import TasksMixin
-except ImportError:
-    class TasksMixin:
-        pass
-
 try:
     from server_handlers_system import SocialMixin
 except ImportError:

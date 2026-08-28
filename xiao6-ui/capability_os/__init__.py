@@ -252,13 +252,14 @@ def invoke_capability(cap_id: str, args: Any = None, *,
                     "note": "无 build_context 方法"}
         except Exception as e:
             return f"上下文能力 {cap_id} 注入失败: {e}"
-    # tool / builtin / computer_action -> 统一经 tools.execute_tool（C1 单点汇聚）
+    # tool / builtin / computer_action -> 统一经 ai_core.execution.run（C1 单点汇聚，
+    # Policy 闸门先裁决，再委派 tools.execute_tool）；R8-P0 严禁直连 execute_tool 绕过 Policy。
     tool_name = ref.ref
     try:
-        from tools import execute_tool
-        return execute_tool(tool_name, args or {}, allowed=None)
+        from ai_core.execution import run as _execution_run
+        return _execution_run(tool_name, {"args": args or {}}, allowed=None)
     except Exception as e:
-        return (f"能力 {cap_id}（{kind}:{tool_name}）经 execute_tool 调用失败: {e}")
+        return (f"能力 {cap_id}（{kind}:{tool_name}）经 ai_core.execution.run 调用失败: {e}")
 
 
 # 导入即构建（轻量、只读）

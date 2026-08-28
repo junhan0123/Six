@@ -3316,7 +3316,8 @@ def execute_tool_calls(tool_calls, allowed=None):
             return p, _res.to_tool_message()
         except Exception:
             # 极端兜底：直接走统一执行入口，保持 P1 前语义
-            return p, str(_execution_run(p["name"], p["args"], allowed=allowed))
+            # R8-P0：参数契约 run(task, context={"args": args})，工具参数不得丢失
+            return p, str(_execution_run(p["name"], {"args": p["args"]}, allowed=allowed))
 
     if readonly:
         for p in readonly:
@@ -3996,14 +3997,16 @@ def execute_tool(name, args, allowed=None):
         try:
             return str(fn(args or {}))
         except Exception as e:
-            return f"工具执行失败：{e}"
+            # R8-P2：失败串携带异常类名，供上层 ERROR_TAXONOMY 恢复异常类型语义
+            #（消费者匹配前缀/子串「工具执行失败」不受影响）
+            return f"工具执行失败：{type(e).__name__}: {e}"
     # 自定义工具（工具工厂 / 动态 API 槽）
     try:
         from tool_factory import execute_custom_tool, get_custom_tool
         if get_custom_tool(name):
             return execute_custom_tool(name, args or {})
     except Exception as e:
-        return f"自定义工具执行失败：{e}"
+        return f"自定义工具执行失败：{type(e).__name__}: {e}"
     # Phase 41 · 外部 MCP 能力（external.mcp.*）：单一执行链
     # tools.execute_tool → capability_os.execute_capability → mcp_host.MCPExecutor
     # → MCP Host → MCP Server → 结果；权限经 policy_engine。不复制、不绕过。
@@ -4012,7 +4015,7 @@ def execute_tool(name, args, allowed=None):
             from capability_os import execute_capability
             return execute_capability(name, args)
         except Exception as e:
-            return f"外部 MCP 能力执行失败：{e}"
+            return f"外部 MCP 能力执行失败：{type(e).__name__}: {e}"
     # Phase C · G1 · 原生 Skill 句柄（skill:<name>）：单一执行链
     # tools.execute_tool → skills.execute_skill（取 body 指令包）→ Agent 经 TOOL_FUNCS 完成动作；
     # 复用既有执行内核，不新建第二执行器（§七 SECOND-SYSTEM GUARD）。

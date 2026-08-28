@@ -544,6 +544,93 @@ class SystemMixin:
         except Exception as e:
             return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
 
+    # ---------- R8-P3 · Agent API Surface（恢复悬空端点 /api/agent/*）----------
+    # API → Agent Runtime 完整控制链，全部复用既有系统（禁止直连工具）：
+    #   goal     → GoalSystem（agent_runtime.submit_goal → goals.create_goal）
+    #   intent   → IntentGateway（intent_gateway.run_intent_gateway → GDE → submit_goal）
+    #   approval → Approval 流程（policy_engine.resolve 唤醒挂起审批单）
+
+    def _handle_agent_goal(self):
+        """POST /api/agent/goal — 提交目标到 Agent Runtime（GoalSystem 单一路径）。
+
+        载荷：{"title": str, "description": str(可选), "intentId": str(可选)}
+        响应：200 {"ok": True, "goalId": int, "title": str}
+        错误：400 参数缺失/非法 JSON；404 feature 关闭；500 内部异常
+        """
+        if not getattr(config, "FEATURE_AGENT_RUNTIME", False):
+            return self._send(404, json.dumps(
+                {"ok": False, "disabled": True, "error": "Agent Runtime 未启用"}, ensure_ascii=False))
+        payload = self._read_json()
+        if "_error" in payload:
+            return self._send(400, json.dumps({"ok": False, "error": payload["_error"]}, ensure_ascii=False))
+        title = (payload.get("title") or "").strip()
+        if not title:
+            return self._send(400, json.dumps({"ok": False, "error": "缺少 goal title"}, ensure_ascii=False))
+        description = (payload.get("description") or "").strip()
+        intent_id = payload.get("intentId")
+        try:
+            import agent_runtime
+            rt = agent_runtime.runtime
+            if not rt._running:
+                rt.start()  # 幂等：保证提交后目标能被编排执行
+            goal_id = rt.submit_goal(title=title, description=description, intent_id=intent_id)
+        except Exception as e:
+            return self._send(500, json.dumps({"ok": False, "error": f"目标创建失败：{e}"}, ensure_ascii=False))
+        if not goal_id:
+            return self._send(500, json.dumps({"ok": False, "error": "目标创建失败（返回空）"}, ensure_ascii=False))
+        return self._send(200, json.dumps({"ok": True, "goalId": goal_id, "title": title}, ensure_ascii=False))
+
+    def _handle_agent_intent(self):
+        """POST /api/agent/intent — 用户意图经 IntentGateway（GDE 识别/决策 → 建目标）。
+
+        载荷：{"text": str, "source": str(可选)}
+        响应：200 {"ok": True, "intentId", "action", "classification", "confidence",
+                   "title", "goalId", "reason"}（action ∈ create|propose|resume|skip）
+        错误：400 参数缺失/非法 JSON；404 feature 关闭；500 内部异常
+        """
+        if not getattr(config, "FEATURE_AGENT_RUNTIME", False):
+            return self._send(404, json.dumps(
+                {"ok": False, "disabled": True, "error": "Agent Runtime 未启用"}, ensure_ascii=False))
+        payload = self._read_json()
+        if "_error" in payload:
+            return self._send(400, json.dumps({"ok": False, "error": payload["_error"]}, ensure_ascii=False))
+        text = (payload.get("text") or "").strip()
+        if not text:
+            return self._send(400, json.dumps({"ok": False, "error": "缺少 intent text"}, ensure_ascii=False))
+        source = (payload.get("source") or "api").strip()
+        try:
+            import agent_runtime
+            if not agent_runtime.runtime._running:
+                agent_runtime.runtime.start()  # 幂等：保证 create 决策的目标可被编排执行
+            from intent_gateway import run_intent_gateway
+            result = run_intent_gateway(text, source=source)
+        except Exception as e:
+            return self._send(500, json.dumps({"ok": False, "error": f"意图处理失败：{e}"}, ensure_ascii=False))
+        return self._send(200, json.dumps({"ok": True, **result}, ensure_ascii=False))
+
+    def _handle_agent_approval(self):
+        """POST /api/agent/approval — Approval 流程：唤醒挂起的审批单。
+
+        UI 契约（冻结快照 zz-workspace.js）：
+            POST /api/agent/approval?ticket=<ticket>&decision=<approve|reject>
+        响应：200 {"ok": True, "ticket", "decision"} / 400 非法参数 / 404 未知或过期 ticket / 500 内部异常
+        """
+        qs = parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+        ticket = (qs.get("ticket") or [""])[0].strip()
+        decision = (qs.get("decision") or [""])[0].strip().lower()
+        if not ticket or decision not in ("approve", "reject"):
+            return self._send(400, json.dumps(
+                {"ok": False, "error": "ticket/decision 缺失或非法（decision ∈ approve|reject）"},
+                ensure_ascii=False))
+        try:
+            from policy_engine import resolve
+            if not resolve(ticket, decision):
+                return self._send(404, json.dumps(
+                    {"ok": False, "error": "未知或已过期的审批单"}, ensure_ascii=False))
+        except Exception as e:
+            return self._send(500, json.dumps({"ok": False, "error": f"审批处理失败：{e}"}, ensure_ascii=False))
+        return self._send(200, json.dumps({"ok": True, "ticket": ticket, "decision": decision}, ensure_ascii=False))
+
     # ---------- Phase 11 全息 HUD 端点 ----------
 
     def _handle_hud_config(self):
