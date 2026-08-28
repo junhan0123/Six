@@ -1297,6 +1297,11 @@ def main():
         print(f"[浠?悊] 宸插惎鐢ㄥ叏灞€浠?悊 -> {_proxy}")
     print(f"搴勫懆 鎸囨尌鏍稿績鍚?姩涓?->  http://localhost:{port}")
     print(f"妯″瀷: {config.AGNES_MODEL}  |  鎻愪緵鍟? {config.AGNES_PROVIDER}  |  宸ュ叿: {', '.join(TOOL_FUNCS.keys())}")
+    # S79: 启动配置冲突检测（诊断环境变量与 .env 一致性）
+    try:
+        config.check_env_conflict()
+    except Exception as _ce:
+        print(f"[WARN] 配置冲突检测失败: {_ce}")
     # 鐭ヨ瘑搴擄細鍚?姩鍗虫壂鎻?+ 寤虹储寮?+ 鍚?敤鏂囦欢 watcher锛堜慨澶嶏細姝ゅ墠浠呭湪璇锋眰鏃舵噿鍔犺浇锛寃atcher 浠庢湭婵€娲伙級
     try:
         import knowledge
