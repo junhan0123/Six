@@ -22,8 +22,8 @@ _remote_allowed_tools = []
 _hotspot_modal_payload = {}
 
 # CORS origins
-_resolve_cors_origins = lambda: ["*"]
-_CORS_ALLOWED_ORIGINS = ["*"]
+_resolve_cors_origins = lambda host, port: {"*"}
+_CORS_ALLOWED_ORIGINS = {"*"}
 _ACCESS_LOG_REDACT_RE = None
 _REMOTE_FORBIDDEN = False
 
