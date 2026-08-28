@@ -219,6 +219,43 @@ def load_env(path=".env"):
         pass
 
 
+# ---- CONFIG SOURCE TRACKING (DEBUG only, production off) ----
+_CONFIG_SOURCE: dict = {}  # populated by _trace_config_load()
+
+def _trace_config_load():
+    """记录配置来源（仅 DEBUG 模式）。"""
+    import os as _os
+    secrets = {"AGNES_API_KEY", "LLM2_API_KEY", "MINIMAX_API_KEY",
+               "HOTDATA_KEY", "WEB_SEARCH_KEY", "REMOTE_ACCESS_TOKEN"}
+    for k in list(secrets):
+        from_env = _os.environ.get(k, "")
+        from_default = False  # we don't track defaults here
+        _CONFIG_SOURCE[k] = {
+            "present": bool(from_env),
+            "source": "env" if from_env else ("default" if k in _os.environ else "missing"),
+            "length": len(from_env),
+            "fingerprint": f"{from_env[:5]}...{from_env[-4:]}" if len(from_env) > 9 else "",
+        }
+    # AGNES specifics
+    _CONFIG_SOURCE["AGNES_KEY"] = {
+        "present": bool(os.environ.get("AGNES_API_KEY")),
+        "source": "env",
+        "length": len(os.environ.get("AGNES_API_KEY", "")),
+        "fingerprint": "",  # intentionally blank in production
+    }
+
+def CONFIG_SOURCE_REPORT(sensitive=False):
+    """输出配置来源报告。sensitive=True 时包含 fingerprint。"""
+    lines = ["=== CONFIG_SOURCE_REPORT ==="]
+    for k, v in sorted(_CONFIG_SOURCE.items()):
+        fp = v.get("fingerprint", "")
+        if not sensitive and fp:
+            fp = "[REDACTED]"
+        lines.append(f"  {k}: source={v['source']} present={v['present']} length={v['length']} fingerprint={fp}")
+    lines.append("=== END REPORT ===")
+    return "\n".join(lines)
+
+
 def reload():
     """重新从 os.environ 刷新所有运行时配置。调用方应使用 config.XXX 访问以获取最新值。"""
     global AGNES_BASE, AGNES_KEY, AGNES_MODEL, AGNES_PROVIDER, AGNES_REASONING
