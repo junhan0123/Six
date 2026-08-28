@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-庄周 · 全局配置与常量
+庄周  全局配置与常量
 - 纯标准库
 - 内置界面 (index.html / styles.css / app.js)
 - API Key 仅从环境变量或同目录 .env 读取，绝不硬编码
@@ -21,7 +21,7 @@ LLM2_API_KEY: str = ""
 LLM2_MODEL: str = ""
 LLM2_PROVIDER: str = ""
 ACTIVE_LLM: str = "agnes"            # 当前生效聊天供应商：agnes | llm2
-# ---- 本地 LLM 供应商（OpenAI 兼容，仅 127.0.0.1 白名单；Phase 10-C spec §八）----
+# ---- 本地 LLM 供应商（OpenAI 兼容，仅 127.0.0.1 白名单；Phase 10-C spec 八）----
 # 注意：本地端点无 API Key（provider_registry 中 config_attrs.key 为空）。
 # base 的 127.0.0.1 缺省值**唯一**归 provider_registry.PROVIDER_SPECS[<id>].default_base_url，
 # 本处 reload 缺省留空，由 llm.resolve_provider 统一兜底（Single Source Rule，避免双源漂移，DC-02/DC-03）。
@@ -50,8 +50,9 @@ QWEN3_TTS_MODEL: str = ""          # 模型名，默认 Qwen/Qwen3-TTS-12Hz-1.7B
 QWEN3_TTS_VOICE: str = ""          # 默认声线；空=模型默认音色
 QWEN3_TTS_CLONE_URL: str = ""      # 音色克隆服务（Base 克隆接口预留）
 QWEN3_TTS_REF_AUDIO: str = ""      # 默认参考音频（音色克隆用）
-HOTDATA_KEY: str = ""
+HOTDATA_KEY: str = "zIisgRZJLLXgqKCwBirNLegtNNRuL70eBsbHXPxEBWU="
 AI_DISPLAY_NAME: str = ""
+XIAO6_THEME: str = ""
 THEME: str = ""
 MEMORY_GRAPH_ENABLED: bool = True
 # Context Engine 五阶段管线（唯一 Context 系统，默认开启，env 可瞬时回退旧路径）
@@ -71,7 +72,7 @@ FEATURE_PREMIUM_UI: bool = False
 FEATURE_KNOWLEDGE_PLATFORM: bool = True
 # Phase 18：Personal Context Engine（当前用户状态五维视图，注册为 Context Source；默认开启，关闭即不注入）
 FEATURE_PERSONAL_CONTEXT: bool = True
-# Phase 37.2：Personal AI 统一画像（确认/纠正/蒸馏/双源对齐 Source；默认开启，关闭即不注入【个性化 · 统一画像】块）
+# Phase 37.2：Personal AI 统一画像（确认/纠正/蒸馏/双源对齐 Source；默认开启，关闭即不注入【个性化  统一画像】块）
 FEATURE_PERSONAL_AI: bool = True
 # Phase 19：Memory Intelligence 2.0（主动关联检索 + 重要性判断 Source；默认开启，关闭即不注入【长期记忆】块）
 FEATURE_MEMORY_INTELLIGENCE: bool = True
@@ -85,18 +86,18 @@ FEATURE_TTS_STREAM: bool = False
 FEATURE_SELF_LEARNING: bool = False
 # Phase 8：Agent Runtime（编排状态机 + 授权内核 + 反思层）；P10-4 起默认开启（低危工具 auto 自驱）
 FEATURE_AGENT_RUNTIME: bool = True
-# P5.1：Cognitive Context Integration —— Agent Runtime 的 Planner Context 改由 Canonical Context Engine
+# P5.1：Cognitive Context Integration  Agent Runtime 的 Planner Context 改由 Canonical Context Engine
 # （context.facade.build_cognitive_context）生成。true=启用（默认新行为）；false=Agent Runtime 回退
 # legacy 自构 prompt（DEPRECATE，不删）。仅新增此干净开关，不触碰任何既有 Feature Flag。
 FEATURE_COGNITIVE_CONTEXT: bool = True
-# P5.2：Canonical Cognitive Memory —— Cognitive / Agent Runtime 的记忆写入统一经
+# P5.2：Canonical Cognitive Memory  Cognitive / Agent Runtime 的记忆写入统一经
 # cognitive.memory_adapter 落到 memory.py Canonical Memory API（唯一写入权威），
 # legacy 表（user_model / episodes / conversation_memories）退化为兼容投影。
 # true=启用（默认新行为）；false=单点回滚为「legacy 投影 only」写入（P5.2 前等价行为）。
 FEATURE_CANONICAL_COGNITIVE_MEMORY: bool = True
 # Phase 9：Goal Decision Engine（聊天自动建 Goal 前置决策门）；Step 2 起默认开启（per-goal 预批准协作已落地）
 FEATURE_GOAL_DECISION: bool = True
-# Phase 47.4 · P1：默认 Chat 统一 Capability Execution 适配器开关。
+# Phase 47.4  P1：默认 Chat 统一 Capability Execution 适配器开关。
 # true=默认 Chat 的能力执行经 capability_runtime（capability_os 选择真相 + ai_core.execution.run 执行入口 + CapabilityResult 契约）；
 # false=回退到 P1 前直连 execute_tool / select_tools 行为（单点 rollback）。
 FEATURE_CAPABILITY_RUNTIME: bool = True
@@ -126,11 +127,11 @@ PERSONA_QUIRKS: str = "use_emoji,end_with_question"
 # P13-3 常驻伴随：后台轻量心跳常驻，CPU 超阈值自动降档；默认关闭，桌面环境显式开启
 FEATURE_ALWAYS_ON: bool = False
 ALWAYS_ON_CPU_LIMIT: int = 5
-# P13-2 跨端接力：会话无缝交接（桌面↔移动）；默认关闭
+# P13-2 跨端接力：会话无缝交接（桌面移动）；默认关闭
 FEATURE_CROSS_DEVICE: bool = False
 # P13-1 移动伴随端：轻量简报 + 跨端同步（PWA/轻量页）；默认关闭
 FEATURE_MOBILE_COMPANION: bool = False
-# P9 环境感知（日历 / 应用焦点 / 剪贴板）— 均为 Windows 专属，默认关闭
+# P9 环境感知（日历 / 应用焦点 / 剪贴板） 均为 Windows 专属，默认关闭
 # P9-1 日历感知：读取系统日历（Windows Outlook/COM）
 FEATURE_CALENDAR_SENSE: bool = False
 # P9-2 应用焦点：当前前台窗口/应用感知（Windows win32gui）
@@ -140,13 +141,13 @@ FEATURE_CLIPBOARD_SENSE: bool = False
 # Phase 20：Computer Perception Layer（电脑视觉 / 只读感知；只建 Eyes 不建 Hands）
 # 总开关默认开启（本地截图 + 本地 OCR，数据不出本机，风险可控）；
 # OCR 子开关默认开启（省 CPU 时可关）；
-# 上下文注入默认关闭 —— 把屏幕文字送 LLM 需用户显式授权（隐私决策）
+# 上下文注入默认关闭  把屏幕文字送 LLM 需用户显式授权（隐私决策）
 FEATURE_PERCEPTION: bool = True
 FEATURE_PERCEPTION_OCR: bool = True
 FEATURE_PERCEPTION_CONTEXT: bool = False
-# Phase 21 · Computer Action Layer（"Hand" 总开关：关闭后 observer/executor 全部降级为 no-op，零 OS 副作用）
+# Phase 21  Computer Action Layer（"Hand" 总开关：关闭后 observer/executor 全部降级为 no-op，零 OS 副作用）
 FEATURE_COMPUTER_ACTION: bool = True
-# Phase 20.5 · Memory Truth Layer：按可信度/来源/状态过滤与降权长期记忆（关闭即退回旧 ranking）
+# Phase 20.5  Memory Truth Layer：按可信度/来源/状态过滤与降权长期记忆（关闭即退回旧 ranking）
 FEATURE_MEMORY_TRUTH: bool = True
 WEB_SEARCH_KEY: str = ""
 WEB_SEARCH_ENGINE: str = ""
@@ -168,7 +169,7 @@ FEISHU_APP_SECRET: str = ""
 SOCIAL_INBOUND_TOKEN: str = ""
 # 飞书长连接(stream) 接收开关（需 FEISHU_APP_ID/SECRET，且已 pip install websocket-client）
 FEISHU_WS_ENABLED: str = "false"
-# —— Phase C 安全策略配置 ——
+#  Phase C 安全策略配置 
 # 工具工厂 / 动态 API 槽（运行时自扩展工具，声明式规格，禁任意 Python 执行）
 TOOL_FACTORY_ENABLED: str = "false"
 TOOL_FACTORY_COMMAND_ENABLED: str = "false"   # command 策略默认关闭（仅 http 默认可用）
@@ -178,7 +179,7 @@ AGENT_DELEGATE_ENABLED: str = "false"
 AGENT_DELEGATE_AUTO: str = "false"            # false=每次需显式 confirm 确认；true=直接执行
 AGENT_DELEGATE_TIMEOUT: str = "120"
 AGENT_DELEGATE_CLI: str = ""                  # claude.exe 路径；空则按已知默认路径探测
-# Phase C · 原生 Agent 运行时闸门（EXTEND，不新建调度/委托/执行类）
+# Phase C  原生 Agent 运行时闸门（EXTEND，不新建调度/委托/执行类）
 AGENT_MAX_STEPS: int = 16               # 单轮最大执行步数（与 runtime._MAX_STEPS 对齐）
 AGENT_MAX_ROUNDS: int = 8               # 单目标总轮次上限
 AGENT_MAX_REPLANS: int = 4              # 单目标动态重规划次数上限
@@ -188,9 +189,12 @@ AGENT_TOTAL_CAPABILITY_CALLS: int = 0   # 单目标能力调用总预算（0=无
 # 远程访问 token 认证（非 localhost 须 Bearer；默认空=仅允许本机）
 REMOTE_ACCESS_TOKEN: str = ""
 REMOTE_TOOL_WHITELIST: str = ""               # 远程会话可用工具白名单（逗号分隔）；空=内置安全默认
-PORT: int = 8000
+PORT: int = 8010
 BIND_HOST: str = "127.0.0.1"                  # 监听网口；默认仅本机；设为 0.0.0.0 需同时配置 REMOTE_ACCESS_TOKEN
 ZHUANGZHOU_PROXY_URL: str = ""
+# 与 llm._urlopen_with_proxy 约定的代理键名（兼容 XIAO6_PROXY_URL 环境变量）。
+# 留空则走「真·直连」；在需经代理出网的环境（如本机 Clash）设为 http://127.0.0.1:7890/
+XIAO6_PROXY_URL: str = os.environ.get("XIAO6_PROXY_URL", "")
 # 安全沙箱（对应参考实现「安全沙箱」设置）
 SANDBOX_FILE_ENABLED: bool = True
 SANDBOX_EXEC_ENABLED: bool = True
@@ -225,7 +229,7 @@ def reload():
     global TTS_VOICE, TTS_RATE, TTS_BACKEND
     global GPT_SOVITS_URL, GPT_SOVITS_REF_AUDIO, GPT_SOVITS_PROMPT_TEXT
     global QWEN3_TTS_URL, QWEN3_TTS_MODEL, QWEN3_TTS_VOICE, QWEN3_TTS_CLONE_URL, QWEN3_TTS_REF_AUDIO
-    global HOTDATA_KEY, AI_DISPLAY_NAME, THEME, MEMORY_GRAPH_ENABLED, FEATURE_CONTEXT_ENGINE, FEATURE_USER_MODEL, FEATURE_EPISODIC_MEMORY, FEATURE_EVENTBUS, FEATURE_PERSONALITY, FEATURE_GOAL_SYSTEM, FEATURE_PREMIUM_UI, FEATURE_KNOWLEDGE_PLATFORM, FEATURE_PERSONAL_CONTEXT, FEATURE_PERSONAL_AI, FEATURE_MEMORY_INTELLIGENCE, FEATURE_PROACTIVE_V2, FEATURE_MULTI_DEVICE, FEATURE_TTS_STREAM, FEATURE_SELF_LEARNING, FEATURE_AGENT_RUNTIME, FEATURE_COGNITIVE_CONTEXT, FEATURE_CANONICAL_COGNITIVE_MEMORY, AGENT_RUNTIME_AUTO, AGENT_POLICY_DEFAULT, AGENT_LOW_RISK_DEFAULT, FEATURE_GOAL_DECISION, FEATURE_HUD_RING, FEATURE_GLANCE_CARD, FEATURE_AVATAR_SCENE, HUD_RING_PERF_THRESHOLD, FEATURE_PERSONA, FEATURE_MEMORY_DISTILL, PERSONA_TONE, PERSONA_STYLE, PERSONA_BOUNDARIES, PERSONA_QUIRKS, FEATURE_ALWAYS_ON, ALWAYS_ON_CPU_LIMIT, FEATURE_CROSS_DEVICE, FEATURE_MOBILE_COMPANION, FEATURE_CALENDAR_SENSE, FEATURE_APP_FOCUS, FEATURE_CLIPBOARD_SENSE, FEATURE_PERCEPTION, FEATURE_PERCEPTION_OCR, FEATURE_PERCEPTION_CONTEXT, FEATURE_COMPUTER_ACTION, FEATURE_MEMORY_TRUTH
+    global HOTDATA_KEY, AI_DISPLAY_NAME, XIAO6_THEME, THEME, MEMORY_GRAPH_ENABLED, FEATURE_CONTEXT_ENGINE, FEATURE_USER_MODEL, FEATURE_EPISODIC_MEMORY, FEATURE_EVENTBUS, FEATURE_PERSONALITY, FEATURE_GOAL_SYSTEM, FEATURE_PREMIUM_UI, FEATURE_KNOWLEDGE_PLATFORM, FEATURE_PERSONAL_CONTEXT, FEATURE_PERSONAL_AI, FEATURE_MEMORY_INTELLIGENCE, FEATURE_PROACTIVE_V2, FEATURE_MULTI_DEVICE, FEATURE_TTS_STREAM, FEATURE_SELF_LEARNING, FEATURE_AGENT_RUNTIME, FEATURE_COGNITIVE_CONTEXT, FEATURE_CANONICAL_COGNITIVE_MEMORY, AGENT_RUNTIME_AUTO, AGENT_POLICY_DEFAULT, AGENT_LOW_RISK_DEFAULT, FEATURE_GOAL_DECISION, FEATURE_HUD_RING, FEATURE_GLANCE_CARD, FEATURE_AVATAR_SCENE, HUD_RING_PERF_THRESHOLD, FEATURE_PERSONA, FEATURE_MEMORY_DISTILL, PERSONA_TONE, PERSONA_STYLE, PERSONA_BOUNDARIES, PERSONA_QUIRKS, FEATURE_ALWAYS_ON, ALWAYS_ON_CPU_LIMIT, FEATURE_CROSS_DEVICE, FEATURE_MOBILE_COMPANION, FEATURE_CALENDAR_SENSE, FEATURE_APP_FOCUS, FEATURE_CLIPBOARD_SENSE, FEATURE_PERCEPTION, FEATURE_PERCEPTION_OCR, FEATURE_PERCEPTION_CONTEXT, FEATURE_COMPUTER_ACTION, FEATURE_MEMORY_TRUTH
     global WEB_SEARCH_KEY, WEB_SEARCH_ENGINE
     global MEDIA_PROVIDER, MINIMAX_API_KEY, MINIMAX_GROUP_ID
     global ASR_PROVIDER, ALIYUN_ASR_KEY, ALIYUN_ASR_TOKEN
@@ -244,7 +248,7 @@ def reload():
     global ZHUANGZHOU_KWS_ENABLED, ZHUANGZHOU_WAKE_PHRASE, ZHUANGZHOU_KWS_SENSITIVITY, ZHUANGZHOU_VOSK_KWS_ENABLED, ZHUANGZHOU_DOC_DIR, ZHUANGZHOU_AUTO_REVIEW
     global BUILD_CHANNEL
 
-    # Phase I / 38F · 发布通道：development / rc / release；其它值一律按 development 处理
+    # Phase I / 38F  发布通道：development / rc / release；其它值一律按 development 处理
     #   - development：显示开发者入口与内部链接（自检页、预览页、调试信息）
     #   - rc         ：隐藏开发工具（同 release），并打 RC 版本标记（F2 记版本）
     #   - release    ：只留最终用户该看见的东西，干净无 audit / phase / debug
@@ -278,6 +282,7 @@ def reload():
     ZHUANGZHOU_AUTO_REVIEW = os.environ.get("ZHUANGZHOU_AUTO_REVIEW", "false").lower()
 
     AI_DISPLAY_NAME = os.environ.get("AI_DISPLAY_NAME", "小6")
+    XIAO6_THEME = os.environ.get("XIAO6_THEME", "light")
     THEME = os.environ.get("ZHUANGZHOU_THEME", "dark-cyan")
     MEMORY_GRAPH_ENABLED = os.environ.get("ZHUANGZHOU_MEMORY_GRAPH", "true").lower() in ("1", "true", "yes")
     # Phase 1 Step 5：主路径默认切到 Context Engine（输出与旧实现逐字节一致）。
@@ -302,7 +307,7 @@ def reload():
     # Phase 18：Personal Context Engine 默认开启（false 即不注入【当前状态】块，
     # 上下文管线瞬时回退到 Phase 17 形态；用于故障时一键剥离本期改动）
     FEATURE_PERSONAL_CONTEXT = os.environ.get("FEATURE_PERSONAL_CONTEXT", "true").lower() in ("1", "true", "yes")
-    # Phase 37.2：Personal AI 统一画像默认开启（false 即不注入【个性化 · 统一画像】块）
+    # Phase 37.2：Personal AI 统一画像默认开启（false 即不注入【个性化  统一画像】块）
     FEATURE_PERSONAL_AI = os.environ.get("FEATURE_PERSONAL_AI", "true").lower() in ("1", "true", "yes")
     # Phase 19：Memory Intelligence 2.0 默认开启（false 即不注入【长期记忆】主动关联块，
     # 上下文回退到 Phase 18 形态）
@@ -355,9 +360,9 @@ def reload():
     FEATURE_PERCEPTION = os.environ.get("FEATURE_PERCEPTION", "true").lower() in ("1", "true", "yes")
     FEATURE_PERCEPTION_OCR = os.environ.get("FEATURE_PERCEPTION_OCR", "true").lower() in ("1", "true", "yes")
     FEATURE_PERCEPTION_CONTEXT = os.environ.get("FEATURE_PERCEPTION_CONTEXT", "false").lower() in ("1", "true", "yes")
-    # Phase 21 · Computer Action Layer（默认开启；关闭即零 OS 副作用）
+    # Phase 21  Computer Action Layer（默认开启；关闭即零 OS 副作用）
     FEATURE_COMPUTER_ACTION = os.environ.get("FEATURE_COMPUTER_ACTION", "true").lower() in ("1", "true", "yes")
-    # Phase 20.5 · Memory Truth Layer（默认开启；关闭即退回旧 ranking）
+    # Phase 20.5  Memory Truth Layer（默认开启；关闭即退回旧 ranking）
     FEATURE_MEMORY_TRUTH = os.environ.get("FEATURE_MEMORY_TRUTH", "true").lower() in ("1", "true", "yes")
 
     TTS_VOICE = os.environ.get("ZhuangZhou_TTS_VOICE", "zh-CN-YunxiNeural")
@@ -373,8 +378,9 @@ def reload():
     QWEN3_TTS_CLONE_URL = os.environ.get("QWEN3_TTS_CLONE_URL", "")
     QWEN3_TTS_REF_AUDIO = os.environ.get("QWEN3_TTS_REF_AUDIO", "")
 
-    HOTDATA_KEY = os.environ.get("HOTDATA_KEY", "")
+    HOTDATA_KEY = os.environ.get("HOTDATA_KEY", "zIisgRZJLLXgqKCwBirNLegtNNRuL70eBsbHXPxEBWU=")
     ZHUANGZHOU_PROXY_URL = os.environ.get("ZHUANGZHOU_PROXY_URL", "")
+    XIAO6_PROXY_URL = os.environ.get("XIAO6_PROXY_URL", "")
 
     WEB_SEARCH_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_KEY", "")
     WEB_SEARCH_ENGINE = os.environ.get("ZHUANGZHOU_WEB_SEARCH_ENGINE", "tavily")
@@ -405,7 +411,7 @@ def reload():
     AGENT_DELEGATE_AUTO = os.environ.get("AGENT_DELEGATE_AUTO", "false").lower()
     AGENT_DELEGATE_TIMEOUT = os.environ.get("AGENT_DELEGATE_TIMEOUT", "120")
     AGENT_DELEGATE_CLI = os.environ.get("AGENT_DELEGATE_CLI", "")
-    # Phase C · 原生 Agent 运行时闸门（env 覆盖；默认值与常量声明对齐）
+    # Phase C  原生 Agent 运行时闸门（env 覆盖；默认值与常量声明对齐）
     AGENT_MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "16") or "16")
     AGENT_MAX_ROUNDS = int(os.environ.get("AGENT_MAX_ROUNDS", "8") or "8")
     AGENT_MAX_REPLANS = int(os.environ.get("AGENT_MAX_REPLANS", "4") or "4")
@@ -424,15 +430,18 @@ def reload():
     WEB_SEARCH_BRAVE_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_BRAVE_KEY", "")
     WEB_SEARCH_SEARXNG_URL = os.environ.get("ZHUANGZHOU_WEB_SEARCH_SEARXNG_URL", "")
 
-    PORT = int(os.environ.get("ZhuangZhou_PORT", "8000"))
+    PORT = int(os.environ.get("ZhuangZhou_PORT", "8010"))
     BIND_HOST = (os.environ.get("BIND_HOST", "127.0.0.1") or "127.0.0.1").strip()
 
 
 # 首次加载
-load_env()
+# Load .env.local with absolute path
+_here = os.path.dirname(os.path.abspath(__file__))
+load_env(os.path.join(_here, ".env.local"))
+load_env(os.path.join(_here, ".env"))
 reload()
 
-# ---- Phase I · 发布通道（Dev / Release）----
+# ---- Phase I  发布通道（Dev / Release）----
 # development：显示开发者入口与内部链接（自检页、预览页、调试信息）
 # rc         ：隐藏开发工具（同 release），并打 RC 版本标记
 # release    ：只留最终用户该看见的东西
@@ -446,9 +455,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Phase 3.2：文件/Shell/Web 工具沙箱根目录（所有文件操作限制在此目录内）
 SANDBOX_ROOT = os.path.abspath(os.environ.get("ZHUANGZHOU_SANDBOX", os.path.join(HERE, "sandbox")))
 
-DB_PATH = os.path.join(HERE, "zhuangzhou.db")
+DB_PATH = os.path.join(HERE, "six.db")
 GEO_FILE = os.path.join(HERE, "geo-weather.json")
-SERVER_LOG = os.path.join(HERE, "zhuangzhou.log")
+SERVER_LOG = os.path.join(HERE, "six.log")
 
 CONTENT = {
     ".html": "text/html; charset=utf-8",
@@ -458,9 +467,9 @@ CONTENT = {
     ".mp3": "audio/mpeg",
 }
 
-# 持久化配置键名 ↔ 内存变量名映射（用于 /api/config 读写）
+# 持久化配置键名  内存变量名映射（用于 /api/config 读写）
 ENV_KEYS = {
-    # Phase I · 发布通道（development | release）；纯表现层开关
+    # Phase I  发布通道（development | release）；纯表现层开关
     "BUILD_CHANNEL": "BUILD_CHANNEL",
     "AGNES_BASE_URL": "AGNES_BASE_URL",
     "AGNES_API_KEY": "AGNES_API_KEY",
@@ -468,6 +477,7 @@ ENV_KEYS = {
     "AGNES_PROVIDER": "AGNES_PROVIDER",
     "AGNES_REASONING": "AGNES_REASONING",
     "AI_DISPLAY_NAME": "AI_DISPLAY_NAME",
+    "XIAO6_THEME": "XIAO6_THEME",
     "ZHUANGZHOU_THEME": "ZHUANGZHOU_THEME",
     "ZHUANGZHOU_MEMORY_GRAPH": "ZHUANGZHOU_MEMORY_GRAPH",
     "ZhuangZhou_TTS_VOICE": "ZhuangZhou_TTS_VOICE",
@@ -568,7 +578,7 @@ ENV_KEYS = {
     "HUD_RING_PERF_THRESHOLD": "HUD_RING_PERF_THRESHOLD",
     "FEATURE_PERSONA": "FEATURE_PERSONA",
     "FEATURE_MEMORY_DISTILL": "FEATURE_MEMORY_DISTILL",
-    # ── Phase 9 B1/B2：主动智能引擎配置 ──
+    #  Phase 9 B1/B2：主动智能引擎配置 
     "FEATURE_PROACTIVE_ENGINE": "FEATURE_PROACTIVE_ENGINE",
     "PROACTIVE_SUGGESTION_MODE": "PROACTIVE_SUGGESTION_MODE",
     "PROACTIVE_WINDOW_START": "PROACTIVE_WINDOW_START",
@@ -690,7 +700,7 @@ def get_system_prompt_template():
         "若需要连续操作（先 cd 进目录再编译/运行、分多步跑长任务、保持环境变量），把 run_shell 的 session 设为 true，"
         "持久 shell 会跨命令保持工作目录与环境变量，像真终端一样连续干活；随时可用 session_state 查看会话状态、reset_session 重置。"
         "帮用户装软件时用 install_software 工具（Windows winget，支持中文名如微信/QQ/VSCode）：后台安装并实时显示进度卡，装完自动更新。"
-        "表达原则（最重要）：你最终对用户说的话，先想清楚『用户真正想知道的是什么』，然后只回答那个问题——先给结论，必要时再解释，用户没追问就别主动展开。"
+        "表达原则（最重要）：你最终对用户说的话，先想清楚『用户真正想知道的是什么』，然后只回答那个问题先给结论，必要时再解释，用户没追问就别主动展开。"
         "能一句话说清绝不说三句；短问题给短回答（例如『好了』『可以了』『找到了』）。不要向用户汇报执行过程（别提调了几个工具、检查了哪些模块、Provider/API/内部状态等），除非用户明确问起。"
         "语气自然、简洁、有温度，像一位长期陪着用户工作的副驾；不要客服腔（禁止『好的呀』『非常高兴为您』『很抱歉给您带来不便』这类套话），不要卖萌，也不要强行人格化。"
         "遇到问题由你主动承担并处理，不要直接把技术错误甩给用户；确需用户操作时，用自然语言说『这里还差一个配置，你填好以后告诉我，我再帮你测一遍』。"

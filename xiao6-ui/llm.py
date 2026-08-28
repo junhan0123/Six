@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""小6 · Agnes / OpenAI 兼容大模型调用（带重试 + 最小间隔，支持动态配置热重载）"""
+"""庄周 · Agnes / OpenAI 兼容大模型调用（带重试 + 最小间隔，支持动态配置热重载）"""
 
 import json
 import threading
@@ -27,7 +27,7 @@ def _urlopen_with_proxy(req, timeout):
     兜底与无代理路径都显式使用空 ProxyHandler，强制绕过任何环境变量代理
     （某些后台运行环境会注入指向死代理的 HTTPS_PROXY，导致「直连」也拿到 10061 拒绝）。
     """
-    proxy = getattr(config, "XIAO6_PROXY_URL", "") or ""
+    proxy = getattr(config, "ZHUANGZHOU_PROXY_URL", "") or ""
     if proxy:
         try:
             opener = urllib.request.build_opener(
@@ -126,7 +126,7 @@ def _provider_creds(provider=None):
     return b["base_url"], b["api_key"], b["model"], b["capabilities"].get("reasoning_effort", True)
 
 
-def agnes_completion(messages, tools=None, stream=False, timeout=60, retries=2, temperature=0.7, reasoning=None, provider=None, auth_required=None, model=None):
+def agnes_completion(messages, tools=None, stream=False, timeout=60, retries=2, temperature=0.7, reasoning=None, provider=None, auth_required=None):
     """
     调用 LLM。使用 config 模块当前值，支持运行时修改。
     当 AGNES_REASONING 为 low/medium/high 时，会加入 reasoning_effort 参数（OpenAI / 部分兼容端点支持）。
@@ -135,13 +135,11 @@ def agnes_completion(messages, tools=None, stream=False, timeout=60, retries=2, 
     auth_required：None = 由 Provider Binding 自动推导（云端 True / 本地 False）；
                    显式 True/False 可覆盖。为 False 时不发送 Authorization 头
                    （本地端点无 Key，发 "Bearer " 空头不诚实且可能被拒）。
-    model：Phase 11 新增，允许外部传入 model 覆盖默认模型。
     """
     _binding = resolve_provider(provider)
     _base = _binding["base_url"]
     _key = _binding["api_key"]
-    # Phase 11: 允许外部传入 model 覆盖默认模型
-    _model = model or _binding["model"]
+    _model = _binding["model"]
     if auth_required is None:
         auth_required = _binding["auth_required"]
     body = {
@@ -214,11 +212,7 @@ def agnes_completion(messages, tools=None, stream=False, timeout=60, retries=2, 
                     # 命中 429 限流：配额模块做指数退避 + 锁心跳（对齐参考实现 quota.js）
                     backoff = quota.on_429()
                     print(f"[LLM] 命中 429 限流，退避 {backoff:.0f}s 并临时降速心跳")
-                if e.code == 401:
-                    # 认证失败：不重试，立即抛出（避免 3 次 × 退避 = ~14s 超时）
-                    print('[LLM] 401 认证失败，不重试')
-                    break
-                if e.code in (429, 500, 502, 503, 504):
+                if e.code in (401, 429, 500, 502, 503, 504):
                     time.sleep(2**attempt * 2)  # 退避 2s / 4s
                     continue
                 raise

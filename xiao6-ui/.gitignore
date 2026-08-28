@@ -1,0 +1,101 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.env
+.env.local
+.env.bak
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+package-lock.json
+
+# Python runtime
+python/
+python*/
+
+# Data files
+*.db
+*.db-journal
+*.sqlite
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# Models
+models/
+*.bin
+*.gguf
+*.onnx
+
+# Generated data
+data/tts_output/
+data/agent_reports/
+
+# Backup files
+*.bak
+*.backup
+*.migration-bak-*
+
+# Cache
+.ruff_cache/
+.pytest_cache/
+
+# Screenshots
+*_shot_*.png
+*_screenshot*.png
+*.bin
+_spk_*.bin
+_tts_*.bin
+
+# Temporary files
+*.tmp
+temp_*.py
+_smts_append.py
+_wcpc_append.py
+_p39b_verify.py
+_trace_e_test_tmp.py
+_phase62_e2e.py
+
+# Audit/Shots
+_shots/
+_audit/
+_phase4_design/
+_verify/
+_archive/
+
+# Desktop app artifacts
+Desktop/
+
+# Environment-specific
+xiao6.db
+xiao6_sessions.db
+six.db
+zhuangzhou.db*
+
+# Server logs
+server*.log
+_backend.log
+
+# Electron
+electron-bin/
