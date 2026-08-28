@@ -89,15 +89,15 @@ class ExecutionEvent:
     def tool_started(self, session) -> None:
         self.publish(EVENT_TOOL_STARTED, {
             "execution_id": session.execution_id,
-            "goal_id": session.context.goal_id,
-            "tool": session.context.metadata.get("tool"),
+            "goal_id": getattr(session, 'goal_id', None),
+            "task": session.task,
         })
 
     def tool_finished(self, session, ok: bool = True) -> None:
         self.publish(EVENT_TOOL_FINISHED, {
             "execution_id": session.execution_id,
-            "goal_id": session.context.goal_id,
-            "tool": session.context.metadata.get("tool"),
+            "goal_id": getattr(session, 'goal_id', None),
+            "task": session.task,
             "ok": ok,
         })
 
@@ -109,3 +109,33 @@ class ExecutionEvent:
             "execution_id": session.execution_id,
             "ok": ok,
         })
+
+
+class ExecutionSession:
+    """Execution session state machine for events."""
+
+    def __init__(self, execution_id: str, task: str, context=None, goal_id: int = None):
+        self.execution_id = execution_id
+        self.task = task
+        self.context = context
+        self.goal_id = goal_id
+        self.state = "pending"
+        self.created_at = None
+        self.completed_at = None
+        self.result = None
+        self.error = None
+
+    def set_state(self, state: str):
+        self.state = state
+        if state in ("completed", "failed"):
+            import time
+            self.completed_at = time.time()
+
+    def as_dict(self) -> dict:
+        return {
+            "execution_id": self.execution_id,
+            "task": self.task,
+            "session_id": getattr(getattr(self, 'context', None), 'session_id', 'default') if self.context else 'default',
+            "goal_id": getattr(self, 'goal_id', None),
+            "state": self.state,
+        }
