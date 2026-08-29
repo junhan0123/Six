@@ -1,6 +1,6 @@
 /* ═════════════════════════════════════════════════════════════════
    Xiao6 UI-R1 · voice.js — 语音输入 / TTS 播报（Phase 2）
-   迁移自 xiao6-workspace.js：speakText / startVoice / pcmToWav
+   迁移自 x6-workspace.js：speakText / startVoice / pcmToWav
    冻结契约：POST /api/speak（body {text,stream:false}）、
             POST /api/asr?ext=.wav（multipart 字段名 audio，不得修改）
    ═════════════════════════════════════════════════════════════════ */

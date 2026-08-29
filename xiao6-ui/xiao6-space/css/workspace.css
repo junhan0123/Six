@@ -1,173 +1,167 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · workspace.css — Timeline 组件细节（monochrome）
-   所有状态使用灰阶。仅语音红色保留。
+   Xiao6 UI-R2 · workspace.css — Timeline nodes (minimal, calm)
+   灰阶表达，无彩色，通过粗细/边框/动画区分状态
    ═════════════════════════════════════════════════════════════════ */
 
-/* ═══════════ typed ChatNode ═══════════ */
-.xiao6-node { display: flex; gap: 12px; max-width: 100%; animation: xiao6Fade .18s ease; }
-@keyframes xiao6Fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.xiao6-node.user { flex-direction: row-reverse; }
+/* ── Node base ── */
+.x6-node { display: flex; gap: 10px; max-width: 100%; animation: x6Fade .16s ease; }
+@keyframes x6Fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.x6-node.user { flex-direction: row-reverse; }
 
-/* avatar — 灰调 */
-.xiao6-avatar {
-  width: 28px; height: 28px; border-radius: 7px; flex: none; display: grid; place-items: center;
-  font-size: 12px; font-weight: 600; background: var(--xiao6-bg-2); color: var(--xiao6-text-muted);
+/* ── Avatar ── */
+.x6-avatar {
+  width: 26px; height: 26px; border-radius: 6px; flex: none; display: grid; place-items: center;
+  font-size: 11px; font-weight: 600; background: var(--x6-bg-2); color: var(--x6-text-muted);
 }
-.xiao6-node.user .xiao6-avatar { background: var(--xiao6-text); color: var(--xiao6-on-accent); }
-.xiao6-node.assistant .xiao6-avatar { background: var(--xiao6-bg-2); color: var(--xiao6-text-muted); }
-.xiao6-node.tool .xiao6-avatar { background: var(--xiao6-surface-hover); color: var(--xiao6-text-muted); }
-.xiao6-node.error .xiao6-avatar { background: var(--xiao6-bg-2); color: var(--xiao6-text-faint); }
-.xiao6-node.approval .xiao6-avatar { background: var(--xiao6-bg-2); color: var(--xiao6-text-muted); }
-.xiao6-node.intent .xiao6-avatar { background: var(--xiao6-bg-2); color: var(--xiao6-text-faint); }
-.xiao6-node.risk .xiao6-avatar { background: var(--xiao6-bg-2); color: var(--xiao6-text-faint); }
+.x6-node.user .x6-avatar { background: var(--x6-text); color: #fff; }
+.x6-node.tool .x6-avatar { background: var(--x6-bg-2); color: var(--x6-text-muted); }
 
-/* bubble — 灰边框 */
-.xiao6-bubble {
-  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 10px;
-  padding: 10px 13px; min-width: 0; max-width: 80%;
+/* ── Bubble ── */
+.x6-bubble {
+  background: var(--x6-surface); border: 1px solid var(--x6-border); border-radius: 10px;
+  padding: 9px 12px; min-width: 0; max-width: 82%;
 }
-.xiao6-node.user .xiao6-bubble {
-  background: var(--xiao6-bg-2); border-color: var(--xiao6-border);
+.x6-node.user .x6-bubble { background: var(--x6-bg-2); border-color: var(--x6-border); }
+.x6-bubble-meta { font-size: 10.5px; color: var(--x6-text-faint); margin-bottom: 4px; display: flex; gap: 8px; }
+.x6-bubble-body { font-size: 13.5px; word-break: break-word; }
+.x6-bubble-body p { margin: 0 0 7px; }
+.x6-bubble-body p:last-child { margin-bottom: 0; }
+.x6-bubble-body pre {
+  background: var(--x6-code-bg); border: 1px solid var(--x6-border); border-radius: 7px;
+  padding: 9px 11px; overflow-x: auto; font-family: var(--x6-font-mono); font-size: 12px; line-height: 1.5;
 }
-.xiao6-bubble-meta { font-size: 11px; color: var(--xiao6-text-faint); margin-bottom: 4px; display: flex; gap: 8px; }
-.xiao6-bubble-body { font-size: 13.5px; word-break: break-word; }
-.xiao6-bubble-body p { margin: 0 0 7px; } .xiao6-bubble-body p:last-child { margin-bottom: 0; }
-.xiao6-bubble-body pre {
-  background: var(--xiao6-code-bg); border: 1px solid var(--xiao6-border); border-radius: 7px;
-  padding: 10px 12px; overflow-x: auto; font-family: var(--xiao6-font-mono); font-size: 12px; line-height: 1.5;
-}
-.xiao6-bubble-body code { font-family: var(--xiao6-font-mono); font-size: 12px; background: var(--xiao6-bg-2); padding: 1px 4px; border-radius: 4px; }
-.xiao6-bubble-body pre code { background: none; padding: 0; }
-.xiao6-bubble-body ul, .xiao6-bubble-body ol { margin: 0 0 7px; padding-left: 18px; }
-.xiao6-bubble-body table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin: 5px 0; }
-.xiao6-bubble-body th, .xiao6-bubble-body td { border: 1px solid var(--xiao6-border); padding: 4px 8px; text-align: left; }
-.xiao6-bubble-body blockquote { border-left: 2px solid var(--xiao6-border-strong); margin: 5px 0; padding: 2px 11px; color: var(--xiao6-text-muted); }
-.xiao6-node.streaming .xiao6-bubble { border-color: var(--xiao6-border-strong); }
-.xiao6-stream-flag { font-size: 10.5px; color: var(--xiao6-text-faint); margin-top: 3px; }
-.xiao6-md-block { min-width: 0; }
+.x6-bubble-body code { font-family: var(--x6-font-mono); font-size: 12px; background: var(--x6-bg-2); padding: 1px 4px; border-radius: 4px; }
+.x6-bubble-body ul, .x6-bubble-body ol { margin: 0 0 7px; padding-left: 18px; }
+.x6-bubble-body blockquote { border-left: 2px solid var(--x6-border-strong); margin: 5px 0; padding: 2px 10px; color: var(--x6-text-muted); }
+.x6-node.streaming .x6-bubble { border-color: var(--x6-border-strong); }
+.x6-stream-flag { font-size: 10px; color: var(--x6-text-faint); margin-top: 3px; }
 
-/* ═══════════ Tool node — 灰阶，无彩色左边界 ═══════════ */
-.xiao6-tool-summary { font-size: 12px; color: var(--xiao6-text-muted); }
-.xiao6-tool-summary b { color: var(--xiao6-text); font-family: var(--xiao6-font-mono); font-size: 11.5px; }
+/* ── Tool node ── */
+.x6-tool-summary { font-size: 11.5px; color: var(--x6-text-muted); }
+.x6-tool-summary b { color: var(--x6-text); font-family: var(--x6-font-mono); font-size: 11px; }
 
-/* tool 执行卡片 — 灰框，通过粗细区分状态 */
-.xiao6-node.tool .xiao6-bubble {
-  background: var(--xiao6-bg); border-left: 2px solid var(--xiao6-border-strong);
-  border-top: 1px solid var(--xiao6-border); border-right: 1px solid var(--xiao6-border);
-  border-bottom: 1px solid var(--xiao6-border);
+.x6-node.tool .x6-bubble {
+  background: var(--x6-bg); border-left: 2px solid var(--x6-border-strong);
+  border-top: 1px solid var(--x6-border); border-right: 1px solid var(--x6-border); border-bottom: 1px solid var(--x6-border);
 }
-.xiao6-node.tool.tool-running .xiao6-avatar { animation: xiao6Pulse 1.2s ease-in-out infinite; }
-.xiao6-node.tool.tool-running .xiao6-bubble { border-left-color: var(--xiao6-text-muted); }
-.xiao6-node.tool.tool-done .xiao6-bubble { border-left-color: var(--xiao6-text-muted); background: var(--xiao6-bg); }
-.xiao6-node.tool.tool-done .xiao6-tool-summary b { color: var(--xiao6-text); }
-.xiao6-node.tool.tool-done .xiao6-avatar { background: var(--xiao6-bg-2); color: var(--xiao6-text-muted); }
+.x6-node.tool.tool-running .x6-avatar { animation: x6Pulse 1.2s ease-in-out infinite; }
+.x6-node.tool.tool-running .x6-bubble { border-left-color: var(--x6-text-muted); }
+.x6-node.tool.tool-done .x6-bubble { border-left-color: var(--x6-text-muted); }
+.x6-node.tool.tool-done .x6-tool-summary b { color: var(--x6-text); }
 
-/* ═══════════ Approval card — 灰框 ═══════════ */
-.xiao6-approval-card {
-  border: 1px solid var(--xiao6-border-strong); border-left: 3px solid var(--xiao6-text-muted);
-  background: var(--xiao6-bg); border-radius: var(--xiao6-radius-sm); padding: 11px 13px;
+/* ── Approval card ── */
+.x6-approval-card {
+  border: 1px solid var(--x6-border-strong); border-left: 3px solid var(--x6-text-muted);
+  background: var(--x6-bg); border-radius: var(--x6-radius-sm); padding: 10px 12px;
 }
-.xiao6-approval-card .xiao6-approval-act { display: flex; gap: 8px; margin-top: 9px; }
-.xiao6-approval-card button {
-  padding: 6px 14px; border-radius: 6px;
-  border: 1px solid var(--xiao6-border); background: var(--xiao6-surface);
-  font-size: 12.5px; transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease);
+.x6-approval-card .x6-approval-act { display: flex; gap: 8px; margin-top: 8px; }
+.x6-approval-card button {
+  padding: 5px 13px; border-radius: 6px; border: 1px solid var(--x6-border);
+  background: var(--x6-surface); font-size: 12px; transition: var(--x6-dur-fast);
 }
-.xiao6-approval-card .approve {
-  color: var(--xiao6-text); border-color: var(--xiao6-text-muted);
-  background: var(--xiao6-bg-2);
-}
-.xiao6-approval-card .approve:hover { background: var(--xiao6-text); color: var(--xiao6-on-accent); }
-.xiao6-approval-card .reject {
-  color: var(--xiao6-text-muted); border-color: var(--xiao6-border-strong);
-  background: var(--xiao6-surface);
-}
-.xiao6-approval-card .reject:hover { background: var(--xiao6-bg-2); }
+.x6-approval-card .approve { color: var(--x6-text); border-color: var(--x6-text-muted); background: var(--x6-bg-2); }
+.x6-approval-card .approve:hover { background: var(--x6-text); color: #fff; }
+.x6-approval-card .reject { color: var(--x6-text-muted); border-color: var(--x6-border-strong); }
+.x6-approval-card .reject:hover { background: var(--x6-bg-2); }
 
-/* file chips — 灰 */
-.xiao6-file-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
-.xiao6-file-chip {
-  display: inline-flex; align-items: center; gap: 5px; max-width: 200px;
-  padding: 3px 9px; border-radius: 999px; background: var(--xiao6-bg-2);
-  border: 1px solid var(--xiao6-border); font-size: 11.5px; overflow: hidden;
+/* ── Result card ── */
+.x6-res-card {
+  border: 1px solid var(--x6-border-strong); border-left: 2px solid var(--x6-text-muted);
+  background: var(--x6-surface); border-radius: var(--x6-radius-sm); padding: 11px 13px;
 }
-.xiao6-file-chip .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.xiao6-file-chip .more { color: var(--xiao6-text-faint); }
+.x6-tool-summary { font-size: 12px; }
 
-/* ═══════════ WS / Results / Agent ═══════════ */
-.xiao6-ws-card, .xiao6-res-card, .xiao6-agent-item {
-  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 8px; padding: 12px 14px;
-  transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease);
-}
-.xiao6-ws-card { border-left: 2px solid var(--xiao6-text-muted); }
-.xiao6-res-card { border-left: 2px solid var(--xiao6-text-muted); }
-.xiao6-ws-card:hover, .xiao6-res-card:hover { border-color: var(--xiao6-border-strong); }
-.xiao6-ws-card .ttl { font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.xiao6-ws-card .meta { color: var(--xiao6-text-muted); font-size: 12px; margin-top: 5px; }
-
-/* progress bar — 灰 */
-.xiao6-prog { height: 4px; border-radius: 999px; background: var(--xiao6-border); margin-top: 8px; overflow: hidden; }
-.xiao6-prog > i { display: block; height: 100%; background: var(--xiao6-text-muted); border-radius: 999px; transition: width .3s; }
-
-.xiao6-agent-item { display: flex; gap: 10px; align-items: flex-start; }
-.xiao6-agent-ic {
-  width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center;
-  font-size: 12px; flex: none; background: var(--xiao6-bg-2); color: var(--xiao6-text-muted);
+/* ── Phase label ── */
+.x6-phase-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--x6-text-faint); padding: 3px 0 1px; margin: 6px 0 3px;
+  border-left: 2px solid var(--x6-border-strong);
 }
 
-/* ═══════════ Intent / Risk — 透明节点，灰框 ═══════════ */
-.xiao6-node.intent .xiao6-avatar,
-.xiao6-node.risk .xiao6-avatar { background: transparent; color: var(--xiao6-text-faint); }
+/* ── File chips ── */
+.x6-file-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.x6-file-chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 190px;
+  padding: 2px 8px; border-radius: var(--x6-radius-pill); background: var(--x6-bg-2);
+  border: 1px solid var(--x6-border); font-size: 11px; overflow: hidden;
+}
+.x6-file-chip .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* ── Tool detail (expandable) ── */
+.x6-tl-toggle {
+  display: block; margin-top: 4px; padding: 2px 7px; border: none; background: none;
+  color: var(--x6-text-faint); font-size: 10.5px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.x6-tl-toggle:hover { color: var(--x6-text-muted); }
+.x6-tl-detail { margin-top: 4px; padding: 7px 9px; background: var(--x6-bg-2); border-radius: 5px; }
+.x6-tl-detail[hidden] { display: none; }
+.x6-tl-kv { display: flex; gap: 6px; font-size: 11px; margin-bottom: 2px; }
+.x6-tl-kv .k { color: var(--x6-text-faint); min-width: 28px; flex: none; }
+.x6-tl-kv pre { margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--x6-text-muted); font-family: var(--x6-font-mono); font-size: 11px; }
+
+/* ── Status chip ── */
+.x6-st {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 10px;
+  padding: 1px 6px; border-radius: var(--x6-radius-pill);
+  background: var(--x6-bg-2); color: var(--x6-text-muted);
+}
+.x6-st i { font-style: normal; }
+
+/* ── Error ── */
+.x6-tl-err { color: var(--x6-text-muted); font-size: 11px; margin-top: 3px; }
+.x6-tl-errcard {
+  border: 1px solid var(--x6-border-strong); border-left: 3px solid var(--x6-text-muted);
+  background: var(--x6-bg); border-radius: var(--x6-radius-sm); padding: 8px 10px;
+}
+
+/* ── Meta ── */
+.x6-tl-meta { font-size: 11px; color: var(--x6-text-faint); margin-top: 2px; }
+.x6-tl-card { border: 1px solid var(--x6-border); border-radius: var(--x6-radius-sm); padding: 8px 10px; background: var(--x6-surface); }
+.x6-tl-sub { font-size: 11px; color: var(--x6-text-muted); margin-left: 4px; font-family: var(--x6-font); font-weight: 400; }
+
+/* ── Agent activity items ── */
+.x6-agent-item { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; border-radius: var(--x6-radius-sm); border: 1px solid var(--x6-border); background: var(--x6-surface); }
+.x6-agent-ic { width: 22px; height: 22px; border-radius: 5px; display: grid; place-items: center; font-size: 11px; flex: none; background: var(--x6-bg-2); color: var(--x6-text-muted); }
+.x6-agent-body-txt { flex: 1; min-width: 0; }
+.x6-agent-body-txt > div:first-child { font-size: 12.5px; }
+.x6-agent-body-txt .t { font-size: 10.5px; color: var(--x6-text-faint); margin-top: 2px; }
+
+/* ── Progress bar ── */
+.x6-prog { height: 3px; border-radius: var(--x6-radius-pill); background: var(--x6-border); margin-top: 6px; overflow: hidden; }
+.x6-prog > i { display: block; height: 100%; background: var(--x6-text-muted); border-radius: var(--x6-radius-pill); transition: width .3s; }
+
+/* ── WS card ── */
+.x6-ws-card { border: 1px solid var(--x6-border); border-radius: var(--x6-radius-sm); padding: 10px 12px; }
+.x6-ws-card .ttl { font-weight: 600; font-size: 13px; }
+.x6-ws-card .meta { color: var(--x6-text-muted); font-size: 11.5px; margin-top: 3px; }
+
+/* ── Intent / Risk ── */
 .intent-card, .risk-card {
-  font-size: 12px; padding: 9px 11px;
-  border-radius: var(--xiao6-radius-sm); border: 1px solid var(--xiao6-border); background: var(--xiao6-bg);
+  font-size: 11.5px; padding: 8px 10px; border-radius: var(--x6-radius-sm);
+  border: 1px solid var(--x6-border); background: var(--x6-bg);
 }
-.intent-card { border-left: 2px solid var(--xiao6-border-strong); }
-.risk-card.risk-safe { border-left: 2px solid var(--xiao6-text-muted); }
-.risk-card.risk-confirm { border-left: 2px solid var(--xiao6-text-muted); }
-.risk-card.risk-block { border-left: 2px solid var(--xiao6-text); }
+.intent-card { border-left: 2px solid var(--x6-border-strong); }
+.risk-card.risk-safe { border-left: 2px solid var(--x6-text-muted); }
+.risk-card.risk-confirm { border-left: 2px solid var(--x6-text-muted); }
+.risk-card.risk-block { border-left: 2px solid var(--x6-text); }
+.ic-title { font-weight: 600; margin-bottom: 4px; font-size: 11.5px; }
+.risk-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--x6-radius-pill); background: var(--x6-bg-2); color: var(--x6-text-muted); }
+.risk-tag.risk-block { background: var(--x6-text); color: #fff; }
 
-.ic-title { font-weight: 600; margin-bottom: 5px; font-size: 12px; color: var(--xiao6-text); }
-.intent-card .ic-title { color: var(--xiao6-text-muted); }
-.risk-card.risk-safe .ic-title,
-.risk-card.risk-confirm .ic-title { color: var(--xiao6-text-muted); }
-.risk-card.risk-block .ic-title { color: var(--xiao6-text); }
-.ic-row { color: var(--xiao6-text-muted); margin-top: 2px; }
+/* ── Jumpbar (minimap) ── */
+.x6-jumpbar { position: absolute; top: 60px; bottom: 110px; right: 8px; width: 12px; z-index: 30; opacity: 0; transition: opacity .18s; pointer-events: none; }
+.x6-timeline:hover .x6-jumpbar { opacity: 1; pointer-events: auto; }
+.x6-jumpbar[hidden] { display: none; }
+.x6-jump-track { position: relative; width: 3px; height: 100%; background: var(--x6-border); border-radius: 2px; }
+.x6-jump-thumb { position: absolute; left: -1px; width: 5px; border-radius: 2px; background: var(--x6-text-muted); transition: top .12s ease; opacity: 0.6; }
+.x6-jump-mark { position: absolute; left: -3px; width: 9px; height: 2px; border-radius: 1px; background: var(--x6-text-faint); cursor: pointer; opacity: 0.4; transition: background .12s; }
+.x6-jump-mark:hover { background: var(--x6-text-muted); opacity: 1; }
+.x6-jump-tip { position: absolute; right: 18px; max-width: 200px; padding: 6px 9px; border-radius: 6px; background: var(--x6-surface); border: 1px solid var(--x6-border); font-size: 11px; box-shadow: var(--x6-shadow-soft); white-space: normal; opacity: 0; transition: opacity .12s; pointer-events: none; z-index: 40; }
+.x6-jump-tip.show { opacity: 1; }
 
-.risk-tag {
-  display: inline-block; font-size: 10.5px; font-weight: 600;
-  padding: 1px 7px; border-radius: 999px; letter-spacing: 0.03em;
-  background: var(--xiao6-bg-2); color: var(--xiao6-text-muted);
-}
-.risk-tag.risk-safe { background: var(--xiao6-bg-2); color: var(--xiao6-text-muted); }
-.risk-tag.risk-confirm { background: var(--xiao6-bg-2); color: var(--xiao6-text); }
-.risk-tag.risk-block { background: var(--xiao6-text); color: var(--xiao6-on-accent); }
-
-/* ═══════════ Timeline 辅助元素 ═══════════ */
-.xiao6-tl-toggle {
-  display: block; margin-top: 5px; padding: 3px 9px;
-  border: none; background: none; color: var(--xiao6-text-faint);
-  font-size: 11px; cursor: pointer; text-decoration: underline;
-}
-.xiao6-tl-toggle:hover { color: var(--xiao6-text-muted); }
-.xiao6-tl-detail { margin-top: 5px; padding: 7px 9px; background: var(--xiao6-bg-2); border-radius: 5px; }
-.xiao6-tl-kv { display: flex; gap: 7px; font-size: 11.5px; margin-bottom: 3px; }
-.xiao6-tl-kv .k { color: var(--xiao6-text-faint); min-width: 30px; flex: none; }
-.xiao6-tl-kv pre { margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--xiao6-text-muted); font-family: var(--xiao6-font-mono); font-size: 11px; }
-
-.xiao6-st {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px;
-  padding: 2px 7px; border-radius: 999px;
-  background: var(--xiao6-bg-2); color: var(--xiao6-text-muted); margin-right: 5px;
-}
-.xiao6-st i { font-style: normal; }
-
-.xiao6-tl-err { color: var(--xiao6-text-muted); font-size: 11.5px; margin-top: 3px; }
-.xiao6-tl-errcard {
-  border: 1px solid var(--xiao6-border-strong); border-left: 3px solid var(--xiao6-text-muted);
-  background: var(--xiao6-bg); border-radius: var(--xiao6-radius-sm); padding: 9px 11px;
-}
-.xiao6-tl-sub { font-size: 11.5px; color: var(--xiao6-text-muted); margin-left: 5px; font-family: var(--xiao6-font); font-weight: 400; }
-.xiao6-tl-meta { font-size: 11.5px; color: var(--xiao6-text-faint); margin-top: 2px; }
-.xiao6-tl-card { border: 1px solid var(--xiao6-border); border-radius: var(--xiao6-radius-sm); padding: 9px 11px; background: var(--xiao6-surface); }
+/* ── Settings ── */
+.x6-settings { padding: 0 28px; display: flex; flex-direction: column; gap: 12px; }
+.x6-set-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--x6-border); border-radius: var(--x6-radius-sm); background: var(--x6-surface); }
+.x6-set-label { font-size: 13px; }
+.x6-set-desc { font-size: 11.5px; color: var(--x6-text-faint); margin-top: 1px; }

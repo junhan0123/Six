@@ -114,17 +114,17 @@
     var blocks = this._splitBlocks(fullText);
     var n = blocks.length;
     for (var i = this.renderedBlocks; i < n - 1; i++) {
-      var be = el('div', 'xiao6-md-block'); be.innerHTML = this._renderBlock(blocks[i]);
+      var be = el('div', 'x6-md-block'); be.innerHTML = this._renderBlock(blocks[i]);
       this.container.appendChild(be);
       this.renderedBlocks++;
     }
     var tailBlock = blocks[n - 1];
     var html = tailBlock ? this._renderBlock(tailBlock) : '';
-    if (!this.tailEl) { this.tailEl = el('div', 'xiao6-md-block'); this.container.appendChild(this.tailEl); }
+    if (!this.tailEl) { this.tailEl = el('div', 'x6-md-block'); this.container.appendChild(this.tailEl); }
     this.tailEl.innerHTML = html;
   };
   StreamingMarkdown.prototype.finalize = function () {
-    if (this.tailEl) { this.tailEl.className = 'xiao6-md-block'; this.tailEl = null; }
+    if (this.tailEl) { this.tailEl.className = 'x6-md-block'; this.tailEl = null; }
     this.renderedBlocks = 0;
   };
   function mdToHtml(text) {
@@ -146,28 +146,28 @@
 
   // ───────────────────── 节点 HTML（只渲染真实字段）─────────────────────
   function statusChip(st) {
-    return '<span class="xiao6-st ' + st + '"><i>' + sym(st) + '</i>' + esc(stxt(st)) + '</span>';
+    return '<span class="x6-st ' + st + '"><i>' + sym(st) + '</i>' + esc(stxt(st)) + '</span>';
   }
   function detailBlock(n) {
     // §8/§15：只有 payload 里真实存在的信息才展示；错误详情默认收起
     var rows = '';
     if (n.input !== undefined && n.input !== null && n.input !== '') {
-      rows += '<div class="xiao6-tl-kv"><span class="k">输入</span><pre>' + esc(preview(n.input)) + '</pre></div>';
+      rows += '<div class="x6-tl-kv"><span class="k">输入</span><pre>' + esc(preview(n.input)) + '</pre></div>';
     }
     if (n.output !== undefined && n.output !== null && n.output !== '') {
-      rows += '<div class="xiao6-tl-kv"><span class="k">结果</span><pre>' + esc(preview(n.output)) + '</pre></div>';
+      rows += '<div class="x6-tl-kv"><span class="k">结果</span><pre>' + esc(preview(n.output)) + '</pre></div>';
     }
     if (n.detail) {
-      rows += '<div class="xiao6-tl-kv"><span class="k">详情</span><pre>' + esc(preview(n.detail)) + '</pre></div>';
+      rows += '<div class="x6-tl-kv"><span class="k">详情</span><pre>' + esc(preview(n.detail)) + '</pre></div>';
     }
     if (!rows) return '';
-    return '<button class="xiao6-tl-toggle" type="button" data-toggle="1">查看详情</button>' +
-      '<div class="xiao6-tl-detail" hidden>' + rows + '</div>';
+    return '<button class="x6-tl-toggle" type="button" data-toggle="1">查看详情</button>' +
+      '<div class="x6-tl-detail" hidden>' + rows + '</div>';
   }
 
   function nodeInnerHtml(n) {
     if (n.type === 'user') {
-      return '<div class="xiao6-bubble-body">' + esc(n.title || '') + '</div>';
+      return '<div class="x6-bubble-body">' + esc(n.title || '') + '</div>';
     }
     if (n.type === 'intent') {
       var h = '<div class="intent-card"><div class="ic-title">小6理解</div>' +
@@ -184,88 +184,88 @@
     }
     if (n.type === 'tool') {
       var label = n.tool || '工具';
-      var line = '<div class="xiao6-tool-summary">' + statusChip(n.status) +
+      var line = '<div class="x6-tool-summary">' + statusChip(n.status) +
         '<b>' + esc(label) + '</b>' +
-        (n.summary ? '<span class="xiao6-tl-sub">' + esc(n.summary) + '</span>' : '') + '</div>';
+        (n.summary ? '<span class="x6-tl-sub">' + esc(n.summary) + '</span>' : '') + '</div>';
       return line + detailBlock(n);
     }
     if (n.type === 'goal') {
       var gt = n.title ? n.title : ('目标 #' + (n.goalId != null ? n.goalId : '?'));
-      var gh = '<div class="xiao6-tl-card"><div class="xiao6-tool-summary">' + statusChip(n.status) +
-        '<b>目标</b><span class="xiao6-tl-sub">' + esc(gt) + '</span></div>';
-      if (n.summary) gh += '<div class="xiao6-tl-meta">' + esc(n.summary) + '</div>';
+      var gh = '<div class="x6-tl-card"><div class="x6-tool-summary">' + statusChip(n.status) +
+        '<b>目标</b><span class="x6-tl-sub">' + esc(gt) + '</span></div>';
+      if (n.summary) gh += '<div class="x6-tl-meta">' + esc(n.summary) + '</div>';
       return gh + '</div>' + detailBlock(n);
     }
     if (n.type === 'task') {
       var tt = n.title ? n.title : ('任务 #' + (n.taskId != null ? n.taskId : '?'));
-      var th = '<div class="xiao6-tool-summary">' + statusChip(n.status) +
-        '<b>任务</b><span class="xiao6-tl-sub">' + esc(tt) + '</span></div>';
+      var th = '<div class="x6-tool-summary">' + statusChip(n.status) +
+        '<b>任务</b><span class="x6-tl-sub">' + esc(tt) + '</span></div>';
       return th + detailBlock(n);
     }
     if (n.type === 'approval') {
-      var ah = '<div class="xiao6-approval-card" data-ticket="' + esc(n.ticket || '') + '">' +
-        '<div class="xiao6-appr-head">' + statusChip(n.status) + '<b>小6请求执行</b></div>';
-      if (n.tool) ah += '<div class="xiao6-tl-meta">工具：' + esc(n.tool) + '</div>';
-      if (n.summary) ah += '<div class="xiao6-tl-meta">操作：' + esc(n.summary) + '</div>';
-      if (n.argsPreview) ah += '<div class="xiao6-tl-meta">参数：' + esc(preview(n.argsPreview, 160)) + '</div>';
-      if (n.error) ah += '<div class="xiao6-tl-err">' + esc(n.error) + '</div>';
+      var ah = '<div class="x6-approval-card" data-ticket="' + esc(n.ticket || '') + '">' +
+        '<div class="x6-appr-head">' + statusChip(n.status) + '<b>小6请求执行</b></div>';
+      if (n.tool) ah += '<div class="x6-tl-meta">工具：' + esc(n.tool) + '</div>';
+      if (n.summary) ah += '<div class="x6-tl-meta">操作：' + esc(n.summary) + '</div>';
+      if (n.argsPreview) ah += '<div class="x6-tl-meta">参数：' + esc(preview(n.argsPreview, 160)) + '</div>';
+      if (n.error) ah += '<div class="x6-tl-err">' + esc(n.error) + '</div>';
       if (n.status === 'blocked') {
-        ah += '<div class="xiao6-approval-act">' +
+        ah += '<div class="x6-approval-act">' +
           '<button class="approve" type="button" data-decision="approve">允许</button>' +
           '<button class="reject" type="button" data-decision="reject">拒绝</button></div>';
       } else if (n.status === 'success') {
-        ah += '<div class="xiao6-tl-meta">已批准</div>';
+        ah += '<div class="x6-tl-meta">已批准</div>';
       } else if (n.status === 'stopped') {
-        ah += '<div class="xiao6-tl-meta">已拒绝</div>';
+        ah += '<div class="x6-tl-meta">已拒绝</div>';
       }
       return ah + '</div>';
     }
     if (n.type === 'error') {
-      var eh = '<div class="xiao6-tl-errcard"><div class="xiao6-tool-summary">' + statusChip('failed') +
+      var eh = '<div class="x6-tl-errcard"><div class="x6-tool-summary">' + statusChip('failed') +
         '<b>' + esc(n.title || '执行失败') + '</b></div>';
-      if (n.summary) eh += '<div class="xiao6-tl-err">' + esc(n.summary) + '</div>';
+      if (n.summary) eh += '<div class="x6-tl-err">' + esc(n.summary) + '</div>';
       return eh + '</div>' + detailBlock(n);
     }
     if (n.type === 'execution') {
-      var xh = '<div class="xiao6-tool-summary">' + statusChip(n.status) +
-        '<b>执行</b><span class="xiao6-tl-sub">' + esc(n.title || n.summary || '') + '</span></div>';
+      var xh = '<div class="x6-tool-summary">' + statusChip(n.status) +
+        '<b>执行</b><span class="x6-tl-sub">' + esc(n.title || n.summary || '') + '</span></div>';
       return xh + detailBlock(n);
     }
     // RESULT 卡片：AGENT 完成任务后的结果摘要
     if (n.type === 'result') {
       var isFailed = n.status === 'failed';
-      var rh = '<div class="xiao6-res-card">';
-      rh += '<div class="xiao6-tool-summary"><b>' + (isFailed ? '! 任务失败' : '✓ 任务完成') + '</b></div>';
-      if (n.title) rh += '<div class="xiao6-tl-meta">' + esc(n.title) + '</div>';
-      if (n.summary) rh += '<div class="xiao6-tl-meta">' + esc(n.summary) + '</div>';
-      if (n.detail) rh += '<div class="xiao6-tl-meta">' + esc(preview(n.detail, 200)) + '</div>';
+      var rh = '<div class="x6-res-card">';
+      rh += '<div class="x6-tool-summary"><b>' + (isFailed ? '! 任务失败' : '✓ 任务完成') + '</b></div>';
+      if (n.title) rh += '<div class="x6-tl-meta">' + esc(n.title) + '</div>';
+      if (n.summary) rh += '<div class="x6-tl-meta">' + esc(n.summary) + '</div>';
+      if (n.detail) rh += '<div class="x6-tl-meta">' + esc(preview(n.detail, 200)) + '</div>';
       return rh + '</div>';
     }
-    return '<div class="xiao6-bubble-body">' + esc(n.title || '') + '</div>';
+    return '<div class="x6-bubble-body">' + esc(n.title || '') + '</div>';
   }
 
   // ───────────────────── 增量渲染器 ─────────────────────
   var domById = Object.create(null);
 
   function buildNodeDom(n) {
-    var root = el('div', 'xiao6-node ' + n.type);
+    var root = el('div', 'x6-node ' + n.type);
     root.dataset.nid = n.id;
     root.dataset.status = n.status;
-    var av = el('div', 'xiao6-avatar', AVATAR[n.type] || '·');
-    var bub = el('div', 'xiao6-bubble');
+    var av = el('div', 'x6-avatar', AVATAR[n.type] || '·');
+    var bub = el('div', 'x6-bubble');
     root.appendChild(av); root.appendChild(bub);
     var rec = { root: root, bub: bub, ver: n._ver || 0, body: null, sm: null };
     if (n.type === 'assistant') {
-      var meta = el('div', 'xiao6-bubble-meta');
+      var meta = el('div', 'x6-bubble-meta');
       meta.innerHTML = '<span>小6</span><span>' + fmtTime(n.timestamp) + '</span>';
-      var body = el('div', 'xiao6-bubble-body');
+      var body = el('div', 'x6-bubble-body');
       bub.appendChild(meta); bub.appendChild(body);
       rec.body = body;
       rec.sm = new StreamingMarkdown(body);
       if (n.text) { rec.sm.update(n.text); }
       if (n.status !== 'running') { rec.sm.finalize(); }
       else { root.classList.add('streaming'); }
-      if (n.error) { var ee = el('div', 'xiao6-tl-err', n.error); bub.appendChild(ee); }
+      if (n.error) { var ee = el('div', 'x6-tl-err', n.error); bub.appendChild(ee); }
     } else {
       bub.innerHTML = nodeInnerHtml(n);
     }
@@ -277,8 +277,8 @@
       // 流式节点：正文由 StreamingMarkdown 持有，绝不整体重绘（否则会闪断）
       if (n.status === 'running') rec.root.classList.add('streaming');
       else { rec.root.classList.remove('streaming'); if (rec.sm) rec.sm.finalize(); }
-      var errEl = rec.bub.querySelector('.xiao6-tl-err');
-      if (n.error && !errEl) rec.bub.appendChild(el('div', 'xiao6-tl-err', n.error));
+      var errEl = rec.bub.querySelector('.x6-tl-err');
+      if (n.error && !errEl) rec.bub.appendChild(el('div', 'x6-tl-err', n.error));
       else if (!n.error && errEl) errEl.remove();
     } else {
       rec.bub.innerHTML = nodeInnerHtml(n);
@@ -286,7 +286,7 @@
     rec.ver = n._ver || 0;
   }
 
-  var EMPTY_HTML = '<div class="xiao6-empty-hero"><div class="xiao6-empty-orb"></div><div class="xiao6-empty-title">小6</div><div class="xiao6-empty-sub">今天想让我做什么？</div></div>';
+  var EMPTY_HTML = '<div class="x6-empty-hero"><div class="x6-empty-orb"></div><div class="x6-empty-title">小6</div><div class="x6-empty-sub">今天想让我做什么？</div></div>';
   function renderTimeline() {
     var list = $('chatList'); if (!list) return;
     var tl = state.timeline;
@@ -335,7 +335,7 @@
       // PLAN 阶段：第一个 goal/task 节点前插入（如果没有 goal/task 则不插入）
       if (n.type === 'goal' || n.type === 'task') {
         if (!shownPlan) {
-          var pe0 = el('div', 'xiao6-phase-label');
+          var pe0 = el('div', 'x6-phase-label');
           pe0.textContent = 'PLAN';
           list.appendChild(pe0);
           shownPlan = true;
@@ -344,7 +344,7 @@
       // EXECUTE 阶段：第一个 tool 节点前插入（如果没有 tool 则不插入）
       if (n.type === 'tool') {
         if (!shownExecute) {
-          var pe1 = el('div', 'xiao6-phase-label');
+          var pe1 = el('div', 'x6-phase-label');
           pe1.textContent = 'EXECUTE';
           list.appendChild(pe1);
           shownExecute = true;
@@ -352,14 +352,14 @@
       }
       // VERIFY 阶段：assistant 最终回复出现在 tool 之后
       if (n.type === 'assistant' && n.status === 'success' && hasTool && !shownVerify) {
-        var vpe = el('div', 'xiao6-phase-label');
+        var vpe = el('div', 'x6-phase-label');
         vpe.textContent = 'VERIFY';
         list.appendChild(vpe);
         shownVerify = true;
       }
       // RESULT 阶段：result 节点或 execution_completed 节点后
       if ((n.type === 'result' || (n.type === 'execution' && n.title && n.title.indexOf('执行完成') >= 0)) && !shownResult) {
-        var rpe = el('div', 'xiao6-phase-label');
+        var rpe = el('div', 'x6-phase-label');
         rpe.textContent = 'RESULT';
         list.appendChild(rpe);
         shownResult = true;
@@ -610,7 +610,7 @@
       return n.type === 'tool' || n.type === 'goal' || n.type === 'task' ||
              n.type === 'approval' || n.type === 'intent' || n.type === 'risk' || n.type === 'error';
     });
-    if (!items.length) { list.innerHTML = '<span class="xiao6-empty">暂无 Agent 活动</span>'; return; }
+    if (!items.length) { list.innerHTML = '<span class="x6-empty">暂无 Agent 活动</span>'; return; }
     list.innerHTML = items.slice(-40).reverse().map(function (n) {
       var txt = n.type === 'tool' ? ('工具 ' + (n.tool || '') + ' · ' + stxt(n.status))
         : n.type === 'goal' ? ('目标 ' + (n.title || ('#' + n.goalId)) + ' · ' + stxt(n.status))
@@ -619,16 +619,16 @@
         : n.type === 'intent' ? ('意图 ' + intentLabel(n.intent))
         : n.type === 'risk' ? ('安全检查 ' + (n.tool || '') + ' ' + (n.risk || ''))
         : (n.title || '执行失败');
-      return '<div class="xiao6-agent-item ' + n.type + '"><div class="xiao6-agent-ic">' + sym(n.status) + '</div>' +
-        '<div class="xiao6-agent-body-txt"><div>' + esc(txt) + '</div><div class="t">' + fmtTime(n.timestamp) + '</div></div></div>';
+      return '<div class="x6-agent-item ' + n.type + '"><div class="x6-agent-ic">' + sym(n.status) + '</div>' +
+        '<div class="x6-agent-body-txt"><div>' + esc(txt) + '</div><div class="t">' + fmtTime(n.timestamp) + '</div></div></div>';
     }).join('');
   }
   function renderResults() {
     var list = $('resList'); if (!list) return;
     var replies = state.timeline.filter(function (n) { return n.type === 'assistant' && n.text; });
-    if (!replies.length) { list.innerHTML = '<span class="xiao6-empty">暂无结果</span>'; return; }
+    if (!replies.length) { list.innerHTML = '<span class="x6-empty">暂无结果</span>'; return; }
     list.innerHTML = replies.slice(-12).reverse().map(function (r) {
-      return '<div class="xiao6-res-card"><div class="xiao6-bubble-meta"><span>小6</span><span>' +
+      return '<div class="x6-res-card"><div class="x6-bubble-meta"><span>小6</span><span>' +
         fmtTime(r.timestamp) + '</span></div>' + mdToHtml(r.text) + '</div>';
     }).join('');
   }
@@ -641,30 +641,30 @@
       return s !== 'done' && s !== 'completed' && s !== 'closed' && t.current_step != null && t.total_steps;
     }).slice(0, 8);
     var running = Number((state.snap.agent || {}).running || 0);
-    if (!open.length && !running) { list.innerHTML = '<span class="xiao6-empty">没有进行中的任务</span>'; return; }
+    if (!open.length && !running) { list.innerHTML = '<span class="x6-empty">没有进行中的任务</span>'; return; }
     var html = '';
     open.forEach(function (t) {
       // 真实步骤计数（§7：不创造百分比，用 current/total 表达）
-      html += '<div class="xiao6-ws-card"><div class="ttl">⚙ ' + esc(t.title || '任务') + '</div>' +
+      html += '<div class="x6-ws-card"><div class="ttl">⚙ ' + esc(t.title || '任务') + '</div>' +
         '<div class="meta">步骤 ' + t.current_step + ' / ' + t.total_steps + '</div></div>';
     });
-    if (running > 0) html += '<div class="xiao6-ws-card"><div class="ttl">● 小6核心执行中</div><div class="meta">运行 ' + running + ' 项</div></div>';
+    if (running > 0) html += '<div class="x6-ws-card"><div class="ttl">● 小6核心执行中</div><div class="meta">运行 ' + running + ' 项</div></div>';
     list.innerHTML = html;
   }
 
   // ───────────────────── JUMPBAR（minimap / scroll-spy）─────────────────────
   function buildJumpbar() {
     var track = $('jumpTrack'); var list = $('chatList'); if (!track || !list) return;
-    Array.prototype.slice.call(track.querySelectorAll('.xiao6-jump-mark, .xiao6-jump-tip, .xiao6-jump-thumb')).forEach(function (n) { n.remove(); });
-    var nodes = Array.prototype.slice.call(list.querySelectorAll('.xiao6-node'));
+    Array.prototype.slice.call(track.querySelectorAll('.x6-jump-mark, .x6-jump-tip, .x6-jump-thumb')).forEach(function (n) { n.remove(); });
+    var nodes = Array.prototype.slice.call(list.querySelectorAll('.x6-node'));
     var total = list.scrollHeight || 1;
     nodes.forEach(function (n, i) {
       var frac = Math.min(1, Math.max(0, n.offsetTop / total));
-      var mk = el('div', 'xiao6-jump-mark');
+      var mk = el('div', 'x6-jump-mark');
       mk.style.top = (frac * 100) + '%';
       mk.dataset.idx = i;
-      var tip = el('div', 'xiao6-jump-tip');
-      var txt = ((n.querySelector('.xiao6-bubble-body') || n.querySelector('.xiao6-bubble') || n).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      var tip = el('div', 'x6-jump-tip');
+      var txt = ((n.querySelector('.x6-bubble-body') || n.querySelector('.x6-bubble') || n).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
       mk.addEventListener('mouseenter', function () { tip.textContent = txt || '（空消息）'; tip.style.top = mk.style.top; tip.classList.add('show'); });
       mk.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
       mk.addEventListener('click', function () { jumpToMessage(i); });
@@ -674,8 +674,8 @@
   }
   function updateJumpbarThumb() {
     var track = $('jumpTrack'); var list = $('chatList'); if (!track || !list) return;
-    var thumb = track.querySelector('.xiao6-jump-thumb');
-    if (!thumb) { thumb = el('div', 'xiao6-jump-thumb'); track.appendChild(thumb); }
+    var thumb = track.querySelector('.x6-jump-thumb');
+    if (!thumb) { thumb = el('div', 'x6-jump-thumb'); track.appendChild(thumb); }
     var total = list.scrollHeight || 1;
     var vh = list.clientHeight;
     thumb.style.top = ((list.scrollTop / total) * 100) + '%';
@@ -683,10 +683,10 @@
   }
   function jumpToMessage(i) {
     var list = $('chatList'); if (!list) return;
-    var nodes = Array.prototype.slice.call(list.querySelectorAll('.xiao6-node'));
+    var nodes = Array.prototype.slice.call(list.querySelectorAll('.x6-node'));
     var n = nodes[i]; if (!n) return;
     list.scrollTo({ top: n.offsetTop - 24, behavior: 'smooth' });
-    Array.prototype.forEach.call(list.parentNode.querySelectorAll('.xiao6-jump-mark'), function (m) { m.classList.toggle('is-active', m.dataset.idx == i); });
+    Array.prototype.forEach.call(list.parentNode.querySelectorAll('.x6-jump-mark'), function (m) { m.classList.toggle('is-active', m.dataset.idx == i); });
   }
 
   // ───────────────────── WIRING ─────────────────────
@@ -700,22 +700,22 @@
     // 事件委托：详情展开 / 审批按钮（DOM 会被增量重绘，必须委托而非直接绑定）
     var chatList = $('chatList');
     if (chatList) chatList.addEventListener('click', function (e) {
-      var tg = e.target.closest ? e.target.closest('.xiao6-tl-toggle') : null;
+      var tg = e.target.closest ? e.target.closest('.x6-tl-toggle') : null;
       if (tg) {
-        var d = tg.parentNode.querySelector('.xiao6-tl-detail');
+        var d = tg.parentNode.querySelector('.x6-tl-detail');
         if (d) { d.hidden = !d.hidden; tg.textContent = d.hidden ? '查看详情' : '收起详情'; }
         return;
       }
-      var btn = e.target.closest ? e.target.closest('.xiao6-approval-act button') : null;
+      var btn = e.target.closest ? e.target.closest('.x6-approval-act button') : null;
       if (btn) {
-        var card = btn.closest('.xiao6-approval-card');
+        var card = btn.closest('.x6-approval-card');
         var ticket = card ? card.dataset.ticket : '';
         window.Xiao6.approval.postApproval(ticket, btn.dataset.decision);
       }
     });
 
     // Composer 模式开关（思考 / 联网 / 语音输入 / 语音播报）
-    qsa('.xiao6-mode').forEach(function (b) {
+    qsa('.x6-mode').forEach(function (b) {
       b.addEventListener('click', function () {
         var t = b.dataset.tool;
         if (t === 'think') { state.toolModes.think = !state.toolModes.think; }
@@ -725,8 +725,8 @@
         b.classList.toggle('is-on', (t === 'speak' ? state.autoSpeak : state.toolModes[t]));
       });
     });
-    var speakBtn = qs('.xiao6-mode[data-tool="speak"]'); if (speakBtn) speakBtn.classList.toggle('is-on', state.autoSpeak);
-    var webBtn = qs('.xiao6-mode[data-tool="web"]'); if (webBtn) webBtn.classList.toggle('is-on', !!state.toolModes.web);
+    var speakBtn = qs('.x6-mode[data-tool="speak"]'); if (speakBtn) speakBtn.classList.toggle('is-on', state.autoSpeak);
+    var webBtn = qs('.x6-mode[data-tool="web"]'); if (webBtn) webBtn.classList.toggle('is-on', !!state.toolModes.web);
 
     var cf = $('cmdForm');
     if (cf) cf.addEventListener('submit', function (e) {
@@ -743,7 +743,7 @@
     var sugg = $('suggestions');
     if (sugg) {
       sugg.addEventListener('click', function (e) {
-        var btn = e.target.closest ? e.target.closest('.xiao6-sug') : null;
+        var btn = e.target.closest ? e.target.closest('.x6-sug') : null;
         if (btn) { var task = btn.dataset.task; if (task) { $('cmdInput').value = task; window.Xiao6.timeline.submitCmd(task); } }
       });
     }

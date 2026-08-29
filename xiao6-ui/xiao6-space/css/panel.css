@@ -1,40 +1,34 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · panel.css — Agent Panel · Runtime Inspector 区块样式（Phase 4）
-   增强卡片层级：hover 边框、分组标题、状态灯动效
-   保持所有 xiao6-* class 名
+   Xiao6 UI-R2 · panel.css — Drawer / Inspector 区块样式
    ═════════════════════════════════════════════════════════════════ */
 
-.xiao6-ctx-card {
+.x6-ctx-card {
   background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 10px;
-  padding: 12px 14px; transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease);
+  padding: 12px 14px; margin-bottom: 10px; transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease);
 }
-.xiao6-ctx-card:hover { border-color: var(--xiao6-border-strong); }
-.xiao6-ctx-card .ct {
-  font-size: 11px; color: var(--xiao6-text-faint); margin-bottom: 8px;
-  text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
-  display: flex; align-items: center; gap: 6px;
+.x6-ctx-card:last-child { margin-bottom: 0; }
+.x6-ctx-card:hover { border-color: var(--xiao6-border-strong); }
+.x6-ctx-card .ct {
+  font-size: 10px; color: var(--xiao6-text-faint); margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
 }
-.xiao6-ctx-item { font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--xiao6-border); display: flex; gap: 8px; align-items: flex-start; }
-.xiao6-ctx-item:last-child { border-bottom: none; }
-.xiao6-ctx-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--xiao6-accent); margin-top: 6px; flex: none; }
-.xiao6-ctx-state { display: flex; align-items: center; gap: 8px; }
+.x6-ctx-item { font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--xiao6-border); display: flex; gap: 8px; align-items: flex-start; }
+.x6-ctx-item:last-child { border-bottom: none; }
+.x6-ctx-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--xiao6-text-muted); margin-top: 7px; flex: none; }
+.x6-ctx-state { display: flex; align-items: center; gap: 8px; }
 
-/* ═══════════ StateDot ═══════════ */
-.xiao6-statedot { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; }
-.xiao6-statedot .sd { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.xiao6-statedot.done .sd { background: var(--xiao6-success); }
-.xiao6-statedot.warning .sd { background: var(--xiao6-warning); }
-.xiao6-statedot.ongoing .sd { background: var(--xiao6-accent); animation: xiao6Pulse 1.2s ease-in-out infinite; box-shadow: 0 0 8px -1px var(--xiao6-accent); }
-.xiao6-statedot.error .sd { background: var(--xiao6-danger); }
+.x6-statedot { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; }
+.x6-statedot .sd { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.x6-statedot.done .sd { background: var(--xiao6-success); }
+.x6-statedot.warning .sd { background: var(--xiao6-warning); }
+.x6-statedot.ongoing .sd { background: var(--xiao6-text); animation: x6Pulse 1.2s ease-in-out infinite; }
+.x6-statedot.error .sd { background: var(--xiao6-danger); }
 
-/* ═══════════ Phase 9-A · 记忆洞察条目 ═══════════ */
-.xiao6-mem-insight {
-  padding: 7px 9px; border-bottom: 1px solid var(--xiao6-border);
-  cursor: pointer; border-radius: 6px;
-  transition: background var(--xiao6-dur-fast) var(--xiao6-ease);
-  margin: 0 -4px;
+.x6-mem-insight {
+  padding: 7px 9px; border-bottom: 1px solid var(--xiao6-border); cursor: pointer;
+  border-radius: 6px; transition: background var(--xiao6-dur-fast);
 }
-.xiao6-mem-insight:last-child { border-bottom: none; }
-.xiao6-mem-insight:hover { background: var(--xiao6-surface-hover); }
-.xiao6-mem-insight .mi-t { font-size: 13px; color: var(--xiao6-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.xiao6-mem-insight .mi-s { font-size: 11.5px; color: var(--xiao6-text-faint); margin-top: 2px; }
+.x6-mem-insight:last-child { border-bottom: none; }
+.x6-mem-insight:hover { background: var(--xiao6-surface-hover); }
+.x6-mem-insight .mi-t { font-size: 13px; color: var(--xiao6-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.x6-mem-insight .mi-s { font-size: 11px; color: var(--xiao6-text-faint); margin-top: 2px; }

@@ -1,6 +1,6 @@
 /* ═════════════════════════════════════════════════════════════════
    Xiao6 UI-R1 · sidebar.js — 列表视图渲染（Phase 2）
-   迁移自 xiao6-workspace.js：Goals/Tasks/Memory/Knowledge/Capabilities/
+   迁移自 x6-workspace.js：Goals/Tasks/Memory/Knowledge/Capabilities/
    Settings 渲染 + openGoalForm/openIntentForm + row/isOpen/isDone/asList
    兼容裸数组：/api/goals、/api/tasks、/api/memories 均返回数组
    ═════════════════════════════════════════════════════════════════ */
@@ -22,7 +22,7 @@
   function isDone(t) { var s = String(t.status || '').toLowerCase(); return s === 'done' || s === 'completed' || s === 'closed'; }
 
   function row(ic, t, s, tagCls, tagTxt) {
-    return '<div class="xiao6-row"><div class="ic">' + esc(ic) + '</div><div class="body"><div class="t">' + esc(t) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>' + (tagTxt ? '<span class="tag ' + (tagCls || '') + '">' + esc(tagTxt) + '</span>' : '') + '</div>';
+    return '<div class="x6-row"><div class="ic">' + esc(ic) + '</div><div class="body"><div class="t">' + esc(t) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>' + (tagTxt ? '<span class="tag ' + (tagCls || '') + '">' + esc(tagTxt) + '</span>' : '') + '</div>';
   }
 
   // ───────────────────── 列表渲染 ─────────────────────
@@ -32,7 +32,7 @@
     list.innerHTML = tasks.length ? tasks.map(function (t) {
       var open = isOpen(t);
       return row('✓', t.title || ('任务 #' + t.id), (t.status || '') + (t.updated ? ' · ' + relTime(t.updated) : ''), open ? 'run' : 'done', open ? '进行中' : '已完成');
-    }).join('') : '<span class="xiao6-empty">暂无任务</span>';
+    }).join('') : '<span class="x6-empty">暂无任务</span>';
   }
   function renderProjects() {
     var list = $('projectsList'); if (!list) return;
@@ -40,7 +40,7 @@
     list.innerHTML = goals.length ? goals.map(function (g) {
       var s = String(g.status || ''); var prog = Number(g.progress || 0);
       return row('◆', g.title || ('目标 #' + g.id), s + ' · 进度 ' + prog + '%', s === 'active' ? 'run' : 'done', s);
-    }).join('') : '<span class="xiao6-empty">暂无项目/目标</span>';
+    }).join('') : '<span class="x6-empty">暂无项目/目标</span>';
   }
   function renderMemory() {
     var list = $('memoryList'); if (!list) return;
@@ -48,37 +48,37 @@
     list.innerHTML = mems.length ? mems.map(function (m) {
       var title = String(m.title || m.content || '记忆').replace(/^Hotspot event:\s*/, '').slice(0, 80);
       return row('◷', title, (m.event_type || 'memory') + (m.ts ? ' · ' + relTime(m.ts) : ''), '', '');
-    }).join('') : '<span class="xiao6-empty">暂无记忆 · 与小6对话后自动沉淀</span>';
+    }).join('') : '<span class="x6-empty">暂无记忆 · 与小6对话后自动沉淀</span>';
   }
   function renderKnowledge() {
     var list = $('knowledgeList'); if (!list) return;
     var docs = asList(state.snap.knowledge, 'docs');
     list.innerHTML = docs.length ? docs.map(function (d) {
       return row('▤', d.title || '文档', (d.domain || '其他') + (d.tags && d.tags.length ? ' · ' + d.tags.join(',') : ''), '', '');
-    }).join('') : '<span class="xiao6-empty">知识库为空</span>';
+    }).join('') : '<span class="x6-empty">知识库为空</span>';
   }
   function renderCapabilities() {
     var list = $('capabilitiesList'); if (!list) return;
     var caps = state.snap.capabilities;
     list.innerHTML = caps.length ? caps.map(function (c) {
       return row(c.icon || '⚡', c.label || c.id, c.description || (c.group || ''), c.active ? 'done' : 'run', c.active ? '激活' : '待命');
-    }).join('') : '<span class="xiao6-empty">暂无能力数据</span>';
+    }).join('') : '<span class="x6-empty">暂无能力数据</span>';
   }
   function renderTools() {
     var list = $('toolsList'); if (!list) return;
     var tools = (state.snap.health && state.snap.health.tools) || [];
     list.innerHTML = tools.length ? tools.map(function (t) {
       return row('⚙', t, '工具', '', '');
-    }).join('') : '<span class="xiao6-empty">暂无工具数据</span>';
+    }).join('') : '<span class="x6-empty">暂无工具数据</span>';
   }
 
   // ───────────────────── 历史（GET /api/chat/history，只读真实会话记录）─────────────────────
   function renderHistory() {
     var list = $('historyList'); if (!list) return;
-    list.innerHTML = '<span class="xiao6-empty">读取中…</span>';
+    list.innerHTML = '<span class="x6-empty">读取中…</span>';
     window.Xiao6.api.getJSON('/api/chat/history?limit=60').then(function (d) {
       var sessions = (d && d.sessions) || [];
-      if (!sessions.length) { list.innerHTML = '<span class="xiao6-empty">暂无会话记录</span>'; return; }
+      if (!sessions.length) { list.innerHTML = '<span class="x6-empty">暂无会话记录</span>'; return; }
       // 会话按最近一轮时间倒序（后端返回顺序不保证，前端按 turns 末尾 ts 排序）
       sessions.sort(function (a, b) {
         var ta = (a.turns && a.turns.length ? a.turns[a.turns.length - 1].ts : '') || '';
@@ -107,7 +107,7 @@
     var body = $('currentBody'); if (!body) return;
     var active = state.snap.goals.filter(function (g) { return String(g.status || '').toLowerCase() === 'active'; });
     if (!active.length) {
-      body.innerHTML = '<span class="xiao6-empty">当前没有活跃的目标 · 让小6帮你推进一件事</span>';
+      body.innerHTML = '<span class="x6-empty">当前没有活跃的目标 · 让小6帮你推进一件事</span>';
       return;
     }
     body.innerHTML = active.map(function (g) {
@@ -116,15 +116,15 @@
       // note 元数据「来自目标 #N 拆解」做归属，无法归属的任务不硬塞进任何目标。
       var gt = goalTasks(g.id);
       var done = gt.filter(isDone).length;
-      var html = '<div class="xiao6-cur-card">' +
-        '<div class="xiao6-cur-title">◆ #' + g.id + ' ' + esc(g.title || ('目标 #' + g.id)) + '</div>' +
-        '<div class="xiao6-cur-meta">' + esc(g.status || '') + ' · 进度 ' + prog + '%' +
+      var html = '<div class="x6-cur-card">' +
+        '<div class="x6-cur-title">◆ #' + g.id + ' ' + esc(g.title || ('目标 #' + g.id)) + '</div>' +
+        '<div class="x6-cur-meta">' + esc(g.status || '') + ' · 进度 ' + prog + '%' +
           (g.horizon ? ' · ' + esc(g.horizon) : '') + (g.due_date ? ' · 截止 ' + esc(g.due_date) : '') +
           (gt.length ? ' · 任务 ' + done + '/' + gt.length : '') + '</div>' +
-        '<div class="xiao6-prog"><i style="width:' + Math.max(0, Math.min(100, prog)) + '%"></i></div>';
-      if (g.description) html += '<div class="xiao6-cur-meta" style="margin-top:10px">' + esc(g.description) + '</div>';
+        '<div class="x6-prog"><i style="width:' + Math.max(0, Math.min(100, prog)) + '%"></i></div>';
+      if (g.description) html += '<div class="x6-cur-meta" style="margin-top:10px">' + esc(g.description) + '</div>';
       if (gt.length) {
-        html += '<div class="xiao6-list" style="margin-top:12px">' + gt.map(function (t) {
+        html += '<div class="x6-list" style="margin-top:12px">' + gt.map(function (t) {
           return row(isOpen(t) ? '◌' : '✓', t.title || ('任务 #' + t.id),
             (t.total_steps ? '步骤 ' + (t.current_step || 0) + '/' + t.total_steps + ' · ' : '') + (t.status || ''),
             isOpen(t) ? 'run' : 'done', isOpen(t) ? '进行中' : '已完成');
@@ -138,9 +138,9 @@
     active.forEach(function (g) { goalTasks(g.id).forEach(function (t) { linked[t.id] = 1; }); });
     var loose = state.snap.tasks.filter(function (t) { return isOpen(t) && !linked[t.id]; });
     if (loose.length) {
-      body.innerHTML += '<div class="xiao6-cur-card"><div class="xiao6-cur-title">进行中的任务</div>' +
-        '<div class="xiao6-cur-meta">未关联到当前活跃目标 · 共 ' + loose.length + ' 项</div>' +
-        '<div class="xiao6-list" style="margin-top:12px">' + loose.slice(0, 12).map(function (t) {
+      body.innerHTML += '<div class="x6-cur-card"><div class="x6-cur-title">进行中的任务</div>' +
+        '<div class="x6-cur-meta">未关联到当前活跃目标 · 共 ' + loose.length + ' 项</div>' +
+        '<div class="x6-list" style="margin-top:12px">' + loose.slice(0, 12).map(function (t) {
           return row('◌', t.title || ('任务 #' + t.id),
             (t.total_steps ? '步骤 ' + (t.current_step || 0) + '/' + t.total_steps + ' · ' : '') + (t.status || ''),
             'run', '进行中');
@@ -153,11 +153,11 @@
     var body = $('settingsBody'); if (!body) return;
     var h = state.snap.health || {}, a = state.snap.agent || {};
     var html = '';
-    html += '<div class="xiao6-set-group"><h3>功能偏好</h3>' +
+    html += '<div class="x6-set-group"><h3>功能偏好</h3>' +
       setRow('web', '联网搜索', '默认开启，搜索时自动联网', state.toolModes.web) +
       setRow('think', '深度思考', '回复前先进行深度推理', state.toolModes.think) +
       setRow('speak', '语音播报', '回复完成后自动朗读', state.autoSpeak) + '</div>';
-    html += '<div class="xiao6-set-group"><h3>系统概览</h3>' +
+    html += '<div class="x6-set-group"><h3>系统概览</h3>' +
       kvRow('目标 / 任务', state.snap.goals.length + ' / ' + state.snap.tasks.filter(isOpen).length) +
       kvRow('记忆 / 知识', (state.snap.memories || []).length + ' / ' + asList(state.snap.knowledge, 'docs').length) +
       kvRow('能力登记', (state.snap.capabilities || []).length + ' 项') +
@@ -165,7 +165,7 @@
       kvRow('提供方', h.provider || '—') +
       kvRow('TTS 引擎', h.tts_backend || '—') + '</div>';
     body.innerHTML = html;
-    Array.prototype.forEach.call(body.querySelectorAll('.xiao6-switch'), function (sw) {
+    Array.prototype.forEach.call(body.querySelectorAll('.x6-switch'), function (sw) {
       sw.addEventListener('click', function () {
         sw.classList.toggle('on');
         var k = sw.dataset.key;
@@ -175,17 +175,17 @@
       });
     });
   }
-  function setRow(key, label, desc, on) { return '<div class="xiao6-set-row"><span class="k">' + esc(label) + '<small>' + esc(desc) + '</small></span><span class="xiao6-switch ' + (on ? 'on' : '') + '" data-key="' + key + '"></span></div>'; }
-  function kvRow(k, v) { return '<div class="xiao6-set-row"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>'; }
+  function setRow(key, label, desc, on) { return '<div class="x6-set-row"><span class="k">' + esc(label) + '<small>' + esc(desc) + '</small></span><span class="x6-switch ' + (on ? 'on' : '') + '" data-key="' + key + '"></span></div>'; }
+  function kvRow(k, v) { return '<div class="x6-set-row"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>'; }
 
   // ───────────────────── 表单（新建目标 / 意图识别）─────────────────────
   function openGoalForm() {
     window.Xiao6.main.openOverlay('新建目标', 'POST /api/agent/goal → Agent Runtime',
       '<div style="display:flex;flex-direction:column;gap:10px">' +
-      '<input id="goalTitle" class="xiao6-cmd-input" placeholder="目标标题（必填）" style="width:100%" />' +
-      '<input id="goalDesc" class="xiao6-cmd-input" placeholder="目标描述（可选）" style="width:100%" />' +
-      '<button id="goalSubmit" class="xiao6-send" type="button" style="align-self:flex-start">创建目标</button>' +
-      '<div id="goalResult" class="xiao6-tool-summary"></div></div>',
+      '<input id="goalTitle" class="x6-cmd-input" placeholder="目标标题（必填）" style="width:100%" />' +
+      '<input id="goalDesc" class="x6-cmd-input" placeholder="目标描述（可选）" style="width:100%" />' +
+      '<button id="goalSubmit" class="x6-send" type="button" style="align-self:flex-start">创建目标</button>' +
+      '<div id="goalResult" class="x6-tool-summary"></div></div>',
       function () {
         var gs = $('goalSubmit');
         gs.addEventListener('click', function () {
@@ -198,7 +198,7 @@
               window.Xiao6.main.toast('目标已创建 #' + d.goalId);
               state.fetchSnapshot();
             } else {
-              $('goalResult').innerHTML = '<span style="color:var(--xiao6-danger)">失败：' + esc((d && d.error) || '未知错误') + '</span>';
+              $('goalResult').innerHTML = '<span style="color:var(--x6-danger)">失败：' + esc((d && d.error) || '未知错误') + '</span>';
             }
           });
         });
@@ -207,9 +207,9 @@
   function openIntentForm() {
     window.Xiao6.main.openOverlay('意图识别', 'POST /api/agent/intent → IntentGateway → GDE',
       '<div style="display:flex;flex-direction:column;gap:10px">' +
-      '<input id="intentText" class="xiao6-cmd-input" placeholder="输入用户意图文本" style="width:100%" />' +
-      '<button id="intentSubmit" class="xiao6-send" type="button" style="align-self:flex-start">识别意图</button>' +
-      '<div id="intentResult" class="xiao6-tool-summary"></div></div>',
+      '<input id="intentText" class="x6-cmd-input" placeholder="输入用户意图文本" style="width:100%" />' +
+      '<button id="intentSubmit" class="x6-send" type="button" style="align-self:flex-start">识别意图</button>' +
+      '<div id="intentResult" class="x6-tool-summary"></div></div>',
       function () {
         var is = $('intentSubmit');
         is.addEventListener('click', function () {
@@ -221,11 +221,11 @@
               var cls = { create: '创建目标', propose: '建议确认', resume: '恢复目标', skip: '跳过' }[d.action] || d.action;
               $('intentResult').innerHTML = '<b>' + esc(cls) + '</b> · 分类 ' + esc(d.classification) + ' · 置信度 ' + Math.round((d.confidence || 0) * 100) + '%' +
                 (d.goalId ? ' · goalId=' + d.goalId : '') +
-                (d.reason ? '<br/><span style="color:var(--xiao6-text-muted)">' + esc(d.reason) + '</span>' : '');
+                (d.reason ? '<br/><span style="color:var(--x6-text-muted)">' + esc(d.reason) + '</span>' : '');
               window.Xiao6.main.toast('意图识别：' + cls);
               if (d.goalId) state.fetchSnapshot();
             } else {
-              $('intentResult').innerHTML = '<span style="color:var(--xiao6-danger)">失败：' + esc((d && d.error) || '未知错误') + '</span>';
+              $('intentResult').innerHTML = '<span style="color:var(--x6-danger)">失败：' + esc((d && d.error) || '未知错误') + '</span>';
             }
           });
         });

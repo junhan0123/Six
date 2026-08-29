@@ -3,239 +3,215 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>小6 · Agent Workbench</title>
-<meta name="description" content="小6 Agent Workbench —— 核心问题：小6现在正在做什么" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%2322d3ee' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='%23a78bfa'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="css/tokens.css?v=40" />
-<link rel="stylesheet" href="css/layout.css?v=40" />
-<link rel="stylesheet" href="css/components.css?v=40" />
-<link rel="stylesheet" href="css/sidebar.css?v=40" />
-<link rel="stylesheet" href="css/workspace.css?v=40" />
-<link rel="stylesheet" href="css/panel.css?v=40" />
+<title>小6 · Agent</title>
+<meta name="description" content="小6 — 你的个人桌面 Agent" />
+<link rel="stylesheet" href="css/tokens.css?v=41" />
+<link rel="stylesheet" href="css/layout.css?v=41" />
+<link rel="stylesheet" href="css/components.css?v=41" />
+<link rel="stylesheet" href="css/workspace.css?v=41" />
+<link rel="stylesheet" href="css/sidebar.css?v=41" />
 </head>
 <body data-view="home">
 
-<!-- ═══════════════ 顶栏（极简：品牌 / 命令入口 / 运行时）═══════════════ -->
-<header class="xiao6-top">
-  <div class="xiao6-top-left">
-    <span class="xiao6-brand-orb" aria-hidden="true"></span>
-    <span class="xiao6-brand">小6</span>
+<!-- ═══════════════ TOP BAR ═══════════════ -->
+<header class="x6-top">
+  <div class="x6-top-left">
+    <span class="x6-orb" aria-hidden="true"></span>
+    <span class="x6-brand">小6</span>
   </div>
-  <div class="xiao6-top-center">
-    <button class="xiao6-cmdk" id="cmdkBtn" type="button" aria-label="命令面板">
-      <span class="xiao6-cmdk-ic">⌘</span>
-      <span class="xiao6-cmdk-text">告诉小6要做什么…</span>
-      <span class="xiao6-cmdk-kbd">Ctrl K</span>
+  <div class="x6-top-center">
+    <button class="x6-cmdk" id="cmdkBtn" type="button" aria-label="命令面板">
+      <span class="x6-cmdk-ic">⌘</span>
+      <span class="x6-cmdk-text">搜索或告诉小6…</span>
+      <span class="x6-cmdk-kbd">Ctrl K</span>
     </button>
   </div>
-  <div class="xiao6-top-right">
-    <span class="xiao6-runtime" id="runtimeState" data-mode="online" title="运行时状态">
-      <i class="xiao6-dot"></i><b>在线待命</b>
+  <div class="x6-top-right">
+    <span class="x6-status" id="runtimeState" data-mode="online" title="状态">
+      <span class="x6-dot"></span>
+      <span class="x6-status-text">在线</span>
     </span>
-    <button class="xiao6-tool xiao6-model-btn" id="modelBtn" type="button" title="模型">
-      <span class="xiao6-model-dot"></span><span id="modelLabel">模型</span><span class="xiao6-caret">▾</span>
-      <div class="xiao6-model-pop" id="modelPop" hidden></div>
-    </button>
-    <button class="xiao6-tool xiao6-perm-btn" id="permBtn" type="button" title="权限">
-      <span id="permLabel">手动确认</span>
-      <div class="xiao6-perm-pop" id="permPop" hidden></div>
-    </button>
-    <button class="xiao6-icon-btn" id="orbBtn" type="button" aria-label="语音球" title="语音球（小6的存在感）">
-      <span class="xiao6-mini-orb" data-state="idle"></span>
+    <button class="x6-btn-icon" id="orbBtn" type="button" aria-label="语音球" title="语音">
+      <span class="x6-mini-orb" data-state="idle"></span>
     </button>
   </div>
 </header>
 
-<!-- ═══════════════ SHELL（三栏）═══════════════ -->
-<div class="xiao6-shell">
+<!-- ═══════════════ SHELL ═══════════════ -->
+<div class="x6-shell" id="shell">
 
-  <!-- LEFT：主导航（首页 / 项目 / 任务 / 历史 / 当前项目 / 设置） -->
-  <aside class="xiao6-sidebar" id="xiao6Sidebar" aria-label="主导航">
-    <div class="xiao6-sidebar-brand">
-      <span class="xiao6-brand-orb" aria-hidden="true"></span>
-      <span class="xiao6-brand">小6</span>
-    </div>
-    <div class="xiao6-sidebar-scroll">
-      <button class="xiao6-nav-btn" data-nav="home" type="button">
-        <svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v10h12V10"/></svg>
-        <span>首页</span>
+  <!-- SIDEBAR -->
+  <aside class="x6-sidebar" id="x6Sidebar" aria-label="导航">
+    <div class="x6-sidebar-content">
+      <button class="x6-new-task" type="button" id="newTaskBtn">
+        <span class="x6-new-icon">+</span>
+        <span class="x6-new-label">新任务</span>
       </button>
-      <button class="xiao6-nav-btn" data-nav="projects" type="button">
-        <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
-        <span>项目</span>
-      </button>
-      <button class="xiao6-nav-btn" data-nav="tasks" type="button">
-        <svg viewBox="0 0 24 24"><path d="M9 5h11M9 12h11M9 19h11"/><path d="m4 5 1 1 2-2"/><path d="m4 12 1 1 2-2"/><path d="m4 19 1 1 2-2"/></svg>
-        <span>任务</span>
-      </button>
-      <button class="xiao6-nav-btn" data-nav="history" type="button">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-        <span>历史</span>
-      </button>
-      <button class="xiao6-nav-btn" data-nav="current" type="button">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>当前项目</span>
-        <em class="xiao6-nav-badge" id="currentNavBadge" hidden></em>
-      </button>
-    </div>
-    <div class="xiao6-sidebar-foot">
-      <button class="xiao6-nav-btn" data-nav="settings" type="button">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <nav class="x6-nav">
+        <button class="x6-nav-btn is-active" data-nav="home" type="button">
+          <svg viewBox="0 0 24 24"><path d="M4 11L12 4l8 7M6 10v10h12V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>首页</span>
+        </button>
+        <button class="x6-nav-btn" data-nav="history" type="button">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span>历史</span>
+        </button>
+        <button class="x6-nav-btn" data-nav="projects" type="button">
+          <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m3 12 9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m3 17 9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span>项目</span>
+        </button>
+      </nav>
+      <div class="x6-nav-divider"></div>
+      <div class="x6-current-section" id="currentSection" hidden>
+        <div class="x6-section-label">当前任务</div>
+        <div class="x6-current-item" id="currentItem">
+          <span class="x6-current-dot"></span>
+          <span class="x6-current-title">—</span>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="x6-nav-btn" data-nav="settings" type="button">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
         <span>设置</span>
       </button>
     </div>
   </aside>
 
-  <!-- CENTER：Agent Timeline -->
-  <main class="xiao6-center" id="xiao6Center">
+  <!-- CENTER: Main work area -->
+  <main class="x6-main" id="x6Main">
 
-    <!-- ── 首页：Agent Timeline（唯一主视图）── -->
-    <section class="xiao6-view xiao6-timeline" data-view="home">
-      <!-- 「小6现在正在做什么」状态条 -->
-      <div class="xiao6-now" id="nowBar" data-state="idle">
-        <span class="xiao6-now-dot" id="nowDot"></span>
-        <div class="xiao6-now-text">
-          <div class="xiao6-now-title" id="nowTitle">在线待命</div>
-          <div class="xiao6-now-sub" id="nowSub">没有正在进行的工作</div>
+    <!-- HOME view -->
+    <section class="x6-view x6-home-view" data-view="home">
+      <div class="x6-hero" id="hero">
+        <div class="x6-hero-orb"></div>
+        <div class="x6-hero-title">小6</div>
+        <div class="x6-hero-sub">有什么我可以帮你的？</div>
+      </div>
+
+      <!-- Timeline / Chat -->
+      <div class="x6-timeline" id="timelineSection" hidden>
+        <div class="x6-nowbar" id="nowBar" data-state="idle">
+          <span class="x6-now-dot" id="nowDot"></span>
+          <span class="x6-now-title" id="nowTitle">在线待命</span>
+          <span class="x6-now-sub" id="nowSub">没有正在进行的工作</span>
+          <button class="x6-btn-icon x6-insp-trigger" id="inspTrigger" title="查看详情" hidden>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M9 5h11M9 12h11M9 19h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          </button>
         </div>
-        <div class="xiao6-now-acts" id="nowActs"></div>
+        <div class="x6-tl-body" id="chatList"></div>
       </div>
-      <!-- Timeline 主体：真实事件流（user / assistant / tool / approval / intent / risk） -->
-      <div class="xiao6-tl-body" id="chatList"></div>
-      <!-- 底部快捷建议（空态时显示，点击后进入真实 chat） -->
-      <div class="xiao6-suggestions" id="suggestions" hidden>
-        <button class="xiao6-sug" data-task="检查当前项目结构" type="button">检查项目结构</button>
-        <button class="xiao6-sug" data-task="整理桌面文件" type="button">整理桌面</button>
-        <button class="xiao6-sug" data-task="查一下今天的天气" type="button">查天气</button>
-        <button class="xiao6-sug" data-task="搜索最近的 AI 新闻" type="button">搜新闻</button>
-      </div>
-      <!-- 右侧消息跳转条（minimap / scroll-spy） -->
-      <div class="xiao6-jumpbar" id="jumpbar" hidden>
-        <div class="xiao6-jump-track" id="jumpTrack"></div>
+
+      <!-- Composer -->
+      <div class="x6-composer-wrap" id="composerWrap">
+        <div class="x6-composer" id="composer">
+          <form class="x6-cmd-form" id="cmdForm" autocomplete="off">
+            <span class="x6-input-prefix">›</span>
+            <input class="x6-cmd-input" id="cmdInput" type="text" placeholder="给小6一个任务……" autocomplete="off" spellcheck="false" aria-label="指令输入" />
+            <button class="x6-send" type="submit" id="sendBtn" disabled title="执行">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+          </form>
+          <div class="x6-composer-tools">
+            <button class="x6-tool-btn" data-tool="web" type="button" title="联网搜索">
+              <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button class="x6-tool-btn x6-voice-btn" id="voiceBtn" type="button" title="语音输入">
+              <svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="x6-suggestions" id="suggestions" hidden></div>
       </div>
     </section>
 
-    <!-- ── 项目 / 任务 / 历史 / 当前项目 ── -->
-    <section class="xiao6-view xiao6-list-view" data-view="projects" hidden>
-      <div class="xiao6-view-head"><h2>项目</h2><p>目标与长期推进的事项</p></div>
-      <div class="xiao6-list" id="projectsList"></div>
-    </section>
-    <section class="xiao6-view xiao6-list-view" data-view="tasks" hidden>
-      <div class="xiao6-view-head"><h2>任务</h2><p>待办与执行中</p></div>
-      <div class="xiao6-list" id="tasksList"></div>
-    </section>
-    <section class="xiao6-view xiao6-hist-view" data-view="history" hidden>
-      <div class="xiao6-view-head"><h2>历史</h2><p>会话记录 · Agent 活动 · 执行结果</p></div>
-      <div class="xiao6-hist">
-        <div class="xiao6-hist-col"><h3>会话记录</h3><div class="xiao6-list" id="historyList"></div></div>
-        <div class="xiao6-hist-col"><h3>Agent 活动</h3><div class="xiao6-list xiao6-agent-list" id="agentList"></div></div>
-        <div class="xiao6-hist-col"><h3>执行结果</h3><div class="xiao6-list xiao6-results-list" id="resList"></div></div>
+    <!-- HISTORY view -->
+    <section class="x6-view x6-list-view" data-view="history" hidden>
+      <div class="x6-view-head">
+        <h2>历史</h2>
+        <p>最近的 Agent 工作记录</p>
       </div>
-    </section>
-    <section class="xiao6-view xiao6-list-view" data-view="current" hidden>
-      <div class="xiao6-view-head"><h2>当前项目</h2><p>正在推进的目标及其任务</p></div>
-      <div class="xiao6-current" id="currentBody"></div>
+      <div class="x6-hist" id="histBody"></div>
     </section>
 
-    <!-- ── 数据视图（Inspector「查看全部」/ Command Palette 进入，功能保留）── -->
-    <section class="xiao6-view xiao6-list-view" data-view="memory" hidden>
-      <div class="xiao6-view-head"><h2>记忆</h2><p>小6记住的关于你的一切</p></div>
-      <div class="xiao6-list" id="memoryList"></div>
-    </section>
-    <section class="xiao6-view xiao6-list-view" data-view="knowledge" hidden>
-      <div class="xiao6-view-head"><h2>知识</h2><p>结构化沉淀的知识库</p></div>
-      <div class="xiao6-list" id="knowledgeList"></div>
-    </section>
-    <section class="xiao6-view xiao6-list-view" data-view="capabilities" hidden>
-      <div class="xiao6-view-head"><h2>技能</h2><p>已登记并可被调用的能力</p></div>
-      <div class="xiao6-list" id="capabilitiesList"></div>
-    </section>
-    <section class="xiao6-view xiao6-list-view" data-view="tools" hidden>
-      <div class="xiao6-view-head"><h2>工具</h2><p>可用的工具清单</p></div>
-      <div class="xiao6-list" id="toolsList"></div>
-    </section>
-    <section class="xiao6-view xiao6-list-view" data-view="settings" hidden>
-      <div class="xiao6-view-head"><h2>设置</h2><p>偏好与系统概览</p></div>
-      <div class="xiao6-settings" id="settingsBody"></div>
+    <!-- PROJECTS view -->
+    <section class="x6-view x6-list-view" data-view="projects" hidden>
+      <div class="x6-view-head">
+        <h2>项目</h2>
+        <p>目标与长期推进的事项</p>
+      </div>
+      <div class="x6-list" id="projectsList"></div>
     </section>
 
-    <!-- ── 底部 Composer（任务下达）── -->
-    <div class="xiao6-composer" id="composer">
-      <div class="xiao6-trigger-hint" id="triggerHint" hidden></div>
-      <form class="xiao6-cmd-form" id="cmdForm" autocomplete="off">
-        <span class="xiao6-input-prefix">›</span>
-        <input class="xiao6-cmd-input" id="cmdInput" type="text" placeholder="给小6一个任务……" autocomplete="off" spellcheck="false" aria-label="指令输入" />
-        <button class="xiao6-send" type="submit" aria-label="执行" id="sendBtn">执行</button>
-      </form>
-      <div class="xiao6-composer-modes">
-        <button class="xiao6-mode" data-tool="think" type="button" title="深度思考">思考</button>
-        <button class="xiao6-mode is-on" data-tool="web" type="button" title="联网搜索">联网</button>
-        <button class="xiao6-mode" data-tool="voice" type="button" title="语音输入">🎙</button>
-        <button class="xiao6-mode is-on" data-tool="speak" type="button" title="语音播报">🔊</button>
+    <!-- SETTINGS view -->
+    <section class="x6-view x6-list-view" data-view="settings" hidden>
+      <div class="x6-view-head">
+        <h2>设置</h2>
+        <p>偏好与系统概览</p>
       </div>
-    </div>
+      <div class="x6-settings" id="settingsBody"></div>
+    </section>
+
   </main>
 
-  <!-- RIGHT：Inspector（上下文检视器） -->
-  <aside class="xiao6-inspector" id="xiao6Inspector" aria-label="Inspector">
-    <div class="xiao6-insp-head">
-      <span id="ctxTitle">上下文</span>
-      <button class="xiao6-insp-close" id="ctxClose" type="button" aria-label="收起">×</button>
+  <!-- DRAWER: Inspector / Task Detail (slides in from right) -->
+  <aside class="x6-drawer" id="drawer" aria-hidden="true">
+    <div class="x6-drawer-scrim" id="drawerScrim"></div>
+    <div class="x6-drawer-panel">
+      <div class="x6-drawer-head">
+        <span class="x6-drawer-title" id="drawerTitle">详情</span>
+        <button class="x6-btn-icon" id="drawerClose" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </div>
+      <div class="x6-drawer-body" id="drawerBody"></div>
     </div>
-    <div class="xiao6-insp-tabs" id="inspTabs">
-      <button class="xiao6-insp-tab is-active" data-insp="overview" type="button">概览</button>
-      <button class="xiao6-insp-tab" data-insp="memory" type="button">记忆</button>
-      <button class="xiao6-insp-tab" data-insp="knowledge" type="button">知识</button>
-      <button class="xiao6-insp-tab" data-insp="capability" type="button">技能</button>
-      <button class="xiao6-insp-tab" data-insp="tools" type="button">工具</button>
-    </div>
-    <div class="xiao6-insp-body" id="ctxBody"></div>
   </aside>
+
 </div>
 
-<!-- ═══════════════ VOICE ORB PRESENCE ═══════════════ -->
-<div class="xiao6-orb-presence" id="orbPresence" data-state="idle" title="小6语音球">
-  <span class="xiao6-orb-core"></span>
-  <span class="xiao6-orb-ring"></span>
+<!-- VOICE ORB -->
+<div class="x6-orb-presence" id="orbPresence" data-state="idle" title="小6语音球">
+  <span class="x6-orb-core"></span>
+  <span class="x6-orb-ring"></span>
 </div>
 
-<!-- ═══════════════ COMMAND PALETTE ═══════════════ -->
-<div class="xiao6-palette" id="palette" aria-hidden="true">
-  <div class="xiao6-palette-scrim" id="paletteScrim"></div>
-  <div class="xiao6-palette-sheet" role="dialog" aria-modal="true" aria-label="命令面板">
-    <div class="xiao6-palette-input-row">
-      <span class="xiao6-palette-ic">⌘</span>
-      <input class="xiao6-palette-input" id="paletteInput" type="text" placeholder="搜索命令或告诉小6要做什么…" autocomplete="off" />
+<!-- COMMAND PALETTE -->
+<div class="x6-palette" id="palette" aria-hidden="true">
+  <div class="x6-palette-scrim" id="paletteScrim"></div>
+  <div class="x6-palette-sheet" role="dialog" aria-modal="true" aria-label="命令面板">
+    <div class="x6-palette-input-row">
+      <span class="x6-palette-ic">⌘</span>
+      <input class="x6-palette-input" id="paletteInput" type="text" placeholder="搜索命令或告诉小6要做什么…" autocomplete="off" />
     </div>
-    <div class="xiao6-palette-list" id="paletteList"></div>
+    <div class="x6-palette-list" id="paletteList"></div>
   </div>
 </div>
 
-<!-- ═══════════════ OVERLAY（detail / approval / 表单）═══════════════ -->
-<div class="xiao6-overlay" id="overlay" aria-hidden="true">
-  <div class="xiao6-overlay-scrim" id="overlayScrim"></div>
-  <section class="xiao6-overlay-sheet" role="dialog" aria-modal="true">
-    <div class="xiao6-overlay-head">
-      <span class="xiao6-overlay-title" id="overlayTitle">面板</span>
-      <span class="xiao6-overlay-hint" id="overlayHint"></span>
-      <button class="xiao6-overlay-close" id="overlayClose" type="button" aria-label="关闭">×</button>
+<!-- OVERLAY -->
+<div class="x6-overlay" id="overlay" aria-hidden="true">
+  <div class="x6-overlay-scrim" id="overlayScrim"></div>
+  <section class="x6-overlay-sheet" role="dialog" aria-modal="true">
+    <div class="x6-overlay-head">
+      <span class="x6-overlay-title" id="overlayTitle">面板</span>
+      <button class="x6-btn-icon" id="overlayClose" type="button" aria-label="关闭">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
-    <div class="xiao6-overlay-body" id="overlayBody"></div>
+    <div class="x6-overlay-body" id="overlayBody"></div>
   </section>
 </div>
 
-<!-- ═══════════════ TOAST / BANNER ═══════════════ -->
-<div class="xiao6-toast-layer" id="toastLayer" aria-live="polite"></div>
-<div class="xiao6-banner" id="banner" hidden></div>
+<!-- TOAST -->
+<div class="x6-toast-layer" id="toastLayer" aria-live="polite"></div>
 
-<script src="js/api.js?v=40"></script>
-<script src="js/state.js?v=40"></script>
-<script src="js/voice.js?v=40"></script>
-<script src="js/approval.js?v=40"></script>
-<script src="js/timeline.js?v=40"></script>
-<script src="js/sidebar.js?v=40"></script>
-<script src="js/palette.js?v=40"></script>
-<script src="js/inspector.js?v=40"></script>
-<script src="js/main.js?v=40"></script>
+<script src="js/api.js?v=41"></script>
+<script src="js/state.js?v=41"></script>
+<script src="js/voice.js?v=41"></script>
+<script src="js/approval.js?v=41"></script>
+<script src="js/timeline.js?v=41"></script>
+<script src="js/sidebar.js?v=41"></script>
+<script src="js/palette.js?v=41"></script>
+<script src="js/inspector.js?v=41"></script>
+<script src="js/main.js?v=41"></script>
 </body>
 </html>

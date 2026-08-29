@@ -1,6 +1,6 @@
 /* ═════════════════════════════════════════════════════════════════
    Xiao6 UI-R1 · api.js — 唯一网络层（Phase 1）
-   迁移自 xiao6-workspace.js helpers：getJSON / postJSON
+   迁移自 x6-workspace.js helpers：getJSON / postJSON
    + EventSource 封装（冻结：new EventSource('/api/stream')，禁止 fetch 替代）
    所有 /api/ 字符串集中于此文件
    ═════════════════════════════════════════════════════════════════ */

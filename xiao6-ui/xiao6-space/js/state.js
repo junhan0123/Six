@@ -30,7 +30,7 @@
   var toolModes = { think: false, web: true, code: 'auto' };
   var autoSpeak = lsGet('xiao6_autoSpeak', '1') !== '0';
   var sessionId = lsGet('xiao6_sid', null);
-  if (!sessionId) { sessionId = 'xiao6-' + Date.now(); lsSet('xiao6_sid', sessionId); }
+  if (!sessionId) { sessionId = 'x6-' + Date.now(); lsSet('xiao6_sid', sessionId); }
   var trust = { intent: null, risk: null };
 
   // ───────────────────── Runtime 状态（真实 API/SSE 驱动）─────────────────────
@@ -179,10 +179,10 @@
     var low = String(st || 'IDLE').toLowerCase();
     runtime.agentState = String(st || 'IDLE').toUpperCase();
     var rt = $('runtimeState');
-    if (rt) { rt.dataset.mode = (low === 'thinking' || low === 'planning' || low === 'executing' || low === 'running' || low === 'listening' || low === 'speaking') ? 'busy' : (low === 'waiting' || low === 'waiting_approval') ? 'waiting' : (low === 'failed' || low === 'error' || low === 'offline') ? 'off' : 'online'; rt.querySelector('b').textContent = CORE_TEXT[runtime.agentState] || '小6在线'; }
-    var mo = qs('#orbBtn .xiao6-mini-orb'); if (mo) mo.dataset.state = low;
+    if (rt) { rt.dataset.mode = (low === 'thinking' || low === 'planning' || low === 'executing' || low === 'running' || low === 'listening' || low === 'speaking') ? 'busy' : (low === 'waiting' || low === 'waiting_approval') ? 'waiting' : (low === 'failed' || low === 'error' || low === 'offline') ? 'off' : 'online'; var rtText = rt.querySelector('.x6-status-text') || rt.querySelector('b'); if (rtText) rtText.textContent = CORE_TEXT[runtime.agentState] || '小6在线'; }
+    var mo = qs('#orbBtn .x6-mini-orb'); if (mo) mo.dataset.state = low;
     var op = $('orbPresence'); if (op) op.dataset.state = low;
-    var cs = $('ctxStateDot'); if (cs) { cs.className = 'xiao6-statedot ' + ((low === 'thinking' || low === 'executing' || low === 'listening') ? 'ongoing' : (low === 'error' ? 'error' : 'done')); }
+    var cs = $('ctxStateDot'); if (cs) { cs.className = 'x6-statedot ' + ((low === 'thinking' || low === 'executing' || low === 'listening') ? 'ongoing' : (low === 'error' ? 'error' : 'done')); }
     if (opts.ctxText && $('ctxStateText')) $('ctxStateText').textContent = opts.ctxText;
   }
 

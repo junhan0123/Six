@@ -1,6 +1,6 @@
 /* ═════════════════════════════════════════════════════════════════
    Xiao6 UI-R1 · palette.js — 命令面板 / 模型选择 / 权限选择（Phase 2）
-   迁移自 xiao6-workspace.js：FEATURE_REGISTRY / COMMANDS / openFeature /
+   迁移自 x6-workspace.js：FEATURE_REGISTRY / COMMANDS / openFeature /
    openPalette/closePalette/softMatch/renderPalette/paletteKey / handleTrigger /
    MODELS / renderModelSelector / permMode / renderPerm / buildPermPop
    保持 localStorage：xiao6_model / xiao6_policy（不得改名）
@@ -115,10 +115,10 @@
   });
   function openFeature(id) {
     var f = FEATURE_REGISTRY.filter(function (x) { return x.id === id; })[0]; if (!f) return;
-    window.Xiao6.main.openOverlay(f.name, '能力 · /api/' + id.replace(/-/g, '/').replace('capability/os', 'capability_os'), '<div class="xiao6-loading">读取中…</div>', function () {
+    window.Xiao6.main.openOverlay(f.name, '能力 · /api/' + id.replace(/-/g, '/').replace('capability/os', 'capability_os'), '<div class="x6-loading">读取中…</div>', function () {
       window.Xiao6.api.getJSON('/api/' + id.replace(/-/g, '/').replace('capability/os', 'capability_os')).then(function (d) {
         var ob = $('overlayBody'); if (ob) ob.innerHTML = '<pre style="white-space:pre-wrap;word-break:break-word;font-size:12.5px">' + esc(JSON.stringify(d, null, 2) || '（空）') + '</pre>';
-      }).catch(function () { var ob = $('overlayBody'); if (ob) ob.innerHTML = '<span class="xiao6-empty">读取失败</span>'; });
+      }).catch(function () { var ob = $('overlayBody'); if (ob) ob.innerHTML = '<span class="x6-empty">读取失败</span>'; });
     });
   }
 
@@ -134,13 +134,13 @@
     var list = $('paletteList'); if (!list) return;
     list.innerHTML = '';
     palItems = COMMANDS.filter(function (c) { return softMatch(c.name, q) || softMatch(c.desc, q); });
-    if (!palItems.length) { list.innerHTML = '<div class="xiao6-palette-group">无匹配命令</div>'; return; }
+    if (!palItems.length) { list.innerHTML = '<div class="x6-palette-group">无匹配命令</div>'; return; }
     var groups = {}; palItems.forEach(function (c) { (groups[c.group] = groups[c.group] || []).push(c); });
     Object.keys(groups).forEach(function (g) {
-      list.appendChild(el('div', 'xiao6-palette-group', g));
+      list.appendChild(el('div', 'x6-palette-group', g));
       groups[g].forEach(function (c, idx) {
         var globalIdx = palItems.indexOf(c);
-        var item = el('div', 'xiao6-palette-item' + (globalIdx === palActive ? ' is-active' : ''));
+        var item = el('div', 'x6-palette-item' + (globalIdx === palActive ? ' is-active' : ''));
         item.innerHTML = '<span class="pi-ic">›</span><div class="pi-body"><div class="pi-name">' + esc(c.name) + '</div><div class="pi-desc">' + esc(c.desc) + '</div></div>';
         item.addEventListener('click', function () { closePalette(); c.run(); });
         item.addEventListener('mousemove', function () { palActive = globalIdx; renderPalette($('paletteInput').value); });
@@ -196,7 +196,7 @@
     pop.innerHTML = '';
     pop.appendChild(el('h4', null, '选择模型'));
     MODELS.forEach(function (m) {
-      var it = el('div', 'xiao6-model-item' + (m.id === currentModel ? ' is-sel' : ''));
+      var it = el('div', 'x6-model-item' + (m.id === currentModel ? ' is-sel' : ''));
       it.innerHTML = '<span class="mi-name">' + esc(m.name) + '</span><span class="mi-meta">' + esc(m.meta) + '</span>' + (m.id === currentModel ? '<span class="mi-check">✓</span>' : '');
       it.addEventListener('click', function () {
         currentModel = m.id;
@@ -206,7 +206,7 @@
       });
       pop.appendChild(it);
     });
-    var cust = el('div', 'xiao6-model-custom', '＋ 自定义模型');
+    var cust = el('div', 'x6-model-custom', '＋ 自定义模型');
     cust.addEventListener('click', function () {
       var v = prompt('输入自定义模型 ID：', currentModel);
       if (v && v.trim()) { currentModel = v.trim(); state.lsSet('xiao6_model', currentModel); var lab = $('modelLabel'); if (lab) lab.textContent = currentModel; renderModelSelector(); pop.hidden = true; }
@@ -231,11 +231,11 @@
   function buildPermPop() {
     var btn = $('permBtn'); if (!btn) return;
     var pop = $('permPop');
-    if (!pop) { pop = el('div', 'xiao6-perm-pop'); pop.id = 'permPop'; pop.hidden = true; btn.appendChild(pop); }
+    if (!pop) { pop = el('div', 'x6-perm-pop'); pop.id = 'permPop'; pop.hidden = true; btn.appendChild(pop); }
     if (pop.getAttribute('data-built') === '1') return;
     pop.setAttribute('data-built', '1');
-    pop.innerHTML = '<p>小6 执行工具或命令前，是否需要你手动确认？</p><div class="xiao6-seg"><button data-m="ask" class="' + (permMode === 'ask' ? 'is-sel' : '') + '">手动确认</button><button data-m="auto" class="' + (permMode === 'auto' ? 'is-sel' : '') + '">自动执行</button></div>';
-    Array.prototype.forEach.call(pop.querySelectorAll('.xiao6-seg button'), function (b) {
+    pop.innerHTML = '<p>小6 执行工具或命令前，是否需要你手动确认？</p><div class="x6-seg"><button data-m="ask" class="' + (permMode === 'ask' ? 'is-sel' : '') + '">手动确认</button><button data-m="auto" class="' + (permMode === 'auto' ? 'is-sel' : '') + '">自动执行</button></div>';
+    Array.prototype.forEach.call(pop.querySelectorAll('.x6-seg button'), function (b) {
       b.addEventListener('click', function () {
         permMode = b.dataset.m;
         state.lsSet('xiao6_policy', permMode);

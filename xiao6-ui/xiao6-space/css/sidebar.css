@@ -1,41 +1,4 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · sidebar.css — 列表视图 + 设置样式（Phase 2）
-   迁移自 xiao6-workspace.css：list views / settings
-   保持所有 xiao6-* class 名
+   Xiao6 UI-R2 · sidebar.css — Additional sidebar-related styles
    ═════════════════════════════════════════════════════════════════ */
-
-/* ═══════════ list views ═══════════ */
-.xiao6-list-view { max-width: 960px; margin: 0 auto; width: 100%; }
-.xiao6-view-head { margin-bottom: var(--xiao6-spacing-5); }
-.xiao6-view-head h2 { font-size: 21px; font-weight: 650; margin: 0 0 4px; }
-.xiao6-view-head p { color: var(--xiao6-text-muted); margin: 0; font-size: 13px; }
-.xiao6-list { display: flex; flex-direction: column; gap: 10px; max-width: 960px; }
-.xiao6-row {
-  position: relative;
-  display: flex; align-items: center; gap: 12px; padding: 13px 15px;
-  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 10px;
-  transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease), background var(--xiao6-dur-fast) var(--xiao6-ease);
-}
-.xiao6-row:hover { border-color: var(--xiao6-border-strong); background: var(--xiao6-surface-hover); }
-.xiao6-row:hover::before { content: ""; position: absolute; left: -1px; top: 12px; bottom: 12px; width: 2px; border-radius: 1px; background: var(--xiao6-accent); }
-.xiao6-row .ic { width: 34px; height: 34px; border-radius: 8px; background: var(--xiao6-surface-elevated); display: grid; place-items: center; flex: none; color: var(--xiao6-accent); }
-.xiao6-row .body { flex: 1; min-width: 0; }
-.xiao6-row .body .t { font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.xiao6-row .body .s { color: var(--xiao6-text-muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.xiao6-row .tag { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--xiao6-surface-elevated); color: var(--xiao6-text-muted); flex: none; }
-.xiao6-row .tag.done { color: var(--xiao6-success); background: var(--xiao6-success-soft); }
-.xiao6-row .tag.run { color: var(--xiao6-warning); background: var(--xiao6-warning-soft); }
-
-/* ═══════════ settings ═══════════ */
-.xiao6-settings { max-width: 720px; display: flex; flex-direction: column; gap: var(--xiao6-spacing-4); }
-.xiao6-set-group { background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 12px; padding: var(--xiao6-spacing-4); }
-.xiao6-set-group h3 { font-size: 13px; color: var(--xiao6-text-faint); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px; }
-.xiao6-set-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--xiao6-border); }
-.xiao6-set-row:last-child { border-bottom: none; }
-.xiao6-set-row .k { color: var(--xiao6-text); }
-.xiao6-set-row .k small { display: block; color: var(--xiao6-text-faint); font-size: 11.5px; }
-.xiao6-set-row .v { color: var(--xiao6-accent); font-weight: 550; }
-.xiao6-switch { width: 40px; height: 22px; border-radius: 999px; background: var(--xiao6-surface-elevated); border: 1px solid var(--xiao6-border); position: relative; transition: .15s; flex: none; cursor: pointer; }
-.xiao6-switch.on { background: var(--xiao6-accent); border-color: var(--xiao6-accent); }
-.xiao6-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--xiao6-switch-knob); transition: var(--xiao6-dur-fast) var(--xiao6-ease); }
-.xiao6-switch.on::after { left: 20px; }
+/* Re-exported from layout.css for backward compat */

@@ -1,98 +1,86 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · tokens.css — Monochrome design tokens + Voice Red
-   仅允许一种强色：语音红色 (#d93636)
-   其余所有状态：灰阶表达（字体 / 图标 / 边框 / 粗细 / 动画 / 明暗）
+   Xiao6 UI-R2 · tokens.css — Premium minimal palette
+   低饱和、高级、克制、现代桌面软件质感
    ═════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Surfaces ── */
-  --xiao6-bg:         #fafafa;
-  --xiao6-bg-2:       #f0f0ee;
-  --xiao6-surface:    #ffffff;
-  --xiao6-surface-elevated: #f7f7f5;
-  --xiao6-surface-hover: #eeeeec;
+  --x6-bg:         #f7f7f5;
+  --x6-bg-2:       #f0f0ee;
+  --x6-surface:    #ffffff;
+  --x6-surface-elevated: #f9f9f7;
+  --x6-surface-hover: #f2f2ef;
 
   /* ── Text ── */
-  --xiao6-text:       #181818;
-  --xiao6-text-muted: #666666;
-  --xiao6-text-faint: #999999;
+  --x6-text:       #1c1c1c;
+  --x6-text-muted: #707070;
+  --x6-text-faint: #999999;
 
   /* ── Border ── */
-  --xiao6-border:     #e0e0dd;
-  --xiao6-border-strong: #c8c8c4;
+  --x6-border:     #e5e5e2;
+  --x6-border-strong: #d5d5d0;
 
-  /* ── Accent (brand) — 灰阶，无彩色 ── */
-  --xiao6-accent:     #181818;
-  --xiao6-accent-2:   #555555;
-  --xiao6-on-accent:  #fafafa;
+  /* ── Accent — 蓝灰，克制 ── */
+  --x6-accent:     #59636b;
+  --x6-accent-soft: #eceff0;
 
-  /* ── Semantic (灰阶化，非语音不使用彩色) ── */
-  /* success → 深灰（完成态，用于状态符号 ✓ 和边框） */
-  --xiao6-success:        #2a2a2a;
-  --xiao6-success-soft:   rgba(42, 42, 42, 0.06);
-  /* warning → 中灰（待确认态，用于状态 ● 和边框） */
-  --xiao6-warning:        #555555;
-  --xiao6-warning-soft:   rgba(85, 85, 85, 0.07);
-  /* danger → 深灰偏暖（错误态，不鲜艳） */
-  --xiao6-danger:         #3a3a3a;
-  --xiao6-danger-soft:    rgba(58, 58, 58, 0.06);
-  /* info → 次级灰（仅用于占位，已废弃） */
-  --xiao6-info:           #888888;
-  --xiao6-info-soft:      rgba(136, 136, 136, 0.07);
+  /* ── Semantic（灰阶） ── */
+  --x6-success:    #2a2a2a;
+  --x6-success-soft: rgba(42, 42, 42, 0.06);
+  --x6-warning:    #666666;
+  --x6-warning-soft: rgba(102, 102, 102, 0.07);
+  --x6-danger:     #8b4444;
+  --x6-danger-soft: rgba(139, 68, 68, 0.06);
 
-  /* ── Voice Red — 唯一允许的强色 ── */
-  --xiao6-voice:        #d93636;
-  --xiao6-voice-soft:   rgba(217, 54, 54, 0.07);
+  /* ── Voice Red — 唯一强色 ── */
+  --x6-voice:      #c83a3a;
+  --x6-voice-soft: rgba(200, 58, 58, 0.07);
 
   /* ── Glass ── */
-  --xiao6-glass:      rgba(255, 255, 255, 0.82);
-  --xiao6-glass-strong: rgba(252, 252, 250, 0.95);
+  --x6-glass:      rgba(255, 255, 255, 0.88);
+  --x6-glass-strong: rgba(252, 252, 250, 0.96);
 
   /* ── Radius / shadow ── */
-  --xiao6-radius:     10px;
-  --xiao6-radius-sm:  7px;
-  --xiao6-radius-lg:  16px;
-  --xiao6-shadow:     0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --xiao6-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --x6-radius:     12px;
+  --x6-radius-sm:  8px;
+  --x6-radius-lg:  20px;
+  --x6-radius-pill: 999px;
+  --x6-shadow:     0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06);
+  --x6-shadow-soft: 0 1px 4px rgba(0,0,0,0.04);
+  --x6-shadow-lg:  0 8px 32px rgba(0,0,0,0.08);
 
   /* ── Spacing ── */
-  --xiao6-spacing-1: 4px;
-  --xiao6-spacing-2: 8px;
-  --xiao6-spacing-3: 12px;
-  --xiao6-spacing-4: 16px;
-  --xiao6-spacing-5: 24px;
-  --xiao6-spacing-6: 32px;
+  --x6-spacing-1:  4px;
+  --x6-spacing-2:  8px;
+  --x6-spacing-3:  12px;
+  --x6-spacing-4:  16px;
+  --x6-spacing-5:  24px;
+  --x6-spacing-6:  32px;
 
   /* ── Font ── */
-  --xiao6-font:        "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --xiao6-font-mono:   "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
+  --x6-font:       "PingFang SC", "Microsoft YaHei", "SF Pro Display", -apple-system, system-ui, sans-serif;
+  --x6-font-mono:  "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
 
   /* ── Code ── */
-  --xiao6-code-bg: #f4f4f1;
-
-  /* ── Switch ── */
-  --xiao6-switch-knob: #ffffff;
+  --x6-code-bg: #f4f4f1;
 
   /* ── Animation ── */
-  --xiao6-dur-fast: 0.12s;
-  --xiao6-dur-base: 0.18s;
-  --xiao6-dur-slow: 0.28s;
-  --xiao6-ease:     cubic-bezier(0.4, 0, 0.2, 1);
+  --x6-dur-fast: 0.12s;
+  --x6-dur-base: 0.18s;
+  --x6-dur-slow: 0.28s;
+  --x6-ease:     cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/* Light theme defaults are the monochrome base above.
-   Keep explicit overrides only for dark mode if needed. */
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
-  font-family: var(--xiao6-font);
-  background: var(--xiao6-bg);
-  color: var(--xiao6-text);
+  font-family: var(--x6-font);
+  background: var(--x6-bg);
+  color: var(--x6-text);
   font-size: 14px;
   line-height: 1.6;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 button { font-family: inherit; cursor: pointer; color: inherit; }
-::selection { background: var(--xiao6-border); }
+::selection { background: var(--x6-border); }
