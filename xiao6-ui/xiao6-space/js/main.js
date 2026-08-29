@@ -57,8 +57,18 @@
 
   // ───────────────────── 运行时状态灯 ─────────────────────
   function renderRuntime() {
-    state.setState(String(state.snap.agent.state || 'IDLE').toUpperCase());
-    renderNow();
+    var st = String(state.snap.agent.state || 'IDLE').toUpperCase();
+    var rt = $('runtimeState');
+    if (rt) {
+      var dot = rt.querySelector('.x6-status-dot');
+      var txt = rt.querySelector('.x6-status-text');
+      if (dot) dot.dataset.state = st.toLowerCase();
+      if (txt) txt.textContent = state.CORE_TEXT[st] || '小6在线';
+      rt.dataset.mode = (st === 'THINKING' || st === 'PLANNING' || st === 'RUNNING' || st === 'EXECUTING' || st === 'LISTENING' || st === 'SPEAKING') ? 'busy' : (st === 'WAITING' || st === 'WAITING_APPROVAL') ? 'waiting' : (st === 'FAILED' || st === 'ERROR' || st === 'OFFLINE') ? 'error' : 'online';
+    }
+    var op = $('orbPresence'); if (op) op.dataset.state = st.toLowerCase();
+    var mo = document.querySelector('.x6-mini-orb'); if (mo) mo.dataset.state = st.toLowerCase();
+    renderNow(st);
   }
 
   // ───────────────────── Now Bar ─────────────────────
@@ -69,7 +79,7 @@
   function renderNow() {
     var bar = $('nowBar'); if (!bar) return;
     var st = String(state.snap.agent.state || 'IDLE').toUpperCase();
-    var title = state.CORE_TEXT[st] || '在线待命';
+    var title = state.CORE_TEXT[st] || '小6在线';
     var sub;
     var mode = 'idle';
 
@@ -85,16 +95,16 @@
     }
 
     if (pendingApprovalCount() > 0) {
-      mode = 'waiting';
+      stateMode = 'waiting';
       sub = '等待你的确认';
     } else if (state.busy) {
-      mode = 'busy';
+      stateMode = 'busy';
       sub = state.busyDetail || (sub || '正在处理你的指令…');
     } else if (st === 'ERROR' || st === 'FAILED') {
-      mode = 'error';
+      stateMode = 'error';
       sub = '执行失败';
     } else if (st === 'COMPLETED' || st === 'STOPPED') {
-      mode = 'done';
+      stateMode = 'done';
       sub = '任务完成';
     } else {
       var active = state.snap.goals.filter(function (g) { return String(g.status || '').toLowerCase() === 'active'; });
@@ -102,15 +112,17 @@
         var g = active[0];
         var prog = Number(g.progress || 0);
         sub = (g.title || ('目标 #' + g.id)) + ' · ' + prog + '%';
-        if (st.match(/EXECUTING|RUNNING|THINKING|PLANNING/)) mode = 'busy';
+        if (st.match(/EXECUTING|RUNNING|THINKING|PLANNING/)) stateMode = 'busy';
       } else {
         sub = '没有正在进行的工作';
       }
     }
 
-    bar.dataset.state = mode;
-    var t = $('nowTitle'); if (t) t.textContent = title;
-    var s = $('nowSub'); if (s) { s.textContent = sub; s.title = sub; }
+    bar.dataset.state = stateMode;
+    textEl.textContent = title + (sub ? ' · ' + sub : '');
+    if (dot) {
+      dot.style.background = stateMode === 'busy' ? 'var(--x6-brand)' : stateMode === 'waiting' ? '#f59e0b' : stateMode === 'error' ? 'var(--x6-voice)' : '#22c55e';
+    }
 
     // Drawer trigger: show when running tool or approval pending
     var inspBtn = $('inspTrigger');

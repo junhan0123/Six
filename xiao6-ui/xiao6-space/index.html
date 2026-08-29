@@ -4,214 +4,233 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>小6 · Agent</title>
-<meta name="description" content="小6 — 你的个人桌面 Agent" />
-<link rel="stylesheet" href="css/tokens.css?v=41" />
-<link rel="stylesheet" href="css/layout.css?v=41" />
-<link rel="stylesheet" href="css/components.css?v=41" />
-<link rel="stylesheet" href="css/workspace.css?v=41" />
-<link rel="stylesheet" href="css/sidebar.css?v=41" />
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/layout.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/workspace.css" />
+<link rel="stylesheet" href="css/panel.css" />
+<style>
+/* AgnesCode-style accent: indigo (#6366F1) instead of flat gray */
+:root {
+  --x6-brand: #6366F1;
+  --x6-brand-hover: #4F46E5;
+  --x6-brand-light: #EEF2FF;
+}
+.x6-nav-btn.is-active { background: var(--x6-brand-light) !important; color: var(--x6-brand) !important; }
+.x6-composer-send { background: var(--x6-brand) !important; }
+.x6-composer-send:hover { background: var(--x6-brand-hover) !important; }
+.x6-model-sel-select { border-color: var(--x6-border); color: var(--x6-text-secondary); font-size: 12px; padding: 2px 6px; border-radius: 4px; background: var(--x6-surface-2); }
+</style>
 </head>
-<body data-view="home">
+<body>
 
-<!-- ═══════════════ TOP BAR ═══════════════ -->
-<header class="x6-top">
-  <div class="x6-top-left">
-    <span class="x6-orb" aria-hidden="true"></span>
-    <span class="x6-brand">小6</span>
-  </div>
-  <div class="x6-top-center">
-    <button class="x6-cmdk" id="cmdkBtn" type="button" aria-label="命令面板">
-      <span class="x6-cmdk-ic">⌘</span>
-      <span class="x6-cmdk-text">搜索或告诉小6…</span>
-      <span class="x6-cmdk-kbd">Ctrl K</span>
-    </button>
-  </div>
-  <div class="x6-top-right">
-    <span class="x6-status" id="runtimeState" data-mode="online" title="状态">
-      <span class="x6-dot"></span>
-      <span class="x6-status-text">在线</span>
-    </span>
-    <button class="x6-btn-icon" id="orbBtn" type="button" aria-label="语音球" title="语音">
-      <span class="x6-mini-orb" data-state="idle"></span>
-    </button>
-  </div>
-</header>
-
-<!-- ═══════════════ SHELL ═══════════════ -->
-<div class="x6-shell" id="shell">
-
-  <!-- SIDEBAR -->
-  <aside class="x6-sidebar" id="x6Sidebar" aria-label="导航">
-    <div class="x6-sidebar-content">
-      <button class="x6-new-task" type="button" id="newTaskBtn">
-        <span class="x6-new-icon">+</span>
-        <span class="x6-new-label">新任务</span>
-      </button>
-      <nav class="x6-nav">
-        <button class="x6-nav-btn is-active" data-nav="home" type="button">
-          <svg viewBox="0 0 24 24"><path d="M4 11L12 4l8 7M6 10v10h12V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>首页</span>
-        </button>
-        <button class="x6-nav-btn" data-nav="history" type="button">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <span>历史</span>
-        </button>
-        <button class="x6-nav-btn" data-nav="projects" type="button">
-          <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m3 12 9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m3 17 9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
-          <span>项目</span>
-        </button>
-      </nav>
-      <div class="x6-nav-divider"></div>
-      <div class="x6-current-section" id="currentSection" hidden>
-        <div class="x6-section-label">当前任务</div>
-        <div class="x6-current-item" id="currentItem">
-          <span class="x6-current-dot"></span>
-          <span class="x6-current-title">—</span>
-        </div>
-      </div>
-      <div style="flex:1"></div>
-      <button class="x6-nav-btn" data-nav="settings" type="button">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
-        <span>设置</span>
-      </button>
+<!-- ═══ Sidebar ═══ -->
+<aside class="x6-sidebar" id="sidebar">
+  <!-- Brand -->
+  <div class="x6-sidebar-brand">
+    <div class="x6-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--x6-brand)" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="var(--x6-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="x6-logo-text">小6</span>
     </div>
-  </aside>
+    <button class="x6-new-task-btn" id="newTaskBtn" title="新任务">＋ 新任务</button>
+  </div>
 
-  <!-- CENTER: Main work area -->
-  <main class="x6-main" id="x6Main">
+  <!-- Nav -->
+  <nav class="x6-sidebar-nav">
+    <button class="x6-nav-btn is-active" data-nav="home">💬 新对话</button>
+    <button class="x6-nav-btn" data-nav="timer">⏰ 定时任务</button>
+    <button class="x6-nav-btn" data-nav="plugins">🔌 插件</button>
+  </nav>
 
+  <!-- Projects -->
+  <div class="x6-sidebar-section">
+    <div class="x6-section-header">
+      <span>项目</span>
+      <span class="x6-section-count" id="projectCount">0</span>
+    </div>
+    <div class="x6-project-list" id="projectList">
+      <div class="x6-project-empty">暂无项目</div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="x6-sidebar-section">
+    <div class="x6-section-header">
+      <span>最近对话</span>
+    </div>
+    <div class="x6-history-list" id="historyList">
+      <div class="x6-history-empty">暂无对话</div>
+    </div>
+  </div>
+
+  <!-- User -->
+  <div class="x6-sidebar-footer">
+    <div class="x6-user-info">
+      <div class="x6-avatar">6</div>
+      <div class="x6-user-meta">
+        <div class="x6-username">用户</div>
+        <div class="x6-plan">免费版</div>
+      </div>
+    </div>
+    <button class="x6-settings-btn" title="设置">⚙</button>
+  </div>
+</aside>
+
+<!-- ═══ Shell (main area) ═══ -->
+<div class="x6-shell" id="shell">
+  <!-- Top bar -->
+  <header class="x6-topbar">
+    <div class="x6-topbar-left">
+      <span class="x6-topbar-title" id="topbarTitle">小6</span>
+      <span class="x6-topbar-subtitle" id="topbarSubtitle">有什么我可以帮你？</span>
+    </div>
+    <div class="x6-topbar-right">
+      <div class="x6-model-sel" id="modelSelWrap">
+        <select class="x6-model-sel-select" id="modelSel">
+          <option value="agnes-2.5-flash">Agnes 2.5 Flash</option>
+          <option value="deepseek-r1-671b">DeepSeek R1 671B</option>
+        </select>
+      </div>
+      <div class="x6-status-dot-wrap" id="runtimeState" data-mode="online">
+        <span class="x6-status-dot"></span>
+        <span class="x6-status-text">在线</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Views -->
+  <main class="x6-main">
     <!-- HOME view -->
-    <section class="x6-view x6-home-view" data-view="home">
+    <section class="x6-view x6-view-home" data-view="home">
+      <!-- Hero -->
       <div class="x6-hero" id="hero">
-        <div class="x6-hero-orb"></div>
-        <div class="x6-hero-title">小6</div>
-        <div class="x6-hero-sub">有什么我可以帮你的？</div>
-      </div>
+        <div class="x6-hero-inner">
+          <h1 class="x6-hero-title">你好，<span class="x6-hero-name">614415</span></h1>
+          <p class="x6-hero-sub">我能为你做什么？</p>
 
-      <!-- Timeline / Chat -->
-      <div class="x6-timeline" id="timelineSection" hidden>
-        <div class="x6-nowbar" id="nowBar" data-state="idle">
-          <span class="x6-now-dot" id="nowDot"></span>
-          <span class="x6-now-title" id="nowTitle">在线待命</span>
-          <span class="x6-now-sub" id="nowSub">没有正在进行的工作</span>
-          <button class="x6-btn-icon x6-insp-trigger" id="inspTrigger" title="查看详情" hidden>
-            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M9 5h11M9 12h11M9 19h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
-          </button>
-        </div>
-        <div class="x6-tl-body" id="chatList"></div>
-      </div>
+          <!-- Composer: AgnesCode style -->
+          <div class="x6-composer-wrap" id="composerWrap">
+            <div class="x6-composer-hint">
+              <span>@ 引用文件 &nbsp;·&nbsp; / 调用指令 &nbsp;·&nbsp; $ 调用技能</span>
+            </div>
+            <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="给小6一个任务……"></textarea>
+            <div class="x6-composer-bar">
+              <div class="x6-composer-left">
+                <button class="x6-composer-attach" title="附件">📎</button>
+                <button class="x6-composer-mode" id="modeSel">智能模式 ▾</button>
+              </div>
+              <div class="x6-composer-right">
+                <button class="x6-composer-voice" id="voiceBtn" title="语音输入">🎤</button>
+                <button class="x6-composer-send" id="sendBtn" title="发送">↑</button>
+              </div>
+            </div>
+          </div>
 
-      <!-- Composer -->
-      <div class="x6-composer-wrap" id="composerWrap">
-        <div class="x6-composer" id="composer">
-          <form class="x6-cmd-form" id="cmdForm" autocomplete="off">
-            <span class="x6-input-prefix">›</span>
-            <input class="x6-cmd-input" id="cmdInput" type="text" placeholder="给小6一个任务……" autocomplete="off" spellcheck="false" aria-label="指令输入" />
-            <button class="x6-send" type="submit" id="sendBtn" disabled title="执行">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            </button>
-          </form>
-          <div class="x6-composer-tools">
-            <button class="x6-tool-btn" data-tool="web" type="button" title="联网搜索">
-              <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-            </button>
-            <button class="x6-tool-btn x6-voice-btn" id="voiceBtn" type="button" title="语音输入">
-              <svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-            </button>
+          <!-- Quick actions -->
+          <div class="x6-quick-actions">
+            <div class="x6-quick-label">快速开始</div>
+            <div class="x6-quick-grid">
+              <button class="x6-quick-card" data-prompt="帮我检查这个项目"><span>🔍</span>检查项目</button>
+              <button class="x6-quick-card" data-prompt="帮我写一个工具"><span>⚡</span>开发工具</button>
+              <button class="x6-quick-card" data-prompt="帮我分析一下代码"><span>📊</span>分析代码</button>
+              <button class="x6-quick-card" data-prompt="帮我生成一个网页"><span>🌐</span>制作网页</button>
+            </div>
+          </div>
+
+          <!-- Timeline (compact) -->
+          <div class="x6-timeline-section" id="timelineSection" style="display:none">
+            <div class="x6-timeline-header">
+              <span>执行过程</span>
+              <button class="x6-timeline-toggle" id="inspTrigger">展开详情 ▸</button>
+            </div>
+            <div class="x6-timeline-body" id="timelineBody"></div>
           </div>
         </div>
-        <div class="x6-suggestions" id="suggestions" hidden></div>
+      </div>
+    </section>
+
+    <!-- TIMER view -->
+    <section class="x6-view" data-view="timer" hidden>
+      <div class="x6-empty-state">
+        <div class="x6-empty-icon">⏰</div>
+        <div class="x6-empty-title">定时任务</div>
+        <div class="x6-empty-desc">暂未配置定时任务</div>
+      </div>
+    </section>
+
+    <!-- PLUGINS view -->
+    <section class="x6-view" data-view="plugins" hidden>
+      <div class="x6-empty-state">
+        <div class="x6-empty-icon">🔌</div>
+        <div class="x6-empty-title">插件市场</div>
+        <div class="x6-empty-desc">暂未安装插件</div>
       </div>
     </section>
 
     <!-- HISTORY view -->
-    <section class="x6-view x6-list-view" data-view="history" hidden>
-      <div class="x6-view-head">
-        <h2>历史</h2>
-        <p>最近的 Agent 工作记录</p>
-      </div>
-      <div class="x6-hist" id="histBody"></div>
+    <section class="x6-view" data-view="history" hidden>
+      <div class="x6-history-page" id="historyPage"></div>
     </section>
-
-    <!-- PROJECTS view -->
-    <section class="x6-view x6-list-view" data-view="projects" hidden>
-      <div class="x6-view-head">
-        <h2>项目</h2>
-        <p>目标与长期推进的事项</p>
-      </div>
-      <div class="x6-list" id="projectsList"></div>
-    </section>
-
-    <!-- SETTINGS view -->
-    <section class="x6-view x6-list-view" data-view="settings" hidden>
-      <div class="x6-view-head">
-        <h2>设置</h2>
-        <p>偏好与系统概览</p>
-      </div>
-      <div class="x6-settings" id="settingsBody"></div>
-    </section>
-
   </main>
 
-  <!-- DRAWER: Inspector / Task Detail (slides in from right) -->
-  <aside class="x6-drawer" id="drawer" aria-hidden="true">
-    <div class="x6-drawer-scrim" id="drawerScrim"></div>
-    <div class="x6-drawer-panel">
-      <div class="x6-drawer-head">
-        <span class="x6-drawer-title" id="drawerTitle">详情</span>
-        <button class="x6-btn-icon" id="drawerClose" type="button" aria-label="关闭">
-          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-        </button>
-      </div>
-      <div class="x6-drawer-body" id="drawerBody"></div>
+  <!-- Now bar (bottom of main) -->
+  <div class="x6-nowbar" id="nowBar" data-state="idle">
+    <div class="x6-nowbar-content">
+      <span class="x6-nowbar-dot" id="nowDot"></span>
+      <span class="x6-nowbar-text" id="nowText">小6在线</span>
     </div>
-  </aside>
-
-</div>
-
-<!-- VOICE ORB -->
-<div class="x6-orb-presence" id="orbPresence" data-state="idle" title="小6语音球">
-  <span class="x6-orb-core"></span>
-  <span class="x6-orb-ring"></span>
-</div>
-
-<!-- COMMAND PALETTE -->
-<div class="x6-palette" id="palette" aria-hidden="true">
-  <div class="x6-palette-scrim" id="paletteScrim"></div>
-  <div class="x6-palette-sheet" role="dialog" aria-modal="true" aria-label="命令面板">
-    <div class="x6-palette-input-row">
-      <span class="x6-palette-ic">⌘</span>
-      <input class="x6-palette-input" id="paletteInput" type="text" placeholder="搜索命令或告诉小6要做什么…" autocomplete="off" />
-    </div>
-    <div class="x6-palette-list" id="paletteList"></div>
   </div>
 </div>
 
-<!-- OVERLAY -->
-<div class="x6-overlay" id="overlay" aria-hidden="true">
-  <div class="x6-overlay-scrim" id="overlayScrim"></div>
-  <section class="x6-overlay-sheet" role="dialog" aria-modal="true">
-    <div class="x6-overlay-head">
-      <span class="x6-overlay-title" id="overlayTitle">面板</span>
-      <button class="x6-btn-icon" id="overlayClose" type="button" aria-label="关闭">
-        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-      </button>
-    </div>
-    <div class="x6-overlay-body" id="overlayBody"></div>
-  </section>
+<!-- ═══ Drawer (inspector) ═══ -->
+<div class="x6-drawer-backdrop" id="drawerScrim" aria-hidden="true"></div>
+<aside class="x6-drawer" id="drawer" aria-hidden="true">
+  <div class="x6-drawer-header">
+    <span class="x6-drawer-title" id="drawerTitle">详情</span>
+    <button class="x6-drawer-close" id="drawerClose">✕</button>
+  </div>
+  <div class="x6-drawer-body" id="drawerBody"></div>
+</aside>
+
+<!-- ═══ Command Palette ═══ -->
+<div class="x6-palette-backdrop" id="paletteScrim" aria-hidden="true"></div>
+<div class="x6-palette" id="palette" aria-hidden="true">
+  <div class="x6-palette-input-wrap">
+    <span class="x6-palette-icon">🔍</span>
+    <input class="x6-palette-input" id="paletteInput" placeholder="搜索命令或对话……" autocomplete="off" />
+  </div>
+  <div class="x6-palette-list" id="paletteList"></div>
 </div>
 
-<!-- TOAST -->
-<div class="x6-toast-layer" id="toastLayer" aria-live="polite"></div>
+<!-- ═══ Overlay (modal) ═══ -->
+<div class="x6-overlay" id="overlay" aria-hidden="true">
+  <div class="x6-overlay-card">
+    <div class="x6-overlay-header">
+      <span class="x6-overlay-title" id="overlayTitle">提示</span>
+      <button class="x6-overlay-close" onclick="window.Xiao6&&window.Xiao6.main&&window.Xiao6.main.closeOverlay()">✕</button>
+    </div>
+    <div class="x6-overlay-body" id="overlayBody"></div>
+  </div>
+</div>
 
-<script src="js/api.js?v=41"></script>
-<script src="js/state.js?v=41"></script>
-<script src="js/voice.js?v=41"></script>
-<script src="js/approval.js?v=41"></script>
-<script src="js/timeline.js?v=41"></script>
-<script src="js/sidebar.js?v=41"></script>
-<script src="js/palette.js?v=41"></script>
-<script src="js/inspector.js?v=41"></script>
-<script src="js/main.js?v=41"></script>
+<!-- ═══ Toasts ═══ -->
+<div class="x6-toast-layer" id="toastLayer"></div>
+
+<!-- ═══ Voice orb (fixed, bottom-right) ═══ -->
+<div class="x6-voice-orb" id="orbBtn">
+  <div class="x6-orb-presence" id="orbPresence" data-state="idle"></div>
+  <div class="x6-mini-orb" data-state="idle"></div>
+</div>
+
+<!-- ═══ Scripts ═══ -->
+<script src="js/api.js"></script>
+<script src="js/state.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/approval.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/palette.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/inspector.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

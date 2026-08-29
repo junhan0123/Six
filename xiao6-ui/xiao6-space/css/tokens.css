@@ -1,86 +1,37 @@
-/* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R2 · tokens.css — Premium minimal palette
-   低饱和、高级、克制、现代桌面软件质感
-   ═════════════════════════════════════════════════════════════════ */
-
 :root {
-  /* ── Surfaces ── */
-  --x6-bg:         #f7f7f5;
-  --x6-bg-2:       #f0f0ee;
-  --x6-surface:    #ffffff;
-  --x6-surface-elevated: #f9f9f7;
-  --x6-surface-hover: #f2f2ef;
-
-  /* ── Text ── */
-  --x6-text:       #1c1c1c;
-  --x6-text-muted: #707070;
-  --x6-text-faint: #999999;
-
-  /* ── Border ── */
-  --x6-border:     #e5e5e2;
-  --x6-border-strong: #d5d5d0;
-
-  /* ── Accent — 蓝灰，克制 ── */
-  --x6-accent:     #59636b;
-  --x6-accent-soft: #eceff0;
-
-  /* ── Semantic（灰阶） ── */
-  --x6-success:    #2a2a2a;
-  --x6-success-soft: rgba(42, 42, 42, 0.06);
-  --x6-warning:    #666666;
-  --x6-warning-soft: rgba(102, 102, 102, 0.07);
-  --x6-danger:     #8b4444;
-  --x6-danger-soft: rgba(139, 68, 68, 0.06);
-
-  /* ── Voice Red — 唯一强色 ── */
-  --x6-voice:      #c83a3a;
-  --x6-voice-soft: rgba(200, 58, 58, 0.07);
-
-  /* ── Glass ── */
-  --x6-glass:      rgba(255, 255, 255, 0.88);
-  --x6-glass-strong: rgba(252, 252, 250, 0.96);
-
-  /* ── Radius / shadow ── */
-  --x6-radius:     12px;
-  --x6-radius-sm:  8px;
-  --x6-radius-lg:  20px;
-  --x6-radius-pill: 999px;
-  --x6-shadow:     0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06);
-  --x6-shadow-soft: 0 1px 4px rgba(0,0,0,0.04);
-  --x6-shadow-lg:  0 8px 32px rgba(0,0,0,0.08);
-
-  /* ── Spacing ── */
-  --x6-spacing-1:  4px;
-  --x6-spacing-2:  8px;
-  --x6-spacing-3:  12px;
-  --x6-spacing-4:  16px;
-  --x6-spacing-5:  24px;
-  --x6-spacing-6:  32px;
-
-  /* ── Font ── */
-  --x6-font:       "PingFang SC", "Microsoft YaHei", "SF Pro Display", -apple-system, system-ui, sans-serif;
-  --x6-font-mono:  "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
-
-  /* ── Code ── */
-  --x6-code-bg: #f4f4f1;
-
-  /* ── Animation ── */
-  --x6-dur-fast: 0.12s;
-  --x6-dur-base: 0.18s;
-  --x6-dur-slow: 0.28s;
-  --x6-ease:     cubic-bezier(0.4, 0, 0.2, 1);
+  --x6-brand: #6366F1;
+  --x6-brand-hover: #4F46E5;
+  --x6-brand-light: #EEF2FF;
+  --x6-bg: #FFFFFF;
+  --x6-sidebar-bg: #F8F9FA;
+  --x6-surface: #FFFFFF;
+  --x6-surface-2: #F3F4F6;
+  --x6-text: #111827;
+  --x6-text-secondary: #6B7280;
+  --x6-text-muted: #9CA3AF;
+  --x6-border: #E5E7EB;
+  --x6-border-strong: #D1D5DB;
+  --x6-voice: #C83A3A;
+  --x6-radius-sm: 6px;
+  --x6-radius: 10px;
+  --x6-radius-lg: 14px;
+  --x6-shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --x6-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  --x6-shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --x6-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --x6-font-mono: "SF Mono", "Fira Code", Consolas, monospace;
 }
-
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-body {
-  font-family: var(--x6-font);
-  background: var(--x6-bg);
-  color: var(--x6-text);
-  font-size: 14px;
-  line-height: 1.6;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
+[data-theme="dark"] {
+  --x6-bg: #0F0F0F;
+  --x6-sidebar-bg: #1A1A1A;
+  --x6-surface: #1E1E1E;
+  --x6-surface-2: #2A2A2A;
+  --x6-text: #F3F4F6;
+  --x6-text-secondary: #9CA3AF;
+  --x6-text-muted: #6B7280;
+  --x6-border: #374151;
+  --x6-border-strong: #4B5563;
+  --x6-shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --x6-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  --x6-shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
 }
-button { font-family: inherit; cursor: pointer; color: inherit; }
-::selection { background: var(--x6-border); }
