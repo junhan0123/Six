@@ -335,6 +335,23 @@
       state.notify();
       return;
     }
+    if (ev === 'AGENT_COMPLETED' || ev === 'AGENT_FAILED') {
+      // AGENT 完成/失败后，在 Timeline 末尾追加 result 节点
+      var p = m.payload || {};
+      var rstatus = /COMPLETED/.test(ev) ? 'success' : 'failed';
+      var rid = 'result:' + (p.agentId || Date.now());
+      state.upsertNode({
+        id: rid, type: 'result', status: rstatus,
+        title: p.title || '',
+        summary: p.summary || '',
+        detail: p.result || '',
+        timestamp: Date.now()
+      });
+      // 同时更新 now bar 状态
+      state.setState('COMPLETED');
+      state.notify();
+      return;
+    }
     if (ev.indexOf('GOAL_') === 0 || ev.indexOf('TASK_') === 0 || ev.indexOf('INTENT_') === 0 || ev.indexOf('AGENT_') === 0) {
       var p = m.payload || {};
       var label = { GOAL_CREATED: '目标已创建', GOAL_PLANNED: '目标已规划', GOAL_STARTED: '目标已启动', GOAL_RUNNING: '目标执行中', GOAL_COMPLETED: '目标已完成', GOAL_FAILED: '目标失败', TASK_CREATED: '任务已创建', TASK_STARTED: '任务开始', TASK_RUNNING: '任务执行中', TASK_COMPLETED: '任务完成', TASK_FAILED: '任务失败', INTENT_CLASSIFIED: '意图已识别', INTENT_ACCEPTED: '意图已接受', INTENT_REJECTED: '意图已拒绝', INTENT_CONVERTED_TO_GOAL: '意图转为目标', AGENT_COMPLETED: 'Agent 完成', AGENT_FAILED: 'Agent 失败' }[ev] || ev;

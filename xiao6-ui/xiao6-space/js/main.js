@@ -66,12 +66,24 @@
     var sub;
     var mode = 'idle';
 
+    // 优先显示真实当前动作（来自 derive.currentAction）
+    var curAction = state.derive.currentAction();
+    if (curAction) {
+      if (curAction.kind === 'tool') {
+        sub = '正在执行：' + (curAction.label || '工具');
+      } else if (curAction.kind === 'task') {
+        sub = '正在分析：' + (curAction.label || '任务');
+      } else if (curAction.kind === 'goal') {
+        sub = '正在规划：' + (curAction.label || '目标');
+      }
+    }
+
     if (pendingApprovalCount() > 0) {
       mode = 'waiting';
       sub = '有一项操作等你确认';
     } else if (state.busy) {
       mode = 'busy';
-      sub = state.busyDetail || '正在处理你的指令…';
+      sub = state.busyDetail || (sub || '正在处理你的指令…');
     } else if (st === 'ERROR' || st === 'FAILED') {
       mode = 'error';
       sub = '上一次执行遇到问题';

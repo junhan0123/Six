@@ -231,6 +231,15 @@
         '<b>执行</b><span class="xiao6-tl-sub">' + esc(n.title || n.summary || '') + '</span></div>';
       return xh + detailBlock(n);
     }
+    // RESULT 卡片：AGENT 完成任务后的结果摘要
+    if (n.type === 'result') {
+      var rh = '<div class="xiao6-res-card">';
+      rh += '<div class="xiao6-tool-summary"><b>✓ 任务完成</b></div>';
+      if (n.title) rh += '<div class="xiao6-tl-meta">' + esc(n.title) + '</div>';
+      if (n.summary) rh += '<div class="xiao6-tl-meta">' + esc(n.summary) + '</div>';
+      if (n.detail) rh += '<div class="xiao6-tl-meta">' + esc(preview(n.detail, 200)) + '</div>';
+      return rh + '</div>';
+    }
     return '<div class="xiao6-bubble-body">' + esc(n.title || '') + '</div>';
   }
 
@@ -299,15 +308,41 @@
     var atBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 100;
     // 插入阶段分隔符（不持久化到 timeline，仅渲染时计算）
     var phaseMarker = null;
+    var phaseLabels = [];
+    var toolCount = 0;
     for (var i = 0; i < tl.length; i++) {
       var n = tl[i];
-      // 阶段标记：在 goal/task 节点前插入阶段标签
-      if ((n.type === 'goal' || n.type === 'task') && phaseMarker !== n.type) {
-        phaseMarker = n.type;
-        var plabel = n.type === 'goal' ? 'PLAN' : 'EXECUTE';
+      if (n.type === 'tool') toolCount++;
+    }
+    // 根据工具节点数量推导阶段标签
+    if (toolCount > 0) phaseLabels.push('PLAN');
+    phaseLabels.push('EXECUTE');
+    if (toolCount > 0) phaseLabels.push('VERIFY');
+    phaseLabels.push('RESULT');
+    var phaseIndex = 0;
+    for (var i = 0; i < tl.length; i++) {
+      var n = tl[i];
+      // 阶段标记：在对应阶段首次出现时插入标签
+      if ((n.type === 'goal' || n.type === 'task') && phaseIndex < phaseLabels.length && phaseMarker !== phaseLabels[phaseIndex]) {
+        phaseMarker = phaseLabels[phaseIndex];
         var pe = el('div', 'xiao6-phase-label');
-        pe.textContent = plabel;
+        pe.textContent = phaseMarker;
         list.appendChild(pe);
+        phaseIndex++;
+      }
+      // VERIFY 阶段：assistant 最终回复出现在 tool 节点之后
+      if (n.type === 'assistant' && n.status === 'success' && toolCount > 0 && phaseMarker !== 'VERIFY') {
+        var vpe = el('div', 'xiao6-phase-label');
+        vpe.textContent = 'VERIFY';
+        list.appendChild(vpe);
+        phaseMarker = 'VERIFY';
+      }
+      // RESULT 阶段：AGENT_COMPLETED 执行节点后
+      if (n.type === 'execution' && n.title && n.title.indexOf('执行完成') >= 0 && phaseMarker !== 'RESULT') {
+        var rpe = el('div', 'xiao6-phase-label');
+        rpe.textContent = 'RESULT';
+        list.appendChild(rpe);
+        phaseMarker = 'RESULT';
       }
       var rec = domById[n.id];
       if (!rec) {
