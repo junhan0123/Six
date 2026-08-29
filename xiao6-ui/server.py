@@ -887,6 +887,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_memories_post()
         if ppath == "/api/memory/important-dates":
             return self._handle_important_dates_post()
+        if ppath == "/api/memory/write":
+            return self._handle_memory_write()
         if ppath == "/api/memory/query":
             return self._handle_memory_query()
         if ppath == "/api/memory/confirm":

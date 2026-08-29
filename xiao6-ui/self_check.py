@@ -55,7 +55,11 @@ def _http_head(url: str, timeout: int = 8) -> tuple[bool, str]:
 
 
 def _timed(fn) -> dict[str, Any]:
-    """包裹单个检查，记录耗时并补上分组字段。"""
+    """包裹单个检查，记录耗时并补上分组字段。
+
+    severity: "required"（默认，失败即阻断 readiness）| "optional"（失败仅记
+    degraded，不阻断整体 health —— 用于可选外部能力/凭证缺失）。
+    """
     s = time.time()
     try:
         result = fn()
@@ -63,6 +67,7 @@ def _timed(fn) -> dict[str, Any]:
         result = {"name": getattr(fn, "__name__", "?"), "ok": False, "detail": f"检查异常：{e}"}
     result["elapsed_ms"] = round((time.time() - s) * 1000, 1)
     result["category"] = _CATEGORY.get(fn.__name__, "其它")
+    result.setdefault("severity", "required")
     return result
 
 
@@ -141,12 +146,18 @@ def _check_openmeteo() -> dict[str, Any]:
 
 
 def _check_hotspot_sources() -> dict[str, Any]:
-    """检查各热点源是否可达；抖音用公开 API，其余需要 HOTDATA_KEY。"""
+    """检查各热点源是否可达；抖音用公开 API，其余需要 HOTDATA_KEY。
+
+    HOTDATA_KEY 属**可选**外部凭证：未配置时公开抖音源仍可用，属于合法部署状态，
+    只记 degraded（severity=optional），不阻断整体 health.ok；
+    仅当公开源本身不可达才判为真实故障（severity=required）。
+    """
     sources = [
         ("抖音(haotechs)", "https://www.haotechs.cn/ljh-wx/api/douyinHot"),
         ("抖音(xxapi)", "https://v2.xxapi.cn/api/douyinhot"),
     ]
-    if HOTDATA_KEY:
+    key_missing = not HOTDATA_KEY
+    if not key_missing:
         sources.extend(
             [
                 ("小红书(hotdata)", "https://w-hotdata.aipromptnav.com/api/hot-data/xiaohongshu"),
@@ -154,18 +165,24 @@ def _check_hotspot_sources() -> dict[str, Any]:
                 ("微博(hotdata)", "https://w-hotdata.aipromptnav.com/api/hot-data/weibohot"),
             ]
         )
-    else:
-        sources.append(("热点源(HOTDATA_KEY)", ""))
 
     results = []
+    public_ok = True
     for name, url in sources:
-        if not url:
-            results.append(f"{name}: 未配置")
-            continue
         ok, detail = _http_head(url, timeout=8)
         results.append(f"{name}: {'OK' if ok else 'FAIL'} {detail}")
-    all_ok = all("OK" in r for r in results)
-    return {"name": "热点数据源", "ok": all_ok, "detail": "; ".join(results)}
+        if not ok:
+            public_ok = False
+    if key_missing:
+        results.append("热点源(HOTDATA_KEY): 未配置（可选能力，已降级）")
+
+    return {
+        "name": "热点数据源",
+        "ok": public_ok,
+        "detail": "; ".join(results),
+        # 公开源可用 + 可选 key 缺失 = 降级而非故障；公开源不可达 = 真实故障
+        "severity": "optional" if (public_ok and key_missing) else "required",
+    }
 
 
 def _check_feature_flags() -> dict[str, Any]:
@@ -248,9 +265,15 @@ def run_self_check(force: bool = False) -> dict[str, Any]:
     ]
     checks = [_timed(fn) for fn in raw]
     elapsed = round((time.time() - t0) * 1000, 1)
-    overall = all(c["ok"] for c in checks)
+    # 总体 ok 只由 required 检查项决定；optional 项失败记为 degraded（可选能力降级），
+    # 不阻断 readiness —— 避免「可选外部凭证未配置」被误判为整个运行时不健康。
+    failed_required = [c["name"] for c in checks if not c["ok"] and c.get("severity") != "optional"]
+    degraded = [c["name"] for c in checks if not c["ok"] and c.get("severity") == "optional"]
+    overall = not failed_required
     result = {
         "ok": overall,
+        "degraded": degraded,
+        "failed": failed_required,
         "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "elapsed_ms": elapsed,
         "checks": checks,

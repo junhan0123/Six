@@ -229,17 +229,39 @@ class MemoryMixin:
             return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
 
     def _handle_memory_write(self):
-        """POST /api/memory/write — 最小记忆写入适配器。"""
+        """POST /api/memory/write — 最小记忆写入适配器。
+
+        写入经 Canonical Memory API（memory.create_memory）落到 memories 表，
+        与 /api/memory/query（memory_query.query_memory）同源，
+        保证 write → persist → query → read back 真实闭环。
+        """
         try:
-            from notes import create_note
+            import memory
+
             payload = self._read_json()
+            if "_error" in payload:
+                return self._send(400, json.dumps({"error": payload["_error"]}))
             content_text = (payload.get("content") or "").strip()
-            title = (payload.get("title") or "记忆").strip() or "记忆"
-            tags = payload.get("tags", "")
             if not content_text:
                 return self._send(400, json.dumps({"error": "content required"}))
-            note_id = create_note(title, content_text, tags=tags)
-            return self._send(200, json.dumps({"ok": True, "note_id": note_id}))
+            title = (payload.get("title") or "").strip() or None
+            raw_tags = payload.get("tags") or ""
+            if isinstance(raw_tags, (list, tuple)):
+                tags = [str(t).strip() for t in raw_tags if str(t).strip()] or None
+            else:
+                tags = [t.strip() for t in str(raw_tags).split(",") if t.strip()] or None
+            mem_id = memory.create_memory(
+                content_text,
+                event_type=(payload.get("event_type") or "note").strip() or "note",
+                title=title,
+                tags=tags,
+                source=(payload.get("source") or "user").strip() or "user",
+            )
+            # note_id 保留以兼容既有前端契约
+            return self._send(
+                200,
+                json.dumps({"ok": True, "memory_id": mem_id, "note_id": mem_id}, ensure_ascii=False),
+            )
         except Exception as e:
             return self._send(500, json.dumps({"error": str(e)}))
 
