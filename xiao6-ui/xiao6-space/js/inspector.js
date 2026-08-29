@@ -2,9 +2,14 @@
    Xiao6 UI-R1 · inspector.js — 右侧 Inspector（检视器）+ Agent 活动 + 实时事件
    由 agent-panel.js 更名而来：职责从「上下文面板」升级为「检视器」，
    承载 5 个分区：概览 / 记忆 / 知识 / 技能 / 工具。
-   完整保留原有能力：renderAgent / renderContextAuto / renderContext / ctxCard /
-   ctxItem / 记忆洞察 / 主动观察 / 信任分析 + /api/stream 事件处理
-   （tool_started / tool_finished / execution_* / GOAL_* / TASK_* / INTENT_* / AGENT_*）
+
+   R1-B（真实 Runtime 状态投影）：
+   · 所有 /api/stream 真实事件一律经 state.upsertNode / state.patchNode 写入
+     state.timeline（唯一真相源），不再写已废弃的 state.agentLog。
+   · 并发安全：stream 通道的 tool_started/tool_finished 带 execution_id，
+     按唯一 ID 关联，绝不用 tool name 做并发关联依据。
+   · agentList（历史视图「Agent 活动」）由 timeline.renderAgentActivity() 唯一拥有，
+     此处仅做向后兼容转发。
    所有数据来自 state.snap（真实 API）与 SSE 真实事件，无任何伪造条目。
    ═════════════════════════════════════════════════════════════════ */
 (function () {
@@ -22,15 +27,12 @@
   function isOpen(t) { var s = String(t.status || '').toLowerCase(); return s !== 'done' && s !== 'completed' && s !== 'closed'; }
 
   // ───────────────────── Agent 活动（agentList）─────────────────────
+  // agentList 由 timeline.renderAgentActivity() 唯一拥有（派生自 state.timeline）。
+  // 此处仅做向后兼容转发，不再直接持有任何状态。
   function renderAgent() {
-    var list = $('agentList'); if (!list) return;
-    if (!state.agentLog.length) { list.innerHTML = '<span class="xiao6-empty">暂无 Agent 活动</span>'; return; }
-    var icon = { input: '▸', model: '◈', tool: '⚙', result: '✓', error: '✕', approval: '!', intent: '🧠', risk: '🛡' };
-    list.innerHTML = state.agentLog.slice(0, 40).map(function (x) {
-      var txt = x.kind === 'tool' ? ('工具 ' + (x.tool || '') + (x.ongoing ? ' 运行中…' : (x.ok === false ? ' 失败' : ' 完成')))
-        : (x.kind === 'input' ? ('输入：' + (x.text || '')) : (x.kind === 'result' ? ('结果：' + (x.text || '').slice(0, 80)) : (x.text || '')));
-      return '<div class="xiao6-agent-item ' + x.kind + '"><div class="xiao6-agent-ic">' + (icon[x.kind] || '·') + '</div><div class="xiao6-agent-body-txt"><div>' + esc(txt) + '</div><div class="t">' + fmtTime(x.t) + '</div></div></div>';
-    }).join('');
+    if (window.Xiao6.timeline && window.Xiao6.timeline.renderAgentActivity) {
+      window.Xiao6.timeline.renderAgentActivity();
+    }
   }
 
   // ───────────────────── RIGHT AGENT PANEL（完整多区块）─────────────────────
@@ -73,8 +75,7 @@
 
   // ───────────────────── Inspector 分区调度 ─────────────────────
   // 5 个分区：概览 / 记忆 / 知识 / 技能 / 工具。
-  // 每个分区只展示真实数据快照的前若干条，底部「查看全部」跳到对应的全量视图
-  // （视图本身仍在，功能未删除，只是不再占用一级导航）。
+  // 每个分区只展示真实数据快照的前若干条，底部「查看全部」跳到对应的全量视图。
   var inspTab = 'overview';
   function asList(v, key) { if (Array.isArray(v)) return v; if (v && Array.isArray(v[key])) return v[key]; return []; }
   function moreBtn(view) {
@@ -140,7 +141,9 @@
       var caps = state.snap.capabilities.slice(0, 6);
       html += ctxCard('能力', caps.length ? caps.map(function (c) { return ctxItem((c.icon || '') + ' ' + (c.label || c.id)); }).join('') : '<span class="xiao6-empty">无</span>');
     } else if (kind === 'result') {
-      var last = state.resultLog[0];
+      // R1-B：最新结果派生自 state.timeline 中的真实 assistant 回复，不再读已废弃的 resultLog
+      var replies = state.timeline.filter(function (n) { return n.type === 'assistant' && n.text; });
+      var last = replies.length ? replies[replies.length - 1] : null;
       html += ctxCard('最新结果', ctxItem((last && last.text ? last.text : '').slice(0, 120)));
     } else if (kind === 'approval') {
       html += ctxCard('待确认', '<div class="xiao6-ctx-state"><span class="xiao6-statedot warning"><span class="sd"></span></span><span>有一项操作需要你确认</span></div>');
@@ -228,15 +231,18 @@
   }
 
   // ───────────────────── /api/stream 事件处理（冻结事件名）─────────────────────
+  // R1-B：所有事件一律写入 state.timeline（唯一真相源），不再写已废弃的 agentLog。
+  // 并发安全：stream 通道的 tool_started/tool_finished 带 execution_id，按唯一 ID 关联，
+  // 绝不用 tool name 做并发关联依据。
   function onStreamEvent(m) {
     var ev = m.xiao6_event || m.event;
     if (!ev) return;
+
     if (ev === 'AGENT_INTENT_ANALYZED') {
       // Phase 8 · Trust Layer：意图报告 → trust inspector + timeline 透明节点
       var ip = m.payload || {};
       if (ip.intent === 'casual_chat') return;  // 普通聊天：无信任分析，直接回复
       state.trust.intent = ip;
-      state.agentLog.unshift({ type: 'AGENT_INTENT_ANALYZED', timestamp: Date.now(), payload: ip, kind: 'intent', text: '小6理解：' + intentLabel(ip.intent) });
       if (window.Xiao6.timeline) window.Xiao6.timeline.addIntentNode(ip);
       state.notify();
       return;
@@ -245,38 +251,91 @@
       // Phase 8 · Trust Layer：风险检查 → trust inspector + timeline 透明节点
       var rp = m.payload || {};
       state.trust.risk = rp;
-      state.agentLog.unshift({ type: 'TOOL_RISK_CHECKED', timestamp: Date.now(), payload: rp, kind: 'risk', text: '安全检查：' + rp.tool + ' ' + riskLabel(rp.risk) });
       if (window.Xiao6.timeline) window.Xiao6.timeline.addRiskNode(rp);
       state.notify();
       return;
     }
     if (ev === 'modal') {
       if (m.kind === 'agent_approval') window.Xiao6.approval.renderApprovalCard(m);
-    } else if (ev === 'tool_started') {
-      state.agentLog.unshift({ kind: 'tool', t: Date.now(), tool: m.task || m.tool || '', ongoing: true });
-      renderAgent();
-    } else if (ev === 'tool_finished') {
-      var tname = m.task || m.tool || '';
-      state.agentLog.forEach(function (x) { if (x.tool === tname && x.ongoing) { x.ongoing = false; x.ok = m.ok !== false; } });
-      renderAgent();
-    } else if (ev === 'execution_started' || ev === 'execution_completed' || ev === 'execution_cancelled') {
-      state.agentLog.unshift({ kind: ev === 'execution_completed' ? 'result' : 'model', t: Date.now(),
-        text: '执行 ' + (m.task || '') + (ev === 'execution_started' ? ' 开始' : ev === 'execution_completed' ? ' 完成' : ' 取消') });
-      renderAgent();
-    } else if (ev.indexOf('GOAL_') === 0 || ev.indexOf('TASK_') === 0 || ev.indexOf('INTENT_') === 0 || ev.indexOf('AGENT_') === 0) {
+      return;
+    }
+    if (ev === 'tool_started') {
+      // STREAM 通道：带 execution_id —— 经 upsertTool 与 chat 通道合并为同一真实节点（去重）
+      window.Xiao6.timeline.upsertTool({
+        executionId: m.execution_id || null,
+        tool: m.task || m.tool || '工具',
+        status: 'running',
+        goalId: m.goal_id,
+        summary: '正在执行',
+        fromStream: true
+      });
+      state.notify();
+      return;
+    }
+    if (ev === 'tool_finished') {
+      // 必须按 execution_id 找到对应节点（禁止按 tool name 全局匹配）；与 chat 通道共用节点
+      var fo = {
+        executionId: m.execution_id || null,
+        tool: m.task || m.tool || '工具',
+        status: m.ok === false ? 'failed' : 'success',
+        summary: m.ok === false ? '失败' : '完成',
+        fromStream: true
+      };
+      if (m.result !== undefined) fo.output = m.result;
+      window.Xiao6.timeline.upsertTool(fo);
+      state.notify();
+      return;
+    }
+    if (ev === 'execution_started' || ev === 'execution_completed' || ev === 'execution_cancelled') {
+      var xstat = ev === 'execution_started' ? 'running' : (ev === 'execution_cancelled' ? 'stopped' : 'success');
+      var xid = m.execution_id || m.task || ('exec:' + Date.now());
+      state.upsertNode({
+        id: 'exec:' + xid, type: 'execution', status: xstat,
+        title: ev === 'execution_started' ? '执行开始' : (ev === 'execution_cancelled' ? '执行取消' : '执行完成'),
+        summary: m.task || '', executionId: xid,
+        timestamp: Date.now()
+      });
+      state.notify();
+      return;
+    }
+    if (ev.indexOf('GOAL_') === 0 || ev.indexOf('TASK_') === 0 || ev.indexOf('INTENT_') === 0 || ev.indexOf('AGENT_') === 0) {
       var p = m.payload || {};
       var label = { GOAL_CREATED: '目标已创建', GOAL_PLANNED: '目标已规划', GOAL_STARTED: '目标已启动', GOAL_RUNNING: '目标执行中', GOAL_COMPLETED: '目标已完成', GOAL_FAILED: '目标失败', TASK_CREATED: '任务已创建', TASK_STARTED: '任务开始', TASK_RUNNING: '任务执行中', TASK_COMPLETED: '任务完成', TASK_FAILED: '任务失败', INTENT_CLASSIFIED: '意图已识别', INTENT_ACCEPTED: '意图已接受', INTENT_REJECTED: '意图已拒绝', INTENT_CONVERTED_TO_GOAL: '意图转为目标', AGENT_COMPLETED: 'Agent 完成', AGENT_FAILED: 'Agent 失败' }[ev] || ev;
-      state.agentLog.unshift({ kind: (ev.indexOf('GOAL') === 0 || ev.indexOf('TASK') === 0) ? 'result' : 'model', t: Date.now(), text: label + (p.title ? '：' + p.title : '') });
-      renderAgent();
+      if (ev.indexOf('GOAL') === 0) {
+        var gstatus = /COMPLETED/.test(ev) ? 'success' : (/FAILED/.test(ev) ? 'failed' : 'running');
+        state.upsertNode({
+          id: 'goal:' + p.goalId, type: 'goal', status: gstatus,
+          goalId: p.goalId, title: p.title, summary: label,
+          timestamp: Date.now()
+        });
+        if (p.goalId != null) state.runtime.currentGoalId = p.goalId;
+      } else if (ev.indexOf('TASK') === 0) {
+        var tstatus = /COMPLETED/.test(ev) ? 'success' : (/FAILED/.test(ev) ? 'failed' : 'running');
+        state.upsertNode({
+          id: 'task:' + p.taskId, type: 'task', status: tstatus,
+          taskId: p.taskId, goalId: p.goalId, title: p.title, summary: label,
+          timestamp: Date.now()
+        });
+        if (p.taskId != null) state.runtime.currentTaskId = p.taskId;
+      } else {
+        // INTENT_* / AGENT_*：透明节点（不重复造 Agent 活动）
+        state.upsertNode({
+          id: (ev.indexOf('AGENT') === 0 ? 'agent:' : 'intent2:') + (p.agentId || p.intentId || (ev + ':' + Date.now())),
+          type: ev.indexOf('AGENT') === 0 ? 'execution' : 'intent',
+          status: /REJECTED|FAILED/.test(ev) ? 'failed' : 'success',
+          title: label, summary: p.title ? ('：' + p.title) : '',
+          timestamp: Date.now()
+        });
+      }
       if (ev === 'GOAL_CREATED' || ev === 'GOAL_COMPLETED' || ev === 'GOAL_FAILED' || ev === 'TASK_COMPLETED' || ev === 'TASK_FAILED') window.Xiao6.main.toast(label);
       state.fetchSnapshot();
+      state.notify();
     }
   }
 
   function init() {
     state.subscribe(function () {
       renderInspector();
-      renderAgent();
     });
     // 分区切换
     var tabs = $('inspTabs');

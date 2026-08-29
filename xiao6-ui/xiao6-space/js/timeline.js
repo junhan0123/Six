@@ -1,11 +1,28 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · timeline.js — Conversation Timeline 核心（Phase 2）
-   迁移自 xiao6-workspace.js：StreamingMarkdown / addNode / scrollChat /
-   sendChat（pump·handle·onTool·onApproval·finish 闭包链整体保留）/
-   submitCmd / renderWorkspace / renderResults / jumpbar
-   冻结契约：POST /api/chat（body {messages,session_id}，SSE delta.content /
-   tool_start / tool_end / approval / [DONE] 双形态）
-   状态统一改 Xiao6.state.xxx
+   Xiao6 UI-R1-B · timeline.js — 真实 Agent Timeline（Runtime 状态的 UI 投影）
+
+   数据流（单向）：
+       真实 API / 真实 SSE  →  state.timeline（唯一视图模型）  →  本模块渲染
+
+   本模块不持有任何独立状态：所有节点一律经 state.upsertNode / state.patchNode。
+   渲染是增量的：节点按 id 建立 DOM 映射，只有 _ver 变化才重绘该节点。
+
+   真实契约（已逐字核对代码，未做任何猜测）：
+   · POST /api/chat（SSE 风格）
+       {"xiao6_event":"tool_start","tool":<name>,"args":<any>}
+       {"xiao6_event":"tool_end","tool":<name>,"result":<any>[,"ok":false]}
+       {"xiao6_event":"approval",...} / {"choices":[{"delta":{"content":...}}]} / "[DONE]"
+     —— chat 通道**没有** execution_id，工具调用在单次请求内串行，
+        因此用「请求内 open 栈 + 同名就近闭合」关联，禁止全局同名匹配。
+   · GET /api/stream（EventBus）
+       SYSTEM 扁平信封 {"xiao6_event":<name>,...fields}
+         tool_started  { execution_id, goal_id, task }
+         tool_finished { execution_id, goal_id, task, ok }
+       —— **有 execution_id**，必须按唯一 ID 关联（并发安全）。
+       DOMAIN 信封 {"xiao6_event":<NAME>,"payload":{...},"ts":<unix>}
+         GOAL_* / TASK_* / AGENT_*（字段为 camelCase：goalId / taskId / agentId）
+
+   红线：不生成假的执行过程 / 假进度 / 假成功 / 假停止 / 假工具调用。
    ═════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -23,7 +40,24 @@
   }
   function fmtTime(ts) { var d = ts ? new Date(String(ts).replace(/-/g, '/')) : new Date(); if (isNaN(d.getTime())) d = new Date(); var p = function (n) { return n < 10 ? '0' + n : '' + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()); }
 
-  // ───────────────────── INCREMENTAL STREAMING MARKDOWN（§9：无 O(n²)）─────────────────────
+  // ───────────────────── 状态符号（UI-R1-B §6，唯一来源）─────────────────────
+  var STATUS_SYM = { pending: '○', running: '●', success: '✓', failed: '!', blocked: '!', stopped: '■' };
+  var STATUS_TXT = { pending: '等待中', running: '进行中', success: '完成', failed: '失败', blocked: '等待确认', stopped: '已停止' };
+  function sym(st) { return STATUS_SYM[st] || '·'; }
+  function stxt(st) { return STATUS_TXT[st] || ''; }
+
+  // 值预览：只展示真实存在的 payload，不补全、不猜测
+  function preview(v, max) {
+    max = max || 400;
+    if (v == null) return '';
+    var s;
+    if (typeof v === 'string') s = v;
+    else { try { s = JSON.stringify(v, null, 2); } catch (e) { s = String(v); } }
+    s = String(s);
+    return s.length > max ? s.slice(0, max) + ' …' : s;
+  }
+
+  // ───────────────────── INCREMENTAL STREAMING MARKDOWN（无 O(n²)）─────────────────────
   function StreamingMarkdown(container) {
     this.container = container;
     this.renderedBlocks = 0;
@@ -93,46 +127,277 @@
     if (this.tailEl) { this.tailEl.className = 'xiao6-md-block'; this.tailEl = null; }
     this.renderedBlocks = 0;
   };
-
-  // ───────────────────── CHAT（typed ChatNode + SSE）─────────────────────
-  function addNode(kind, meta) {
-    var node = el('div', 'xiao6-node ' + kind);
-    var av = el('div', 'xiao6-avatar', kind === 'user' ? '你' : (kind === 'assistant' ? '小' : (kind === 'tool' ? '⚙' : (kind === 'approval' ? '!' : (kind === 'result' ? '✓' : (kind === 'intent' ? '◎' : (kind === 'risk' ? '⚑' : '·')))))));
-    var bub = el('div', 'xiao6-bubble');
-    node.appendChild(av); node.appendChild(bub);
-    var list = $('chatList'); if (list) list.appendChild(node);
-    scrollChat();
-    return { node: node, bub: bub };
+  function mdToHtml(text) {
+    var box = el('div');
+    var sm = new StreamingMarkdown(box);
+    sm.update(String(text || '')); sm.finalize();
+    return box.innerHTML;
   }
-  function scrollChat() { var c = $('chatList'); if (c) c.scrollTop = c.scrollHeight; }
 
-  // ───────────────────── Phase 8 · Trust 透明节点（intent / risk）─────────────────────
+  // ───────────────────── 标签词表（与后端枚举一一对应，不发明新语义）─────────────────────
   function intentLabel(i) { return { casual_chat: '普通聊天', knowledge_query: '知识查询', execution_task: '执行任务', long_term_goal: '长期目标' }[i] || (i || '未知'); }
   function decisionLabel(d) { return { auto: '自动执行', confirm: '等待确认', block: '拒绝执行', confirm_rejected: '拒绝执行', rejected: '拒绝执行' }[d] || (d || '—'); }
   function riskCls(r) { return r === 'SAFE' ? 'risk-safe' : (r === 'BLOCK' ? 'risk-block' : 'risk-confirm'); }
+
+  var AVATAR = {
+    user: '你', assistant: '小', tool: '⚙', approval: '!', goal: '◆',
+    task: '▸', intent: '◎', risk: '⚑', error: '✕', execution: '⚙'
+  };
+
+  // ───────────────────── 节点 HTML（只渲染真实字段）─────────────────────
+  function statusChip(st) {
+    return '<span class="xiao6-st ' + st + '"><i>' + sym(st) + '</i>' + esc(stxt(st)) + '</span>';
+  }
+  function detailBlock(n) {
+    // §8/§15：只有 payload 里真实存在的信息才展示；错误详情默认收起
+    var rows = '';
+    if (n.input !== undefined && n.input !== null && n.input !== '') {
+      rows += '<div class="xiao6-tl-kv"><span class="k">输入</span><pre>' + esc(preview(n.input)) + '</pre></div>';
+    }
+    if (n.output !== undefined && n.output !== null && n.output !== '') {
+      rows += '<div class="xiao6-tl-kv"><span class="k">结果</span><pre>' + esc(preview(n.output)) + '</pre></div>';
+    }
+    if (n.detail) {
+      rows += '<div class="xiao6-tl-kv"><span class="k">详情</span><pre>' + esc(preview(n.detail)) + '</pre></div>';
+    }
+    if (!rows) return '';
+    return '<button class="xiao6-tl-toggle" type="button" data-toggle="1">查看详情</button>' +
+      '<div class="xiao6-tl-detail" hidden>' + rows + '</div>';
+  }
+
+  function nodeInnerHtml(n) {
+    if (n.type === 'user') {
+      return '<div class="xiao6-bubble-body">' + esc(n.title || '') + '</div>';
+    }
+    if (n.type === 'intent') {
+      var h = '<div class="intent-card"><div class="ic-title">小6理解</div>' +
+        '<div class="ic-row">意图：' + esc(intentLabel(n.intent)) + '</div>';
+      if (n.tools && n.tools.length) h += '<div class="ic-row">计划：' + esc(n.tools.join(' · ')) + '</div>';
+      if (n.risk) h += '<div class="ic-row">风险：<span class="risk-tag ' + riskCls(n.risk) + '">' + esc(n.risk) + '</span></div>';
+      return h + '</div>';
+    }
+    if (n.type === 'risk') {
+      return '<div class="risk-card ' + riskCls(n.risk) + '"><div class="ic-title">安全检查</div>' +
+        '<div class="ic-row">工具：' + esc(n.tool || '') + '</div>' +
+        '<div class="ic-row">风险：<span class="risk-tag ' + riskCls(n.risk) + '">' + esc(n.risk || '') + '</span></div>' +
+        '<div class="ic-row">结果：' + esc(decisionLabel(n.decision)) + '</div></div>';
+    }
+    if (n.type === 'tool') {
+      var label = n.tool || '工具';
+      var line = '<div class="xiao6-tool-summary">' + statusChip(n.status) +
+        '<b>' + esc(label) + '</b>' +
+        (n.summary ? '<span class="xiao6-tl-sub">' + esc(n.summary) + '</span>' : '') + '</div>';
+      return line + detailBlock(n);
+    }
+    if (n.type === 'goal') {
+      var gt = n.title ? n.title : ('目标 #' + (n.goalId != null ? n.goalId : '?'));
+      var gh = '<div class="xiao6-tl-card"><div class="xiao6-tool-summary">' + statusChip(n.status) +
+        '<b>目标</b><span class="xiao6-tl-sub">' + esc(gt) + '</span></div>';
+      if (n.summary) gh += '<div class="xiao6-tl-meta">' + esc(n.summary) + '</div>';
+      return gh + '</div>' + detailBlock(n);
+    }
+    if (n.type === 'task') {
+      var tt = n.title ? n.title : ('任务 #' + (n.taskId != null ? n.taskId : '?'));
+      var th = '<div class="xiao6-tool-summary">' + statusChip(n.status) +
+        '<b>任务</b><span class="xiao6-tl-sub">' + esc(tt) + '</span></div>';
+      return th + detailBlock(n);
+    }
+    if (n.type === 'approval') {
+      var ah = '<div class="xiao6-approval-card" data-ticket="' + esc(n.ticket || '') + '">' +
+        '<div class="xiao6-appr-head">' + statusChip(n.status) + '<b>小6请求执行</b></div>';
+      if (n.tool) ah += '<div class="xiao6-tl-meta">工具：' + esc(n.tool) + '</div>';
+      if (n.summary) ah += '<div class="xiao6-tl-meta">操作：' + esc(n.summary) + '</div>';
+      if (n.argsPreview) ah += '<div class="xiao6-tl-meta">参数：' + esc(preview(n.argsPreview, 160)) + '</div>';
+      if (n.error) ah += '<div class="xiao6-tl-err">' + esc(n.error) + '</div>';
+      if (n.status === 'blocked') {
+        ah += '<div class="xiao6-approval-act">' +
+          '<button class="approve" type="button" data-decision="approve">允许</button>' +
+          '<button class="reject" type="button" data-decision="reject">拒绝</button></div>';
+      } else if (n.status === 'success') {
+        ah += '<div class="xiao6-tl-meta">已批准</div>';
+      } else if (n.status === 'stopped') {
+        ah += '<div class="xiao6-tl-meta">已拒绝</div>';
+      }
+      return ah + '</div>';
+    }
+    if (n.type === 'error') {
+      var eh = '<div class="xiao6-tl-errcard"><div class="xiao6-tool-summary">' + statusChip('failed') +
+        '<b>' + esc(n.title || '执行失败') + '</b></div>';
+      if (n.summary) eh += '<div class="xiao6-tl-err">' + esc(n.summary) + '</div>';
+      return eh + '</div>' + detailBlock(n);
+    }
+    if (n.type === 'execution') {
+      var xh = '<div class="xiao6-tool-summary">' + statusChip(n.status) +
+        '<b>执行</b><span class="xiao6-tl-sub">' + esc(n.title || n.summary || '') + '</span></div>';
+      return xh + detailBlock(n);
+    }
+    return '<div class="xiao6-bubble-body">' + esc(n.title || '') + '</div>';
+  }
+
+  // ───────────────────── 增量渲染器 ─────────────────────
+  var domById = Object.create(null);
+
+  function buildNodeDom(n) {
+    var root = el('div', 'xiao6-node ' + n.type);
+    root.dataset.nid = n.id;
+    root.dataset.status = n.status;
+    var av = el('div', 'xiao6-avatar', AVATAR[n.type] || '·');
+    var bub = el('div', 'xiao6-bubble');
+    root.appendChild(av); root.appendChild(bub);
+    var rec = { root: root, bub: bub, ver: n._ver || 0, body: null, sm: null };
+    if (n.type === 'assistant') {
+      var meta = el('div', 'xiao6-bubble-meta');
+      meta.innerHTML = '<span>小6</span><span>' + fmtTime(n.timestamp) + '</span>';
+      var body = el('div', 'xiao6-bubble-body');
+      bub.appendChild(meta); bub.appendChild(body);
+      rec.body = body;
+      rec.sm = new StreamingMarkdown(body);
+      if (n.text) { rec.sm.update(n.text); }
+      if (n.status !== 'running') { rec.sm.finalize(); }
+      else { root.classList.add('streaming'); }
+      if (n.error) { var ee = el('div', 'xiao6-tl-err', n.error); bub.appendChild(ee); }
+    } else {
+      bub.innerHTML = nodeInnerHtml(n);
+    }
+    return rec;
+  }
+  function paintNode(n, rec) {
+    rec.root.dataset.status = n.status;
+    if (n.type === 'assistant') {
+      // 流式节点：正文由 StreamingMarkdown 持有，绝不整体重绘（否则会闪断）
+      if (n.status === 'running') rec.root.classList.add('streaming');
+      else { rec.root.classList.remove('streaming'); if (rec.sm) rec.sm.finalize(); }
+      var errEl = rec.bub.querySelector('.xiao6-tl-err');
+      if (n.error && !errEl) rec.bub.appendChild(el('div', 'xiao6-tl-err', n.error));
+      else if (!n.error && errEl) errEl.remove();
+    } else {
+      rec.bub.innerHTML = nodeInnerHtml(n);
+    }
+    rec.ver = n._ver || 0;
+  }
+
+  var EMPTY_HTML = '<div class="xiao6-tl-empty">还没有活动 · 下达一个任务，这里会实时显示小6正在做什么</div>';
+  function renderTimeline() {
+    var list = $('chatList'); if (!list) return;
+    var tl = state.timeline;
+    if (!tl.length) {
+      if (list.dataset.empty !== '1') { list.innerHTML = EMPTY_HTML; list.dataset.empty = '1'; domById = Object.create(null); }
+      return;
+    }
+    if (list.dataset.empty === '1') { list.innerHTML = ''; list.dataset.empty = '0'; domById = Object.create(null); }
+    var atBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 100;
+    for (var i = 0; i < tl.length; i++) {
+      var n = tl[i];
+      var rec = domById[n.id];
+      if (!rec) {
+        rec = buildNodeDom(n);
+        domById[n.id] = rec;
+        list.appendChild(rec.root);
+      } else if ((n._ver || 0) !== rec.ver) {
+        paintNode(n, rec);
+      }
+    }
+    if (atBottom) scrollChat();
+  }
+  function scrollChat() { var c = $('chatList'); if (c) c.scrollTop = c.scrollHeight; }
+  function streamOf(nodeId) { var r = domById[nodeId]; return r ? r.sm : null; }
+
+  // ───────────────────── 工具节点去重（chat / stream 双通道合并为同一真实调用）─────────────────────
+  // 后端在 chat SSE 与 /api/stream 两条通道都会广播同一工具调用的事件：
+  //   chat 通道  tool_start/tool_end（无 execution_id）
+  //   stream 通道 tool_started/tool_finished（带 execution_id，唯一主键）
+  // 二者指向同一次真实工具执行，必须合并为单个 Timeline 节点，避免重复行。
+  function findToolByExec(eid) {
+    if (!eid) return null;
+    for (var i = state.timeline.length - 1; i >= 0; i--) {
+      var n = state.timeline[i];
+      if (n.type === 'tool' && n.executionId === eid) return n;
+    }
+    return null;
+  }
+  // chat 通道合并：可并入「运行中」的同名节点（含 stream 抢先创建、已带 execution_id 的节点），
+  // 或刚结束（<5s）的同类节点。用于把 chat 工具节点挂到同一真实调用的 stream 节点上。
+  function findMergeChat(tool) {
+    var now = Date.now(), bestRun = null, bestRunTs = 0, bestRecent = null, bestRecentTs = 0;
+    for (var i = 0; i < state.timeline.length; i++) {
+      var n = state.timeline[i];
+      if (n.type !== 'tool' || (n.tool || '') !== (tool || '')) continue;
+      var age = now - (n.timestamp || now);
+      if (age > 10000) continue;
+      if (n.status === 'running' && n.timestamp >= bestRunTs) { bestRunTs = n.timestamp; bestRun = n; }
+      if (age < 5000 && n.timestamp >= bestRecentTs) { bestRecentTs = n.timestamp; bestRecent = n; }
+    }
+    return bestRun || bestRecent;
+  }
+  // stream 通道合并：仅并入「无 execution_id」的同名节点（chat 节点），
+  // 绝不并入其它 execution_id 节点 —— 否则会把两次不同的同名调用错误合并。
+  function findMergeStream(tool) {
+    var now = Date.now(), bestRun = null, bestRunTs = 0, bestRecent = null, bestRecentTs = 0;
+    for (var i = 0; i < state.timeline.length; i++) {
+      var n = state.timeline[i];
+      if (n.type !== 'tool' || (n.tool || '') !== (tool || '')) continue;
+      if (n.executionId) continue;
+      var age = now - (n.timestamp || now);
+      if (age > 10000) continue;
+      if (n.status === 'running' && n.timestamp >= bestRunTs) { bestRunTs = n.timestamp; bestRun = n; }
+      if (n.timestamp >= bestRecentTs) { bestRecentTs = n.timestamp; bestRecent = n; }
+    }
+    return bestRun || bestRecent;
+  }
+  function upsertTool(opts) {
+    opts = opts || {};
+    var eid = opts.executionId || null;
+    var tool = opts.tool || '工具';
+    // 1) 优先按 execution_id 关联（并发安全，唯一主键）
+    var node = eid ? findToolByExec(eid) : null;
+    // 2) 否则按通道策略合并另一通道已建立的同名节点（同一真实调用，双通道重复）
+    //    · stream 通道：仅并入无 execution_id 的 chat 节点（绝不并入其它 execId 节点）
+    //    · chat  通道：可并入运行中的同名节点（含 stream 抢先节点）或刚结束（<5s）的同类节点
+    if (!node) node = opts.fromStream ? findMergeStream(tool) : findMergeChat(tool);
+    if (node) {
+      if (eid && !node.executionId) node.executionId = eid;
+      if (opts.goalId != null) node.goalId = opts.goalId;
+      // 已处于终态（success/failed）的节点不被 running 覆盖（处理 stream 滞后于 chat 完成的竞态）
+      if (opts.status && node.status !== 'success' && node.status !== 'failed') node.status = opts.status;
+      if (opts.summary) node.summary = opts.summary;
+      if (opts.input !== undefined && opts.input !== null) node.input = opts.input;
+      if (opts.output !== undefined && opts.output !== null) node.output = opts.output;
+      node._ver = (node._ver || 0) + 1;
+      return node;
+    }
+    // 3) 新节点（id：stream 用 execution_id，chat 用请求内序号）
+    var id = eid ? ('tool:stream:' + eid) : ('tool:chat:' + (opts.reqId != null ? opts.reqId : 'x') + ':' + (opts.seq != null ? opts.seq : Date.now()));
+    return state.upsertNode({
+      id: id, type: 'tool', status: opts.status || 'running',
+      tool: tool, executionId: eid, goalId: opts.goalId,
+      summary: opts.summary || (opts.status === 'running' ? '正在执行' : ''),
+      input: opts.input, output: opts.output,
+      timestamp: Date.now()
+    });
+  }
+
+  // ───────────────────── 兼容入口（inspector 调用，节点统一进 state.timeline）─────────────────────
   function addIntentNode(p) {
     p = p || {};
-    var cn = addNode('intent');
-    var html = '<div class="intent-card"><div class="ic-title">小6理解</div>' +
-      '<div class="ic-row">意图：' + esc(intentLabel(p.intent)) + '</div>';
-    if (p.tools && p.tools.length) html += '<div class="ic-row">计划：' + esc(p.tools.join(' · ')) + '</div>';
-    if (p.risk) html += '<div class="ic-row">风险：<span class="risk-tag ' + riskCls(p.risk) + '">' + esc(p.risk) + '</span></div>';
-    html += '</div>';
-    cn.bub.innerHTML = html;
-    return cn;
+    var tsKey = p.__ts || Date.now();
+    return state.upsertNode({
+      id: 'intent:' + tsKey, type: 'intent', status: 'success',
+      title: '小6理解', intent: p.intent, tools: p.tools, risk: p.risk,
+      timestamp: Date.now()
+    });
   }
   function addRiskNode(p) {
     p = p || {};
-    var cn = addNode('risk');
-    var html = '<div class="risk-card ' + riskCls(p.risk) + '"><div class="ic-title">安全检查</div>' +
-      '<div class="ic-row">工具：' + esc(p.tool) + '</div>' +
-      '<div class="ic-row">风险：<span class="risk-tag ' + riskCls(p.risk) + '">' + esc(p.risk) + '</span></div>' +
-      '<div class="ic-row">结果：' + esc(decisionLabel(p.decision)) + '</div>' +
-      '</div>';
-    cn.bub.innerHTML = html;
-    return cn;
+    var tsKey = p.__ts || Date.now();
+    return state.upsertNode({
+      id: 'risk:' + tsKey + ':' + (p.tool || ''), type: 'risk',
+      status: p.decision === 'block' || p.decision === 'rejected' || p.decision === 'confirm_rejected' ? 'failed' : 'success',
+      title: '安全检查', tool: p.tool, risk: p.risk, decision: p.decision,
+      timestamp: Date.now()
+    });
   }
 
+  // ───────────────────── 能力标签（发往后端的 metadata，非用户原话）─────────────────────
   function activePrefix() {
     var order = ['think', 'web', 'code'];
     var on = order.filter(function (k) { return state.toolModes[k]; });
@@ -141,27 +406,36 @@
     return '【' + on.map(function (k) { return names[k]; }).join('】【') + '】';
   }
 
+  // ───────────────────── CHAT（真实 SSE → state.timeline）─────────────────────
+  var chatSeq = 0;
   function sendChat(text, opts) {
     opts = opts || {};
     text = String(text || '').trim();
     if (!text || state.busy) return;
-    // 能力标签（【深度思考】【联网搜索】【代码执行】）是发给后端的 metadata，
-    // 不是用户说的话 —— 时间线上必须显示用户原文，请求体仍带标签（契约不变）。
+
+    // 能力标签是发给后端的 metadata，不是用户说的话 —— Timeline 显示原文，请求体仍带标签（契约不变）
     var displayText = text;
     var prefix = activePrefix();
     if (prefix && text.indexOf('【') !== 0) text = prefix + text;
 
-    var un = addNode('user'); un.bub.innerHTML = '<div class="xiao6-bubble-body">' + esc(displayText) + '</div>';
+    var reqId = (++chatSeq);
+    var now = Date.now();
+    var userId = 'u:' + reqId + ':' + now;
+    var asstId = 'a:' + reqId + ':' + now;
+
+    state.upsertNode({ id: userId, type: 'user', status: 'success', title: displayText, timestamp: now });
+    state.upsertNode({ id: asstId, type: 'assistant', status: 'running', text: '', timestamp: now });
 
     state.busy = true;
     state.busyDetail = '正在理解你的指令…';
-    state.setState(state.snap.agent.state && String(state.snap.agent.state).toUpperCase() === 'IDLE' ? 'THINKING' : state.snap.agent.state);
+    // 状态来自真实 runtime：只有后端处于 IDLE 时前端才本地标记为「正在分析」（本次请求确实已发出）
+    var cur = String(state.snap.agent.state || 'IDLE').toUpperCase();
+    state.setState(cur === 'IDLE' ? 'THINKING' : cur);
     state.notify();
-    var an = addNode('assistant'); an.node.classList.add('streaming');
-    var meta = el('div', 'xiao6-bubble-meta'); meta.innerHTML = '<span>小6</span><span>' + fmtTime() + '</span>';
-    var body = el('div', 'xiao6-bubble-body');
-    an.bub.appendChild(meta); an.bub.appendChild(body);
-    var stream = new StreamingMarkdown(body);
+
+    // 本次请求内的工具 open 栈（chat 通道无 execution_id，禁止全局同名匹配）
+    var openTools = [];
+    var toolSeq = 0;
 
     var payload = { messages: [{ role: 'user', content: text }], session_id: state.sessionId };
 
@@ -186,44 +460,64 @@
         }
         function handle(m) {
           var ev = m.xiao6_event || m.event;
-          if (ev === 'tool_start') { onTool('start', m.tool, m.args); }
-          else if (ev === 'tool_end') { onTool('end', m.tool, m.result, m.ok !== false); }
-          else if (ev === 'approval') { onApproval(m); }
+          if (ev === 'tool_start') { onToolStart(m.tool, m.args); }
+          else if (ev === 'tool_end') { onToolEnd(m.tool, m.result, m.ok !== false); }
+          else if (ev === 'approval') { window.Xiao6.approval.renderApprovalCard(m); }
           else if (m.choices && m.choices[0] && m.choices[0].delta) {
             var dc = m.choices[0].delta.content || '';
-            if (dc) { reply += dc; stream.update(reply); scrollChat(); }
+            if (dc) {
+              reply += dc;
+              var n = state.getNode(asstId); if (n) n.text = reply;   // 视图模型同步（不 bump _ver：正文由 sm 增量写）
+              var sm = streamOf(asstId);
+              if (sm) { sm.update(reply); scrollChat(); }
+              else { state.patchNode(asstId, { text: reply }); state.notify(); }
+            }
           }
         }
-        function onTool(phase, tool, arg, ok) {
-          if (phase === 'start') {
-            state.agentLog.unshift({ kind: 'tool', t: Date.now(), tool: tool, arg: arg, ongoing: true });
-            state.busyDetail = '正在调用工具 ' + (tool || '') + '…';
-            var tn = addNode('tool'); tn.bub.innerHTML = '<div class="xiao6-tool-summary">调用工具 <b>' + esc(tool || '') + '</b> …</div>';
-            tn.node.dataset.toolnode = '1';
-            tn.node.classList.add('tool-running');
-          } else {
-            state.agentLog.forEach(function (x) { if (x.tool === tool && x.ongoing) { x.ongoing = false; x.ok = ok; } });
-            qsa('.xiao6-node.tool').forEach(function (n) { if (n.dataset.toolnode) { n.querySelector('.xiao6-tool-summary').innerHTML = '工具 <b>' + esc(tool || '') + '</b> ' + (ok === false ? '失败' : '完成'); n.classList.remove('tool-running'); n.classList.add('tool-done'); } });
-            window.Xiao6.inspector.renderAgent();
-          }
-          window.Xiao6.inspector.renderAgent();
-        }
-        function onApproval(m) { window.Xiao6.approval.renderApprovalCard(m); }
-        function finish() {
-          state.busy = false; state.busyDetail = null; stream.finalize(); an.node.classList.remove('streaming');
-          state.resultLog.unshift({ t: Date.now(), text: reply });
-          renderResults(); window.Xiao6.inspector.renderAgent();
-          if (reply && state.autoSpeak) window.Xiao6.voice.speakText(reply);
-          state.setState(state.snap.agent.state || 'IDLE');
+        function onToolStart(tool, args) {
+          var node = upsertTool({ executionId: null, tool: tool || '工具', status: 'running', input: args, summary: '正在执行', reqId: reqId, seq: (++toolSeq) });
+          openTools.push({ id: node.id, tool: tool || '' });
+          state.busyDetail = '正在调用工具 ' + (tool || '') + '…';
           state.notify();
-          setTimeout(state.fetchSnapshot, 1200);
+        }
+        function onToolEnd(tool, result, ok) {
+          var name = tool || '';
+          var idx = -1;
+          for (var i = openTools.length - 1; i >= 0; i--) { if (openTools[i].tool === name) { idx = i; break; } }
+          if (idx < 0 && openTools.length) idx = openTools.length - 1;   // 同名缺失时闭合最近一个未完成的
+          if (idx < 0) return;
+          var entry = openTools.splice(idx, 1)[0];
+          state.patchNode(entry.id, {
+            status: ok === false ? 'failed' : 'success',
+            summary: ok === false ? '失败' : '完成',
+            output: result
+          });
+          if (ok === false) state.runtime.lastError = { message: '工具 ' + name + ' 执行失败', source: name, ts: Date.now() };
+          state.busyDetail = openTools.length ? state.busyDetail : '正在生成回复…';
+          state.notify();
+        }
+        function finish() {
+          // §16：完成只由真实终态（[DONE] / 流结束）决定，不用 setTimeout 判断
+          state.busy = false; state.busyDetail = null;
+          openTools.forEach(function (e) {
+            // 流已结束但工具未收到 tool_end：如实标记为未知终态，不假装成功
+            state.patchNode(e.id, { status: 'stopped', summary: '未收到结束事件' });
+          });
+          openTools = [];
+          state.patchNode(asstId, { status: 'success', text: reply });
+          if (reply && state.autoSpeak) window.Xiao6.voice.speakText(reply);
+          state.setState(String(state.snap.agent.state || 'IDLE').toUpperCase());
+          state.notify();
+          state.fetchSnapshot();
         }
         pump();
       })
       .catch(function (err) {
-        state.busy = false; state.busyDetail = null; stream.finalize(); an.node.classList.remove('streaming');
-        an.bub.appendChild(el('div', 'xiao6-bubble-body')).innerHTML = '<span style="color:var(--xiao6-danger)">请求失败 · 请检查核心服务</span>';
-        state.setState('ERROR'); state.notify(); setTimeout(state.fetchSnapshot, 600);
+        state.busy = false; state.busyDetail = null;
+        state.patchNode(asstId, { status: 'failed', error: '请求失败 · 请检查核心服务' });
+        state.runtime.lastError = { message: String((err && err.message) || err || '请求失败'), source: '/api/chat', ts: Date.now() };
+        state.setState('ERROR'); state.notify();
+        state.fetchSnapshot();
       });
   }
 
@@ -233,7 +527,37 @@
     sendChat(text);
   }
 
-  // 进行中的任务卡片（供「当前项目」视图复用；数据源 /api/tasks）
+  // ───────────────────── 「历史」视图：Agent 活动 / 执行结果（派生自 state.timeline）─────────────────────
+  function renderAgentActivity() {
+    var list = $('agentList'); if (!list) return;
+    var items = state.timeline.filter(function (n) {
+      return n.type === 'tool' || n.type === 'goal' || n.type === 'task' ||
+             n.type === 'approval' || n.type === 'intent' || n.type === 'risk' || n.type === 'error';
+    });
+    if (!items.length) { list.innerHTML = '<span class="xiao6-empty">暂无 Agent 活动</span>'; return; }
+    list.innerHTML = items.slice(-40).reverse().map(function (n) {
+      var txt = n.type === 'tool' ? ('工具 ' + (n.tool || '') + ' · ' + stxt(n.status))
+        : n.type === 'goal' ? ('目标 ' + (n.title || ('#' + n.goalId)) + ' · ' + stxt(n.status))
+        : n.type === 'task' ? ('任务 ' + (n.title || ('#' + n.taskId)) + ' · ' + stxt(n.status))
+        : n.type === 'approval' ? ('审批 ' + (n.tool || '') + ' · ' + stxt(n.status))
+        : n.type === 'intent' ? ('意图 ' + intentLabel(n.intent))
+        : n.type === 'risk' ? ('安全检查 ' + (n.tool || '') + ' ' + (n.risk || ''))
+        : (n.title || '执行失败');
+      return '<div class="xiao6-agent-item ' + n.type + '"><div class="xiao6-agent-ic">' + sym(n.status) + '</div>' +
+        '<div class="xiao6-agent-body-txt"><div>' + esc(txt) + '</div><div class="t">' + fmtTime(n.timestamp) + '</div></div></div>';
+    }).join('');
+  }
+  function renderResults() {
+    var list = $('resList'); if (!list) return;
+    var replies = state.timeline.filter(function (n) { return n.type === 'assistant' && n.text; });
+    if (!replies.length) { list.innerHTML = '<span class="xiao6-empty">暂无结果</span>'; return; }
+    list.innerHTML = replies.slice(-12).reverse().map(function (r) {
+      return '<div class="xiao6-res-card"><div class="xiao6-bubble-meta"><span>小6</span><span>' +
+        fmtTime(r.timestamp) + '</span></div>' + mdToHtml(r.text) + '</div>';
+    }).join('');
+  }
+
+  // 进行中的任务卡片（「当前项目」视图复用；数据源 /api/tasks 真实字段）
   function renderWorkspace(container) {
     var list = container || $('wsList'); if (!list) return;
     var open = state.snap.tasks.filter(function (t) {
@@ -243,18 +567,13 @@
     var running = Number((state.snap.agent || {}).running || 0);
     if (!open.length && !running) { list.innerHTML = '<span class="xiao6-empty">没有进行中的任务</span>'; return; }
     var html = '';
-    open.forEach(function (t) { var p = t.total_steps ? Math.round(t.current_step / t.total_steps * 100) : 0;
-      html += '<div class="xiao6-ws-card"><div class="ttl">⚙ ' + esc(t.title || '任务') + '</div><div class="meta">步骤 ' + t.current_step + '/' + t.total_steps + '</div><div class="xiao6-prog"><i style="width:' + p + '%"></i></div></div>'; });
-    if (running > 0) html += '<div class="xiao6-ws-card"><div class="ttl">◌ 小6核心执行中</div><div class="meta">运行 ' + running + ' 项</div><div class="xiao6-prog"><i style="width:100%"></i></div></div>';
+    open.forEach(function (t) {
+      // 真实步骤计数（§7：不创造百分比，用 current/total 表达）
+      html += '<div class="xiao6-ws-card"><div class="ttl">⚙ ' + esc(t.title || '任务') + '</div>' +
+        '<div class="meta">步骤 ' + t.current_step + ' / ' + t.total_steps + '</div></div>';
+    });
+    if (running > 0) html += '<div class="xiao6-ws-card"><div class="ttl">● 小6核心执行中</div><div class="meta">运行 ' + running + ' 项</div></div>';
     list.innerHTML = html;
-  }
-  function renderResults() {
-    var list = $('resList'); if (!list) return;
-    if (!state.resultLog.length) { list.innerHTML = '<span class="xiao6-empty">暂无结果</span>'; return; }
-    list.innerHTML = state.resultLog.slice(0, 12).map(function (r) {
-      var sm = new StreamingMarkdown(el('div')); sm.update(r.text); sm.finalize();
-      return '<div class="xiao6-res-card"><div class="xiao6-bubble-meta"><span>小6</span><span>' + fmtTime(r.t) + '</span></div>' + sm.container.innerHTML + '</div>';
-    }).join('');
   }
 
   // ───────────────────── JUMPBAR（minimap / scroll-spy）─────────────────────
@@ -296,6 +615,29 @@
 
   // ───────────────────── WIRING ─────────────────────
   function init() {
+    // 状态变化 → 增量重绘 Timeline（唯一渲染入口）
+    state.subscribe(function () {
+      renderTimeline();
+      if (document.body.dataset.view === 'history') { renderAgentActivity(); renderResults(); }
+    });
+
+    // 事件委托：详情展开 / 审批按钮（DOM 会被增量重绘，必须委托而非直接绑定）
+    var chatList = $('chatList');
+    if (chatList) chatList.addEventListener('click', function (e) {
+      var tg = e.target.closest ? e.target.closest('.xiao6-tl-toggle') : null;
+      if (tg) {
+        var d = tg.parentNode.querySelector('.xiao6-tl-detail');
+        if (d) { d.hidden = !d.hidden; tg.textContent = d.hidden ? '查看详情' : '收起详情'; }
+        return;
+      }
+      var btn = e.target.closest ? e.target.closest('.xiao6-approval-act button') : null;
+      if (btn) {
+        var card = btn.closest('.xiao6-approval-card');
+        var ticket = card ? card.dataset.ticket : '';
+        window.Xiao6.approval.postApproval(ticket, btn.dataset.decision);
+      }
+    });
+
     // Composer 模式开关（思考 / 联网 / 语音输入 / 语音播报）
     qsa('.xiao6-mode').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -316,31 +658,37 @@
       var v = ($('cmdInput').value || '');
       if (v.charAt(0) === '/' && window.Xiao6.palette && window.Xiao6.palette.runCommand(v)) { $('cmdInput').value = ''; return; }
       submitCmd(v);
+      $('cmdInput').value = '';
     });
     var ci = $('cmdInput');
     if (ci) ci.addEventListener('input', function (e) { if (window.Xiao6.palette) window.Xiao6.palette.handleTrigger(e.target.value); });
 
     var jb = $('jumpbar'); if (jb) jb.hidden = false;
-    var chatList = $('chatList');
     if (chatList) {
       var rafPending = false;
       chatList.addEventListener('scroll', function () { if (!rafPending) { rafPending = true; requestAnimationFrame(function () { rafPending = false; updateJumpbarThumb(); }); } });
       var mo = new MutationObserver(function () { buildJumpbar(); });
-      mo.observe(chatList, { childList: true, subtree: true });
+      mo.observe(chatList, { childList: true });
       setTimeout(buildJumpbar, 300);
     }
+    renderTimeline();
   }
 
   window.Xiao6.timeline = {
-    addNode: addNode,
+    renderTimeline: renderTimeline,
     scrollChat: scrollChat,
+    upsertTool: upsertTool,
     addIntentNode: addIntentNode,
     addRiskNode: addRiskNode,
     sendChat: sendChat,
     submitCmd: submitCmd,
     renderWorkspace: renderWorkspace,
     renderResults: renderResults,
+    renderAgentActivity: renderAgentActivity,
     buildJumpbar: buildJumpbar,
+    mdToHtml: mdToHtml,
+    STATUS_SYM: STATUS_SYM,
+    STATUS_TXT: STATUS_TXT,
     init: init
   };
 })();

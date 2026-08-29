@@ -56,7 +56,8 @@
   // 严格只读真实状态：/api/agent/state + /api/goals + /api/tasks + 本地 busy /
   // 待确认审批计数。后端没给出的数据一律显示「—」，不猜测、不伪造。
   function pendingApprovalCount() {
-    return state.agentLog.filter(function (x) { return x.kind === 'approval' && x.pending; }).length;
+    // R1-B：审批计数来自 state.derive.pendingApprovals()（派生自 state.timeline，唯一真相源）
+    return state.derive.pendingApprovals().length;
   }
   function renderNow() {
     var bar = $('nowBar'); if (!bar) return;
@@ -114,6 +115,11 @@
     if (window.Xiao6.sidebar) window.Xiao6.sidebar.renderView(name);
     if (name !== 'home') { var jb = $('jumpbar'); if (jb) jb.hidden = true; }
     else { var jb2 = $('jumpbar'); if (jb2) jb2.hidden = false; }
+    // 历史视图：切到该视图时立即渲染真实 Agent 活动 / 结果（派生自 state.timeline）
+    if (name === 'history' && window.Xiao6.timeline) {
+      window.Xiao6.timeline.renderAgentActivity();
+      window.Xiao6.timeline.renderResults();
+    }
   }
 
   // ───────────────────── overlay / inspector 关闭绑定 ─────────────────────
