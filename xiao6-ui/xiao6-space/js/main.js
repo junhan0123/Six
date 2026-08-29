@@ -291,11 +291,13 @@
       b.addEventListener('click', function () { switchView(b.dataset.nav); });
     });
 
-    // 新任务按钮
-    var ntb = $('newTaskBtn');
-    if (ntb) ntb.addEventListener('click', function () {
+    // 新对话按钮（侧边栏）
+    var ncb = $('newChatBtn');
+    if (ncb) ncb.addEventListener('click', function () {
       currentTaskId = null;
       if (window.Xiao6.timeline) window.Xiao6.timeline.resetTimeline();
+      var ci = $('cmdInput'); if (ci) ci.value = '';
+      var ts = $('timelineSection'); if (ts) ts.style.display = 'none';
       switchView('home');
     });
 
@@ -319,6 +321,35 @@
     }, 8000);
     setInterval(state.fetchSnapshot, 30000);
 
+    // Quick action cards
+    qsa('.x6-quick-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        var prompt = this.dataset.prompt;
+        if (prompt) {
+          var ci = $('cmdInput');
+          if (ci) { ci.value = prompt; ci.focus(); }
+          sendChat(prompt);
+        }
+      });
+    });
+
+    // Mode selector
+    var modeSel = $('modeSel');
+    if (modeSel) {
+      modeSel.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var isExpert = state.toolModes.expert;
+        state.toolModes.expert = !isExpert;
+        modeSel.textContent = state.toolModes.expert ? '专家模式 ▾' : '智能模式 ▾';
+        state.lsSet('xiao6_expert', state.toolModes.expert ? '1' : '0');
+      });
+    }
+    // Restore mode from localStorage
+    if (state.lsGet('xiao6_expert', '0') === '1') {
+      state.toolModes.expert = true;
+      var ms = $('modeSel'); if (ms) ms.textContent = '专家模式 ▾';
+    }
+
     // Menu bar handling
     var menubtns = document.querySelectorAll('.x6-menubar-btn');
     var menus = document.querySelectorAll('.x6-menu-dropdown');
@@ -332,7 +363,14 @@
         if (menu && !isOpen) menu.hidden = false;
       });
     });
-    document.addEventListener('click', function () { menus.forEach(function (m) { if (m) m.hidden = true; }); });
+    document.addEventListener('click', function (e) {
+      menus.forEach(function (m) { if (m) m.hidden = true; });
+      var item = e.target.closest('.x6-menu-item');
+      if (!item) return;
+      var action = item.dataset.action;
+      if (action === 'new-chat') { $('newChatBtn')?.click(); }
+      else if (action === 'settings') { switchView('settings'); }
+    });
     
     // Toggle sidebar
     var toggleBtn = $('toggleSidebar');

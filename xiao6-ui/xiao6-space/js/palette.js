@@ -188,7 +188,7 @@
   ];
   var currentModel = 'agnes-2.5-flash';
   function loadModelFromConfig(cfg) {
-    try { var m = state.lsGet('xiao6_model', null); if (m) currentModel = m; else if (cfg && cfg.llm && cfg.llm.model) currentModel = cfg.llm.model; } catch (e) {}
+    try { var m = state.lsGet('xiao6_model', null); if (m) currentModel = m; else if (cfg && cfg.llm && cfg.llm.model) currentModel = h.model; } catch (e) {}
     renderModelSelector();
   }
   function renderModelSelector() {

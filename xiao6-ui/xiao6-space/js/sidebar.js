@@ -35,7 +35,7 @@
     }).join('') : '<span class="x6-empty">暂无任务</span>';
   }
   function renderProjects() {
-    var list = $('projectsList'); if (!list) return;
+    var list = $('projectList'); if (!list) return;
     var goals = state.snap.goals.slice().sort(function (a, b) { return String(b.updated || '').localeCompare(String(a.updated || '')); });
     list.innerHTML = goals.length ? goals.map(function (g) {
       var s = String(g.status || ''); var prog = Number(g.progress || 0);
@@ -78,8 +78,7 @@
     list.innerHTML = '<span class="x6-empty">读取中…</span>';
     window.Xiao6.api.getJSON('/api/chat/history?limit=60').then(function (d) {
       var sessions = (d && d.sessions) || [];
-      if (!sessions.length) { list.innerHTML = '<span class="x6-empty">暂无会话记录</span>'; return; }
-      // 会话按最近一轮时间倒序（后端返回顺序不保证，前端按 turns 末尾 ts 排序）
+      if (!sessions.length) { list.innerHTML = '<span class="x6-empty">暂无对话</span>'; return; }
       sessions.sort(function (a, b) {
         var ta = (a.turns && a.turns.length ? a.turns[a.turns.length - 1].ts : '') || '';
         var tb = (b.turns && b.turns.length ? b.turns[b.turns.length - 1].ts : '') || '';
