@@ -12,12 +12,12 @@
     "isp": "China Unicom Henan Province Network"
   },
   "weather": {
-    "temp": "23",
-    "feels_like": "24",
-    "humidity": "74",
-    "condition": "Smoky haze",
-    "wind_kmh": "6",
-    "wind_dir": "NNW"
+    "temp": "32",
+    "feels_like": "33",
+    "humidity": "43",
+    "condition": "阴",
+    "wind_kmh": "8",
+    "wind_dir": "NE"
   },
-  "collected_at": "2026-08-29 09:13:46"
+  "collected_at": "2026-08-29 15:14:11"
 }
