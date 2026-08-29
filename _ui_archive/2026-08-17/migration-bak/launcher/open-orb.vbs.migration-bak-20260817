@@ -1,0 +1,4 @@
+' open-orb.vbs - 无窗口入口：双击后后台启动小6 语音球
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "powershell.exe -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File ""G:\ZhuangZhou\zhuangzhou-ui\launcher\open-orb.ps1""", 0, False
+Set WshShell = Nothing

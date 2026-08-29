@@ -1,0 +1,117 @@
+# P4 · P4-DEPRECATION-MATRIX
+
+> 阶段：P4 Phase 1 DESIGN ONLY · 项目：ZhuangZhou Core v1.4.0
+> 关联：`P4-MIGRATION-PLAN.md` / `P4-ARCHITECTURE-MAP.md` / 主文档
+> 红线：严禁直接 DELETE。最终状态仅可从 KEEP / MERGE / ADAPTER / DEPRECATE / ORPHAN 选择。
+
+---
+
+## 1. 重复实现处理矩阵（§13）
+
+| 当前实现 | 当前调用方（真实） | 功能 | 生产活跃 | 目标归属 | 迁移方式 | 最终状态 |
+|---|---|---|---|---|---|---|
+| `memory.py`(memories 读写) | distiller/hotspots/notes/imports + memory_intelligence/memory_query | Canonical Memory Store | ✓ | KEEP(经 Canonical API) | 写入者改走 API | **KEEP** |
+| `memory_distiller.py` | agent_runtime.py:947 `distill()` | 对话蒸馏→memories | ✓ | KEEP(修正写入) | 改真实列 | **KEEP** |
+| `memory_intelligence.py` | server_handlers_memory.py:240 | 召回+重要性+Truth | ✓ | ADAPTER(内部) | recall 降为 DefaultEvolutionPolicy 内部 | **ADAPTER** |
+| `memory_query.py` | server_handlers_memory.py:240 | 模糊搜索 | ✓ | KEEP(读 API) | 路由 Canonical API | **KEEP** |
+| `memory_evolution/*` | retrieval_policy/lifecycle/__init__ | 治理门面 | ✓(但 EvolvedMemorySource 未注册) | KEEP(唯一治理) | 正式注册 EvolvedMemorySource | **KEEP** |
+| `memory_v2/*` | 仅 MEMORY_V2_ENABLE 时 builder 注册 MemoryV2Source | 休眠可达子系统 | ✗(默认 OFF) | ADAPTER(仅复用 embed/retrieval) | flag 迁入 config；写入禁用 | **DEPRECATE** |
+| `context/sources.MemorySource` | context.builder(always) | 单体委托 build_system_prompt | ✓(临时) | DEPRECATE | 拆 EvolvedMemorySource+RuntimeStateSource | **DEPRECATE** |
+| `context/memory_recall_source.MemoryRecallSource` | FEATURE_MEMORY_INTELLIGENCE(默认未注册) | 记忆召回 | ✗ | MERGE | 并入 EvolvedMemorySource(scope=memory) | **MERGE** |
+| `context/*EvolvedMemorySource` | FEATURE_MEMORY_EVOLUTION(ghost) | 记忆 Context Source | ✗(未注册) | KEEP | 补 DEDUP_SCOPE_KEY+注册 | **KEEP** |
+| `cognitive/user_model.py` | UserModelSource/extractor/build_memory_block | 用户模型 | ✓ | KEEP | 移除 render_user_model_block | **KEEP** |
+| `cognitive/episodic.py` | EpisodicSource/extractor/retrieval_policy | 情节记忆 | ✓ | KEEP | recall_episodes 降内部 | **KEEP** |
+| `cognitive/extractor.py` | 后台线程 maybe_extract | 认知抽取→user_model+episodes | ✓ | KEEP | 保持（已正确不写 memories） | **KEEP** |
+| `knowledge.py`(facade) | KnowledgeSource/server.py/tools.py | 知识门面 | ✓ | KEEP | 保持兼容 | **KEEP** |
+| `knowledge_runtime/*` | knowledge.py 委托 | 知识引擎 | ✓ | KEEP | 边界固化 | **KEEP** |
+| `semantic_fusion.py` | perception_runtime.py(唯一) | 语义融合(感知) | ✓ | KEEP(Perception) | 不并入 Knowledge | **KEEP** |
+| `embed.py` | cognitive.episodic/server.py/tools.py/memory_v2 | 本地语义嵌入 | ✓ | KEEP(共享 ADAPTER) | 保持 | **KEEP** |
+| `eventbus.py` | 全仓 publish | 事件总线 | ✓ | KEEP(唯一事件权威) | 扩展事件名 | **KEEP** |
+| `knowledge_docs`/`knowledge_chunks` | 无(仅 CREATE) | 孤儿 RAG 残留 | ✗(零数据) | ORPHAN | count 校验后 DROP(P4.5) | **ORPHAN** |
+| `memory.build_memory_block`/`build_system_prompt` | MemorySource(回退) | 单体提示词 | ✓(回退) | DEPRECATE | 仅 FEATURE_CONTEXT_ENGINE=false 回退 | **DEPRECATE** |
+| `profile` 表 | build_memory_block | legacy 用户画像 KV | ✓ | DEPRECATE | canonical=user_model；reconcile | **DEPRECATE** |
+
+---
+
+## 2. 最终状态分布（汇总）
+
+```mermaid
+pie title P4 模块最终状态
+    "KEEP" : 14
+    "ADAPTER" : 2
+    "MERGE" : 1
+    "DEPRECATE" : 4
+    "ORPHAN" : 1
+```
+
+> 数字随矩阵条目；核心结论：**无模块被直接 DELETE**。
+
+---
+
+## 3. Deprecation 生命周期（§11）
+
+```mermaid
+graph LR
+    A[ACTIVE 生产活跃] --> B[COMPATIBILITY 双跑]
+    B --> C[DEPRECATED 冻结/默认关]
+    C --> D[REMOVED 未来移除]
+    C -.验证失败.-> B
+```
+
+| 生命周期 | 含义 | 本阶段动作 |
+|---|---|---|
+| ACTIVE | 生产活跃 | 保持 |
+| COMPATIBILITY | 双跑/Adapter 接入 | P4.2–P4.4 双跑期 |
+| DEPRECATED | 冻结，默认 OFF，保留回退 | P4.6 收口后进入 |
+| REMOVED | 未来移除（仅验证通过） | 不在 P4 范围，留待后续 |
+
+---
+
+## 4. 各 DEPRECATE 项处置细则
+
+| 模块 | 默认 | 迁移方式 | 移除条件 |
+|---|---|---|---|
+| `MemorySource` 单体 | 临时 ON | 拆 EvolvedMemorySource+RuntimeStateSource，双跑后停用 | 提示词逐字节一致 + 无三重注入 |
+| `memory_v2/*` | OFF(env) | 复用 embed/retrieval 适配器；写入禁用；flag 迁入 config | 适配器抽取完成且无人依赖 |
+| `MemoryRecallSource` | 未注册 | 并入 EvolvedMemorySource(scope=memory) | 合并后调用点切换 |
+| `memory.build_system_prompt` | 回退路径 | 仅 FEATURE_CONTEXT_ENGINE=false | 长期稳定后可移除 |
+| `profile` 表 | legacy | canonical=user_model；canonical_project 已解析冲突 | user_model 全量接管 |
+
+---
+
+## 5. ORPHAN 处置（knowledge_docs / knowledge_chunks）
+
+- 真实复核：仅 `CREATE TABLE`（db.py:162–168），**零 INSERT**。
+- 属 legacy RAG 后端残留（RAG 已移除）。
+- **本阶段禁止 DROP**（红线）；P4.5 经 `SELECT COUNT(*)` 校验（零数据）→ DROP，无信息损失。
+- 若 count>0 → 中止迁移（fail closed），绝不强删带数据表。
+
+---
+
+## 6. 安全边界（不得绕过）
+
+- Memory / Context / Knowledge 模块**不得**直接执行 Tool / 调用 Executor / 绕过 Capability Runtime / 绕过 Permission Guard。
+- 已验证 `capability_runtime` 仅由 `server_handlers_chat.py` / `tools.py` 调用（Executor 层），Memory/Context 无调用 → 边界 intact。
+- 事件只用于域状态变化/观察，Memory 不直连 Agent/Tool。
+
+---
+
+## 7. 兼容性保证（§14/§15）
+
+- 旧数据可读取：迁移幂等，老/新/半迁移库均安全启动。
+- 旧调用方不突然失效：经 Adapter 双跑，flag 回退。
+- 安全测试继续保持全绿：Legacy Bypass Test + grep 守卫。
+
+---
+
+## 8. Risk Register（关联主文档）
+
+| 风险 | 等级 | 缓解 |
+|---|---|---|
+| 检索质量波动 | 中 | 排名同源 + top-k 重叠度回归 |
+| 提示词逐字节不一致 | 中 | COND 比对 + 人工抽检 |
+| 孤儿表误删 | 低 | count>0 中止 |
+| 配置合并行为变 | 中 | 单一权威 + env 对比 |
+| 双跑回归负担 | 中 | 分阶段门禁 + flag 回退 |
+
+> 完整 Risk Register 见主文档 `P4-MEMORY-CONTEXT-KNOWLEDGE-DESIGN.md` §Risk Register。

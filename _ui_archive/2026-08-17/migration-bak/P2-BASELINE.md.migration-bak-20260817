@@ -1,0 +1,192 @@
+# P2-BASELINE.md — ZhuangZhou（庄周）Runtime 现状基线（P2 VERIFY BEFORE CHANGE）
+
+> 阶段：P2 · REAL CHAT RUNTIME VALIDATION & RELEASE GATE
+> 身份：Senior Runtime Engineer / Verification Engineer
+> 项目根：G:\ZhuangZhou\zhuangzhou-ui · 版本 1.4.0
+> 方法：所有结论基于**真实源码逐行核对**（非依赖 P1 历史报告）。file:line 均来自本次读取。
+> 前置：P0 / P0.5 / P1 全部通过 Runtime Readiness Gate（P1：388 collected / 384 passed / 4 C-D failed / 0 errors / 0 collection errors）。
+
+---
+
+## 1. 当前 Runtime 架构
+
+```
+                         ┌──────────────────────────────────────────────────────┐
+   REAL DEFAULT CHAT      │  /api/chat  (server.py:756 → server_handlers_chat.   │
+   ENTRY                  │  _handle_chat)                                       │
+                         └───────────────┬──────────────────────────────────────┘
+                                         │
+                  run_fc_loop(messages, emit, tools=_cap_select(...), allowed=remote_allowed)
+                  tools.py:3363
+                                         │
+                         ┌───────────────▼──────────────────────────────────────┐
+                         │  execute_tool_calls.run_one  tools.py:3304            │
+                         │    → from capability_runtime import execute           │
+                         │      _res = _cap_execute(name, args, allowed)        │
+                         └───────────────┬──────────────────────────────────────┘
+                                         │  capability_runtime.execute  (P1 收敛点)
+                                         │  capability_runtime.py:147
+                                         │  · 会话白名单边界校验（allowed 不在 → policy_denied）
+                                         │  · cap_id = tool_to_capability(name)
+                                         ▼
+                         ┌──────────────────────────────────────────────────────┐
+                         │  ai_core.execution.run   (全项目唯一执行入口)          │
+                         │  ai_core/execution/api.py:31  ← 唯一 POLICY 门          │
+                         │    permission=NONE（默认 Chat）: 仅拦截 decision==block │
+                         │    permission=GOAL : 完整 policy + request_approval    │
+                         │    ↓ 内部调用 execute_tool(name, args, allowed)         │
+                         └───────────────┬──────────────────────────────────────┘
+                                         │  tools.execute_tool  tools.py:3983
+                                         ▼
+                            TOOL_FUNCS[...] / external.mcp.* / skill:* / computer
+```
+
+两条路径（P1 设计保留，非旁路）：
+
+| 路径 | 入口 | Policy/Permission 门位置 | 用途 |
+|---|---|---|---|
+| **Simple / Default Chat** | `_handle_chat` → `run_fc_loop` → `capability_runtime.execute` → `ai_core.execution.run(NONE)` | Policy 门在 `run` 内部（`policy_engine.evaluate`，仅 block 拦截） | 普通对话 + 工具调用 |
+| **Complex / Goal** | `agent_runtime._execute_task` | Policy 门在 `agent_runtime` 内（`policy.evaluate` + `request_approval` + `permission_guard`），再调用 `ai_core.execution.run` / `capability_os.execute_capability` | 多步任务 / 规划 |
+
+**关键纪律（已核实）**：默认 Chat 的**每一次**能力执行都流经 `ai_core.execution.run`（`capability_runtime.py:180-181` 调用 `_execution_run`），不存在 `Capability → Tool` 直连。
+
+---
+
+## 2. Default Chat 真实入口
+
+- `server.py:756`：`/api/chat` → `server_handlers_chat._handle_chat`（SSE 流）。
+- `_handle_chat` 关键链路（`server_handlers_chat.py`）：
+  - L221 `FEATURE_GOAL_DECISION`：默认 `True`，但仅当 `agent_runtime.runtime._running` 时才介入 Intent Gateway；测试未启动 Runtime 时降级为普通聊天。
+  - L294 `from capability_runtime import select_capabilities as _cap_select, execute as _cap_execute`。
+  - L300 `run_fc_loop(..., tools=_cap_select(user_text, allowed=remote_allowed), ..., allowed=remote_allowed)`。
+  - L306-322 兜底强化：`detect_intents(user_text)` 命中但 LLM 未调用 → `_cap_execute(name, args, allowed=remote_allowed)`（同样经统一 Runtime）。
+  - `remote_allowed = _remote_allowed_tools() if is_remote else None`（`server_globals.py:85`）——远程会话白名单，默认排除 `run_shell / file_write / file_delete / install_software / delegate_agent / create_custom_tool ...`（`server_globals.py:76-81`）。
+- `_is_local_peer`（L94）：`127.0.0.1 / ::1 / localhost / 0:0:0:0:0:0:0:1 / ::ffff:127.0.0.1`。
+
+---
+
+## 3. Capability 注册表
+
+- 声明真相源：**`capability_os`**（registry + discovery + execution_mapping + verification）。
+  - `capability_os/__init__.py:115` `tool_to_capability(tool_name)`：
+    - 已知工具 → 映射能力 id（`get_time→time`、`memory_search→memory`、`open_application→computer_action` …）；
+    - 未知工具 / `external.mcp.*` → 回退 `"tools"`（**仅作 CapabilityResult.capability_id 标签，不影响路由**）。
+  - `capability_os/__init__.py:158` `dispatch_tool_list()`：可见能力真相源（本地 `TOOL_FUNCS` + `external.mcp.*` + `skill:*`）。
+  - `capability_os/__init__.py:214` `invoke_capability`（能力级门面）：对 tool/builtin/computer_action **直接调 `execute_tool`**（L259），**不经 `ai_core.execution.run`**——这是 Complex Path 门面，其 Policy 门在调用方 `agent_runtime` 内。
+- `capability_runtime.select_capabilities`（`capability_runtime.py:129`）：以 `dispatch_tool_list()` 为可见能力真相源 ∩ `select_tools` 启发式裁剪。
+
+---
+
+## 4. Capability → Runtime 路径
+
+默认 Chat（本阶段核心验证对象）：
+
+```
+Chat 文本
+  → capability_runtime.select_capabilities  (可见能力清单，下发 LLM)
+  → LLM function-calling 决策工具名
+  → capability_runtime.execute(name, args, allowed)
+       1. 会话白名单边界 (capability_runtime.py:164)
+       2. cap_id = tool_to_capability(name)        (标签)
+       3. raw = ai_core.execution.run(name, args, allowed)   ← 唯一 Policy 门
+       4. return CapabilityResult.from_raw(name, cap_id, raw)
+```
+
+**结论**：默认 Chat 的 Capability → Runtime 路径**单一且收敛**，所有执行经 `ai_core.execution.run`。
+
+---
+
+## 5. Policy / Permission / Approval 路径
+
+- **Policy（唯一真相源）**：`policy_engine.py`。
+  - `evaluate(tool, args, goal_id, default_deny=True)` → `{decision: auto|confirm|block, reason, permission}`。
+  - 四级：AUTO / CONFIRM / SESSION / NEVER（`policy_engine.py:27-31`）。
+  - `NEVER_TOOLS = {kill_process, file_delete}`（L34）——`evaluate` 直接 `block`。
+  - `is_never_by_args`（L85）：`run_shell` 危险命令（`sandbox.is_dangerous_command`）→ `block`。
+  - 无 `goal_id` + `default_deny` → CONFIRM 工具返回 `"confirm"`（L238-239）。
+  - MCP 分类（`_classify_external_mcp`, L145）：只读观察 AUTO；IMDS/RFC1918/非法 scheme / 外部文件删除 BLOCK；导航/JS/文件读写/交互 CONFIRM。
+- **`ai_core.execution.run` 中的 Policy 门**（`api.py:76-115`）：
+  - `permission == GOAL`：完整 policy（`block` 拦截；`confirm` 调 `request_approval`，非 approve 即取消）。
+  - `permission == NONE`（**默认 Chat**）：**仅拦截 `decision == "block"`**（NEVER / 危险命令）；`confirm` / `auto` 直接执行——设计内：本地交互式 chat = 用户本人键盘操作（`api.py:78-82` 注释明确）。
+- **Approval（`request_approval`, `policy_engine.py:257`）**：
+  - 生成 ticket → 发 `modal` 审批卡（经 EventBus SYSTEM）→ `threading.Event` 挂起 → `POST /api/agent/approval` 唤醒。
+  - **fail-safe**：`default_deny and not goal_id` → 直接 `"reject"`（L260-261），即默认 Chat（无 goal）不会弹出审批、也不会被偷偷放行。
+- **Permission Guard（电脑能力专用）**：`permission_guard.guard`（Complex Path 的 Computer Action 用），`guard.plan` 构造 `ComputerAction`、`guard.run` 经 Policy Engine 裁决 → 执行器。Agent/Runtime 不直构、不直调 executor。
+
+---
+
+## 6. Tool 执行入口
+
+全项目真实「工具落地」调用点（已逐一核实，排除 DB `conn.execute`）：
+
+| 位置 | 调用 | 是否经统一 Policy 门 | 归属路径 |
+|---|---|---|---|
+| `ai_core/execution/api.py:126` | `execute_tool(name, args, allowed)` | ✅ 是（`run` 内部 Policy 门） | **Simple/Default Chat 唯一落地** |
+| `capability_runtime.py:159` | `execute_tool(...)` | ⚠️ 仅当 `FEATURE_CAPABILITY_RUNTIME=False`（回退路径） | Legacy（开关关闭时） |
+| `capability_os/__init__.py:259` | `execute_tool(tool_name, ...)` | ❌ 否（门面，门在调用方） | Complex Path 门面 |
+| `agent_runtime.py:641` | `capability_os.execute_capability(..., auto_approve=True, goal_id)` | ⚠️ MCP Host 内 `_authorize`（默认 deny） | Complex/Goal |
+| `agent_runtime.py:553` | `_execution_run(tool, args)` | ✅ 是（`run` 内部 Policy 门） | Complex/Goal 通用工具 |
+| `agent_runtime.py:716` | `execute_tool(skill_handle, ...)` | ❌ 否（`skill:*` 取指令体，侧效在下层 canonical 工具） | Complex/Goal 技能 |
+
+**默认 Chat 视角**：唯一落地是 `ai_core/execution/api.py:126`，门在 `run` 内 → **无旁路**。其余调用点全部属于 Complex Path，其 Policy 门在 `agent_runtime` 层（已核实 L542-550 先 `policy.evaluate`/`request_approval` 再执行），属 P1 明确保留的 Complex Path，非默认 Chat 旁路。
+
+---
+
+## 7. Event 来源
+
+EventBus（`eventbus.py`）：
+- `DOMAIN_EVENT_NAMES`（L177-218）：领域生命周期事件。`TOOL_CALLED` / `TOOL_DONE` 已声明（L183）但**全仓无发布点**（grep 仅命中声明）——即未被使用（非重复源，仅死声明）。`GOAL_*` / `TASK_*` / `AGENT_*` / `COMPUTER_ACTION_*` 全部由 `agent_runtime` 经 `publish_domain` 单一发布（`agent_runtime.py:210/270/332/888`）。
+- `SYSTEM_EVENT_NAMES`（L220-258）：执行平台事件——`execution_started / execution_updated / execution_completed / execution_cancelled / tool_started / tool_finished / retry_started / retry_finished`。**单一发布源 = `ai_core/execution/events.py`**（L75-107），由 `run` 调用。
+- 默认 Chat 的工具进度 UI 事件：`_handle_chat` / `run_fc_loop` 直接 `emit({"zhuangzhou_event":"tool_start"/"tool_end", ...})`（自由格式，不经 publish_domain 校验，仅前端进度条消费）。
+
+**结论**：`execution_*` 系统事件单一源；领域事件单一源为 `agent_runtime`；`TOOL_CALLED/TOOL_DONE` 为未使用死声明（无重复源）。
+
+---
+
+## 8. Retry / failure 当前行为
+
+- **Default Chat（`run`, NONE）**：`context.retry` 默认 `0`（api.py:36），即**默认不重试**，异常原样上抛（但 `execute_tool` 自身吞异常返字符串，故实际极少上抛）。
+- **Complex/Goal（`agent_runtime._execute_task`, L542-571）**：
+  - `_MAX_RETRIES` 次重试（`range(self._MAX_RETRIES + 1)`）。
+  - `_classify_error(e, tool)`（L557）分类：
+    - `network` → 退避 0.1×(attempt+1)s 后重试；
+    - `file` → 尝试 `_try_alternative_tool`，无替代则退出；
+    - `unknown/permission/tool` → **直接标记不重试**（避免无意义等待）。
+  - 成功 → `_consecutive_failures = 0`（L554 重置）。
+- **连续失败计数器**：`agent_runtime.py:53` `self._consecutive_failures`，成功即清零（L554）。**无「连续失败清队列」实现**（见 §10 与 P2-C）。
+
+---
+
+## 9. FEATURE_CAPABILITY_RUNTIME 行为
+
+- 声明：`config.py:93` `FEATURE_CAPABILITY_RUNTIME: bool = True`（**默认 ON**）。
+- **不在** `_apply_env` 的 env 覆盖列表（grep 确认），即运行时不被环境变量翻转，仅由本属性控制 → 稳定可测。
+- `capability_runtime._feature_enabled()`（L27-32）：`getattr(config, "FEATURE_CAPABILITY_RUNTIME", True)`。
+- **ON**：`select_capabilities` 走 `capability_os.discovery.dispatch_tool_list()` 真相源；`execute` 走 `ai_core.execution.run` 唯一 Policy 门。
+- **OFF**：`select_capabilities` 回退 `select_tools`；`execute` 回退 `tools.execute_tool`（Legacy，仍含其内 Policy 门）。
+- 开关为**进程级属性**，切换即生效（`_feature_enabled` 每次调用实时读），无半切换状态。
+- 回滚安全性：OFF 路径仍经 `execute_tool` → 其内部 Policy 门（`run_shell`/NEVER 仍被 `policy_engine` 拦截），**不绕过 Policy/Permission/Approval**。
+
+---
+
+## 10. 已知 C/D backlog（P0.5 遗留，P1 全量回归核对一致）
+
+| # | 项目 | 分类 | 是否影响真实 Runtime | 是否阻断 release |
+|---|---|---|---|---|
+| C1 | `final/_audit/GATE-GUARD.py` 缺失 | C（未实现能力/脚本） | 否（门禁脚本缺失，不影响运行时） | 否 |
+| C2 | `consecutive_failure_clear_queue` 未实现 | C（未实现能力） | 否（仅影响失败恢复增强，当前有 `_consecutive_failures` 计数但无清队列） | 否 |
+| D1 | ASR `ffmpeg` 环境差异 ×2（`test_status_default_all_disabled` / `test_asr_transcribe_disabled_without_key`） | D（环境依赖） | 否（ASR 功能，与 Capability Runtime 无关） | 否 |
+| D2 | （同 D1 另一用例） | D（环境依赖） | 否 | 否 |
+
+> P2 阶段将**不伪造** C1/C2/D1/D2 实现来刷绿；如实记录为 backlog。
+
+---
+
+## 关键核对结论（供后续 Phase 引用）
+
+- ✅ 默认 Chat 无 Capability → Tool 直连旁路（唯一落地 `ai_core/execution/api.py:126`，门在 `run`）。
+- ✅ `default_deny=True` 在 `run` 与 `policy_engine.evaluate` 两端均保留。
+- ✅ 远程会话经 `_remote_allowed_tools()` 白名单隔离高危工具。
+- ⚠️ 默认 Chat（NONE）下 `confirm` 级工具**不弹审批**（设计内：用户键盘操作；远程已被白名单排除）。这是 P2 需明确记录的设计事实，非 A 类缺陷（详见 P2-SECURITY-RECHECK）。
+- ⚠️ `TOOL_CALLED`/`TOOL_DONE` 为未使用死声明（无重复事件源，但属冗余，可后续清理）。
+- ⚠️ `consecutive_failure_clear_queue` 未实现（C2）。

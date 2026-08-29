@@ -1,0 +1,270 @@
+/*
+ * avatar-controller.js — ZhuangZhou Avatar System v1.0 (Phase 25 · Core)
+ * ----------------------------------------------------------------------------
+ * 职责（唯一可执行逻辑）：AI 状态 → Avatar 状态 → 动画 的统一调度器。
+ *
+ * 最高纪律（红线）：
+ *   - 不新建 State System / EventBus / Runtime / Memory。
+ *   - 唯一状态权威 = avatar-state.js 的 AvatarState.STATES / AvatarState.META。
+ *     本控制器【不定义任何平行的 STATES/META】；它只把「AI 信号 → Avatar 状态」
+ *     表达为 *绑定配置*（AI_Binding/state_map.json，运行时读取），绑定 ≠ 状态系统。
+ *   - 零侵入集成：仅通过 MutationObserver 观察既有管道属性，不修改
+ *     Agent Runtime / Planner / Executor / EventBus / Memory 核心，
+ *     也不修改 ai-core.js / voice-core.js / voice-orb.js。
+ *   - 资源加载接口按 format 委派 AvatarAssets.urlFor，支持未来
+ *     svg/png/webp/webm/frames/sprite/live2d/3d，当前不绑定具体资源（缺省降级）。
+ *   - 动作层 / 表情层 / 环境效果层 以 registerLayer 钩子预留，当前无实现。
+ */
+(function (global) {
+  'use strict';
+
+  var doc = (typeof document !== 'undefined') ? document : null;
+
+  // 运行时回退绑定（与 AI_Binding/state_map.json 保持一致；JSON 优先加载覆盖）
+  var FALLBACK_MAP = {
+    priority: [
+      'voice.listening', 'voice.speaking', 'voice.error', 'voice.thinking',
+      'task.ERROR', 'task.EXECUTING', 'task.THINKING', 'task.PLANNING',
+      'task.WARNING', 'task.LEARNING', 'task.WAITING', 'task.COMPLETED', 'task.OFFLINE',
+      'voice.idle', 'task.IDLE'
+    ],
+    bindings: {
+      IDLE:      { body: 'Idle',      face: 'neutral',   gesture: null,     environment: 'Aura' },
+      LISTENING: { body: 'Listening', face: 'attentive', gesture: null,     environment: 'VoiceWave' },
+      THINKING:  { body: 'Thinking',  face: 'focused',   gesture: null,     environment: 'Particle' },
+      PLANNING:  { body: 'Planning',  face: 'focused',   gesture: 'Explain', environment: 'Hologram' },
+      EXECUTING: { body: 'Executing', face: 'focused',   gesture: 'Point',   environment: 'Particle' },
+      SPEAKING:  { body: 'Speaking',  face: 'speaking',  gesture: null,     environment: 'VoiceWave' },
+      LEARNING:  { body: 'Learning',  face: 'curious',   gesture: null,     environment: 'Particle' },
+      WARNING:   { body: 'Warning',   face: 'concerned', gesture: 'Confirm', environment: 'Aura' },
+      ERROR:     { body: 'Error',     face: 'alarmed',   gesture: null,     environment: 'Aura' }
+    }
+  };
+
+  // 语音态 → 规范 Avatar 态（小写语音词汇 → AvatarState 大写态）
+  var VOICE_CANON = {
+    listening: 'LISTENING', speaking: 'SPEAKING', error: 'ERROR',
+    thinking: 'THINKING', idle: 'IDLE'
+  };
+
+  function metaOf(state) {
+    var M = (global.AvatarState && global.AvatarState.META) || {};
+    return M[state] || M.IDLE || { label: state, color: '#5fb3c8' };
+  }
+
+  function siblingURL(path) {
+    var s = (doc && doc.currentScript && doc.currentScript.src) || '';
+    if (!s) return path;
+    try { return new URL(path, s).href; } catch (e) { return path; }
+  }
+
+  var Controller = {
+    signals: { voice: 'idle', task: 'IDLE' },
+    map: null,
+    state: null,            // 初始 null → 首次解析必派发
+    el: null,
+    layers: { action: [], expression: [], environment: [] },
+    onState: null,
+    _obs: [],
+    _poll: 0,
+
+    /* ---------------- 生命周期 ---------------- */
+    init: function () {
+      if (!doc) return;
+      // 1) 可选绑定元素（未来 SVG/CSS 脸：带 [data-avatar="face"] 的容器）
+      this.el = doc.querySelector('[data-avatar="face"]') || null;
+      // 2) 加载绑定 JSON（AI_Binding；失败回退内嵌常量）
+      this._loadMap();
+      // 3) 观察既有管道（零侵入）
+      this._observe();
+      // 4) 首帧解析 + 派发
+      this._resolve();
+    },
+
+    _loadMap: function () {
+      var self = this;
+      var url = siblingURL('../AI_Binding/state_map.json');
+      if (!global.fetch) { this.map = FALLBACK_MAP; return; }
+      fetch(url)
+        .then(function (r) { return r && r.ok ? r.json() : null; })
+        .then(function (j) { self.map = j || FALLBACK_MAP; })
+        .catch(function () { self.map = FALLBACK_MAP; });
+    },
+
+    _observe: function () {
+      var self = this;
+      // MutationObserver 回调：仅「拉取该源信号 → 解析」，不重复读全量 DOM
+      function bind(id, attr, src) {
+        var el = doc.getElementById(id);
+        if (!el) return;
+        var mo = new MutationObserver(function () {
+          self._pull(src);
+          self._resolve();
+        });
+        mo.observe(el, { attributes: true, attributeFilter: [attr] });
+        self._obs.push(mo);
+      }
+      bind('aiCore', 'data-state', 'task');
+      bind('aiCore', 'data-voice', 'voice');
+      bind('voiceOrb', 'data-voice', 'voice');
+      // FinalVoice 变动轻量轮询（仅当其存在；不影响其他模块）
+      if (global.FinalVoice && typeof global.FinalVoice.getVoice === 'function') {
+        this._poll = setInterval(function () {
+          var v = global.FinalVoice.getVoice();
+          if (v && v !== self.signals.voice) { self.signals.voice = v; self._resolve(); }
+        }, 250);
+      }
+      // 首帧拉取既有管道状态
+      this._pull('voice');
+      this._pull('task');
+    },
+
+    // 从既有管道读取单一源信号（只读）
+    _pull: function (src) {
+      if (src === 'voice') this.signals.voice = this._readVoice();
+      else if (src === 'task') this.signals.task = this._readTask();
+    },
+
+    /* ---------------- 信号读取（只读既有管道） ---------------- */
+    _readVoice: function () {
+      if (global.FinalVoice && typeof global.FinalVoice.getVoice === 'function') {
+        var v = global.FinalVoice.getVoice();
+        if (v) return v;
+      }
+      var orb = doc.getElementById('voiceOrb');
+      if (orb && orb.getAttribute('data-voice')) return orb.getAttribute('data-voice');
+      var core = doc.getElementById('aiCore');
+      if (core && core.getAttribute('data-voice')) return core.getAttribute('data-voice');
+      return 'idle';
+    },
+
+    _readTask: function () {
+      var core = doc.getElementById('aiCore');
+      if (core && core.getAttribute('data-state')) return core.getAttribute('data-state');
+      if (global.AvatarState && typeof global.AvatarState.deriveFromGlobals === 'function') {
+        try { return global.AvatarState.deriveFromGlobals().state; } catch (e) {}
+      }
+      return 'IDLE';
+    },
+
+    /* ---------------- 外部注入（测试 / 未来 API） ---------------- */
+    setAIState: function (source, aiState) {
+      if (source === 'voice') this.signals.voice = aiState || 'idle';
+      else if (source === 'task') this.signals.task = aiState || 'IDLE';
+      this._resolve();
+    },
+
+    /* ---------------- 解析：信号 → 规范 Avatar 状态 ---------------- */
+    _resolve: function () {
+      // 直接消费 this.signals（由观察者 _pull 或 setAIState 注入，不在此处重复读 DOM）
+      var map = this.map || FALLBACK_MAP;
+      var priority = map.priority || FALLBACK_MAP.priority;
+      var next = 'IDLE';
+      for (var i = 0; i < priority.length; i++) {
+        var parts = String(priority[i]).split('.');
+        if (parts.length === 2 && this.signals[parts[0]] === parts[1]) {
+          next = this._canon(parts[0], parts[1]);
+          break;
+        }
+      }
+      if (next !== this.state) {
+        this.state = next;
+        this._dispatch(next);
+      }
+      return next;
+    },
+
+    _canon: function (src, val) {
+      if (src === 'voice') return VOICE_CANON[val] || 'IDLE';
+      // task 值已是规范态（来自 AvatarState）
+      if (global.AvatarState && global.AvatarState.STATES &&
+          global.AvatarState.STATES.indexOf(val) >= 0) return val;
+      return 'IDLE';
+    },
+
+    /* ---------------- 派发：状态 → 视觉层 ---------------- */
+    _dispatch: function (state) {
+      var m = metaOf(state);
+      var color = m.color, label = m.label;
+
+      // 1) 全局可读属性（CSS 钩子 + 未来层订阅）
+      doc.documentElement.setAttribute('data-avatar-state', state);
+      doc.documentElement.style.setProperty('--avatar-color', color);
+
+      // 2) 绑定元素 → AvatarRenderer（SVG/CSS 脸；若存在，守卫）
+      if (this.el && global.AvatarRenderer && typeof global.AvatarRenderer.render === 'function') {
+        try { global.AvatarRenderer.render(this.el, state, color); } catch (e) {}
+      }
+
+      // 3) 兼容既有 3D 渲染器（守卫转发，绝不阻断）
+      this._forward('ZZAvatar', state);
+      this._forward('ZZAvatarScene', state);
+
+      // 4) 预留层：动作 / 表情 / 环境（当前仅钩子）
+      this._applyLayers(state, color);
+
+      // 5) 回调
+      if (typeof this.onState === 'function') {
+        try { this.onState(state, color, label); } catch (e) {}
+      }
+    },
+
+    _forward: function (name, state) {
+      var api = global[name];
+      if (api && typeof api.setState === 'function') {
+        try { api.setState(state.toLowerCase()); } catch (e) {}
+      }
+    },
+
+    _applyLayers: function (state, color) {
+      var map = this.map || FALLBACK_MAP;
+      var bind = (map.bindings && map.bindings[state]) || null;
+      var ctx = { state: state, color: color, bind: bind };
+      var self = this;
+      ['action', 'expression', 'environment'].forEach(function (k) {
+        var list = self.layers[k] || [];
+        for (var i = 0; i < list.length; i++) {
+          try { list[i](ctx); } catch (e) {}
+        }
+      });
+    },
+
+    /* ---------------- 资源加载接口（支持未来格式；当前不绑定） ---------------- */
+    resolveResource: function (state, format) {
+      format = (format || 'svg').toLowerCase();
+      if (global.AvatarAssets && typeof global.AvatarAssets.urlFor === 'function') {
+        try { return global.AvatarAssets.urlFor(state, format); } catch (e) {}
+      }
+      return null; // 未绑定 → 渲染器降级 SVG/CSS 脸
+    },
+
+    /* ---------------- 预留层注册（动作 / 表情 / 环境效果） ---------------- */
+    registerLayer: function (name, handler) {
+      if (['action', 'expression', 'environment'].indexOf(name) < 0) return false;
+      if (typeof handler !== 'function') return false;
+      this.layers[name].push(handler);
+      return true;
+    },
+
+    getState: function () { return this.state; },
+
+    destroy: function () {
+      for (var i = 0; i < this._obs.length; i++) {
+        try { this._obs[i].disconnect(); } catch (e) {}
+      }
+      if (this._poll) clearInterval(this._poll);
+      this._obs = [];
+      this._poll = 0;
+    }
+  };
+
+  /* ---------------- 自初始化（脚本在 final/index.html 中于 boot.js 之前加载） ---------------- */
+  function boot() { Controller.init(); }
+  if (doc) {
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  }
+
+  global.ZZAvatarController = Controller;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Controller;
+})(typeof window !== 'undefined' ? window : globalThis);

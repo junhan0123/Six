@@ -1,0 +1,226 @@
+{
+  "full_idle": {
+    "viewport": "1920x1080",
+    "shellCols": "76px 1778px",
+    "presence": "OFFLINE",
+    "theme": "dark-cyan",
+    "presenceColor": "#8a93a6",
+    "core": {
+      "w": 1778,
+      "h": 697,
+      "x": 120,
+      "y": 100,
+      "vis": true
+    },
+    "side": {
+      "w": 360,
+      "h": 958,
+      "x": 1942,
+      "y": 100,
+      "vis": true
+    },
+    "dock": {
+      "w": 1040,
+      "h": 157,
+      "x": 489,
+      "y": 819,
+      "vis": true
+    },
+    "timeline": {
+      "w": 1040,
+      "h": 68,
+      "x": 489,
+      "y": 990,
+      "vis": true
+    },
+    "coreShare": 59.8,
+    "sideOffscreen": true,
+    "timelineIdle": true,
+    "runtimeVizVisible": false,
+    "ctxToggle": true,
+    "capCount": null,
+    "capRegistry": 13,
+    "capMatrixItems": 0,
+    "heroStyles": {
+      "maxWidth": "380px",
+      "marginTop": "108px",
+      "transform": "matrix(0.86, 0, 0, 0.86, 0, 0)",
+      "alignSelf": "center"
+    },
+    "heroDescDisplay": "none",
+    "coreBg": "radial-gradient(120% 120% at 50% 40%, color(srgb 0.133333 0.827451 0.933333 / 0.0496078), ",
+    "dockBarBorder": "color(srgb 0.133333 0.827451 0.933333 / 0.538431)",
+    "themeSwatches": 9,
+    "swatchBg": "linear-gradient(135deg, rgb(34, 211, 238), rgb(167, 139, 250",
+    "panelReg": "has-list",
+    "errors": []
+  },
+  "full_context_open": {
+    "viewport": "1920x1080",
+    "shellCols": "76px 1778px",
+    "presence": "OFFLINE",
+    "theme": "dark-cyan",
+    "presenceColor": "#8a93a6",
+    "core": {
+      "w": 1778,
+      "h": 697,
+      "x": 120,
+      "y": 100,
+      "vis": true
+    },
+    "side": {
+      "w": 360,
+      "h": 958,
+      "x": 1538,
+      "y": 100,
+      "vis": true
+    },
+    "dock": {
+      "w": 1040,
+      "h": 157,
+      "x": 489,
+      "y": 819,
+      "vis": true
+    },
+    "timeline": {
+      "w": 1040,
+      "h": 68,
+      "x": 489,
+      "y": 990,
+      "vis": true
+    },
+    "coreShare": 59.8,
+    "sideOffscreen": false,
+    "timelineIdle": true,
+    "runtimeVizVisible": false,
+    "ctxToggle": true,
+    "capCount": null,
+    "capRegistry": 13,
+    "capMatrixItems": 0,
+    "heroStyles": {
+      "maxWidth": "380px",
+      "marginTop": "108px",
+      "transform": "matrix(0.86, 0, 0, 0.86, 0, 0)",
+      "alignSelf": "center"
+    },
+    "heroDescDisplay": "none",
+    "coreBg": "radial-gradient(120% 120% at 50% 40%, color(srgb 0.133333 0.827451 0.933333 / 0.0496078), ",
+    "dockBarBorder": "color(srgb 0.133333 0.827451 0.933333 / 0.538431)",
+    "themeSwatches": 9,
+    "swatchBg": "linear-gradient(135deg, rgb(34, 211, 238), rgb(167, 139, 250",
+    "panelReg": "has-list",
+    "errors": []
+  },
+  "compact": {
+    "viewport": "1000x760",
+    "shellCols": "76px 882px",
+    "presence": "OFFLINE",
+    "theme": "dark-cyan",
+    "presenceColor": "#8a93a6",
+    "core": {
+      "w": 882,
+      "h": 409,
+      "x": 104,
+      "y": 84,
+      "vis": true
+    },
+    "side": {
+      "w": 340,
+      "h": 662,
+      "x": 1030,
+      "y": 84,
+      "vis": true
+    },
+    "dock": {
+      "w": 882,
+      "h": 157,
+      "x": 104,
+      "y": 507,
+      "vis": true
+    },
+    "timeline": {
+      "w": 882,
+      "h": 68,
+      "x": 104,
+      "y": 678,
+      "vis": true
+    },
+    "coreShare": 47.5,
+    "sideOffscreen": true,
+    "timelineIdle": true,
+    "runtimeVizVisible": false,
+    "ctxToggle": true,
+    "capCount": null,
+    "capRegistry": 13,
+    "capMatrixItems": 0,
+    "heroStyles": {
+      "maxWidth": "380px",
+      "marginTop": "76px",
+      "transform": "matrix(0.86, 0, 0, 0.86, 0, 0)",
+      "alignSelf": "center"
+    },
+    "heroDescDisplay": "none",
+    "coreBg": "radial-gradient(120% 120% at 50% 40%, color(srgb 0.133333 0.827451 0.933333 / 0.0496078), ",
+    "dockBarBorder": "color(srgb 0.133333 0.827451 0.933333 / 0.538431)",
+    "themeSwatches": 9,
+    "swatchBg": "linear-gradient(135deg, rgb(34, 211, 238), rgb(167, 139, 250",
+    "panelReg": "has-list",
+    "errors": []
+  },
+  "workspace": {
+    "viewport": "1920x1080",
+    "shellCols": "76px 1fr",
+    "presence": "OFFLINE",
+    "theme": "dark-cyan",
+    "presenceColor": "#8a93a6",
+    "core": {
+      "w": 0,
+      "h": 0,
+      "x": 0,
+      "y": 0,
+      "vis": true
+    },
+    "side": {
+      "w": 0,
+      "h": 0,
+      "x": 0,
+      "y": 0,
+      "vis": true
+    },
+    "dock": {
+      "w": 0,
+      "h": 0,
+      "x": 0,
+      "y": 0,
+      "vis": true
+    },
+    "timeline": {
+      "w": 0,
+      "h": 0,
+      "x": 0,
+      "y": 0,
+      "vis": true
+    },
+    "coreShare": 0,
+    "sideOffscreen": false,
+    "timelineIdle": true,
+    "runtimeVizVisible": true,
+    "ctxToggle": true,
+    "capCount": null,
+    "capRegistry": 13,
+    "capMatrixItems": 0,
+    "heroStyles": {
+      "maxWidth": "380px",
+      "marginTop": "108px",
+      "transform": "none",
+      "alignSelf": "center"
+    },
+    "heroDescDisplay": "none",
+    "coreBg": "radial-gradient(120% 120% at 50% 40%, color(srgb 0.133333 0.827451 0.933333 / 0.0496078), ",
+    "dockBarBorder": "color(srgb 0.133333 0.827451 0.933333 / 0.538431)",
+    "themeSwatches": 9,
+    "swatchBg": "linear-gradient(135deg, rgb(34, 211, 238), rgb(167, 139, 250",
+    "panelReg": "has-list",
+    "errors": []
+  }
+}

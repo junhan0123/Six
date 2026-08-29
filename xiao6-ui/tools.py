@@ -533,7 +533,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "web_search",
-            "description": "实时网络搜索（非预取）。无需密钥即可用 DuckDuckGo 兜底检索；若配置了 ZHUANGZHOU_WEB_SEARCH_KEY，则走 tavily/serper/brave/jina/searxng 等更高质量源。当用户问到最新资讯、新闻、实时数据或需要联网求证时使用。",
+            "description": "实时网络搜索（非预取）。无需密钥即可用 DuckDuckGo 兜底检索；若配置了 XIAO6_WEB_SEARCH_KEY，则走 tavily/serper/brave/jina/searxng 等更高质量源。当用户问到最新资讯、新闻、实时数据或需要联网求证时使用。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1751,7 +1751,7 @@ def tool_web_fetch(args):
         url = (args.get("url") or args.get("link") or args.get("href") or "").strip()
         if not url:
             return "错误：未提供 URL"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; ZhuangZhou/1.0)"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Xiao6/1.0)"})
         with urllib.request.urlopen(req, timeout=20) as resp:
             data = resp.read()
             ctype = resp.headers.get("Content-Type", "")
@@ -1839,7 +1839,7 @@ def tool_browser_read(args):
         if not re.match(r"^https?://", url, re.I):
             return "错误：仅支持 http/https 链接"
         max_chars = max(500, min(int(args.get("max_chars") or 6000), 20000))
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; ZhuangZhou/1.0)"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Xiao6/1.0)"})
         data = None
         ctype = ""
         # 优先走代理（与 LLM 一致），失败再直连
@@ -2007,7 +2007,7 @@ def _run_prefetch_task(task):
         elif source in ("web", "url"):
             import urllib.request as _ur
 
-            req = _ur.Request(query, headers={"User-Agent": "Mozilla/5.0 (compatible; ZhuangZhou/1.0)"})
+            req = _ur.Request(query, headers={"User-Agent": "Mozilla/5.0 (compatible; Xiao6/1.0)"})
             try:
                 with _urlopen_with_proxy(req, 25) as resp:
                     data = resp.read()
@@ -2680,13 +2680,13 @@ def clear_pending_review():
 
 
 def _last_assistant_turn(limit=1):
-    """取最近一条庄周(zhuangzhou)回复文本，供审视分身默认审视。"""
+    """取最近一条庄周(xiao6)回复文本，供审视分身默认审视。"""
     try:
         from db import db_conn
         conn = db_conn()
         rows = conn.execute(
             "SELECT content FROM chat_log WHERE role=? ORDER BY id DESC LIMIT ?",
-            ("zhuangzhou", limit),
+            ("xiao6", limit),
         ).fetchall()
         conn.close()
         if rows:
@@ -3399,9 +3399,9 @@ def run_fc_loop(messages, emit, tools=None, temperature=0.7, reasoning=None, all
         tool_msgs, events = execute_tool_calls(tool_calls, allowed)
         for kind, name, payload in events:
             if kind == "start":
-                emit({"zhuangzhou_event": "tool_start", "tool": name, "args": payload})
+                emit({"xiao6_event": "tool_start", "tool": name, "args": payload})
             else:
-                emit({"zhuangzhou_event": "tool_end", "tool": name, "result": payload})
+                emit({"xiao6_event": "tool_end", "tool": name, "result": payload})
         messages.extend(tool_msgs)
     # 超出轮次保护：基于已有上下文强制收尾，不再给工具
     try:

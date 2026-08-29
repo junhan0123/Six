@@ -1,0 +1,26 @@
+{
+  "total": 2,
+  "passed": 0,
+  "failed": 2,
+  "steps": [
+    {
+      "step": "activate",
+      "action": "find_qq",
+      "success": false,
+      "timestamp": 1787359379.0231895,
+      "details": {},
+      "error": "未找到可见QQ窗口"
+    },
+    {
+      "step": "verify_focus",
+      "action": "verify_qq_focus",
+      "success": false,
+      "timestamp": 1787359379.0231895,
+      "details": {
+        "foreground": "Program Manager"
+      },
+      "error": null
+    }
+  ],
+  "evidence": {}
+}

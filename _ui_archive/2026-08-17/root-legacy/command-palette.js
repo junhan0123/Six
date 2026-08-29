@@ -1,0 +1,364 @@
+// 全局指令中心（原生 · Ctrl/Cmd+K）— P7-1 升级
+// 分类：面板 / 主题 / 功能 / 创建 / 系统
+// 与各模块解耦：仅通过 window 桥与 fetch('/api/config') 触发真实动作。
+(function () {
+  'use strict';
+
+  const THEMES = [
+    { id: 'dark', label: '暗夜' },
+    { id: 'quantum', label: '量子' },
+    { id: 'midnight', label: '午夜' },
+    { id: 'dark-cyan', label: '深空青' },
+    { id: 'dark-green', label: '极光绿' },
+    { id: 'dark-purple', label: '霓虹紫' },
+    { id: 'dark-amber', label: '熔岩橙' },
+    { id: 'dark-rose', label: '霓虹粉' },
+    { id: 'light', label: '白昼' },
+  ];
+  const FEATURES = [
+    { flag: 'FEATURE_PREMIUM_UI', label: '沉浸视觉' },
+    { flag: 'FEATURE_KNOWLEDGE_PLATFORM', label: '知识平台' },
+    { flag: 'FEATURE_PROACTIVE_V2', label: '主动智能 V2' },
+    { flag: 'FEATURE_MULTI_DEVICE', label: '多端同步' },
+  ];
+  // Sprint 3/4：FEATURE 成熟度（对齐能力真相；多端同步为实验，其余 prod）
+  const FEATURE_META = {
+    FEATURE_PREMIUM_UI: { maturity: 'prod' },
+    FEATURE_KNOWLEDGE_PLATFORM: { maturity: 'prod' },
+    FEATURE_PROACTIVE_V2: { maturity: 'prod' },
+    FEATURE_MULTI_DEVICE: { maturity: 'exp' },
+  };
+  const CAT_ORDER = ['recent', 'intent', 'panel', 'theme', 'feature', 'create', 'system'];
+  const CAT_LABEL = { recent: '最近', intent: '意图', panel: '面板', theme: '主题', feature: '功能', create: '创建', system: '系统' };
+  // [D] 统一入口分段：搜索 / 命令 / Agent / 工作流
+  const MODES = [
+    { id: 'search', label: '搜索' },
+    { id: 'command', label: '命令' },
+    { id: 'agent', label: 'Agent' },
+    { id: 'workflow', label: '创建' },
+  ];
+  const MODE_CATS = {
+    search: null,                                      // 搜索 = 浏览全部
+    command: ['panel', 'feature', 'system', 'theme'],  // 命令 = 显式动作
+    agent: ['intent'],                                 // Agent = 自然语言意图网关
+    workflow: ['create'],                              // 工作流 = 目标 / 待办 / 提醒
+  };
+
+  let _cmds = [];
+  let _visible = [];      // 当前过滤后的扁平列表（键盘导航用）
+  let _active = 0;        // 键盘选中索引
+  let _open = false;
+  let _featureState = {}; // flag -> bool
+  let _filter = '';
+  let _mode = 'search';   // [D] 统一入口分段：search / command / agent / workflow
+
+  // Sprint 4：最近命令（localStorage，最多 5 条；自然语言意图不计入）
+  const RECENT_KEY = 'zz.cp.recent';
+  const RECENT_MAX = 5;
+  function loadRecent() {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function pushRecent(cmd) {
+    if (!cmd || cmd.intent || cmd._recent) return;
+    const label = cmd.label;
+    let r = loadRecent().filter(x => x !== label);
+    r.unshift(label);
+    r = r.slice(0, RECENT_MAX);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(r)); } catch (e) { /* 隐私模式忽略 */ }
+  }
+
+  function featKey(flag) {
+    return 'feature_' + flag.replace(/^FEATURE_/, '').toLowerCase();
+  }
+
+  function buildCommands() {
+    const c = [];
+    // 面板（Sprint 3/4/5：经 PanelManager.openCapability 唯一入口分发；按能力分类标注暴露档位 T0–T4）
+    c.push({ cat: 'panel', category: 'External', label: '打开 实时热点', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-signal"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('hotspot'); else if (window.ZZHotspot) window.ZZHotspot.open(); } });
+    c.push({ cat: 'panel', category: 'External', label: '打开 天气观测', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-weather"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('weather'); else { const b = document.getElementById('wxOpenBtn'); if (b) b.click(); } } });
+    c.push({ cat: 'panel', category: 'System', label: '打开 系统监控', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-monitor"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('sysmon'); else if (window.ZZSysmon) window.ZZSysmon.open(); } });
+    c.push({ cat: 'panel', category: 'System', label: '打开 终端日志', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-scroll"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('terminal'); else if (window.ZZTerminal) window.ZZTerminal.open(); } });
+    c.push({ cat: 'panel', category: 'Proactive', label: '打开 每日简报', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-calendar"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('briefing'); else { const b = document.getElementById('btnBriefing'); if (b) b.click(); } } });
+    c.push({ cat: 'panel', category: 'Knowledge', label: '打开 文档库', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-book"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('doc'); else if (window.ZZDoc) window.ZZDoc.open(); } });
+    c.push({ cat: 'panel', category: 'Knowledge', label: '打开 知识库', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-book"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('knowledge'); else if (window.ZZKnowledge) window.ZZKnowledge.open(); } });
+    c.push({ cat: 'panel', category: 'Memory', label: '打开 记忆网络', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-brain"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('ai-memory'); else if (window.ZZMemory) window.ZZMemory.open(); } });
+    c.push({ cat: 'panel', category: 'Memory', label: '查询 长期记忆', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-search"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('memory-query'); else if (window.ZZMemoryQuery) window.ZZMemoryQuery.open(); } });
+    c.push({ cat: 'panel', category: 'Intelligence', label: '打开 记忆中心', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-brain"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('memory-center'); else if (window.ZZMemoryCenter) window.ZZMemoryCenter.open(); } });
+    c.push({ cat: 'panel', category: 'Intelligence', label: '打开 关于我', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-id"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('aboutme'); else if (window.ZZAboutMe) window.ZZAboutMe.open(); } });
+    c.push({ cat: 'panel', category: 'Intelligence', label: '打开 能力中心', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-puzzle"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('capability-center'); else if (window.ZZCapabilityCenter) window.ZZCapabilityCenter.open(); } });
+    c.push({ cat: 'panel', category: 'Intelligence', label: '打开 自我认知', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-pulse"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('self-awareness'); else if (window.ZZSelfAwareness) window.ZZSelfAwareness.open(); } });
+    c.push({ cat: 'panel', category: 'Intelligence', label: '打开 执行状态', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-play"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('execution'); else if (window.ZZExecution) window.ZZExecution.open(); } });
+    c.push({ cat: 'panel', category: 'Intelligence', label: '打开 智能建议', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-signal"/></svg>', run: () => { var c2 = document.getElementById('proactiveChip'); if (c2) c2.click(); } });
+    c.push({ cat: 'panel', category: 'External', label: '打开 地图', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-map"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('map'); else if (window.ZZMap) window.ZZMap.open(); } });
+    c.push({ cat: 'panel', category: 'Settings', label: '打开 设置', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-gear"/></svg>', run: () => { if (window.PanelManager) PanelManager.openCapability('settings'); else if (window.ZZSettings) window.ZZSettings.open(); } });
+    // 主题
+    THEMES.forEach(t => c.push({ cat: 'theme', category: 'Settings', label: '主题 · ' + t.label, hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-palette"/></svg>', theme: t.id }));
+    // 功能（按 FEATURE 成熟度标注）
+    FEATURES.forEach(f => c.push({ cat: 'feature', category: 'Settings', maturity: FEATURE_META[f.flag] && FEATURE_META[f.flag].maturity, label: '功能 · ' + f.label, hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-puzzle"/></svg>', feature: f.flag }));
+    // 创建（预填对话输入框，交给 LLM 走工具循环）
+    c.push({ cat: 'create', category: 'Goals', label: '新建 目标', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-target"/></svg>', prefill: '设定目标：' });
+    c.push({ cat: 'create', category: 'Goals', label: '新建 待办', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-check"/></svg>', prefill: '添加待办：' });
+    c.push({ cat: 'create', category: 'Goals', label: '新建 提醒', hint: '⏰', prefill: '提醒我 ' });
+    // 系统
+    c.push({ cat: 'system', category: 'UI', label: '聚焦 指令输入', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-keyboard"/></svg>', run: () => { const e = primaryInput(); if (e) e.focus(); } });
+    c.push({ cat: 'system', category: 'UI', label: '关闭 所有面板', hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-close"/></svg>', run: closeAllPanels });
+    return c;
+  }
+
+  function closeAllPanels() {
+    ['hotspot', 'weather', 'sysmon', 'term', 'doc', 'memory', 'map', 'memq'].forEach(m => document.body.classList.remove(m + '-mode'));
+    if (window.ZZSettings) window.ZZSettings.close();
+    if (window.PanelManager) window.PanelManager.closeAll();
+  }
+
+  function runTheme(id) {
+    if (window.ZZSettings) window.ZZSettings.set({ theme: id });
+    fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ XIAO6_THEME: id }) }).catch(() => {});
+  }
+
+  async function runFeature(flag) {
+    const next = !(_featureState[flag] === true);
+    try {
+      await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [flag]: next }) });
+      _featureState[flag] = next;
+    } catch (e) { /* 静默：本地状态已乐观更新 */ }
+    render();
+  }
+
+  // ── UI Consolidation Sprint 修复：4 条「假命令」接回真实输入面 ──────────────
+  // 原实现取 document.getElementById('userInput')，而该 id 在 index.html 中不存在
+  // （真实输入是工作台 #input 与指令坞 #osDockInput）。结果：新建目标/待办/提醒 +
+  // 聚焦输入 共 4 条命令长期静默失败，且仍回报「已填入对话，等你确认」——谎报成功。
+  // 收口：解析到当前形态下的主输入面。不新增入口、不新增能力。
+  function primaryInput() {
+    const inChat = document.body.classList.contains('chat-mode');
+    const chatEl = document.getElementById('input');
+    const dockEl = document.getElementById('osDockInput');
+    return (inChat ? (chatEl || dockEl) : (dockEl || chatEl)) || null;
+  }
+
+  function runPrefill(text) {
+    const e = primaryInput();
+    if (!e) return false;
+    e.focus();
+    e.value = text;
+    const len = text.length;
+    try { e.setSelectionRange(len, len); } catch (_) {}
+    try { e.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+    return true;
+  }
+
+  function runCmd(cmd) {
+    pushRecent(cmd);
+    // 真实动作与现状完全一致（仅消费既有 Capability / Intent Gateway / Settings，不改 Backend/EventBus/Registry）
+    if (cmd.intent) {
+      try { runIntent(cmd.intent); } catch (e) { return feedback('error', '调度失败：意图网关不可用'); }
+      return feedback('thinking', '理解意图中，已转交小6…');
+    }
+    if (cmd.run) {
+      try { cmd.run(); } catch (e) { return feedback('error', '调度失败'); }
+      return feedback('executing', '正在调度能力…');
+    }
+    if (cmd.theme) { runTheme(cmd.theme); return feedback('completed', '主题已切换'); }
+    if (cmd.feature) { runFeature(cmd.feature); return feedback('completed', '功能开关已更新'); }
+    // 诚实回报：填入成功才报 completed，找不到输入面报 error（不再谎报成功）
+    if (cmd.prefill) {
+      return runPrefill(cmd.prefill)
+        ? feedback('completed', '已填入输入框，等你确认')
+        : feedback('error', '未找到可用的输入框');
+    }
+  }
+
+  // [E] Execution Feedback：AI Presence 调度状态（仅表现层；真实动作已在上方同步执行，不改 Backend/EventBus/Capability）
+  function feedback(kind, label) {
+    const box = document.querySelector('.cp-box');
+    const status = document.getElementById('cpStatus');
+    if (!box || !status) { closeCp(); return; }
+    status.textContent = label;
+    status.className = 'cp-status cp-status--' + kind;
+    box.classList.add('cp--dispatching');
+    setTimeout(closeCp, 460);
+  }
+
+  // Order 5：自由文本 → Intent Gateway。状态由后端经 publish_domain → Event Bridge → AppState 回流，
+  // 本函数不直写状态、不直连业务逻辑（单一入口纪律）。
+  function runIntent(text) {
+    if (window.ZZIntentGateway) window.ZZIntentGateway.dispatch(text);
+  }
+
+  function score(cmd, q) {
+    if (!q) return 1;
+    const label = cmd.label.toLowerCase();
+    const i = label.indexOf(q.toLowerCase());
+    if (i < 0) return 0;
+    return 100 - i - (label.length - q.length) * 0.1;
+  }
+
+  function render() {
+    const list = document.getElementById('cpList');
+    if (!list) return;
+    const q = _filter.trim();
+    const cats = MODE_CATS[_mode];
+    _visible = _cmds
+      .filter(c => !cats || cats.indexOf(c.cat) >= 0)
+      .map(c => ({ c, s: score(c, q) }))
+      .filter(x => x.s > 0)
+      .sort((a, b) => (CAT_ORDER.indexOf(a.c.cat) - CAT_ORDER.indexOf(b.c.cat)) || (b.s - a.s))
+      .map(x => x.c);
+    // Sprint 4：空过滤 + 搜索/命令段时，置顶“最近”命令
+    if (!q && (_mode === 'search' || _mode === 'command')) {
+      loadRecent().forEach(label => {
+        const src = _cmds.find(c => c.label === label);
+        if (src) _visible.unshift(Object.assign({}, src, { _recent: true, cat: 'recent' }));
+      });
+    }
+    // Order 5：自由文本 → Intent Gateway 入口（仅搜索 / Agent 段提供自然语言逃逸舱）
+    if (q && (_mode === 'search' || _mode === 'agent')) {
+      _visible.unshift({ cat: 'intent', intent: q, label: '理解为意图并调度：' + q, hint: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-send"/></svg>' });
+    }
+    if (_active >= _visible.length) _active = 0;
+    list.innerHTML = '';
+    let lastCat = null;
+    _visible.forEach((cmd, idx) => {
+      if (cmd.cat !== lastCat) {
+        lastCat = cmd.cat;
+        const h = document.createElement('div');
+        h.className = 'cp-cat';
+        h.textContent = CAT_LABEL[cmd.cat] || cmd.cat;
+        list.appendChild(h);
+      }
+      const el = document.createElement('div');
+      const isIntent = cmd.cat === 'intent';
+      el.className = 'cp-item' + (idx === _active ? ' active' : '') + (isIntent ? ' cp-item--intent' : '');
+      const exp = (window.CapabilityExposure) ? window.CapabilityExposure.tag({ category: cmd.category, maturity: cmd.maturity }) : null;
+      const badge = exp ? ('<span class="cp-badge cp-badge--' + exp.tier + (exp.maturity !== 'prod' ? ' cp-badge--' + exp.maturity : '') + '" title="暴露档位 ' + exp.tier + (exp.honest ? ' · ' + exp.honest : '') + '">' + exp.tier + (exp.honest ? '·' + exp.honest : '') + '</span>') : '';
+      const st = cmd.feature ? (_featureState[cmd.feature] === true ? ' · 开' : ' · 关') : '';
+      el.innerHTML = '<span class="cp-hint">' + cmd.hint + '</span>' +
+        '<span class="cp-label">' + cmd.label + (st ? '<span class="cp-state">' + st + '</span>' : '') + '</span>' + badge;
+      el.addEventListener('mousemove', () => setActive(idx));
+      el.addEventListener('click', () => runCmd(cmd));
+      list.appendChild(el);
+    });
+    if (!_visible.length) {
+      const empty = document.createElement('div');
+      empty.className = 'cp-empty';
+      empty.textContent = '没有匹配的能力，换个说法试试？';
+      list.appendChild(empty);
+    }
+  }
+
+  function setActive(i) {
+    if (!_visible.length) return;
+    if (i < 0) i = _visible.length - 1;
+    if (i >= _visible.length) i = 0;
+    _active = i;
+    const items = document.querySelectorAll('#cpList .cp-item');
+    items.forEach((el, k) => el.classList.toggle('active', k === i));
+    const act = items[i];
+    if (act && act.scrollIntoView) act.scrollIntoView({ block: 'nearest' });
+  }
+
+  function syncModes() {
+    const modes = document.getElementById('cpModes');
+    if (!modes) return;
+    modes.querySelectorAll('.cp-mode-chip').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-mode') === _mode);
+    });
+  }
+
+  function openCp() {
+    if (_open) return;
+    _open = true;
+    _filter = '';
+    _mode = 'search';
+    _active = 0;
+    document.body.classList.add('cp-mode');
+    const input = document.getElementById('cpInput');
+    if (input) input.value = '';
+    syncModes();
+    // 拉取功能开关真实状态（失败则保持默认）
+    fetch('/api/config').then(r => r.json()).then(d => {
+      FEATURES.forEach(f => { _featureState[f.flag] = !!(d && d[featKey(f.flag)]); });
+      render();
+    }).catch(() => {});
+    render();
+    setTimeout(() => { const i = document.getElementById('cpInput'); if (i) i.focus(); }, 30);
+    // Sprint 1/2：指令中心登记到 OverlayManager（统一 ESC / 焦点 / 栈；保留自身高位 z-index）
+    if (window.OverlayManager) {
+      const ov = document.getElementById('cpOverlay');
+      window.OverlayManager.track('command-palette', { el: ov, onClose: closeCpImpl, type: window.OverlayManager.OverlayType.COMMAND, trap: true, keepZIndex: true });
+    }
+  }
+
+  function closeCpImpl() {
+    _open = false;
+    document.body.classList.remove('cp-mode');
+  }
+
+  function closeCp() {
+    if (window.OverlayManager && window.OverlayManager.isOpen('command-palette')) {
+      window.OverlayManager.close('command-palette');   // 触发 onClose + 出栈 + 焦点恢复
+    } else {
+      closeCpImpl();
+    }
+  }
+
+  function init() {
+    if (document.getElementById('cpOverlay')) return;
+    _cmds = buildCommands();
+    document.body.insertAdjacentHTML('beforeend', CP_HTML);
+    const input = document.getElementById('cpInput');
+    if (input) input.addEventListener('input', e => { _filter = e.target.value; _active = 0; render(); });
+    const modes = document.getElementById('cpModes');
+    if (modes) {
+      modes.innerHTML = MODES.map(m => '<button type="button" class="cp-mode-chip" data-mode="' + m.id + '">' + m.label + '</button>').join('');
+      modes.querySelectorAll('.cp-mode-chip').forEach(function (b) {
+        b.addEventListener('click', function () { _mode = b.getAttribute('data-mode'); _active = 0; syncModes(); render(); });
+      });
+      syncModes();
+    }
+    document.getElementById('cpOverlay').addEventListener('click', e => { if (e.target.id === 'cpOverlay') closeCp(); });
+    document.addEventListener('keydown', e => {
+      // Ctrl/Cmd+K 已由 KeyboardManager 以最高优先级处理；此处仅作无 KeyboardManager 时的回退
+      if (window.KeyboardManager && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        _open ? closeCp() : openCp();
+        return;
+      }
+      if (!_open) return;
+      if (e.key === 'Escape') { return; } // ESC 由 OverlayManager 中央处理（关闭栈顶）
+      else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(_active + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(_active - 1); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (_visible[_active]) runCmd(_visible[_active]); }
+    });
+    // Sprint 2：Ctrl/Cmd+K 经 KeyboardManager 注册为最高优先级（Capture Top）
+    if (window.KeyboardManager) {
+      window.KeyboardManager.registerCommand(function () { _open ? closeCp() : openCp(); });
+    }
+  }
+
+  const CP_HTML = `
+<div class="cp-overlay" id="cpOverlay">
+  <div class="cp-box">
+    <div class="cp-inputrow">
+      <span class="cp-caret"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-chevron-right"/></svg></span>
+      <input class="cp-input" id="cpInput" placeholder="描述目标，或搜索/执行能力 · 小6会理解并调度  (Ctrl K 开关 · ↑↓ 选择 · Enter 调度 · Esc 关闭)" autocomplete="off" />
+      <span class="cp-kbd">Ctrl K</span>
+    </div>
+    <div class="cp-modes" id="cpModes"></div>
+    <div class="cp-list" id="cpList"></div>
+    <div class="cp-status" id="cpStatus"></div>
+  </div>
+</div>`;
+
+  // Phase 8：暴露打开/关闭 API，供 Companion 交互桥复用既有 Command Palette（禁止 Companion 内置命令系统）
+  if (typeof window !== 'undefined') {
+    window.ZZCommandPalette = { open: openCp, close: closeCp };
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  }
+})();

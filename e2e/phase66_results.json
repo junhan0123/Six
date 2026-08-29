@@ -1,0 +1,102 @@
+{
+  "mission_a": {
+    "mission": "A",
+    "status": "PASS",
+    "elapsed_ms": 636,
+    "ai_decision": "ACT",
+    "weather_decision": "ACT"
+  },
+  "mission_b": {
+    "mission": "B",
+    "status": "PASS",
+    "elapsed_ms": 1186,
+    "first": "ACT",
+    "later_scores": [
+      0.19,
+      0.19,
+      0.19
+    ]
+  },
+  "mission_c": {
+    "mission": "C",
+    "status": "PASS",
+    "elapsed_ms": 665,
+    "events": 5,
+    "merges": 0
+  },
+  "mission_d": {
+    "mission": "D",
+    "status": "PASS",
+    "elapsed_ms": 7126,
+    "low": "IGNORE",
+    "normal": "ACT",
+    "high": "ACT"
+  },
+  "mission_e": {
+    "mission": "E",
+    "status": "PASS",
+    "elapsed_ms": 581,
+    "ai_score": 0.6515,
+    "ent_score": 0.5675
+  },
+  "mission_f": {
+    "mission": "F",
+    "status": "PASS",
+    "elapsed_ms": 632,
+    "low_score_count": 5
+  },
+  "mission_g": {
+    "mission": "G",
+    "status": "PASS",
+    "elapsed_ms": 487,
+    "decision": "DEFER",
+    "defer_until": 1787403519.320759
+  },
+  "mission_h": {
+    "mission": "H",
+    "status": "PASS",
+    "elapsed_ms": 581,
+    "levels": [
+      "SILENT",
+      "BACKGROUND",
+      "BACKGROUND",
+      "IMPORTANT"
+    ]
+  },
+  "mission_i": {
+    "mission": "I",
+    "status": "PASS",
+    "elapsed_ms": 777,
+    "safe_policy": true,
+    "danger_policy": false
+  },
+  "mission_j": {
+    "mission": "J",
+    "status": "PASS",
+    "elapsed_ms": 505,
+    "persisted": true
+  },
+  "mission_k": {
+    "mission": "K",
+    "status": "PASS",
+    "elapsed_ms": 435,
+    "decision": "ACT",
+    "reason": "事件有价值，立即执行 (score=0.58)"
+  },
+  "mission_l": {
+    "mission": "L",
+    "status": "PASS",
+    "elapsed_ms": 797,
+    "high_score": 0.64,
+    "low_score": 0.58
+  },
+  "mission_m": {
+    "mission": "M",
+    "status": "PASS",
+    "elapsed_ms": 5596,
+    "cycle1": "ACT",
+    "cycle2": "ACT",
+    "cycle3": "ACT",
+    "report_exists": true
+  }
+}

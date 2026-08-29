@@ -1,0 +1,30 @@
+{
+  "mission_a": {
+    "mission": "A",
+    "status": "PASS",
+    "elapsed_ms": 12009
+  },
+  "mission_b": {
+    "mission": "B",
+    "status": "PASS",
+    "steps_executed": 1,
+    "final_status": "COMPLETED"
+  },
+  "mission_c": {
+    "mission": "C",
+    "status": "PASS"
+  },
+  "mission_d": {
+    "mission": "D",
+    "status": "PASS",
+    "attempts": 2,
+    "final_status": "COMPLETED"
+  },
+  "mission_e": {
+    "mission": "E",
+    "status": "PASS",
+    "elapsed_ms": 1332,
+    "checkpoint_loaded": true,
+    "events_count": 4
+  }
+}

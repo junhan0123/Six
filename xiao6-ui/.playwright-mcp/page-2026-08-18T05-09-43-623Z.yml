@@ -1,0 +1,5 @@
+- generic [ref=e1]:
+  - heading "Xiao6 External" [level=1] [ref=e2]
+  - textbox [ref=e3]: chain2
+  - button "Go" [active] [ref=e4]
+  - generic [ref=e5]: clicked:chain2

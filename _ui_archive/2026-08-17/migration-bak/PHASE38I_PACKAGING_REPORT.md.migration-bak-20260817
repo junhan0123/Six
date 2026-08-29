@@ -1,0 +1,45 @@
+# Phase 38I · 发布包分析（P2-1 · #570）
+
+> 日期：2026-08-13 · 纪律：REALITY FIRST（尺寸实测，非估算）
+> 范围：Electron 构建 `extraResources` 把 `../zhuangzhou-ui` 打包为运行时 `backend`；本次核对打包体积分类并排除死目录。
+
+## 一、体积分类（实测）
+
+| 分区 | 路径 | 体积 | 是否随包发布 | 说明 |
+| --- | --- | --- | --- | --- |
+| 活体前端 | `final/`（排除 `_*`） | **2.0 MB** | 是（必须） | index.html + assets + components + css + js，应用实际加载 |
+| 死目录·验证 | `final/_verify` | 29 MB | ❌ 应排除 | 历史 verify 脚本/快照，不被加载 |
+| 死目录·审计 | `final/_audit` | 4.2 MB | ❌ 应排除 | 审计脚本/日志，不被加载 |
+| 死目录·文档 | `final/_docs` | 188 KB | ❌ 应排除 | 文档草稿，不被加载 |
+| 死目录·遗留 | `final/_legacy` | 140 KB | ❌ 应排除 | 旧组件，不被加载 |
+| 备份文件 | `final/assets/*.bak` | 856 KB | ❌ 应排除 | avatar 备份图，非资源 |
+| **死内容合计** | | **≈ 34.3 MB** | | 约为活体前端的 **17 倍** |
+
+> `du` 实测：活体 2.0M，死目录 33M（_verify 29M + _audit 4.2M + _docs 188K + _legacy 140K），.bak 856K。
+
+## 二、问题
+
+原 `electron/package.json` 的 `extraResources[0].filter` 仅排除 `__pycache__ / *.db / *.log / .env / node_modules / python 测试文档 / *.pyc` 等，**未排除 `final/_audit _docs _legacy _verify` 与 `*.bak`**。
+→ 死目录（≈34MB 开发/审计/验证产物）会被打进正式发布包，违反审计计划 R3「死目录打包须排除」，并可能向用户泄露内部开发痕迹。
+
+## 三、修复（#570 已落地）
+
+`electron/package.json` · `build.extraResources[0].filter` 追加 5 条排除：
+
+```json
+"!final/_audit",
+"!final/_docs",
+"!final/_legacy",
+"!final/_verify",
+"!**/*.bak"
+```
+
+- `files` 数组（管制 electron 壳自身）未改动，仅修正 extraResources 的 `../zhuangzhou-ui` 过滤器。
+- 不改变运行时行为：死目录本就不被 `final/index.html` 加载（实测 index.html 所有 `<script>/<link>` 仅指向活体资源）。
+- `package.json` 经 `JSON.parse` 校验有效。
+
+## 四、结论
+
+- 发布包将不再包含 `final/_*` 与 `*.bak`，体积下降约 34MB（占位 + 去敏感）。
+- 红线未触碰：未改 `server.py`、未新增 API、未改核心架构，仅调整构建过滤器（属发布工程，不在禁止清单）。
+- 验证：`PKG_JSON_VALID`；死目录尺寸实测；index.html 引用全部为活体资源（见 VERIFY2 报告）。

@@ -1,0 +1,108 @@
+/* ============================================================================
+ * spatial-runtime.css — Xiao6 UI-4A · Spatial Runtime Foundation v1.0
+ * ----------------------------------------------------------------------------
+ * 身份：AI OS Spatial Runtime Foundation（最小运行基础）
+ * 性质：纯表现层 ADDITIVE 文件；在 ui2.css 之后加载（继承其全部令牌 / 令牌层级）。
+ * 加载顺序：styles.css → premium.css → runtime-viz.css → execution-channel.css
+ *           → ui2.css → spatial-runtime.css（本文件，最终权威覆盖仅限本文件新增类）
+ *
+ * 纪律（严格遵守 UI-4A brief 红线）：
+ *   - 不修改 solar-system.js / Three.js renderer / Galaxy 数据模型 / AppState /
+ *     EventBus / Backend / Agent / Domain / 功能逻辑。
+ *   - 不大规模重写 CSS、不删除 Legacy CSS、不重写 Workspace HTML、不提前进入 UI-4B。
+ *   - 不新增 Event Contract（DOMAIN=71 / SYSTEM=8 不扩张）。
+ *   - 仅建立「World Layer / Operation Layer」空间关系与迁移基础
+ *     （CSS wrapper/class + 令牌），不改业务。
+ *
+ * 冻结模型（UI-3B v1.1）映射（详见 04_INTERACTION_FLOW.md / 02_GALAXY_WORKSPACE_RELATION.md）：
+ *   World Layer     = Galaxy（#solarCanvas + .galaxy-veil），只读投影，概念 z 0–4
+ *   Operation Layer = Workspace(#osShell / #app) + Command Dock(#osDock)
+ *                     + Panels(OverlayManager) + AI Presence(HUD / Companion)，概念 z 18+
+ *   Command Dock    = # Global AI Intent Entry（底部永驻，非 Chat / 非 Search）
+ *   Panel Lifecycle = Dormant → Attention → Active 三态（04 §13）
+ *
+ * 本文件交付的「最小运行基础」：
+ *   A1 Layer Boundary        —— World/Operation 概念分层令牌 + .zz-world-layer 锚点
+ *   A2 Attention Transition  —— 连续亮度/透明度缓动基础（复用既有 Motion Token，无新 Event Contract）
+ *   A3 Operation Surface     —— .zz-operation-surface 迁移 wrapper（声明，UI-4 接管）
+ *   A4 Command Dock Position —— .zz-command-dock 空间定位确认（不改输入行为）
+ *   A5 Panel Layer Prep      —— .panel-lifecycle-* 三态空间基础（UI-4 打 data-lifecycle 用）
+ * ========================================================================== */
+
+:root {
+  /* ── 空间分层概念令牌（锚点；实值来自 ui2.css 既有 --z-* 体系，不重定义）── */
+  --z-world-floor: 0;            /* World Layer 概念下限（= --z-ground） */
+  --z-world-ceiling: 4;          /* World Layer 概念上限（= --z-stage-deco） */
+  --z-operation-floor: 18;       /* Operation Layer 概念下限（首个操作层令牌 --z-hud=20 之上） */
+
+  /* ── 注意力转换（Attention Transition）基础变量 ──
+     复用 UI-A P7 既有 Motion Token（--ease-premium / --dur-*）；无新增体系。 */
+  --world-brightness: 0.72;            /* 操作态：World Layer 暗化（冻结模型「暗化银河世界层」，仍可见） */
+  --world-brightness-explore: 1;      /* 探索态：World Layer 提亮 */
+  --operation-opacity: 1;             /* 操作态：Operation Surface 全显 */
+  --operation-opacity-explore: 0.35;  /* 探索态：Operation Surface 退后（连续，非硬切） */
+  --attention-ease: var(--ease-premium);
+  /* 绑定到 ui2 既有 --dur-slow(450ms)：原 --dur-med 在 ui2.css 中不存在，
+     导致本令牌解析为无效值、连带 .solar-canvas 亮度过渡被整条丢弃为 0s。
+     改用 --dur-slow（ui2 中"重大视图转场"统一时长，如聊天抽屉/节点卡）。 */
+  --attention-dur: var(--dur-slow);
+}
+
+/* ── A1 · Layer Boundary：World Layer 锚点 ──
+   复用既有令牌，零业务改动。注意：不设置 pointer-events:none ——
+   #solarCanvas 需可点击星球（universe-mode 受控交互经 galaxy-experience.js）。 */
+.zz-world-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-ground);
+}
+
+/* ── A3 · Operation Surface Container：迁移基础 wrapper ──
+   此处仅声明。UI-4 接管时统一将 #osShell / #app 收敛到本概念带，
+   当前不强制改既有 .os-shell{z-index:5}，避免与既有 stacking 冲突。 */
+.zz-operation-surface {
+  position: relative;
+  z-index: var(--z-operation-floor);
+}
+
+/* ── A2 · Attention Transition Foundation ──
+   默认（操作态）：World Layer 暗化；Operation Surface 全显。
+   复用既有 body.universe-mode（Ctrl/Cmd+U 既有触发）与新增 body.zz-explore 钩子，
+   二者均仅切换 CSS 变量 / 透明度，连续缓动，绝不新增 Event Contract。
+   UI-4 才把触发控件（候选 A/B/C）接到 body.zz-explore；本阶段该钩子未接线、无副作用。 */
+.solar-canvas {
+  filter: brightness(var(--world-brightness));
+  transition: filter var(--attention-dur) var(--attention-ease);
+}
+body.universe-mode .solar-canvas,
+body.zz-explore .solar-canvas {
+  filter: brightness(var(--world-brightness-explore));
+}
+body.zz-explore .zz-operation-surface {
+  opacity: var(--operation-opacity-explore);
+  transition: opacity var(--attention-dur) var(--attention-ease);
+}
+
+/* ── A4 · Command Dock Spatial Position ──
+   Dock 已位于 #osShell 底部（.os-bottom > .os-dock > #osDock），属 Operation Surface。
+   此处仅确认其作为 # Global AI Intent Entry 的空间定位：底部永驻、不抢占 Primary。
+   输入行为由 command-dock.js 负责，本文件不改、不新增聊天 UI。 */
+.zz-command-dock {
+  /* 迁移基础：确认 Dock 永驻底部、属 Operation Surface（UI-4 收敛样式用） */
+}
+
+/* ── A5 · Panel Layer Preparation ──
+   Panel Lifecycle 三态对应的空间基础（04 §13）。
+   当前实际 z 由 PanelManager(overlayId) + OverlayManager 承载（60-83 / 90 / 9000）。
+   本块仅定义可复用类，供 UI-4 在 openCapability 时打 data-lifecycle 属性用；不全面迁移 Panel。 */
+.panel-lifecycle-dormant {
+  /* Dormant：完全不可见，不占 z、不占注意力（默认态，无样式即满足） */
+}
+.panel-lifecycle-attention {
+  z-index: var(--z-overlay);   /* 60 —— 占据一个 Secondary Focus */
+  opacity: 0.92;
+}
+.panel-lifecycle-active {
+  z-index: var(--z-dialog);    /* 83 —— 占据 Primary Focus；银河退至暗化背景仍在场 */
+  opacity: 1;
+}

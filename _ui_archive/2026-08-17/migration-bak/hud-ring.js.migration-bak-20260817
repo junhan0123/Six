@@ -1,0 +1,355 @@
+// hud-ring.js — 庄周 P11-1 常驻状态光环（全息 HUD 底层）
+// 环形粒子系统（≤500 粒子），四态：
+//   IDLE     青色呼吸   #22D3EE  0.5Hz
+//   THINKING 琥珀旋转   #F5B544
+//   SPEAKING 青色外扩   #22D3EE
+//   LISTENING绿色汇聚   #10B981
+// 性能门控：帧耗时持续超限（按 HUD_RING_PERF_THRESHOLD 缩放）自动降级为 Canvas2D。
+// 关闭：/api/hud/config 返回 hud_ring=false 时不挂载。
+// 暴露 window.ZZHudRing = { mount(), setState(mode), unmount() }。
+
+import * as THREE from './vendor/three/three.module.js';
+
+// 状态 → 颜色 / 动效类型
+const STATES = {
+  idle:     { color: 0x22d3ee, css: '#22D3EE', kind: 'breathe' },
+  thinking: { color: 0xf5b544, css: '#F5B544', kind: 'rotate' },
+  speaking: { color: 0x22d3ee, css: '#22D3EE', kind: 'expand' },
+  listening:{ color: 0x10b981, css: '#10B981', kind: 'converge' },
+};
+
+const PARTICLE_COUNT = 480;          // ≤500
+const RING_FRACTIONS = [1.0, 0.82, 0.64, 0.46];
+const BASE_RADIUS_FRAC = 0.32;       // 占半高比例
+
+let cfg = { enabled: true, perfThreshold: 5 };
+let mode = 'idle';
+let modeStart = 0;
+let backend = 'webgl';               // 'webgl' | 'canvas2d'
+let degraded = false;
+let stopped = false;                 // 二级降级：完全停渲染（fps<STOP_FPS）
+const STOP_FPS = 20;                 // 帧率低于此值则完全关闭光环渲染，保主链路
+
+let canvas = null, ctx2d = null;
+let renderer = null, scene = null, camera = null, points = null, geometry = null, material = null;
+let particles = [];
+let raf = 0, running = false, lastT = 0;
+let frameSamples = [];
+let mounted = false;
+
+function prefersReduced() {
+  return (
+    document.body.classList.contains('reduced-motion') ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+// ---- 粒子初始布局（一次生成，运行期按态重算位置）----
+function buildParticles() {
+  particles = [];
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const ringIdx = i % RING_FRACTIONS.length;
+    particles.push({
+      angle: Math.random() * Math.PI * 2,
+      rf: RING_FRACTIONS[ringIdx],
+      phase: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.25,   // 各粒子自转微差（视觉有机感）
+      size: 0.7 + Math.random() * 0.6,
+    });
+  }
+}
+
+// 计算第 i 个粒子当前态下的归一化坐标与透明度
+function computeParticle(i, t) {
+  const p = particles[i];
+  const st = STATES[mode] || STATES.idle;
+  const elapsed = t - modeStart;
+  let radiusScale = 1;
+  let alpha = 1;
+  let angle = p.angle + p.spin * t;   // 缓慢自转
+
+  switch (st.kind) {
+    case 'breathe': {
+      radiusScale = 1 + 0.06 * Math.sin(2 * Math.PI * 0.5 * t);   // 0.5Hz 呼吸
+      alpha = 0.55 + 0.35 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 0.5 * t));
+      angle += elapsed * 0.05;
+      break;
+    }
+    case 'rotate': {
+      angle += elapsed * 0.9;           // 明显旋转
+      alpha = 0.85;
+      break;
+    }
+    case 'expand': {
+      const wave = (elapsed % 1.2) / 1.2;
+      radiusScale = 1 + wave * 0.7;
+      alpha = 1 - wave * 0.85;
+      break;
+    }
+    case 'converge': {
+      const wave = (elapsed % 1.2) / 1.2;
+      radiusScale = 1 - wave * 0.55;
+      alpha = 0.4 + wave * 0.6;
+      break;
+    }
+    default:
+      break;
+  }
+  // 有机微抖动
+  const wob = 0.02 * Math.sin(t * 1.3 + p.phase);
+  return { angle, rf: p.rf * (1 + wob), radiusScale, alpha, size: p.size };
+}
+
+// ---- WebGL 后端 ----
+function initWebGL() {
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  } catch {
+    return false;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setClearColor(0x000000, 0);
+
+  scene = new THREE.Scene();
+  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -100, 100);
+
+  geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(PARTICLE_COUNT * 3);
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const colors = new Float32Array(PARTICLE_COUNT * 3);
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  material = new THREE.PointsMaterial({
+    size: 5,
+    sizeAttenuation: false,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.95,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  points = new THREE.Points(geometry, material);
+  scene.add(points);
+  return true;
+}
+
+function renderWebGL(t) {
+  const aspect = window.innerWidth / Math.max(window.innerHeight, 1);
+  const pos = geometry.attributes.position.array;
+  const col = geometry.attributes.color.array;
+  const c = new THREE.Color((STATES[mode] || STATES.idle).color);
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const d = computeParticle(i, t);
+    const r = BASE_RADIUS_FRAC * d.rf * d.radiusScale;
+    pos[i * 3] = Math.cos(d.angle) * r * aspect;
+    pos[i * 3 + 1] = Math.sin(d.angle) * r;
+    pos[i * 3 + 2] = 0;
+    const a = d.alpha;
+    col[i * 3] = c.r * a;
+    col[i * 3 + 1] = c.g * a;
+    col[i * 3 + 2] = c.b * a;
+  }
+  geometry.attributes.position.needsUpdate = true;
+  geometry.attributes.color.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+// ---- Canvas2D 降级后端 ----
+function renderCanvas2D(t) {
+  const w = canvas.width, h = canvas.height;
+  ctx2d.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2;
+  const baseR = Math.min(w, h) * BASE_RADIUS_FRAC;
+  const st = STATES[mode] || STATES.idle;
+  ctx2d.fillStyle = st.css;
+  ctx2d.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const d = computeParticle(i, t);
+    const r = baseR * d.rf * d.radiusScale;
+    const x = cx + Math.cos(d.angle) * r;
+    const y = cy + Math.sin(d.angle) * r;
+    ctx2d.globalAlpha = Math.max(0, d.alpha) * 0.9;
+    ctx2d.beginPath();
+    ctx2d.arc(x, y, 2.4 * d.size, 0, Math.PI * 2);
+    ctx2d.fill();
+  }
+  ctx2d.globalAlpha = 1;
+  ctx2d.globalCompositeOperation = 'source-over';
+}
+
+// ---- 性能门控：帧耗时过载 → 降级 ----
+function monitorFrame(dt) {
+  if (stopped) return;
+  frameSamples.push(dt);
+  if (frameSamples.length > 90) frameSamples.shift();
+  if (frameSamples.length < 60) return;
+  const avg = frameSamples.reduce((a, b) => a + b, 0) / frameSamples.length;
+  const fps = 1000 / avg;
+  // 一级降级：WebGL 帧预算超限 → Canvas2D
+  if (!degraded && backend === 'webgl') {
+    // 阈值 5% → 允许帧预算 ≈ 16.6ms * (1 + 5/5*0.6) ≈ 22.6ms；越低越严
+    const budget = 1000 / 60 * (1 + (cfg.perfThreshold / 5) * 0.6);
+    if (avg > budget) { degrade(); return; }
+  }
+  // 二级降级：任一后端帧率仍 < 20fps → 完全停渲染，保主链路
+  if (fps < STOP_FPS) stopRendering();
+}
+
+function degrade() {
+  degraded = true;
+  backend = 'canvas2d';
+  const w = window.innerWidth, h = window.innerHeight;
+  // 重设 canvas 为像素缓冲（2D 不用 dpr 缩放，直接按视口）
+  canvas.width = w;
+  canvas.height = h;
+  ctx2d = canvas.getContext('2d');
+  if (renderer) {
+    try { renderer.dispose(); } catch {}
+    renderer = null;
+  }
+  console.warn('[hud-ring] 性能门控触发，降级为 Canvas2D 光环');
+}
+
+function stopRendering() {
+  if (stopped) return;
+  stopped = true;
+  stop();
+  document.body.classList.add('hud-stopped');
+  console.warn('[hud-ring] 帧率过低(<20fps)，完全关闭光环渲染以保主链路');
+}
+
+// ---- 主循环 ----
+function loop(now) {
+  raf = requestAnimationFrame(loop);
+  const t = now / 1000;
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  const frameMs = dt * 1000;
+  if (prefersReduced()) {
+    // 减动：仅静态渲染一帧（breathe 微动仍允许，但停循环）
+    renderOnce(t);
+    return;
+  }
+  try {
+    if (backend === 'webgl') renderWebGL(t);
+    else renderCanvas2D(t);
+  } catch {
+    if (backend === 'webgl') { degrade(); }
+  }
+  monitorFrame(frameMs);
+}
+
+function renderOnce(t) {
+  try {
+    if (backend === 'webgl') renderWebGL(t);
+    else renderCanvas2D(t);
+  } catch {}
+}
+
+function start() {
+  if (!canvas || running) return;
+  if (prefersReduced()) {
+    renderOnce(performance.now() / 1000);
+    return;
+  }
+  running = true;
+  lastT = performance.now();
+  raf = requestAnimationFrame(loop);
+}
+
+function stop() {
+  running = false;
+  if (raf) cancelAnimationFrame(raf);
+  raf = 0;
+}
+
+function onResize() {
+  if (!canvas) return;
+  if (backend === 'webgl' && renderer) {
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+  } else {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    if (!prefersReduced()) renderOnce(performance.now() / 1000);
+  }
+}
+
+function ensureCanvas() {
+  canvas = document.getElementById('hudRing');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'hudRing';
+    canvas.style.cssText =
+      'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;' +
+      'z-index:1;' + // 在 premium-bg(z 视情况) 之上、内容(.app) 之下
+      'opacity:0.9;transition:opacity .6s ease;';
+    document.body.appendChild(canvas);
+  }
+  // 初始尺寸
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+// ---- 对外 API ----
+function mount() {
+  if (mounted) return;
+  if (!cfg.enabled) return;
+  stopped = false;
+  document.body.classList.remove('hud-stopped');
+  ensureCanvas();
+  buildParticles();
+  if (!initWebGL()) {
+    backend = 'canvas2d';
+    ctx2d = canvas.getContext('2d');
+  }
+  mounted = true;
+  window.addEventListener('resize', onResize);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else start();
+  });
+  new MutationObserver(() => { if (prefersReduced()) stop(); else start(); })
+    .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  start();
+}
+
+function setState(m) {
+  if (!STATES[m]) return;
+  if (m === mode) return;
+  mode = m;
+  modeStart = performance.now() / 1000;
+  // 主题色随 data-theme 已由粒子颜色硬编码；如需跟随主题可在此扩展
+}
+
+function unmount() {
+  stop();
+  if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+  canvas = null;
+  mounted = false;
+}
+
+// ---- 自举：拉取配置，决定是否挂载 ----
+async function bootstrap() {
+  try {
+    const r = await fetch('/api/hud/config');
+    const d = await r.json();
+    cfg.enabled = !!d.hud_ring;
+    cfg.perfThreshold = Number(d.perf_threshold) || 5;
+  } catch {
+    // 拉取失败：按默认（开启）兜底，仍挂载
+    cfg.enabled = true;
+  }
+  if (!cfg.enabled) return;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  } else {
+    mount();
+  }
+}
+
+window.ZZHudRing = { mount, setState, unmount, isMounted: () => mounted };
+
+bootstrap();
+
+export { STATES };

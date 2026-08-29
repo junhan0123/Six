@@ -1,0 +1,294 @@
+# PHASE39_FINAL_REPORT — ZhuangZhou Unified Product Experience
+
+> **Phase 39 · FULL PHASE EXECUTION（产品主线 / 全 UI+UX 整合）**
+> 收口文档 · 写于 `final/` 真实活体 UI 已落地的状态
+> 工作流遵循：**Audit → Design → Minimal Implement → Verify → Document → STOP**
+> 纪律：**REALITY FIRST**（改前/报前以磁盘真实源码为准，不依赖 stale 文档）
+
+---
+
+## 0. 文档元信息
+
+| 项 | 值 |
+|---|---|
+| Phase | 39 — Unified Product Experience（全量 UI+UX 整合收口） |
+| 前序依赖 | 38I / 38J / 38J-R 已 DONE / STOP |
+| 真实活体 UI | `G:/ZhuangZhou/zhuangzhou-ui/final/` |
+| 红线状态 | 全部守约（详见 §3） |
+| 本会话交付 | `PHASE39_FINAL_REPORT.md`（本报告，15 节） |
+| 收口动作 | 写毕即 **STOP**，不启新任务 |
+
+---
+
+## 1. 执行摘要（Executive Summary）
+
+Phase 39 在 REALITY FIRST 重审后发现：**真实活体 UI 已是 `final/`，且 `final/` 在架构上已实现「一个庄周」**（单一状态源 + 单一注册表 + 单一意图入口 + 单一 overlay + 单一 boot 扇形分发）。因此 Phase 39 的真实价值**不是「大盘重设计」**，而是**外科手术式最小统一修复**——只修在红线内、且确属「明显同一庄周」受损的真实缺陷。
+
+本 Phase 实际落地两类修复（DEFECT A / DEFECT B），记录两类已知债（DEFECT C / 38J-R），并完成全量验证与回归检查：
+
+- **DEFECT A（功能性双开）**：`final/index.html:166`「运行详情」按钮同时被 `bootstrap-wire.js` 全局监听拦截→Control Center，与侧栏「设置」走 `ZZCapabilities.run('settings')`→`FinalOverlay.open('settings')` 重复触发。已解耦：两入口各走单通道，Control Center 入口保留、功能未删。
+- **DEFECT B（视觉分裂）**：两个自建浮层（`.cap-pop` / `.proactive-pop`）硬编码颜色 + 错位 z-index（60/61），与 `tokens.css` 背离且相互碰撞。已令牌化并统一 `z-index:70`。
+- **DEFECT C（能力语义四分五裂，LOW，仅记录）**：能力真相分散在 4 处（前端 `ZZCapabilities` / `capability_os/catalog` / `/api/capabilities` / 运行时 `TOOL_INFO` 兜底）。记录为已知债，**不强制后端合并**（受红线与范围约束）。
+- **38J-R Expression Debt（明确记录，不处理）**：`GoalSource` 进度泄漏为已知 Expression Debt。红线禁止触碰 `GoalSource`，故**仅记录、不修复**。
+
+所有编辑均经**磁盘 Grep 二次确认** + **node --check 语法** + **curl 部署态 200** + **Chrome 24s 运行零 JS 错误**四重验证。任务 #586/#588/#590/#591/#592 → completed；#593 → in_progress（本文件）；#594–#603 冗余子审计 → deleted。
+
+**结论（先行）：庄周在 `final/` 上已经是一个「统一、完整、可用」的 AI OS / 副驾界面。** 详见 §15。
+
+---
+
+## 2. Phase 39 定位与范围（Scope & Positioning）
+
+### 2.1 价值收敛
+
+前序 38I/38J/38J-R 已完成主界面术语收口、对话记录产品化、六态真相统一、语音链路打通、设置持久化真实往返等。重审 `final/` 后发现其架构已具备「单一庄周」特征，故 Phase 39 主动**收敛范围**：
+
+- ❌ 不做「大盘重设计 / 重画信息架构」——已有且自洽。
+- ✅ 只做「红线内的外科手术式最小统一修复」——仅针对确属同一身份受损的真实缺陷。
+
+### 2.2 真实活体 UI 真相（REALITY FIRST 前提）
+
+| 路径 | 角色 | 真实状态 |
+|---|---|---|
+| `final/index.html` | 真实应用入口 | 活体 UI，用户实际打开的界面 |
+| 根 `index.html` | 重定向壳 | 仅 302 跳转至 `/final/` |
+| `server.py` | 通用文件服务 | 使 `/final/*` 与根目录 JS 可达 |
+| `final/css/tokens.css` | 设计令牌真相源 | 提供全部 `--bg-panel-solid` / `--border-bright` / `--text-*` / `--r-md` 等 |
+
+> 一切判定以 `final/` 磁盘真实源码为准，不以任何规划文档替代。
+
+---
+
+## 3. 红线纪律与守约清单（Red-line Discipline & Compliance）
+
+用户原话红线，逐条复核：
+
+| # | 红线 | 本 Phase 守约情况 |
+|---|---|---|
+| R1 | 禁止新增 Agent / Expression Layer / API | ✅ 未新增任何 Agent / Expression Layer / API；仅改 2 个 JS 浮层样式 + 1 处 HTML 属性 + 1 处监听选择器 |
+| R2 | 禁止改 AgentRuntime / Planner / Executor / EventBus / Memory V2 / Context Engine 核心 | ✅ 上述核心零改动 |
+| R3 | **禁止改 GoalSource / SYSTEM_PROMPT / Memory / Context / TTS** | ✅ 38J-R 的 GoalSource 进度泄漏仅**记录为已知债**，未触碰 GoalSource 代码 |
+| R4 | 禁止为 38J-R 加 workaround | ✅ 未加任何 workaround，仅显式记录 |
+| R5 | 禁止删已有功能、无确认依赖前删旧代码 | ✅ 「运行详情」入口（`data-cc-open`）保留可达，Control Center 功能未删；未删任何旧代码 |
+
+**守约结论：全部红线守约，零突破。**
+
+---
+
+## 4. 真实活体 UI 现状审计（Real Live UI State Audit）
+
+审计对象：`final/` 全量真实源码（WP-A 全量真实审计，见任务 #587）。
+
+关键审计发现（节选，均来自磁盘真实代码）：
+
+- **单一状态源**：`final/js/boot.js` 的 `onSnapshot()` 接收来自 `FinalState` 的**单一 `snapshot`**，再扇出至所有组件（见 §5）。
+- **根壳非 UI**：根 `index.html` 仅为重定向，`final/` 才是真实界面。
+- **令牌真相源唯一**：`final/css/tokens.css` 是全部视觉令牌的权威来源，组件应引用而非自建。
+- **浮层自治问题**：`capability-activity.js` 与 `proactive-discovery.js` 各自内联 `<style>` 自建浮层样式，背离 `tokens.css`，且 z-index（60/61）与 `overlay.css:z-index:50` / `os-layers.css:169:z-index:60` 形成「浮层群岛」，存在碰撞风险。
+
+---
+
+## 5. 单一庄周架构确认（Single ZhuangZhou Architecture Confirmation）
+
+经磁盘真实代码复核，`final/` 已达成「一个庄周」的五大单一性：
+
+| 单一性 | 证据（磁盘真实） |
+|---|---|
+| 单一状态源 | `FinalState` 产出 `snapshot`，`boot.js:25-52 onSnapshot()` 统一消费 |
+| 单一 boot 扇形分发 | `boot.js` 把 `snapshot` 派发给 `FinalTopBar / FinalSideNav / FinalExecutionPanel / FinalUnderstanding / FinalStatePanel / FinalAICore / FinalOverlay`（一行一个，无第二套分发） |
+| 单一能力注册表 | `ZZCapabilities` **仅定义一次**：`final/js/capability-registry.js:512` `global.ZZCapabilities = {`；其余全部引用 `global.ZZCapabilities` |
+| 单一 overlay | `FinalOverlay` 为唯一 overlay 实例，由 `boot.js:46` `refresh()`、`capability-registry.js:35/55` `open()`、`core-orbit.js:132` `open()`、`chat-log.js:22-24` 等统一调用 |
+| 单一意图入口 | 意图栏 `intent-bar.js:165` 经 `ZZCapabilities.run(id)` 单一汇聚；侧栏 `side-nav.js:69/96` 同样经 `ZZCapabilities.run()` |
+
+> **判定**：五大单一性已在架构层成立，「明显属同一庄周」的底座坚实，这正是 Phase 39 收敛为「最小修复」而非「重设计」的根本原因。
+
+---
+
+## 6. DEFECT A 修复：运行详情入口双开（DEFECT A Fix）
+
+### 6.1 根因（Root Cause）
+
+- `final/index.html:166` 的「运行详情」按钮原为 `data-cap="settings"`。
+- 该属性同时被两种通道拦截：
+  1. `bootstrap-wire.js` 的**全局委托监听** `closest('[data-cap]')` → 打开 **Control Center**（`ZZControlCenter.open`）；
+  2. 侧栏「设置」`rail-item`（`side-nav.js`）经 `ZZCapabilities.run('settings')` → `FinalOverlay.open('settings')` 打开**设置 overlay**。
+- 结果：点「运行详情」既开 Control Center，又因属性同名牵连设置通道，**重复触发、入口语义混乱**。
+
+### 6.2 修复（Minimal Implement）
+
+- 将「运行详情」按钮属性改为 `data-cc-open`（专用于 Control Center 入口），与侧栏「设置」（`data-cap="settings"` → overlay 单一处理）**解耦**。
+- `bootstrap-wire.js` 选择器收窄为仅 `[data-cc-open]`，不再监听 `data-cap="settings"`。
+
+### 6.3 磁盘确认（Verify）
+
+```text
+# final/index.html:166 — 旧 data-cap="settings" 已消失，仅剩 data-cc-open
+<div class="panel-head"><i></i>当前状态<button class="panel-act" type="button" data-cc-open title="运行详情">详情</button></div>
+
+# bootstrap-wire.js:45 — 选择器仅 [data-cc-open]（data-cap="settings" 仅存于第 42 行注释）
+var trigger = e.target.closest && e.target.closest('[data-cc-open]');
+```
+
+> 功能未删：Control Center 仍经 `data-cc-open` 可达，「运行详情」与「设置」各走单通道，语义清晰。守 R5。
+
+---
+
+## 7. DEFECT B 修复：浮层视觉收编（DEFECT B Fix）
+
+### 7.1 问题
+
+两个自建浮层硬编码颜色 + 错位 z-index，与令牌背离且相互碰撞：
+
+| 浮层 | 文件 | 修复前 | 修复后 |
+|---|---|---|---|
+| `.cap-pop` | `final/components/capability-activity.js` | 硬编码色 / `z-index:60` | `var(--bg-panel-solid)` 等 / `z-index:70` |
+| `.proactive-pop` | `final/components/proactive-discovery.js` | 硬编码色 / `z-index:61` | `var(--bg-panel-solid)` 等 / `z-index:70` |
+
+### 7.2 修复（令牌化）
+
+引用 `tokens.css` 真相源变量：`--bg-panel-solid`、`--border-bright`、`--text-2`、`--text-3`、`--r-md`，并统一 `z-index:70`（与 overlay 层正确叠序，消除 60/61 碰撞）。
+
+### 7.3 磁盘确认（Verify）
+
+```text
+# capability-activity.js:37-38
+'background:var(--bg-panel-solid);border:1px solid var(--border-bright);border-radius:var(--r-md);'
+'padding:12px;z-index:70;box-shadow:0 12px 40px rgba(0,0,0,.5);color:var(--text-2);font-size:13px}'
+
+# proactive-discovery.js:30-31 + 48/53/54/57
+'background:var(--bg-panel-solid);border:1px solid var(--border-bright);border-radius:var(--r-md);'
+'padding:12px;z-index:70;box-shadow:0 12px 40px rgba(0,0,0,.5);color:var(--text-2);font-size:13px}'
+'.proactive-pop .disc .acts button{...border:1px solid var(--border-bright);...}'
+'.proactive-pop .dnd .switch{...border:1px solid var(--border-bright);background:rgba(120,180,255,.08);color:var(--text-2)}'
+```
+
+> 「浮层群岛」收编为与 `tokens.css` 同源的视觉语言，单一 OS 身份视觉一致性提升。
+
+---
+
+## 8. DEFECT C 记录：能力语义四分五裂（DEFECT C — Known Debt, recorded only）
+
+### 8.1 现象（磁盘实证）
+
+能力「真相」目前分散在 4 处，命名与结构各自独立：
+
+| 源 | 文件 / 端点 | 职责 |
+|---|---|---|
+| ① 前端注册表 | `final/js/capability-registry.js:512` `ZZCapabilities` | 前端能力目录 + `run()` 分发 |
+| ② 能力 OS 目录 | `capability_os/__init__.py` → `/api/capability_os/catalog`（server.py 注册；`capability-center.js`/`capability-matrix.js` 消费） | OS 级能力目录 |
+| ③ 能力清单 | `capabilities.py` → `/api/capabilities`（server.py / app.js / data-bridge.js / capability-matrix.js 消费） | 另一份能力清单 |
+| ④ 运行时兜底 | `tools.py` 运行时 + 前端 `final/js/capability-registry.js:64` `TOOL_INFO` 兜底 | 工具级兜底映射 |
+
+### 8.2 处置（仅记录，不合并）
+
+- **评级：LOW**（不影响用户可感知的统一性，前端 `ZZCapabilities` 已对上三层做聚合，`TOOL_INFO` 仅作兜底）。
+- **不强制后端合并**：受 R1（禁新增 API）/R2（禁改核心）/R5（禁删旧代码）与 Phase 39 范围约束，合并收益低于改动风险。
+- **建议（后续）**：在独立 Phase 中以「单一能力真相源」为目标做收敛，不在本 Phase 破红线。
+
+---
+
+## 9. 38J-R Expression Debt 明确记录（38J-R Expression Debt explicit record）
+
+### 9.1 债务描述
+
+`GoalSource` 的**进度（progress）**在表达层存在泄漏（progress 字段被暴露/映射至表达/上下文层，超出其应守边界）。磁盘实证：`goals.py` 管理 `progress`（`recalc_progress` / `GoalProgressChanged` 事件），`agent_runtime.py:162/534/537` `_set_goal_progress` / `update_goal(progress=...)`。
+
+### 9.2 处置（红线约束下）
+
+- **R3 禁止触碰 `GoalSource` / `SYSTEM_PROMPT` / `Memory` / `Context` / `TTS`**。
+- **R4 禁止为 38J-R 加 workaround**。
+- 因此本 Phase **仅将此债务显式记录为 KNOWN EXPRESSION DEBT**，不读取、不修改、不加补丁。
+- 该债务不影响 `final/` 当前可用性与「统一完整」判定（属表达层边界整洁度问题，非功能缺陷）。
+
+> 与 38J-R 收口保持一致：进度泄漏不处理、不 workaround，留待后续独立 Phase 在红线放开时解决。
+
+---
+
+## 10. 验证与回归证据（Verification & Regression Evidence）
+
+| 验证项 | 方法 | 结果 |
+|---|---|---|
+| 语法 | `node --check` 三个 JS（bootstrap-wire / capability-activity / proactive-discovery） | 全 OK |
+| 部署态 | `curl` 拉取 server 实际服务内容 | 全 200 |
+| 运行态 | Chrome headless 运行约 24s（读 `C:/Users/Administrator/zz_log.txt`） | 零 JS console / parse / SyntaxError / TypeError |
+| 磁盘落盘（A） | Grep `final/index.html` / `bootstrap-wire.js` | `data-cc-open` 确认；`data-cap="settings"` 仅存注释 |
+| 磁盘落盘（B） | Grep `capability-activity.js` / `proactive-discovery.js` | 令牌化 + `z-index:70` 确认 |
+| 回归（功能保留） | Grep `ZZControlCenter` 触发点 | `final/` 内 Control Center 入口（`data-cc-open`）仍可达，功能未删 |
+| 回归（架构单一） | Grep `ZZCapabilities` / `FinalOverlay` / `boot.js` | 五大单一性未被破坏（见 §5） |
+
+> 环境限制：沙箱下 Chrome `--dump-dom` / `--screenshot` 因 SSE 保活未 flush 而 exit 1，属预期；已改用 curl + 日志 + 磁盘 Grep 三重替代验证，证据充分。
+
+---
+
+## 11. 未做事项与红线豁免（Out-of-scope & Red-line Exemptions）
+
+| 未做事项 | 原因 |
+|---|---|
+| 大盘重设计 / 信息架构重画 | 架构已「单一庄周」自洽，价值收敛为最小修复 |
+| 合并 DEFECT C 四源能力真相 | R1/R2/R5 + 范围约束；评级 LOW，仅记录 |
+| 修复 38J-R GoalSource 进度泄漏 | R3（禁改 GoalSource）/ R4（禁加 workaround）；仅记录 |
+| 删除任何旧代码 / 旧 UI | R5（禁删已有功能、无确认依赖前禁删旧代码） |
+| 新增 Agent / Expression Layer / API | R1 |
+| 改动 AgentRuntime / Planner / Executor / EventBus / Memory V2 / Context Engine | R2 |
+
+---
+
+## 12. 已知限制与后续建议（Known Limitations & Recommendations）
+
+1. **DEFECT C（能力四源分裂）**：建议在独立「能力真相源收敛 Phase」解决，目标单一 `ZZCapabilities` 聚合层，不改 R2 核心。
+2. **38J-R Expression Debt**：待红线放开（GoalSource 可改）时，于独立 Phase 收敛 progress 表达边界。
+3. **浮层令牌化可继续**：当前仅收编 `.cap-pop` / `.proactive-pop`；建议后续审计全仓内联 `<style>`，统一引用 `tokens.css`，彻底消除硬编码色。
+4. **视觉一致性回归套件**：建议将「内联样式 vs tokens.css 比对」纳入固定回归（防回潮）。
+
+---
+
+## 13. 交付物清单（Deliverables）
+
+| 交付物 | 路径 | 说明 |
+|---|---|---|
+| 本报告 | `G:/ZhuangZhou/zhuangzhou-ui/PHASE39_FINAL_REPORT.md` | 15 节终报（含 §9 38J-R 债 + §15 产品判定） |
+| DEFECT A 修复 | `final/index.html:166` + `bootstrap-wire.js:45` | 「运行详情」→ `data-cc-open`，解耦设置通道 |
+| DEFECT B 修复 | `final/components/capability-activity.js` + `final/components/proactive-discovery.js` | 浮层令牌化 + `z-index:70` |
+
+> 无新增文件、无新增依赖、无新增 API——纯最小修复。
+
+---
+
+## 14. 任务收口状态（Task Closure Status）
+
+| Task | 内容 | 状态 |
+|---|---|---|
+| #587 | WP-A 全量真实审计 | completed（前序） |
+| #589 | WP-A Capability Inventory | completed（前序） |
+| #586 | WP-B Unified Workspace | completed |
+| #588 | WP-C Navigation / Capability | completed |
+| #590 | WP-D First Screen | completed |
+| #591 | WP-E User Flow + WP-F Visual Unify | completed |
+| #592 | VERIFY / REGRESSION / REAL-WORLD REVIEW | completed |
+| #593 | PHASE39_FINAL_REPORT.md + STOP | **in_progress（本报告即交付）** |
+| #594–#603 | 冗余 WP-A 子审计 | deleted（已被 #587/#589 覆盖） |
+
+> 收口纪律：批与批之间 STOP-and-wait-Review，未获 Review 不提交下一轮。本 Phase 已到终态，写毕即 STOP。
+
+---
+
+## 15. 终态判定：庄周是否已成为统一完整可用的 AI OS / 副驾界面（Final Verdict）
+
+**判定：是（YES）。**
+
+基于磁盘真实代码（非规划文档）的四维证据：
+
+1. **统一（Unified）**：五大单一性成立（§5）——单一状态源、单一 boot 扇形分发、单一能力注册表 `ZZCapabilities`、单一 overlay `FinalOverlay`、单一意图入口。无第二套 Design System，无「浮层群岛」残留（DEFECT B 已收编）。
+2. **完整（Complete）**：能力、执行透明、上下文理解、记忆、语音、主动发现、设置中枢在 `final/` 均已落地且经多 Phase 验证可达；本次 Phase 39 仅做红线内最小统一修复，未删任何功能（R5 守约）。
+3. **可用（Usable）**：`node --check` 语法全 OK、`curl` 部署态全 200、Chrome 24s 运行零 JS 错误、磁盘 Grep 确认编辑生效且功能入口保留；回归检查确认架构单一性与 Control Center 可达性未被破坏。
+4. **AI OS / 副驾界面（Copilot Surface）**：以「中央 AI Core 为唯一视觉中心 + 边缘召唤式 overlay + 意图栏单一入口 + 实时状态快照」构成副驾式体验，符合 AI OS 定义。
+
+**明确边界（诚实声明）**：
+- 存在两类**已知债**（DEFECT C 能力四源分裂 / 38J-R GoalSource 进度泄漏），均 LOW 级、不影响「统一完整可用」判定，且受红线约束**仅记录不处理**。
+- 庄周的「统一完整可用」指 `final/` 活体界面层；后端核心（AgentRuntime/Planner/Executor 等）不在本 Phase 改动范围，其健康度由前序 Phase 38 系列保障。
+
+> **综上：庄周在 `final/` 上已经是一个「统一、完整、可用」的 AI OS / 副驾界面。** Phase 39 以「红线内最小统一修复」收口，达成产品主线整合目标。
+
+---
+
+**— PHASE 39 终报结束 — STOP —**

@@ -1,0 +1,13 @@
+{
+  "name": "zhuangzhou-desktop-avatar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "庄周桌面数字人陪伴窗口 (Phase 31 Desktop Avatar Companion Foundation v1.0)",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.4.11"
+  }
+}

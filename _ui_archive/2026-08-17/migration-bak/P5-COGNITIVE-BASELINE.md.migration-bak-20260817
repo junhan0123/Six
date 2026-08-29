@@ -1,0 +1,351 @@
+# P5 — COGNITIVE RUNTIME / AGENT INTELLIGENCE
+## PHASE 0 — VERIFY / BASELINE AUDIT
+
+> **Identity:** ZhuangZhou Senior Systems Architect / Runtime Engineer
+> **Repo:** `G:\ZhuangZhou\zhuangzhou-ui` (v1.4.0)
+> **Mode:** READ-ONLY VERIFY / BASELINE. **ZERO implementation, ZERO production/DB/config/UI/test changes.**
+> **Scope of this document:** answer one question — *after P4 Memory/Context Foundation, what is the actual state of ZhuangZhou's Cognitive / Agent Runtime?* — with every conclusion traced to real source (`file:line`), real call relations, and a fresh test baseline.
+> **Status:** `P5 PHASE 0 = COMPLETE` / `DESIGN GATE = NOT STARTED` / `IMPLEMENTATION = NOT STARTED`.
+
+---
+
+## 1. Executive Summary
+
+P4 delivered a **canonical Memory API** and a **single Context Facade entry** (`context.facade.build_context_prompt`) with a Collect→Rank→Budget→Bundle→Build pipeline. It did **not** touch the Agent Runtime, the Goal system, the cognitive subsystems, or the EventBus producer side. P5 therefore inherits a system where the **Context Facade is wired only into the interactive Chat LLM**, while the **background Agent Runtime builds its own planner prompt in isolation** and never consults Memory/Context/Knowledge through the new contract.
+
+**Headline findings (all verified):**
+
+| # | Finding | Severity for P5 |
+|---|---------|-----------------|
+| F1 | **Two disjoint context pipelines.** Chat uses `context.facade.build_context_prompt`; Agent Runtime self-builds its planner prompt (`agent_runtime.py:851–883`) and never calls the Facade. | P5 core design gap |
+| F2 | **Agent Runtime does not self-retrieve Memory/Knowledge** via the P4 canonical API; it writes Memory directly (`_distill_memory`, `agent_runtime.py:904,933`). | P5 design gap + bypass |
+| F3 | **MCP execution bypasses Approval** with `auto_approve=True` (`agent_runtime.py:641,652`) — Policy retained, Approval skipped. | Security boundary drift |
+| F4 | **Two proactive systems** coexist: legacy `proactive.py` + new `proactive_agent/`. | Architecture duplicate |
+| F5 | **WorldModel is not a module** — it is the `COMPUTER_WORLD_SYNC` event + a read-only `verification.PerceptionWorldModelObserver`. Not consumed by Agent Runtime or Context. | Concept gap |
+| F6 | **Two perception stacks**: Phase 8 `perception_runtime.py` (test-only) vs Phase 20 `perception/` (production). | Architecture duplicate |
+| F7 | **EventBus gating voided on bypass paths** — bare `bus.publish` to non-contract topics (`goals.py:48` `"zz.goal"`, `agent_runtime.py:1181` `"agent:state"`, `mobile.py:46`). | EventBus contract erosion |
+| F8 | **6 feature flags have double-default drift** (module `False` vs `reload()` env `"true"`) → effectively always-on but misleading (`config.py:63,69,79,81,83,85` ↔ `285,288,302,304,308,310`). | Config hygiene |
+| F9 | **Dead/ineffective kill-switches**: `FEATURE_CAPABILITY_RUNTIME` (`config.py:93`) not in reload globals → cannot be disabled; `FEATURE_PROACTIVE_ENGINE` referenced but undefined. | Config hygiene |
+| F10 | **`self_awareness/` and `self_improvement/` overlap heavily** and are observe/archive-only (no execution path). | Scope clarification |
+| F11 | **Memory↔Cognitive mutual imports** (`memory.py:251` ↔ `cognitive/extractor.py:94`, `proactive_agent/observer.py`, `self_awareness/observer.py`, `self_improvement/observer.py`). | Coupling |
+| F12 | **1 real code defect** (`_consecutive_failures` reset-only, never incremented, `agent_runtime.py:554`) surfaces as a test failure; 7 stale-contract test failures; 2 environment-dependent failures. | Test baseline |
+
+**Test baseline (fresh, this PHASE 0):** `474 passed / 10 failed / 0 errors / 0 collection errors` in 178.13s — identical to the P4.4 gate. **A=1, B=7 (with 1 carrying an A root cause), D=2.**
+
+**P5 should NOT start by writing code.** It should start by **designing the Cognitive Runtime contract** that (a) gives Agent Runtime a sanctioned way to consume P4 Memory/Context/Knowledge, (b) converges the two context pipelines, (c) closes the Approval/EventBus bypasses, and (d) de-duplicates the proactive/perception stacks.
+
+---
+
+## 2. Cognitive Architecture
+
+The `cognitive/` package is a **passive observation + extraction + write-back layer**, not an execution subsystem. Verified components:
+
+- **`cognitive/user_model.py`** — maintains a canonical user profile; `canonical_project()` is imported directly by `memory.py:251` (mutual import, F11). Writes to DB **directly**, bypassing the P4 canonical Memory API / EventBus.
+- **`cognitive/episodic.py`** — episodic memory extraction; also writes DB directly, bypassing Memory API.
+- **`cognitive/extractor.py`** — fact/entity extraction; imports `memory` at `:94`.
+- **`cognitive_sources.py`** — the **only sanctioned one-way bridge** feeding P4 Context: it registers `UserModelSource` / `EpisodicSource` into the Context Facade pipeline. This is correct P4 integration; the problem is the *write-back* path (user_model/episodic) does not go through Memory API.
+- **`cognitive/personality.py`** — `:87` `bus.publish("PersonalityChanged", ...)` is a **bare non-contract publish** (not via `publish_domain`).
+
+**Conclusion:** Cognitive = observe/extract/archive only. It has **no agent runtime, no decision loop, no execution authority**. This is the correct role for P5's "Cognitive Runtime" to *consume*, but the write-back bypasses must be closed.
+
+---
+
+## 3. Agent Runtime Architecture
+
+Two **loosely-coupled execution paths** exist (verified call chains):
+
+**Path A — Interactive Chat (default convergence):**
+`server_handlers_chat` → `build_context_prompt` → LLM → `run_fc_loop` → `capability_runtime.execute` → `ai_core.execution.run` → `tools.execute_tool`.
+
+- `capability_runtime._execution_run` (`capability_runtime.py:180–181`) is the **single Chat convergence + Policy gate**.
+- OFF fallback (`:159`) → `execute_tool` directly; `_feature_enabled` reads `getattr(config,"FEATURE_CAPABILITY_RUNTIME",True)` (`:27–32`).
+
+**Path B — Background goal-driven daemon (`agent_runtime`):**
+`goal_decision_engine.submit` → `agent_runtime.runtime.submit_goal` → `_loop` → `_run_goal` → `_execute_task` → branch `[skill: / external.mcp. / computer / else]`.
+
+- Skill branch `_execute_skill_task` (`agent_runtime.py:521,707`) → direct `execute_tool` (benign, no Policy gate needed for in-process skill).
+- MCP branch (`agent_runtime.py:641,651–653`) → `capability_os.execute_capability(..., auto_approve=True, goal_id)` → **Approval bypass (F3)**, Policy retained.
+- Planner **self-builds its LLM prompt in isolation** (`agent_runtime.py:851–883`) — inline `[{"role":"system","content":prompt}]`, **no call to `build_context_prompt` / Context Facade** (F1).
+- `_distill_memory` (`agent_runtime.py:904,933`) writes Memory **directly**, bypassing the canonical API (F2).
+- `capability_os.invoke_capability` (`:256–259`) has a **dormant bypass**: `tool/builtin/computer_action` → `from tools import execute_tool; return execute_tool(...)` — skips `capability_runtime` policy gate. Reachable only via the `invoke_capability` entry, which Path B uses for the Complex/Goal path.
+
+**FSM (verified):** goal states `active/paused/completed/archived/failed/max_steps_exceeded/blocked_by_policy`; task states `open/done/failed/running/paused`; round FSM `none/planned/running/observing/evaluating/COMPLETE/CONTINUE/REPLAN/BLOCK/FAIL`.
+
+**Conclusion:** Agent Runtime is a working daemon but is **cognitively blind** — it does not consume P4 Memory/Context/Knowledge through the sanctioned contract, and it self-manages its own prompt + memory write-back.
+
+---
+
+## 4. Goal Architecture
+
+`goals.py` implements a full, coherent FSM (verified):
+
+- `create_goal` (`:230`) → `status="active"`.
+- `delete_goal` (`:324`) → soft-delete → `status="archived"` (data retained, traceable).
+- `recalc_progress` → flips to `completed` (`:380`) and back.
+- `set_round` (`:170`), `_valid_status` (`:226`), `STATUS` enum (`:221`).
+- Goal dicts returned to callers **include the `"status"` key** (`:369–377` returns task dict with status; `tasks.py:96,118` return `"status": r[5]`). **Production-safe** — the `KeyError:'status'` seen in `test_goal_decision_engine` is a **test-stub defect**, not a runtime bug.
+
+**EventBus integration is split:**
+- Proper path: `publish_domain(domain, payload, source="goals")` (`:87`) → SSE contract.
+- **Bypass path:** `bus.publish("zz.goal", {...})` (`:48`) → bare non-contract topic (F7).
+
+`GoalDeleted` is mapped to `GOAL_UPDATED` (`:32`) — correct single-stream discipline.
+
+**Conclusion:** Goal system is healthy and P5-ready. The only issue is the `:48` bare publish, to be folded into the EventBus contract audit.
+
+---
+
+## 5. WorldModel Architecture
+
+**WorldModel does NOT exist as a module.** Verified: there is no `world_model.py` / `worldmodel/` package. What exists:
+
+- The `COMPUTER_WORLD_SYNC` domain event (`eventbus.py:194`) — emitted by the Perception/Observation layer.
+- `verification.PerceptionWorldModelObserver` — a **read-only** observer that consumes `COMPUTER_WORLD_SYNC` and builds a transient world snapshot for verification, then discards it.
+
+**Not consumed by:** Agent Runtime (no import), Context Facade (no source registered), Goal system. It is a **perception-side read-only artifact**, not a persistent world model the agent reasons over.
+
+**Conclusion for P5:** "World Model" is currently a **perception/verification concept only**. If P5 needs a world model the agent reasons over (state of desktop, open apps, plan progress), that is **net-new design**, not integration of an existing module.
+
+---
+
+## 6. Proactive Architecture
+
+**Two proactive systems coexist (F4):**
+
+1. **Legacy `proactive.py`** — Phase 6 TICK scanner; consumes `goals.py` (TICK scans due goals), emits via `publish_system("proactive", ...)`. Still the production path referenced by `goals.py:13`.
+2. **New `proactive_agent/`** — Phase 9 B1/B3 Proactive Engine: `proactive_decision` / `proactive_result` system events (`:270–271`), an `observer.py` that imports `memory`/`cognitive`.
+
+Both emit under the `proactive` system channel (`:256`). No single owner; risk of dual decision loops.
+
+**Conclusion:** P5 should converge proactive into one engine (the new `proactive_agent/` is the intended successor; legacy `proactive.py` is a candidate for deprecation per the P4 deprecation matrix discipline).
+
+---
+
+## 7. Self-Awareness Architecture
+
+`self_awareness/` = **observe/archive only** (verified):
+- `observer.py` consumes events and writes a self-awareness record; imports `memory` (`self_awareness/observer.py`).
+- No execution authority, no loop, no decision output that feeds Agent Runtime.
+
+Heavily overlaps `self_improvement/` (F10) — both watch the same event streams and archive similar records.
+
+---
+
+## 8. Self-Improvement Architecture
+
+`self_improvement/` = **observe/archive only** (verified):
+- `observer.py` records failures/patterns; imports `memory` (`self_improvement/observer.py`).
+- `_distill_memory` in Agent Runtime (`:904,933`) is the *only* path that turns observations into Memory writes, and it does so **directly**, not through the canonical API.
+
+**Conclusion:** Self-improvement has no closed learning loop — observations are archived but not converted into behavior change except via the ad-hoc `_distill_memory` direct write. P5 "Cognitive Runtime" design must define how distilled insight re-enters Memory/Context via the canonical contract.
+
+---
+
+## 9. P4 → P5 Contract
+
+**What P4 actually delivered (verified in this audit, not assumed):**
+
+- **Canonical Memory API** (`memory.retrieve_memories`, `store_memory`, `delete_by_source_ref`, governance/lifecycle/decay) — single write/read entry for all memory.
+- **Context Facade single entry** `context.facade.build_context_prompt` (`facade.py:31`) with pipeline Collect→Rank→Budget→Bundle→Build.
+- **Sources:** `CorePromptSource`, `RuntimeStateSource`, `MemoryRecallSource`, `UserModelSource`, `EpisodicSource`, `KnowledgeSource`, `GoalSource`, `PersonalitySource`.
+- **Legacy compat:** `memory.build_system_prompt()` retained only as Facade `_legacy_prompt` fallback when Context Engine OFF (`facade.py:24–28,50,57`).
+- **UI frozen** — no frontend changes in P4.
+
+**Integration gap (the P5 contract problem):**
+- The Facade is consumed **only** by the Chat LLM path.
+- Agent Runtime (Path B) does **not** import or call the Facade, does **not** register as a Context consumer, and does **not** use the canonical Memory retrieval API for its own planning context — it self-builds prompt (`:851–883`) and writes Memory directly (`:904,933`).
+- `RuntimeStateSource` is registered (sanctioned, read-only). `MemorySource` class exists but is **unregistered** (dead/historical).
+
+**Therefore the P4→P5 handoff is: P4 built the plumbing; P5 must define who else (Agent Runtime, Goal decision, Proactive) is allowed to *consume* it, and through what sanctioned call.**
+
+---
+
+## 10. Memory / Context Bypass Audit
+
+Reproduced P4.4 bypass scan against current source (verified, production main path only):
+
+| Location | What | Verdict |
+|----------|------|---------|
+| `context/facade.py:24–28` | `_legacy_prompt` → `memory.build_system_prompt` | **Sanctioned** (engine OFF only) |
+| `context/sources/runtime_state_source.py` | `RuntimeStateSource` | **Sanctioned** (read-only state) |
+| `memory.py:251` | `from cognitive.user_model import canonical_project` | **Bypass** (Memory→Cognitive direct import; mutual coupling F11) |
+| `cognitive/user_model.py`, `cognitive/episodic.py` | direct DB writes | **Bypass** (skip canonical Memory API + EventBus) |
+| `agent_runtime.py:904,933` | `_distill_memory` direct Memory write | **Bypass** (F2) |
+| `agent_runtime.py:851–883` | planner self-built prompt | **Bypass** (F1 — does not use Facade) |
+| `e2e_d.py` | dev harness legacy assembly | Out of scope (dev only) |
+| `tests/` | test-only legacy | Out of scope |
+
+**Capability/Executor import boundary (security):** `capability_runtime` and `executor` are imported **only** by `server_handlers_chat.py` + `tools.py`. **No memory/context/cognitive module imports the executor layer.** Security boundary (executor is not reachable from cognitive code) **remains intact.**
+
+**Conclusion:** Post-P4, the production main path has exactly one sanctioned legacy assembly (engine-OFF fallback) plus one sanctioned read-only source. The real bypasses are in the **Agent Runtime write-back + self-prompt** and the **Cognitive direct DB writes** — both are P5 design targets, not P4 regressions.
+
+---
+
+## 11. Capability Security Audit
+
+- **Chat path convergence (intact):** `capability_runtime._execution_run` (`capability_runtime.py:180–181`) is the sole Chat gate; Policy engine evaluates before `ai_core.execution.run` → `tools.execute_tool`.
+- **Agent Runtime MCP bypass (F3):** `capability_os.execute_capability(..., auto_approve=True, goal_id)` (`agent_runtime.py:641,652`). Policy engine is still consulted inside `execute_capability`, but **Approval is auto-granted** for goal-driven MCP calls. This is a deliberate convenience that **removes the human-in-the-loop approval** for background goals.
+- **Dormant bypass (F3):** `capability_os.invoke_capability` `:256–259` → direct `execute_tool`, skipping `capability_runtime` policy gate. Reachable only via the `invoke_capability` entry used by the Complex/Goal path.
+- **Skill path (benign):** `_execute_skill_task` (`:521,707`) → direct `execute_tool` for in-process skills; no external side-effect gate needed.
+
+**Conclusion:** Policy Engine is respected on all paths; **Approval is bypassed for background MCP**. P5 should decide whether background goals require an Approval policy tier rather than blanket `auto_approve=True`.
+
+---
+
+## 12. EventBus Audit
+
+**Contract (verified, `eventbus.py`):**
+- `DOMAIN_EVENT_NAMES` = **78 entries** (`:177–225`) — SSE/AppState contract, checked by `publish_domain` (`:228–247`, raises on unknown name).
+- `SYSTEM_EVENT_NAMES` = **22 entries** (`:255–285`) — telemetry/proactive channel, checked by `publish_system` (`:288+`).
+- Discipline: same semantics must belong to exactly one namespace; no synonym drift.
+
+**Erosion found (F7):**
+- Bare `bus.publish("zz.goal", ...)` — `goals.py:48` (non-contract topic).
+- Bare `bus.publish("agent:state", ...)` — `agent_runtime.py:1181` (note: `"agent:state"` ≠ `TOPIC_HUD_STATE="zz.hud.state"` and ≠ SYSTEM `"agent_state"`).
+- Bare `bus.publish(TOPIC_HUD_STATE, ...)` — `agent_runtime.py:1189` (uses constant, but `TOPIC_HUD_STATE` is not in `SYSTEM_EVENT_NAMES`; the SYSTEM entry is the *string* `"agent_state"`).
+- Bare `bus.publish("PersonalityChanged", ...)` — `cognitive/personality.py:87`.
+- `mobile.py:46` bare publish (verified in grep scan).
+
+**Dead/synonym drift:**
+- `TOOL_CALLED`/`TOOL_DONE` declared in DOMAIN (`:183`) but never emitted (code uses SYSTEM `tool_started`/`tool_finished`, `:281–282`).
+- `long_running` declared in SYSTEM (`:272`) but watchdog path uses bare `bus.publish`.
+
+**Mutual coupling (F11):** `memory.py:251` ↔ `cognitive/extractor.py:94`, `proactive_agent/observer.py`, `self_awareness/observer.py`, `self_improvement/observer.py` all import `memory` directly. EventBus is **not** the only module boundary; direct imports bypass it.
+
+**Conclusion:** EventBus has a sound contract but **multiple producers bypass it**. P5 should make `publish_domain`/`publish_system` the only allowed emit path (lint/CI guard) and reconcile the dead/synonym names.
+
+---
+
+## 13. Feature Flag Audit
+
+**Double-default drift (F8)** — module-level `False` overridden by `reload()` reading env `"true"`:
+
+| Flag | Module default | reload() | Effective |
+|------|---------------|----------|-----------|
+| `FEATURE_EVENTBUS` (`config.py:63`) | `False` | `:285` `"true"` | **Always on** |
+| `FEATURE_PREMIUM_UI` (`:69`) | `False` | `:288` | **Always on** |
+| `FEATURE_PROACTIVE_V2` (`:79`) | `False` | `:302` | **Always on** |
+| `FEATURE_MULTI_DEVICE` (`:81`) | `False` | `:304` | **Always on** |
+| `FEATURE_TTS_STREAM` (`:83`) | `False` | `:308` | **Always on** |
+| `FEATURE_SELF_LEARNING` (`:85`) | `False` | `:310` | **Always on** |
+
+These read as "disabled" in source but are effectively enabled at runtime → misleading and a hazard for P5 kill-switch reasoning.
+
+**Dead/ineffective kill-switches (F9):**
+- `FEATURE_CAPABILITY_RUNTIME` (`:93`) = `True` and **absent from the `reload()` global declaration** (`:219`) → it is never reloaded → **cannot be disabled** at runtime. The `_feature_enabled` guard (`:27–32`) reads `getattr(config,"FEATURE_CAPABILITY_RUNTIME",True)`, so it is permanently on.
+- `FEATURE_PROACTIVE_ENGINE` appears in `ENV_KEYS` (`:561`) but is **undefined** elsewhere → the kill-switch is referenced but non-functional.
+
+**Other:** 9 ghost `ENV_KEYS` (declared but not bound to a real config attribute); bool-vs-string type inconsistency (`module bool` vs `env string "true"`). `FEATURE_CONTEXT_ENGINE=false` falls back to `memory.build_system_prompt` per `:277` comment (consistent with Facade legacy path).
+
+**Conclusion:** P5 design must normalize flags to a **single source of truth** (env-driven, typed) and remove dead kill-switches before adding any new P5 feature flags.
+
+---
+
+## 14. Test Baseline
+
+**Command (fresh, managed venv, this PHASE 0):**
+`pytest` under `C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Scripts\python.exe`
+**Result:** `10 failed, 474 passed in 178.13s` — **0 errors, 0 collection errors.**
+
+This is **identical** to the P4.4 regression gate (474/10), confirming P5 PHASE 0 inherits a stable, unchanged baseline. Log: `C:\Users\Administrator\.workbuddy\p5_test_baseline.log`.
+
+**The 10 failures (exact, verified):**
+
+| # | Test | Immediate cause |
+|---|------|----------------|
+| 1 | `tests/phase7-order2.backend.test.py::test_be_count` | asserts `DOMAIN_EVENT_NAMES` count == 72, now **78** |
+| 2 | `tests/phase7-order2.backend.test.py::test_symmetry` | stale contract count |
+| 3 | `tests/phase7-order3.backend.test.py::test_be_count` | asserts count 72, now 78 |
+| 4 | `tests/phase7-order3.backend.test.py::test_symmetry` | stale contract count |
+| 5 | `tests/phase8-mvp.backend.test.py::test_contract` | `DOMAIN_EVENT_NAMES` count stale |
+| 6 | `tests/phase8-order1.backend.test.py::test_contract` | `DOMAIN_EVENT_NAMES` count stale |
+| 7 | `tests/phasec_native_runtime.test.py::TestPriorRegression::test_gate_guard_passes` | invokes `GATE-GUARD.py` which checks the stale contract count |
+| 8 | `tests/test_external.py::test_status_default_all_disabled` | env has `ffmpeg` → `asr` enabled, assert fails |
+| 9 | `tests/test_external.py::test_asr_transcribe_disabled_without_key` | env has `ffmpeg` → `asr` enabled, err not "未启用" |
+| 10 | `tests/test_goal_decision_engine.py::test_consecutive_failure_clear_queue` | `KeyError:'status'` — test stub omits `status` key |
+
+---
+
+## 15. A / B / C / D Classification
+
+| Class | Meaning | Count | Tests |
+|-------|---------|-------|-------|
+| **A** | Real code/product defect — must fix in **code** | **1 (root cause)** | #10 root cause: `_consecutive_failures` is **reset-only** (`agent_runtime.py:554` — no increment anywhere, no queue-clear branch). The feature "consecutive failure → clear queue / switch tool" is **never implemented**. |
+| **B** | Test asserts stale contract / test rot — fix **tests** (or defer) | **7** | #1–#7 (phase7/phase8/phasec contract+count stale). #10 is *immediately* B (stub missing `status`) but carries the **A root cause above**. |
+| **C** | Ambiguous / needs design | **0** | — |
+| **D** | Environment-dependent, not a real bug | **2** | #8, #9 (CI env ships `ffmpeg`, so ASR is enabled; tests assume absence). |
+
+**Net:** A=1, B=7, D=2 (10 total). **No security-class or UI-class failures.** The single A is a latent Agent Runtime feature gap, not a regression introduced by P4.
+
+**PHASE 0 rule honored:** did **not** fix any test, did **not** fix the A defect. Reported only.
+
+---
+
+## 16. Architecture Duplicates
+
+| Duplicate | Members | Recommendation for P5 |
+|-----------|---------|----------------------|
+| Proactive engine (F4) | `proactive.py` (legacy) + `proactive_agent/` (new) | Converge on `proactive_agent/`; deprecate `proactive.py` per P4 deprecation-matrix discipline. |
+| Perception stack (F6) | `perception_runtime.py` (Phase 8, test-only) + `perception/` (Phase 20, production) | Keep `perception/`; mark `perception_runtime.py` as test-fixture only (it already is) and ensure no production import. |
+| Tool event naming (F7) | DOMAIN `TOOL_CALLED`/`TOOL_DONE` (dead) vs SYSTEM `tool_started`/`tool_finished` (used) | Remove dead DOMAIN names; emit via `publish_system("tool_started"/"tool_finished")`. |
+| Context pipeline (F1) | Chat `build_context_prompt` vs Agent Runtime self-built prompt | **Core P5 work** — give Agent Runtime a sanctioned Context consumer. |
+
+---
+
+## 17. Orphan Modules
+
+- **WorldModel** — does not exist as code; only `COMPUTER_WORLD_SYNC` event + `verification.PerceptionWorldModelObserver` (read-only). Not wired to any consumer.
+- **`MemorySource` (Context source class)** — exists but **unregistered**; dead/historical.
+- **`capability_os.invoke_capability` dormant branch** (`:256–259`) — reachable but unused by the main Path-B skill branch (which uses `execute_capability`). Candidate for removal or deliberate wiring.
+
+---
+
+## 18. Legacy Modules
+
+- **`memory.build_system_prompt()`** — retained as Facade `_legacy_prompt` fallback only when Context Engine OFF (`facade.py:24–28,50,57`). Sanctioned; do not expand.
+- **`proactive.py`** — legacy TICK scanner; still referenced by `goals.py:13`. Deprecation candidate (see §16).
+- **`e2e_d.py`** — dev-only legacy assembly; out of production scope.
+
+---
+
+## 19. P5 Blocking Issues
+
+1. **(BLOCKER for "cognitively-aware Agent Runtime")** Agent Runtime has no sanctioned way to consume P4 Memory/Context/Knowledge. Must design the P5 Cognitive Runtime contract **before** any Agent Runtime change.
+2. **(Security, resolvable in design)** Background MCP `auto_approve=True` removes Approval for goals (F3). Decide Approval tiering in P5 design.
+3. **(Config, pre-req)** Dead/ineffective kill-switches + double-default drift (F8/F9) must be normalized **before** P5 adds new flags, or P5 feature gating will be untrustworthy.
+4. **(Test, non-blocking)** 10 baseline failures (A=1, B=7, D=2) are **pre-existing**, not P5-introduced. P5 DESIGN should plan a test-baseline refresh; PHASE 0 does not touch them.
+5. **(Coupling, design)** Memory↔Cognitive mutual imports (F11) — any P5 change to Memory write-path must account for these direct consumers.
+
+---
+
+## 20. P5 Recommended Design Scope (design-only proposal; not yet started)
+
+> This section is a **scope recommendation for the DESIGN GATE**, not a design document. PHASE 0 stops here.
+
+1. **P5.1 Cognitive Runtime Contract** — define a sanctioned consumer API so Agent Runtime (and optionally Goal Decision / Proactive) can pull P4 Memory/Context/Knowledge through `context.facade` + canonical Memory API. Converge the two context pipelines (F1).
+2. **P5.2 Memory Write-back Normalization** — route `cognitive/user_model`, `cognitive/episodic`, and `agent_runtime._distill_memory` through the canonical Memory API + emit `MEMORY_*` events (close F2/F11).
+3. **P5.3 EventBus Convergence** — make `publish_domain`/`publish_system` the only emit path (CI lint guard); reconcile bare publishes (F7); remove dead/synonym names.
+4. **P5.4 Capability Approval Tiering** — replace blanket `auto_approve=True` with a goal-aware Approval policy; close the dormant `invoke_capability` bypass (F3).
+5. **P5.5 Proactive Convergence** — single Proactive Engine (`proactive_agent/`); deprecate `proactive.py`.
+6. **P5.6 World Model (net-new, optional)** — if P5 needs the agent to reason over environment state, design a persistent world model fed by `COMPUTER_WORLD_SYNC` + Perception, consumed by Agent Runtime/Context. Currently only a read-only verification observer exists (§5).
+7. **P5.7 Config Normalization** — single typed env-driven flag source; remove dead kill-switches (F8/F9) **before** adding P5 flags.
+8. **P5.8 Test Baseline Refresh** — plan fixes for A=1 (implement `_consecutive_failures` queue-clear), B=7 (update stale contract assertions), D=2 (env-guard the ffmpeg tests).
+
+---
+
+### PHASE 0 Acceptance (per directive)
+
+- ✅ **ZERO** production code changes
+- ✅ **ZERO** DB changes
+- ✅ **ZERO** config changes
+- ✅ **ZERO** UI changes
+- ✅ **ZERO** test changes
+- ✅ Only: this audit document + the background baseline log (`p5_test_baseline.log`)
+
+### Report
+
+> **P5 PHASE 0 = COMPLETE**
+> **DESIGN GATE = NOT STARTED**
+> **IMPLEMENTATION = NOT STARTED**
+
+*Audit delivered for your review. I will not start P5.1 or any implementation until you confirm the DESIGN GATE.*

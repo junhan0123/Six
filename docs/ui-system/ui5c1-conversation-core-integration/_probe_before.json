@@ -1,0 +1,1921 @@
+{
+  "phase": "before",
+  "at": "2026-08-10T00:24:12.513Z",
+  "scenes": [
+    {
+      "scene": "01-1920x1080-home",
+      "size": "1920x1080",
+      "bodyClass": "kws-listening kws-downclocked",
+      "osShell": {
+        "sel": "#osShell",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "5",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "osDock": {
+        "sel": "#osDock",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(10, 14, 20, 0.55)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 489,
+          "y": 854,
+          "w": 1040,
+          "h": 114
+        }
+      },
+      "osDockInput": {
+        "sel": "#osDockInput",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 553,
+          "y": 878,
+          "w": 774,
+          "h": 22
+        }
+      },
+      "app": {
+        "sel": "#app",
+        "exists": true,
+        "display": "grid",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "2",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "rail": {
+        "sel": "#app .rail",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "blur(18px) saturate(1.25)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 14,
+          "y": 14,
+          "w": 248,
+          "h": 1052
+        }
+      },
+      "tele": {
+        "sel": "#tele",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 1606,
+          "y": 14,
+          "w": 300,
+          "h": 1052
+        }
+      },
+      "mainArea": {
+        "sel": "#mainArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 14,
+          "w": 1316,
+          "h": 1052
+        }
+      },
+      "hudBar": {
+        "sel": "#app .hud-bar",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "20",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 14,
+          "w": 1316,
+          "h": 56
+        }
+      },
+      "chatArea": {
+        "sel": "#chatArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "18",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 82,
+          "w": 1316,
+          "h": 984
+        }
+      },
+      "chatHistory": {
+        "sel": "#chatHistory",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "0",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "0px",
+        "rect": {
+          "x": 280,
+          "y": 994,
+          "w": 1308,
+          "h": 1
+        }
+      },
+      "chatDock": {
+        "sel": "#chatArea .dock",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 280,
+          "y": 981,
+          "w": 1308,
+          "h": 75
+        }
+      },
+      "legacyInput": {
+        "sel": "#input",
+        "exists": true,
+        "display": "block",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "120px",
+        "rect": {
+          "x": 540,
+          "y": 998,
+          "w": 962,
+          "h": 42
+        }
+      },
+      "solarCanvas": {
+        "sel": "#solarCanvas",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "brightness(0.46) saturate(0.6) contrast(0.95)",
+        "pointerEvents": "auto",
+        "zIndex": "0",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "galaxyVeil": {
+        "sel": ".galaxy-veil",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "0.5",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "1",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "hits": [
+        {
+          "sel": "#osDockInput",
+          "exists": true,
+          "point": [
+            940,
+            889
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        },
+        {
+          "sel": "#osDock",
+          "exists": true,
+          "point": [
+            1009,
+            911
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        },
+        {
+          "sel": "#solarCanvas",
+          "exists": true,
+          "point": [
+            960,
+            540
+          ],
+          "top": "div.briefing-empty",
+          "reachable": false
+        },
+        {
+          "sel": "#input",
+          "exists": true,
+          "point": [
+            1021,
+            1019
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        }
+      ],
+      "dockRoute": {
+        "hasInput": true,
+        "hasSend": true,
+        "hasDockInput": true,
+        "hasDockSend": true
+      }
+    },
+    {
+      "scene": "02-1920x1080-conversation",
+      "size": "1920x1080",
+      "bodyClass": "kws-listening kws-downclocked chat-mode",
+      "osShell": {
+        "sel": "#osShell",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "0.32",
+        "filter": "blur(6px) saturate(0.85)",
+        "pointerEvents": "none",
+        "zIndex": "5",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "osDock": {
+        "sel": "#osDock",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(10, 14, 20, 0.55)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 503,
+          "y": 862,
+          "w": 1012,
+          "h": 96
+        }
+      },
+      "osDockInput": {
+        "sel": "#osDockInput",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 567,
+          "y": 886,
+          "w": 746,
+          "h": 22
+        }
+      },
+      "app": {
+        "sel": "#app",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "50",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "rail": {
+        "sel": "#app .rail",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "blur(18px) saturate(1.25)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 14,
+          "y": 14,
+          "w": 248,
+          "h": 1052
+        }
+      },
+      "tele": {
+        "sel": "#tele",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 1606,
+          "y": 14,
+          "w": 300,
+          "h": 1052
+        }
+      },
+      "mainArea": {
+        "sel": "#mainArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 14,
+          "w": 1316,
+          "h": 1052
+        }
+      },
+      "hudBar": {
+        "sel": "#app .hud-bar",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "20",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 14,
+          "w": 1316,
+          "h": 56
+        }
+      },
+      "chatArea": {
+        "sel": "#chatArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "18",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 82,
+          "w": 1316,
+          "h": 984
+        }
+      },
+      "chatHistory": {
+        "sel": "#chatHistory",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "0",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "0px",
+        "rect": {
+          "x": 280,
+          "y": 994,
+          "w": 1308,
+          "h": 1
+        }
+      },
+      "chatDock": {
+        "sel": "#chatArea .dock",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 280,
+          "y": 981,
+          "w": 1308,
+          "h": 75
+        }
+      },
+      "legacyInput": {
+        "sel": "#input",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "120px",
+        "rect": {
+          "x": 540,
+          "y": 998,
+          "w": 962,
+          "h": 42
+        }
+      },
+      "solarCanvas": {
+        "sel": "#solarCanvas",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "brightness(0.46) saturate(0.6) contrast(0.95)",
+        "pointerEvents": "auto",
+        "zIndex": "0",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "galaxyVeil": {
+        "sel": ".galaxy-veil",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "0.5",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "1",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "hits": [
+        {
+          "sel": "#osDockInput",
+          "exists": true,
+          "point": [
+            940,
+            897
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        },
+        {
+          "sel": "#osDock",
+          "exists": true,
+          "point": [
+            1009,
+            910
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        },
+        {
+          "sel": "#solarCanvas",
+          "exists": true,
+          "point": [
+            960,
+            540
+          ],
+          "top": "div.briefing-empty",
+          "reachable": false
+        },
+        {
+          "sel": "#input",
+          "exists": true,
+          "point": [
+            1021,
+            1019
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        }
+      ],
+      "dockRoute": {
+        "hasInput": true,
+        "hasSend": true,
+        "hasDockInput": true,
+        "hasDockSend": true
+      }
+    },
+    {
+      "scene": "03-1920x1080-back-home",
+      "size": "1920x1080",
+      "bodyClass": "kws-listening kws-downclocked",
+      "osShell": {
+        "sel": "#osShell",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "5",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "osDock": {
+        "sel": "#osDock",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(10, 14, 20, 0.55)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 489,
+          "y": 854,
+          "w": 1040,
+          "h": 114
+        }
+      },
+      "osDockInput": {
+        "sel": "#osDockInput",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 553,
+          "y": 878,
+          "w": 774,
+          "h": 22
+        }
+      },
+      "app": {
+        "sel": "#app",
+        "exists": true,
+        "display": "grid",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "2",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "rail": {
+        "sel": "#app .rail",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "blur(18px) saturate(1.25)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 14,
+          "y": 14,
+          "w": 248,
+          "h": 1052
+        }
+      },
+      "tele": {
+        "sel": "#tele",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 1606,
+          "y": 14,
+          "w": 300,
+          "h": 1052
+        }
+      },
+      "mainArea": {
+        "sel": "#mainArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 14,
+          "w": 1316,
+          "h": 1052
+        }
+      },
+      "hudBar": {
+        "sel": "#app .hud-bar",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "20",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 14,
+          "w": 1316,
+          "h": 56
+        }
+      },
+      "chatArea": {
+        "sel": "#chatArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "18",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 276,
+          "y": 82,
+          "w": 1316,
+          "h": 984
+        }
+      },
+      "chatHistory": {
+        "sel": "#chatHistory",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "0",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "0px",
+        "rect": {
+          "x": 280,
+          "y": 994,
+          "w": 1308,
+          "h": 1
+        }
+      },
+      "chatDock": {
+        "sel": "#chatArea .dock",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 280,
+          "y": 981,
+          "w": 1308,
+          "h": 75
+        }
+      },
+      "legacyInput": {
+        "sel": "#input",
+        "exists": true,
+        "display": "block",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "120px",
+        "rect": {
+          "x": 540,
+          "y": 998,
+          "w": 962,
+          "h": 42
+        }
+      },
+      "solarCanvas": {
+        "sel": "#solarCanvas",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "brightness(0.46) saturate(0.6) contrast(0.95)",
+        "pointerEvents": "auto",
+        "zIndex": "0",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "galaxyVeil": {
+        "sel": ".galaxy-veil",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "0.5",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "1",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1920,
+          "h": 1080
+        }
+      },
+      "hits": [
+        {
+          "sel": "#osDockInput",
+          "exists": true,
+          "point": [
+            940,
+            889
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        },
+        {
+          "sel": "#osDock",
+          "exists": true,
+          "point": [
+            1009,
+            911
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        },
+        {
+          "sel": "#solarCanvas",
+          "exists": true,
+          "point": [
+            960,
+            540
+          ],
+          "top": "div.briefing-empty",
+          "reachable": false
+        },
+        {
+          "sel": "#input",
+          "exists": true,
+          "point": [
+            1021,
+            1019
+          ],
+          "top": "div#briefingOverlay.briefing-overlay.show",
+          "reachable": false
+        }
+      ],
+      "dockRoute": {
+        "hasInput": true,
+        "hasSend": true,
+        "hasDockInput": true,
+        "hasDockSend": true
+      }
+    },
+    {
+      "scene": "01-1600x900-home",
+      "size": "1600x900",
+      "bodyClass": "kws-listening kws-downclocked",
+      "osShell": {
+        "sel": "#osShell",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "5",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "osDock": {
+        "sel": "#osDock",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(10, 14, 20, 0.55)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 329,
+          "y": 674,
+          "w": 1040,
+          "h": 114
+        }
+      },
+      "osDockInput": {
+        "sel": "#osDockInput",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 393,
+          "y": 698,
+          "w": 774,
+          "h": 22
+        }
+      },
+      "app": {
+        "sel": "#app",
+        "exists": true,
+        "display": "grid",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "2",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "rail": {
+        "sel": "#app .rail",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "blur(18px) saturate(1.25)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 12,
+          "y": 12,
+          "w": 207,
+          "h": 877
+        }
+      },
+      "tele": {
+        "sel": "#tele",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 1338,
+          "y": 12,
+          "w": 250,
+          "h": 877
+        }
+      },
+      "mainArea": {
+        "sel": "#mainArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 12,
+          "w": 1097,
+          "h": 877
+        }
+      },
+      "hudBar": {
+        "sel": "#app .hud-bar",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "20",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 12,
+          "w": 1097,
+          "h": 47
+        }
+      },
+      "chatArea": {
+        "sel": "#chatArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "18",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 68,
+          "w": 1097,
+          "h": 820
+        }
+      },
+      "chatHistory": {
+        "sel": "#chatHistory",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "0",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "0px",
+        "rect": {
+          "x": 233,
+          "y": 828,
+          "w": 1090,
+          "h": 1
+        }
+      },
+      "chatDock": {
+        "sel": "#chatArea .dock",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 233,
+          "y": 817,
+          "w": 1090,
+          "h": 62
+        }
+      },
+      "legacyInput": {
+        "sel": "#input",
+        "exists": true,
+        "display": "block",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "120px",
+        "rect": {
+          "x": 450,
+          "y": 832,
+          "w": 802,
+          "h": 35
+        }
+      },
+      "solarCanvas": {
+        "sel": "#solarCanvas",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "brightness(0.46) saturate(0.6) contrast(0.95)",
+        "pointerEvents": "auto",
+        "zIndex": "0",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "galaxyVeil": {
+        "sel": ".galaxy-veil",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "0.5",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "1",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "hits": [
+        {
+          "sel": "#osDockInput",
+          "exists": true,
+          "point": [
+            780,
+            709
+          ],
+          "top": "input#osDockInput",
+          "reachable": true
+        },
+        {
+          "sel": "#osDock",
+          "exists": true,
+          "point": [
+            849,
+            731
+          ],
+          "top": "div#osDockBar.os-dock-bar",
+          "reachable": true
+        },
+        {
+          "sel": "#solarCanvas",
+          "exists": true,
+          "point": [
+            800,
+            450
+          ],
+          "top": "canvas#osCoreCanvas",
+          "reachable": false
+        },
+        {
+          "sel": "#input",
+          "exists": true,
+          "point": [
+            851,
+            849
+          ],
+          "top": "div#osTimeline.is-idle",
+          "reachable": false
+        }
+      ],
+      "dockRoute": {
+        "hasInput": true,
+        "hasSend": true,
+        "hasDockInput": true,
+        "hasDockSend": true
+      }
+    },
+    {
+      "scene": "02-1600x900-conversation",
+      "size": "1600x900",
+      "bodyClass": "kws-listening kws-downclocked chat-mode",
+      "osShell": {
+        "sel": "#osShell",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "0.32",
+        "filter": "blur(6px) saturate(0.85)",
+        "pointerEvents": "none",
+        "zIndex": "5",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "osDock": {
+        "sel": "#osDock",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(10, 14, 20, 0.55)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 343,
+          "y": 682,
+          "w": 1012,
+          "h": 96
+        }
+      },
+      "osDockInput": {
+        "sel": "#osDockInput",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 407,
+          "y": 706,
+          "w": 746,
+          "h": 22
+        }
+      },
+      "app": {
+        "sel": "#app",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "50",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "rail": {
+        "sel": "#app .rail",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "blur(18px) saturate(1.25)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 12,
+          "y": 12,
+          "w": 207,
+          "h": 877
+        }
+      },
+      "tele": {
+        "sel": "#tele",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 1338,
+          "y": 12,
+          "w": 250,
+          "h": 877
+        }
+      },
+      "mainArea": {
+        "sel": "#mainArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 12,
+          "w": 1097,
+          "h": 877
+        }
+      },
+      "hudBar": {
+        "sel": "#app .hud-bar",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "20",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 12,
+          "w": 1097,
+          "h": 47
+        }
+      },
+      "chatArea": {
+        "sel": "#chatArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "18",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 68,
+          "w": 1097,
+          "h": 820
+        }
+      },
+      "chatHistory": {
+        "sel": "#chatHistory",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "0",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "0px",
+        "rect": {
+          "x": 233,
+          "y": 828,
+          "w": 1090,
+          "h": 1
+        }
+      },
+      "chatDock": {
+        "sel": "#chatArea .dock",
+        "exists": true,
+        "display": "flex",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 233,
+          "y": 817,
+          "w": 1090,
+          "h": 62
+        }
+      },
+      "legacyInput": {
+        "sel": "#input",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "120px",
+        "rect": {
+          "x": 450,
+          "y": 832,
+          "w": 802,
+          "h": 35
+        }
+      },
+      "solarCanvas": {
+        "sel": "#solarCanvas",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "brightness(0.46) saturate(0.6) contrast(0.95)",
+        "pointerEvents": "auto",
+        "zIndex": "0",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "galaxyVeil": {
+        "sel": ".galaxy-veil",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "0.5",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "1",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "hits": [
+        {
+          "sel": "#osDockInput",
+          "exists": true,
+          "point": [
+            780,
+            717
+          ],
+          "top": "main#mainArea.main",
+          "reachable": false
+        },
+        {
+          "sel": "#osDock",
+          "exists": true,
+          "point": [
+            849,
+            730
+          ],
+          "top": "main#mainArea.main",
+          "reachable": false
+        },
+        {
+          "sel": "#solarCanvas",
+          "exists": true,
+          "point": [
+            800,
+            450
+          ],
+          "top": "main#mainArea.main",
+          "reachable": false
+        },
+        {
+          "sel": "#input",
+          "exists": true,
+          "point": [
+            851,
+            849
+          ],
+          "top": "textarea#input",
+          "reachable": true
+        }
+      ],
+      "dockRoute": {
+        "hasInput": true,
+        "hasSend": true,
+        "hasDockInput": true,
+        "hasDockSend": true
+      }
+    },
+    {
+      "scene": "03-1600x900-back-home",
+      "size": "1600x900",
+      "bodyClass": "kws-listening kws-downclocked",
+      "osShell": {
+        "sel": "#osShell",
+        "exists": true,
+        "display": "grid",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "5",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "osDock": {
+        "sel": "#osDock",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(10, 14, 20, 0.55)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 329,
+          "y": 674,
+          "w": 1040,
+          "h": 114
+        }
+      },
+      "osDockInput": {
+        "sel": "#osDockInput",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 393,
+          "y": 698,
+          "w": 774,
+          "h": 22
+        }
+      },
+      "app": {
+        "sel": "#app",
+        "exists": true,
+        "display": "grid",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "2",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "rail": {
+        "sel": "#app .rail",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "blur(18px) saturate(1.25)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 12,
+          "y": 12,
+          "w": 207,
+          "h": 877
+        }
+      },
+      "tele": {
+        "sel": "#tele",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 1338,
+          "y": 12,
+          "w": 250,
+          "h": 877
+        }
+      },
+      "mainArea": {
+        "sel": "#mainArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 12,
+          "w": 1097,
+          "h": 877
+        }
+      },
+      "hudBar": {
+        "sel": "#app .hud-bar",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "20",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 12,
+          "w": 1097,
+          "h": 47
+        }
+      },
+      "chatArea": {
+        "sel": "#chatArea",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "18",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 230,
+          "y": 68,
+          "w": 1097,
+          "h": 820
+        }
+      },
+      "chatHistory": {
+        "sel": "#chatHistory",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "0",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "0px",
+        "rect": {
+          "x": 233,
+          "y": 828,
+          "w": 1090,
+          "h": 1
+        }
+      },
+      "chatDock": {
+        "sel": "#chatArea .dock",
+        "exists": true,
+        "display": "flex",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(34, 211, 238, 0.05)",
+        "backdrop": "blur(14px) saturate(1.6)",
+        "maxHeight": "none",
+        "rect": {
+          "x": 233,
+          "y": 817,
+          "w": 1090,
+          "h": 62
+        }
+      },
+      "legacyInput": {
+        "sel": "#input",
+        "exists": true,
+        "display": "block",
+        "visibility": "hidden",
+        "opacity": "1",
+        "filter": "none",
+        "pointerEvents": "auto",
+        "zIndex": "auto",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "120px",
+        "rect": {
+          "x": 450,
+          "y": 832,
+          "w": 802,
+          "h": 35
+        }
+      },
+      "solarCanvas": {
+        "sel": "#solarCanvas",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "filter": "brightness(0.46) saturate(0.6) contrast(0.95)",
+        "pointerEvents": "auto",
+        "zIndex": "0",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "galaxyVeil": {
+        "sel": ".galaxy-veil",
+        "exists": true,
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "0.5",
+        "filter": "none",
+        "pointerEvents": "none",
+        "zIndex": "1",
+        "background": "rgba(0, 0, 0, 0)",
+        "backdrop": "none",
+        "maxHeight": "none",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 1600,
+          "h": 900
+        }
+      },
+      "hits": [
+        {
+          "sel": "#osDockInput",
+          "exists": true,
+          "point": [
+            780,
+            709
+          ],
+          "top": "input#osDockInput",
+          "reachable": true
+        },
+        {
+          "sel": "#osDock",
+          "exists": true,
+          "point": [
+            849,
+            731
+          ],
+          "top": "div#osDockBar.os-dock-bar",
+          "reachable": true
+        },
+        {
+          "sel": "#solarCanvas",
+          "exists": true,
+          "point": [
+            800,
+            450
+          ],
+          "top": "canvas#osCoreCanvas",
+          "reachable": false
+        },
+        {
+          "sel": "#input",
+          "exists": true,
+          "point": [
+            851,
+            849
+          ],
+          "top": "div#osTimeline.is-idle",
+          "reachable": false
+        }
+      ],
+      "dockRoute": {
+        "hasInput": true,
+        "hasSend": true,
+        "hasDockInput": true,
+        "hasDockSend": true
+      }
+    }
+  ],
+  "errors": []
+}

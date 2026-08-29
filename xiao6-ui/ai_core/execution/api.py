@@ -78,6 +78,17 @@ def run(task: str, context: dict = None, **kwargs) -> dict:
         )
         
         decision = policy_result.get("decision", "block")
+        # Phase 7 · Agent Trust Layer：工具风险检查事件（TOOL_RISK_CHECKED，纯观测不改变裁决）
+        try:
+            from tool_risk import risk_level
+            from eventbus import publish_domain
+            publish_domain("TOOL_RISK_CHECKED", {
+                "tool": tool_name,
+                "risk": risk_level(tool_name),
+                "decision": decision,
+            }, source="execution")
+        except Exception:
+            pass
         
         # Step 2: Handle confirmation required
         if decision == "block":

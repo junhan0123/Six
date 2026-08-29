@@ -27,7 +27,7 @@ def _urlopen_with_proxy(req, timeout):
     兜底与无代理路径都显式使用空 ProxyHandler，强制绕过任何环境变量代理
     （某些后台运行环境会注入指向死代理的 HTTPS_PROXY，导致「直连」也拿到 10061 拒绝）。
     """
-    proxy = getattr(config, "ZHUANGZHOU_PROXY_URL", "") or ""
+    proxy = getattr(config, "XIAO6_PROXY_URL", "") or ""
     if proxy:
         try:
             opener = urllib.request.build_opener(

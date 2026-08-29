@@ -1,0 +1,69 @@
+[
+  {
+    "test": "M01_Continuous_Observation",
+    "status": "PASS",
+    "time_ms": 3864
+  },
+  {
+    "test": "M03_Foreground_Event",
+    "status": "PASS",
+    "time_ms": 3215
+  },
+  {
+    "test": "M04_File_Event",
+    "status": "FAIL",
+    "time_ms": 2411
+  },
+  {
+    "test": "M05_Goal_Relevance",
+    "status": "PASS",
+    "time_ms": 3777
+  },
+  {
+    "test": "M06_Running_Task_Awareness",
+    "status": "PASS",
+    "time_ms": 867
+  },
+  {
+    "test": "M07_Environment_Replan",
+    "status": "PASS",
+    "time_ms": 4490
+  },
+  {
+    "test": "M08_Long_Horizon",
+    "status": "PASS",
+    "time_ms": 7588
+  },
+  {
+    "test": "M09_Memory_World_Decision",
+    "status": "PASS",
+    "time_ms": 1749
+  },
+  {
+    "test": "M10_Full_Autonomous_Loop",
+    "status": "PASS",
+    "time_ms": 3490
+  },
+  {
+    "test": "Chinese_Input_Verification",
+    "status": "PASS",
+    "time_ms": 4421
+  },
+  {
+    "test": "Domestic_Browser_Verification",
+    "status": "PASS",
+    "time_ms": 1785
+  },
+  {
+    "test": "M03_Foreground_Event",
+    "status": "PASS",
+    "details": {
+      "before_fg": 3344090,
+      "mid_fg": 3344090,
+      "after_fg": 3344090,
+      "foreground_changed": false,
+      "windows_observed": 19
+    },
+    "time_ms": 0
+  }
+]

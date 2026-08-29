@@ -1,0 +1,343 @@
+# P4 · P4-MEMORY-CONTEXT-KNOWLEDGE-DESIGN
+
+> 阶段：P4 Phase 1 DESIGN ONLY（不修改产品代码 / 数据库 / 配置 / UI / 测试）
+> 项目：ZhuangZhou Core v1.4.0 · `G:\ZhuangZhou\zhuangzhou-ui`
+> 身份：ZhuangZhou Senior Systems Architect / Runtime Engineer
+> 关联文档：`P4-ARCHITECTURE-MAP.md` / `P4-MEMORY-CONTRACT.md` / `P4-CONTEXT-CONTRACT.md` / `P4-KNOWLEDGE-CONTRACT.md` / `P4-MIGRATION-PLAN.md` / `P4-DEPRECATION-MATRIX.md`
+> 复核基线：`P4-MEMORY-CONTEXT-BASELINE.md`（本设计已按真实源码纠正其偏差）
+
+---
+
+## 1. Executive Summary
+
+P4 目标是把当前并存的多个 Memory / Retrieval / Context / Knowledge 实现**逐步收敛为唯一权威**，而非重写。本阶段只设计、不实现。
+
+**核心结论：**
+- 真实源码验证确认 `context.facade.build_context_prompt` 已是唯一装配入口（零绕过），但 `MemorySource` 把它委托回 `memory.build_system_prompt` 单体 → 新引擎包裹旧 monolith，是首要反模式。
+- 已识别并纠正 Phase 0 基线 3 处偏差 + 新发现 2 处（见 §2）。
+- 收敛为**五权威各一**：Memory(`memories`+`memory_evolution`)、Retrieval(`DefaultEvolutionPolicy`)、Context(`context.facade`)、Knowledge(`knowledge_runtime`)、Lifecycle/Event(`lifecycle`+`eventbus`)。
+- 全链路遵守红线：不丢数据、不删旧模块、不绕过 Policy/Permission/Approval/Executor、不碰 UI、DESIGN 阶段零代码变更。
+
+---
+
+## 2. Current Architecture（真实复核 + 偏差纠正）
+
+### 2.1 验证范围
+对 22 模块 + 调用链 + Schema + Event + Config 逐一复核（verify-before-design）。重点新验模块：`knowledge.py`/`knowledge_runtime/*`、`semantic_fusion.py`、`embed.py`、`capability_runtime.py`、`cognitive/extractor.py`、`context/models.py`、`context/knowledge_source.py`、`memory.build_memory_block`。
+
+### 2.2 纠正 Phase 0 基线 3 处偏差
+| # | 基线说法 | 真实 |
+|---|---|---|
+| D1 | 仅 hotspots/notes/imports 写 memories | `memory_distiller.distill()`（agent_runtime.py:947）也写，但把 confidence/source 塞进 tags JSON（违反契约） |
+| D2 | memories 基础 CREATE 缺 content_hash 等 | 基础已含 `content_hash TEXT UNIQUE`(db.py:80)；其余由迁移 662–745 补齐 |
+| D3 | memory_v2 为 dead | 有独立 flag(memory_v2/flags.py)，休眠可达，非死 |
+
+### 2.3 新发现 2 处偏差
+| # | 发现 | 影响 |
+|---|---|---|
+| D4 | `FEATURE_MEMORY_EVOLUTION` 从未在 config.py 定义（ghost flag）→ EvolvedMemorySource 永不注册 | 治理引擎不可达 |
+| D5 | 配置双来源漂移：模块级默认(56–94, 多 False) 被 reload() 块(271–350, 默认 "true") 覆盖，运行时以 true 为准 | 模块级是 decoy |
+
+### 2.4 其他确认
+- `knowledge.py` = 门面，委托 `knowledge_runtime`（同一系统，非两套）。
+- `semantic_fusion.py` 仅被 `perception_runtime.py` 引用 → 属 **Perception**，不并入 Knowledge。
+- `capability_runtime`(Executor) 仅由 `server_handlers_chat.py`/`tools.py` 调用，Memory/Context 无调用 → 安全边界 intact。
+- `cognitive/extractor.py` 只写 `user_model`+`episodes`，不写 memories → 非越界写入者。
+- `build_system_prompt` 单体包入 `build_context_prefix`(运行时状态)+`build_memory_block`(记忆) → 双重读取根因。
+
+```mermaid
+graph TB
+    FACADE[context.facade] --> ENGINE[Context Engine]
+    ENGINE --> MS[MemorySource 单体] --> BSP[memory.build_system_prompt<br/>context_prefix + memory_block]
+    ENGINE --> UMS[UserModelSource] --> UM[(user_model)]
+    ENGINE --> ES[EpisodicSource] --> EP[(episodes)]
+    BSP --> PROFILE[(profile)]
+    BSP --> SUM[(memory_summary)]
+    BSP --> CL[(chat_log)]
+    BSP --> LN[(learnings)]
+    style MS fill:#5f1f1f,color:#fff
+```
+
+---
+
+## 3. Target Architecture
+
+```mermaid
+graph TB
+    CHAT[Chat Runtime] --> FACADE[Context Facade SINGLE ENTRY]
+    FACADE --> ENGINE[Context Engine<br/>Collect→Retrieve→Rank→Budget→Dedupe→Assemble→Build]
+    ENGINE --> RMS[EvolvedMemorySource] --> MEM[(memories 唯一 Canonical)]
+    ENGINE --> RT[RuntimeStateSource] --> RB[(reminders/geo/foci/tasks)]
+    ENGINE --> UMS[UserModelSource] --> UM[(user_model)]
+    ENGINE --> ES[EpisodicSource] --> EP[(episodes)]
+    ENGINE --> KS[KnowledgeSource] --> KN[("knowledge/*.md")]
+    MEM --> API[Canonical Memory API]
+    API --> EV[memory_evolution 治理]
+    EV --> RET[DefaultEvolutionPolicy 唯一检索]
+    EV --> LC[lifecycle 状态机]
+    MEM --> EB[(EventBus 唯一事件)]
+    KN --> KRT[knowledge_runtime]
+    style MEM fill:#1f5f3a,color:#fff
+    style RET fill:#5f3a1f,color:#fff
+    style FACADE fill:#3a1f5f,color:#fff
+```
+
+---
+
+## 4. Memory Contract
+
+（详见 `P4-MEMORY-CONTRACT.md`）
+
+- **Canonical Memory = `memories` 表**；其余为 Derived(`memory_summary`/`conversation_memories`/`learnings`)、User/State(`user_model`/`episodes`/`chat_log`/`important_dates`/`profile`)、Projection(`mem_vectors`)。
+- 九问裁决：chat_log/memory_summary/learnings/user_model/episodes **均非** Memory；memories 是 canonical；conversation_memories=对话级沉淀；important_dates=时间型专用。
+- Canonical Memory API：`create/get/update/upsert/archive/restore/delete(逻辑)/verify/link/merge/consolidate`；hotspots/notes/distiller/extractor 不得直操底层表，须经 API。
+- 修正：distiller 改写真实 `confidence`/`source` 列；content_hash 幂等；DELETE 仅 tombstone。
+
+---
+
+## 5. Retrieval Contract
+
+（详见 `P4-UNIFIED-RETRIEVAL-DESIGN.md` 与 Deprecation Matrix）
+
+- **唯一权威 = `DefaultEvolutionPolicy`**（memory_evolution/retrieval_policy）。
+- 分类：CORE=`DefaultEvolutionPolicy`+`embed.py`+`mem_vectors`；ADAPTER=`memory_intelligence.recall`/`cognitive.episodic.recall_episodes`/`memory_v2/semantic`；SPECIALIZED=`knowledge_runtime.search`（独立，不共享底层接口）；LEGACY=`build_system_prompt` 单体；ORPHAN=`knowledge_docs/chunks`。
+- 因子：lexical + semantic(embed) + recency + importance + relevance + confidence + source trust + dedup(content_hash) + archived filtering + token budget。
+- 对象：`RetrievalRequest`/`RetrievalCandidate`/`RetrievalResult`/`RankingPolicy` 基于真实 `ScoredItem` + `ContextRanker` 权重设计。
+- Memory Retrieval 与 Knowledge Retrieval **不共享底层接口**（Context Engine 层汇合）。
+
+---
+
+## 6. Context Contract
+
+（详见 `P4-CONTEXT-CONTRACT.md`）
+
+- 唯一装配入口 `context.facade`；五阶段 Collect→Retrieve→Rank→Budget→Dedupe→Assemble→Build。
+- `ContextItem` 已落地：`source/content/priority/recency/importance/user_relevance/token_est/metadata(DEDUP_SCOPE_KEY)`；`dedup_items_by_scope` 已实现(OND-A3)。
+- Memory Layer 只产 ContextItem/MemoryCandidate；Context Engine 决定装配；**禁止 Memory→LLM prompt 旁路**。
+- 消除 MemorySource 单体：拆为 `EvolvedMemorySource`(memory) + 新增 `RuntimeStateSource`(运行时状态)；补 `DEDUP_SCOPE_KEY`；UserModel 移除 render。
+- 重复读取解法：monolith 退役后每类数据由唯一 Source 读取。
+
+---
+
+## 7. Knowledge Contract
+
+（详见 `P4-KNOWLEDGE-CONTRACT.md`）
+
+- `knowledge.py`(facade) + `knowledge_runtime`(engine) = 同一文件型系统，**无 DB/RAG/embedding**。
+- Knowledge **必须继续与 Memory 分离**；不进 memories、不写 mem_vectors(knowledge scope 清)、不走 Memory Retrieval。
+- 不需 chunk abstraction（文档级召回）。KnowledgeDocument / KnowledgeLink(wikilink) / KnowledgeSearchResult 对应真实。
+- 孤儿 `knowledge_docs`/`knowledge_chunks`：零数据，P4.5 count 校验后 DROP（本阶段禁 DROP）。
+- `semantic_fusion.py` 属 Perception，不并入 Knowledge。
+
+---
+
+## 8. Lifecycle Contract
+
+- 唯一权威 `memory_evolution.lifecycle`：状态机 active→decayed→archived→deprecated/tombstone；软操作、永不物理 DELETE。
+- 复用 `ensure_columns`(幂等 ALTER) / `run_lifecycle`；修正 lifecycle.py:44–57 stale 注释（db.py 已含 content_hash）。
+- MERGE 保高置信；合规擦除=content 脱敏+tombstone+id 留存。
+- 与 Retrieval 联动：排除 archived/decayed/pending；状态变更经 EventBus。
+
+---
+
+## 9. Event Contract
+
+- 现有 `DOMAIN_EVENT_NAMES`：`MEMORY_CREATED/UPDATED/STORED/LINKED/ARCHIVED`（强制校验 publish_domain）。
+- 新增（经论证需要）：`MEMORY_RETRIEVED`、`MEMORY_CONSOLIDATED`、`MEMORY_DECAYED`、`CONTEXT_BUILT`、`KNOWLEDGE_UPDATED`。
+- 禁止：同义事件多名称；模块私自 publish 未注册事件；Memory→Agent/Tool 直接调用。
+- 事件只表域状态变化/观察。
+
+---
+
+## 10. Schema Migration Design
+
+- `memories` 幂等迁移：content_hash UNIQUE 已存在；archived/confidence/source/status/verified_at 由既有迁移补齐；复用 `_migrate_memories`/`_migrate_memory_truth`，不重写。
+- 老/新/已迁移/半迁移库均安全启动（幂等 ALTER/INDEX + 存在性先查）。
+- 孤儿 `knowledge_docs`/`knowledge_chunks`：count 校验>0 中止(fail closed)，零数据方可 DROP。
+- hash 兼容：`memories` 用 `memory_content_hash`(sha1 归一化，db.py:244)；`learnings` 不同 hash → **不强行统一**，共存兼容（旧行 hash 不改，新写统一；collision 仅影响新 UPSERT 幂等，不影响读取）。
+- 禁止 DROP 带数据表、禁止删历史、禁止改 hash 算法、禁止隐写测试。
+
+---
+
+## 11. Feature Flag Design
+
+- 双来源漂移：模块级默认(56–94) 被 reload() 块(271–350, "true") 覆盖 → 运行时以 true 为准；模块级是 decoy。
+- 单一权威：抽取 `DEFAULT_FEATURE_FLAGS` 字典于 reload() 块；模块级 `: bool =` 改为纯注解或注释指向 reload；消除矛盾。
+- `FEATURE_MEMORY_EVOLUTION`：config.py 正式定义（默认 OFF，P4.4 转 ON 注册 EvolvedMemorySource）。
+- `MEMORY_V2_ENABLE`/`SEMANTIC_MEMORY_ENABLE`：迁入 config.py（或别名指向 config），memory_v2/flags.py 标记 deprecated。
+- 生命周期：ACTIVE / COMPATIBILITY / DEPRECATED / REMOVED。
+
+---
+
+## 12. Duplicate Implementation Matrix
+
+（完整见 `P4-DEPRECATION-MATRIX.md` §1）
+
+| 实现 | 调用方(真实) | 生产活跃 | 最终 |
+|---|---|---|---|
+| `memory.py`(memories) | distiller/hotspots/notes/imports | ✓ | KEEP |
+| `memory_distiller` | agent_runtime:947 | ✓ | KEEP(修正) |
+| `memory_intelligence` | server_handlers_memory:240 | ✓ | ADAPTER |
+| `memory_evolution/*` | retrieval/lifecycle | ✓ | KEEP |
+| `memory_v2/*` | MEMORY_V2_ENABLE | ✗ | DEPRECATE |
+| `context.MemorySource` | builder(always) | ✓临时 | DEPRECATE |
+| `MemoryRecallSource` | FEATURE_MEMORY_INTELLIGENCE | ✗ | MERGE |
+| `EvolvedMemorySource` | ghost flag | ✗ | KEEP |
+| `cognitive.*`(user_model/episodic/extractor) | Source/extractor | ✓ | KEEP |
+| `knowledge.py`+`knowledge_runtime` | KnowledgeSource | ✓ | KEEP |
+| `semantic_fusion` | perception_runtime | ✓ | KEEP(Perception) |
+| `embed.py` | episodic/server/tools | ✓ | KEEP |
+| `knowledge_docs/chunks` | 无 | ✗ | ORPHAN |
+
+---
+
+## 13. Migration Strategy
+
+三阶段（§0 原则）：Phase A 契约引入 → Phase B 双跑验证 → Phase C 切换 → Deprecated 冻结 → 验证后未来移除。
+- 映射：P4.2(A) → P4.3(A→B) → P4.4(B→C) → P4.5(A/C) → P4.6(C)。
+- 双跑：旧调用方经 Adapter 接入，新旧一致性比对，flag 回退。
+- 详见 `P4-MIGRATION-PLAN.md`。
+
+---
+
+## 14. Compatibility Strategy
+
+- 旧数据可读取（迁移幂等，多状态库均安全启动）。
+- 旧调用方不突然失效（Adapter + flag 回退）。
+- API 兼容：`knowledge.py` 门面 surface 保持；`memory_query` 保留为显式搜索 API。
+- 提示词逐字节一致（COND 保障）作为 P4.4 回归硬指标。
+
+---
+
+## 15. Rollback Strategy
+
+| 开关 | 回退效果 |
+|---|---|
+| FEATURE_CONTEXT_ENGINE=false | 回退 memory.build_system_prompt 单体 |
+| FEATURE_MEMORY_EVOLUTION=false | 回退 MemorySource + 退出 RuntimeStateSource |
+| FEATURE_KNOWLEDGE_PLATFORM=false | 不注入知识块 |
+| MEMORY_V2_ENABLE=false | memory_v2 不注册（默认关） |
+
+所有 rollback 为配置级，非代码回滚，符合「先双跑后切」。
+
+---
+
+## 16. Testing Strategy
+
+- Unit：Memory CRUD/Dedup/Retrieval/Ranking/Lifecycle/Consolidation。
+- Contract：API 签名/ContextItem 字段/边界。
+- Integration：Context Assembly/Budget/Knowledge Search/EventBus。
+- Migration：幂等/数据保全/孤儿 count/多状态库启动。
+- Regression：全量 pytest（含 test_p3_idempotency/recovery/soak/test_p2_real_chat_runtime/test_context_*）。
+- **Legacy Bypass Test**（硬门禁）：grep 确认除 Canonical API / DefaultEvolutionPolicy / context.facade / eventbus 外无第二入口；Memory 不直连 Executor。
+- 安全测试继续保持全绿。
+
+---
+
+## 17. Security Boundary
+
+- Memory/Context/Knowledge **只提供**记忆/上下文/知识；不执行 Tool、不调用 Executor、不绕过 Capability Runtime / Permission Guard。
+- 已验证 `capability_runtime` 仅由 Chat Runtime 调用，与 Memory/Context 无调用关系。
+- 事件不经 Executor；仅表域状态变化/观察。
+
+---
+
+## 18. Deprecation Plan
+
+（详见 `P4-DEPRECATION-MATRIX.md`）
+
+- KEEP(14)：memories/memory_distiller/memory_intelligence(ADAPTER)/memory_evolution/cognitive.*/knowledge.*/semantic_fusion/embed/eventbus。
+- MERGE(1)：MemoryRecallSource → EvolvedMemorySource。
+- DEPRECATE(4)：MemorySource 单体 / memory_v2/* / memory.build_system_prompt / profile 表。
+- ORPHAN(1)：knowledge_docs/chunks。
+- **无模块被直接 DELETE**；移除仅在未来验证通过后。
+
+---
+
+## 19. Risk Register
+
+| 风险 | 等级 | 缓解 |
+|---|---|---|
+| 检索质量波动 | 中 | 排名同源 + top-k 重叠度回归 |
+| 提示词逐字节不一致 | 中 | COND 比对 + 人工抽检 |
+| 孤儿表误删 | 低 | count>0 中止 |
+| 配置合并行为变 | 中 | 单一权威 + env 默认 true 对比 |
+| 双跑回归负担 | 中 | 分阶段门禁 + flag 回退 |
+| distiller tags 兼容 | 中 | 双写过渡后停读 tags |
+| profile vs user_model 重叠 | 低 | canonical=user_model + canonical_project 冲突解析 |
+
+---
+
+## 20. Implementation Phase Breakdown
+
+| 阶段 | 目标 | 回归门 |
+|---|---|---|
+| P4.2 Memory 契约 | Canonical API + distiller 修正 + lifecycle 注释 | 无物理 DELETE + content_hash 幂等 + 真实列 |
+| P4.3 统一检索 | DefaultEvolutionPolicy 权威 | 排名无漂移 + Legacy Bypass(检索) |
+| P4.4 Context 重构 | 拆 MemorySource 单体 + RuntimeStateSource + EvolvedMemorySource 注册 + UserModel 去 render | 无三重注入 + 逐字节一致 + Legacy Bypass(装配) |
+| P4.5 知识+事件+孤儿 | knowledge_runtime 边界 + 事件扩展 + 孤儿 DROP | 孤儿零数据 + 事件唯一 + 边界 |
+| P4.6 配置+弃用收口 | 单一权威 + ghost 登记 + 全弃用收口 | 配置单一 + 全量回归 + Legacy Bypass 全绿 |
+
+详见 `P4-MIGRATION-PLAN.md`。
+
+---
+
+# P4 DESIGN FINAL REPORT
+
+## Verdict
+**PASS**
+
+## Architecture Decision
+五权威各一：Memory(`memories`+`memory_evolution`)、Retrieval(`DefaultEvolutionPolicy`)、Context(`context.facade`)、Knowledge(`knowledge_runtime`)、Lifecycle/Event(`lifecycle`+`eventbus`)。MemorySource 单体拆为 EvolvedMemorySource + RuntimeStateSource。
+
+## Contract Decisions
+- Memory：`memories` 唯一 canonical；Canonical API 统一写入；distiller 改真实列。
+- Context：`ContextItem` 已落地；消除单体；DEDUP_SCOPE_KEY 兜底。
+- Knowledge：文件型，与 Memory 分离；不引入 chunk；semantic_fusion 归 Perception。
+
+## Migration Decisions
+三阶段（契约引入→双跑验证→切换）；幂等迁移；孤儿 count 校验后 DROP；hash 共存兼容。
+
+## Deprecation Decisions
+KEEP/MERGE/ADAPTER/DEPRECATE/ORPHAN 分类；无直接 DELETE；memory_v2 默认 OFF 且禁用写入。
+
+## Security Verification
+capability_runtime 仅由 Chat Runtime 调用；Memory/Context 无 Executor 调用；事件不经 Executor。边界 intact。
+
+## Regression Impact
+不影响 P1/P2/P3（双跑 + flag 回退 + 全量 pytest 含 test_p3_* / test_p2_real_chat_runtime）。不影响 UI（红线冻结）。
+
+## Risks
+见 §19 Risk Register；均有缓解。
+
+## Implementation Order
+Phase 1: P4.2 → Phase 2: P4.3 → Phase 3: P4.4 → Phase 4: P4.5 → Phase 5: P4.6（串行主链，每阶段门禁）。
+
+## Gate
+# P4 DESIGN GATE = PASS
+
+---
+
+## DESIGN GATE 15 问自检
+
+| # | 问题 | 答案 |
+|---|---|---|
+| 1 | 是否存在新的重复架构？ | 否（收敛为五权威各一；memory_v2/旧单体进入 DEPRECATE） |
+| 2 | 是否真正只有一个 Memory Contract？ | 是（`memories` + Canonical API + memory_evolution） |
+| 3 | 是否真正只有一个 Context Assembly？ | 是（`context.facade`；单体 MemorySource 拆后停用） |
+| 4 | Retrieval 是否被统一？ | 是（`DefaultEvolutionPolicy` 唯一；memory_intelligence/episodic 降内部） |
+| 5 | Knowledge 是否仍与 Memory 分离？ | 是（文件型 knowledge_runtime，不进 memories） |
+| 6 | 是否所有旧调用方都有迁移路线？ | 是（Adapter 双跑 + flag 回退；矩阵 §12/§18） |
+| 7 | 是否存在数据丢失风险？ | 否（无 DROP 带数据表；孤儿零数据；tombstone 保留） |
+| 8 | 是否存在 schema migration 风险？ | 否（幂等；多状态库安全启动；count 校验） |
+| 9 | 是否存在 feature flag 漂移？ | 设计已消除（单一 DEFAULT_FEATURE_FLAGS；ghost 登记） |
+| 10 | 是否存在 EventBus 同义事件？ | 否（禁止同义多名称；新增经论证且唯一） |
+| 11 | 是否可能绕过 Policy/Permission/Approval？ | 否（Memory/Context 不直连 Executor；已验证） |
+| 12 | 是否影响 P1/P2/P3？ | 否（双跑 + 回归门） |
+| 13 | 是否影响 UI？ | 否（UI 永久冻结，本阶段零 UI 变更） |
+| 14 | 是否可以安全 rollback？ | 是（配置级 flag 回退，非代码回滚） |
+| 15 | 是否可以进入 IMPLEMENT？ | 是（**但需等待明确指令进入 P4 IMPLEMENTATION，本阶段 STOP**） |
+
+---
+
+> **STOP — DESIGN ONLY。** 未修改任何产品代码 / 数据库 / 配置 / UI / 测试。下一步：等待进入 **P4 IMPLEMENTATION**（建议从 P4.2 起）。

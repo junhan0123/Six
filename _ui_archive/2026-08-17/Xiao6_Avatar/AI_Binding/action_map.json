@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "name": "Xiao6 Avatar Action Binding",
+  "description": "动作意图 → 手势层（Gesture: Point / Explain / Confirm / Welcome）绑定预留规范。当前为占位，不生成任何资源。",
+  "default": null,
+  "gestures": {
+    "Point":    { "layer": "Gesture/Point",    "trigger": "executing:step", "duration_ms": 600 },
+    "Explain":  { "layer": "Gesture/Explain",  "trigger": "planning",       "duration_ms": 800 },
+    "Confirm":  { "layer": "Gesture/Confirm",  "trigger": "warning|decision", "duration_ms": 500 },
+    "Welcome":  { "layer": "Gesture/Welcome",  "trigger": "session:start",  "duration_ms": 1000 }
+  },
+  "note": "动作层（Action Layer）为 Phase 25 预留钩子；registerLayer('action', fn) 可在状态切换时消费本映射。"
+}

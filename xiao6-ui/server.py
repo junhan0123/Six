@@ -338,7 +338,7 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                         "ok": True,
                         "app_name": config.AI_DISPLAY_NAME,
                         "version": config.APP_VERSION,
-                        "check_url": "https://github.com/AGI-ZhuangZhou/ZhuangZhou/releases/latest",
+                        "check_url": "https://github.com/AGI-Xiao6/Xiao6/releases/latest",
                     },
                     ensure_ascii=False,
                 ),
@@ -725,6 +725,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
         if path.startswith("/static/"):
             return self._serve_file(path[len("/static/") :])
+        if path.startswith("/xiao6-space"):
+            return self._serve_file("xiao6-space" + path[len("/xiao6-space"):])
         if self._resolve_static(path):
             return self._serve_file(path.lstrip("/"))
         self._send(404, json.dumps({"error": "not found"}))
@@ -776,6 +778,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._send_head(200)
         if path.startswith("/static/"):
             return self._serve_file_head(path[len("/static/") :])
+        if path.startswith("/xiao6-space"):
+            return self._serve_file_head("xiao6-space" + path[len("/xiao6-space"):])
         if self._resolve_static(path):
             return self._serve_file_head(path.lstrip("/"))
         self._send_head(404)
@@ -948,13 +952,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
 
 def main():
     port = PORT
-    # ── 日志统一 + 轮转（logs/zhuangzhou.log，5MB×3；logging 模块输出统一入文件）──
+    # ── 日志统一 + 轮转（logs/xiao6.log，5MB×3；logging 模块输出统一入文件）──
     try:
         import logging
         from logging.handlers import RotatingFileHandler
 
         os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs"), exist_ok=True)
-        _lf = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "zhuangzhou.log")
+        _lf = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "xiao6.log")
         _rh = RotatingFileHandler(_lf, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
         _rh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
         logging.basicConfig(level=logging.INFO, handlers=[_rh], force=True)
@@ -982,7 +986,7 @@ def main():
         print(f"[恢复] {n} 个被中断的多步任务已标记为可续。")
     # 出站代理支持：若配置了代理地址，全局安装 opener，使所有 urllib 调用
     # （Agnes 模型/启动自检）自动走代理。本机访问 apihub.agnes-ai.com 需经本地 Clash。
-    _proxy = os.environ.get("ZHUANGZHOU_PROXY_URL") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+    _proxy = os.environ.get("XIAO6_PROXY_URL") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
     if _proxy:
         import urllib.request as _urllib
 
@@ -1011,7 +1015,7 @@ def main():
     start_prefetch_scheduler()  # Phase 2：ACI 预热缓存（天气/新闻定时预取，模型醒来即用）
     print("ACI 预热缓存调度已启动（天气/新闻定时预取）。")
     # Phase 8：语音唤醒词常驻监听（KWS 默认开启时，后端启动即监听麦克风）
-    if config.ZHUANGZHOU_KWS_ENABLED.lower() in ("1", "true", "yes"):
+    if config.XIAO6_KWS_ENABLED.lower() in ("1", "true", "yes"):
         try:
             def _on_wake(transcript):
                 """唤醒词命中后，自动开启语音对话模式。"""
@@ -1026,7 +1030,7 @@ def main():
             print(f"[KWS] 启动失败（非致命）: {e}")
     # 中文唤醒词检测（kws.py）：前端语音循环中每段断句后 POST /api/kws 判定；
     # openwakeword（wakeword.py）作为英文 "hey jarvis" fallback 仍由上方常驻监听承载。
-    if config.ZHUANGZHOU_KWS_ENABLED.lower() in ("1", "true", "yes"):
+    if config.XIAO6_KWS_ENABLED.lower() in ("1", "true", "yes"):
         try:
             import kws as _kws  # noqa: F401（确认模块可加载，/api/kws 已就绪）
 

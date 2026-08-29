@@ -1,0 +1,331 @@
+# P1 · PRODUCT ARCHITECTURE FREEZE — ZhuangZhou 最终产品架构唯一真实基线
+
+> 身份：Senior Product Architect / Runtime Architect
+> 阶段：Phase 1 — PRODUCT ARCHITECTURE FREEZE（在 P5.1–P5.4 Core Foundation 已冻结基础上）
+> 状态：**READ ONLY / ZERO MODIFICATION**。本阶段仅 VERIFY / AUDIT / MAP / CLASSIFY / PLAN / REPORT。
+> 最终必须 STOP。
+> 中文 · 真实源码核验（file:line 来自 `G:\ZhuangZhou\zhuangzhou-ui`、`G:\xiao6-hub`、`G:\deepseek-harness`）
+
+---
+
+## 1. EXECUTIVE VERDICT（执行结论）
+
+- **P5.1–P5.4 Core Foundation 正式冻结**：重新读取真实源码确认全部契约标记在位、零变更（见 §2）。
+- **产品方向正式冻结**：ZhuangZhou = 唯一产品；Voice OS 与 GUI OS 只是两个 **Interaction / Presentation Layer**，共享同一个 Core（Runtime / Context / Memory / Decision / Policy / Approval / Lifecycle / Capability / Executor / Security Boundary）。
+- **Voice Orb = Primary UI**：canonical web orb = `zz-space` petOrb（Lottie robo-ai.json）；canonical Electron 语音球 = `desktop-avatar/dyna-orb`（设计选定，但实际入口存在冲突，见 §11）。
+- **GUI = Advanced Workspace**：Xiao6Hub renderer 作为集成外壳（feature grid + DSH Web webview），**仅为 Presentation + Adapter，不是第二 Runtime / 第二产品**。
+- **DeepSeek Harness = 基础设施 / 工作区 / 实现底座**：拥有自己的 agent-loop，但属于 harness 原语，**不是 ZhuangZhou 产品身份、Memory、Policy、Lifecycle**。禁止把 DSH / DPH 暴露成最终用户产品概念。
+- **不存在第二套 ZhuangZhou Runtime**。唯一需要警惕的"第二运行时"风险是 DSH 自身的 agent-loop —— 必须仅作为底座，经 HTTP（Typert RPC 3080 / ACP / SDK）集成，绝不作为产品面暴露。
+- **P5.5–P5.8 不机械继续**：重新评估后均归类 C（Core 收口后）或 B（UI 重构后）/ D（暂缓），无一项需要现在立即实现（见 §9）。
+- **最终状态**：READ ONLY / AUDIT COMPLETE / PRODUCT ARCHITECTURE FROZEN / PLAN READY / STOP。
+
+---
+
+## 2. CORE FREEZE VERIFICATION MATRIX（Core 冻结核验矩阵）
+
+> 核验方式：重读真实源码 + grep 标记。所有条目均在上次改动后未变更。
+
+| Layer | Authority | Canonical Module | Entry Point | Mutation Owner | Read/Observation | Forbidden Dependencies | Current Status | Future Requirement |
+|-------|-----------|-----------------|-------------|----------------|-----------------|------------------------|----------------|----------------------|
+| Context | AgentRuntime | `context/facade.py` (`build_cognitive_context` :62) + `LegacyContextBuilder` + `SourceRegistry` | `agent_runtime._llm_dispatch` | `context/facade` | EventBus / Cognitive 只读 | 第二 Context Builder；Cognitive 直连 DB | **FROZEN (P5.1)** | 保持单一 builder（第二消费模式，零第二引擎） |
+| Memory | Memory Canonical | `cognitive/memory_adapter.py`(FACADE) + `memory_projection.py`；底层 `memory.py` | AgentRuntime / Cognitive → adapter → `memory.py` | `memory.py` (`create_memory`/`upsert_memory`) | EventBus 观察 | Cognitive 直写 DB；Agent Runtime 直写 memories/user_model/episodes | **FROZEN (P5.2)**，`FEATURE_CANONICAL_COGNITIVE_MEMORY=True` (config.py:96) | 保持 adapter 薄门面，legacy 三表退化为投影 |
+| Decision | AgentRuntime | `agent_runtime._execute_task` (:520) → `_run_goal` | `_run_goal` | AgentRuntime | EventBus | Cognitive 反向依赖 executor | **FROZEN (P5.3)** | 保持 |
+| Policy | policy_engine | `policy_engine.evaluate` (:230) | Decision 调用 | policy_engine | EventBus | 第二 Policy | **FROZEN (P5.3)** | 保持 |
+| Approval | policy_engine | `policy_engine.request_approval` (:257) | Decision 调用；`auto_approve` 不被 confirm 旁路（M-05） | policy_engine | EventBus | 第二 Approval | **FROZEN (P5.3)** | 保持 M-05 语义 |
+| Capability / Executor | capability_os / mcp_host / ai_core | `capability_os.execute_capability`(:195) / `mcp_host.executor`(:153) / `ai_core.execution.run`→`tools.execute_tool` | Decision | 既有执行网关 | EventBus | 第二 Executor；`capability_runtime.py` 仅 Chat 收敛适配层 | **FROZEN (P5.3)** | 保持单执行网关 |
+| Lifecycle | AgentRuntime | `_run_goal`(:149) / `_evaluate_round`(:440) / `_do_replan`(:473)；`goals.set_round`(:170) / `goals.bump_revision`(:192) / `tasks.recover_tasks`(:165) | `_run_goal`（唯一 Round Driver） | AgentRuntime（持久化 setter 收口 goals/tasks） | EventBus 仅观察 | 第二状态机 / lifecycle authority；`ai_core/lifecycle.py` 仅启动就绪承载 | **FROZEN (P5.4)**，`_MAX_CONSECUTIVE_FAIL=2` (:55)，`recover_tasks` 唯一恢复 | 保持单一 lifecycle authority |
+| EventBus | eventbus.py | `publish` / `publish_domain` / `publish_system`（纯 pub/sub） | 各模块 publish | 无（仅通知） | `ThreadPoolExecutor` 内部异步派发 | 反向控制执行（import/点号引用执行编排模块） | **FROZEN**；7 个 event-count 失败归 P5.8 | P5.8 修复计数断言，不改架构 |
+| Cognitive Facade | Cognitive | `cognitive/*`（memory_adapter / user_model / episodic / projection） | AgentRuntime / 内部 | 经 adapter 写 Memory | 零执行依赖 | import `goals`/`tasks`/`agent_runtime`/执行链 | **FROZEN (P5.2/P5.3)** | 保持纯认知/记忆/投影层 |
+
+**核验 grep 证据**（未改动）：`context/facade.py:62 build_cognitive_context`；`config.py:96 FEATURE_CANONICAL_COGNITIVE_MEMORY: True` 且 `FEATURE_COGNITIVE_CONTEXT` 在 global 列表；`cognitive/memory_adapter.py` + `memory_projection.py` 存在；`agent_runtime.py:55/149/440/473`；`goals.py:170/192`；`tasks.py:165`。
+
+---
+
+## 3. VOICE ORB ARCHITECTURE MAP（Voice Orb 架构地图）
+
+> 来源：真实读取 `zhuangzhou-ui` 全部 orb 文件 + 文档。
+
+| Path | Role | Status | Entry? | Runtime link |
+|------|------|--------|--------|--------------|
+| `index.html`（根） | meta-refresh → `/zz-space` (:5) | frozen redirector | no | 跳转 |
+| `app.js` (114KB) | `setOrb` + `/api/chat/asr/speak` 流程 | legacy/frozen | 曾是入口 | `window.ZZAvatar` |
+| `main-orb.js` + `voice-orb-simple.js` | 2D canvas orb（voice-core 移植） | legacy/frozen | 仅冻结根 | 无 mic/ASR |
+| `zz-space/index.html` | **实际 web 入口** | canonical | YES | `js/zz-space.js` |
+| `zz-space/js/zz-space.js` | 活动应用 + 语音管线 + petOrb | canonical | YES | `/api/chat/asr/speak` |
+| `zz-space/js/voice-orb.js` | 3D three.js orb | **DEAD/未接线** | no（不在 index.html） | none |
+| zz-space petOrb（Lottie `robo-ai.json`） | 活动语音球视觉（VAD） | canonical | YES | `zz-space.js` 控制 |
+| `desktop-avatar/dyna-orb.*` + `-voice.js` | Electron「小6」语音球（设计选定） | canonical(设计) | PET_URL(gui/main.js) | `/api/asr→chat→speak` |
+| `desktop-avatar/orb-pet.*` + `-voice.js` | 旧语音球 | superseded | 仅 verify 脚本 | — |
+| `desktop-avatar/gem-orb` / `liquid-orb` / `orb-ui-orb` | 实验变体 | duplicate/competing | no | 无活动 |
+| `desktop-avatar/index.html`(robot.js) | 桌面机器人宠物 | separate/legacy | no | 非 orb |
+| `final/tts-engine.js` / `voice-core.js` | 旧 FinalX 语音 | **REMOVED（磁盘无，PHASE38I 引用过期）** | — | stale |
+| `sse-manager.js` | EventSource `/api/stream` 单例 | canonical infra | YES | 喂 HUD |
+
+**关键结论（10 问）**
+1. **canonical web orb** = `zz-space` 的 petOrb（Lottie），由 `coreStage[data-state]` 驱动；3D `voice-orb.js` 未加载。
+2. **legacy/dead/duplicate**：legacy=`app.js`/`main-orb.js`/`voice-orb-simple.js`/根 `index.html`；dead=`zz-space/js/voice-orb.js`；duplicate=`desktop-avatar/{dyna,gem,liquid,orb-ui}-orb`；removed=`final/`（PHASE38I 文档已过期）。
+3. **真实 ASR→Chat→TTS 链路**：`getUserMedia` → `POST /api/asr`（asr.py: faster-whisper/FunASR/云） → `POST /api/chat`（SSE, server_handlers_chat → agnes LLM） → `POST /api/speak`（qwen3_tts → GPT-SoVITS → edge-tts） → `<audio>`/WebAudio 播放并泵音量到 orb。
+4. **SSE→Orb**：`/api/stream`（sse-manager.js:63 自动连）**不驱动 5 态 orb**，只扇出 agent `st` 到 HUD 环 + 任务卡；orb 5 态由本地 `setOrb()`/mic/ASR/chat/speak 驱动。
+5. **状态机**：`app.js:321 setOrb(mode)`（idle/listening/thinking/speaking/error）→ DOM + `ZZAvatar.setState` + HUD；zz-space 用 `coreStage[data-state]` + petOrb（VAD 开→listening→thinking→speaking→idle）。
+6. **desktop-avatar vs 主 orb**：`desktop-avatar/` 是独立 Electron 宠物；`zz-space petOrb` **非 dead**（活动接线）。
+7. **多竞争 Voice UI？** 是：冻结根+2D orb / 活动 zz-space(petOrb+死 3D) / Electron desktop-avatar(≥5 orb 原型) / 已删 final/。Runtime 已收敛到 zz-space，但磁盘仍有多余 orb。
+
+---
+
+## 4. XIAO6HUB ARCHITECTURE MAP（Xiao6Hub 架构地图）
+
+> 来源：真实读取 `G:\xiao6-hub` 全部关键文件。
+
+- **main.js** = 进程宿主 + 监控代理 + IPC 路由（thin host）：`loadConfig()`(:29) 读 config；`resolveServer()`(:230) 探测 DSH `127.0.0.1:3080` 复用或 `spawnDsh()`(:154) 自拉（`node --import tsx ... apps/cli/src/bin.ts --profile web --port 3210`，超时 45s）；`launchFeature()`(:277) 按 kind 分支（cli/url/api/file）；仅创建无边框窗口(:367) 承载 DSH webview。**不含业务/智能**。
+- **preload.js** = 纯安全桥（`contextBridge.exposeInMainWorld`，每个方法是 `ipcRenderer` 封装），`contextIsolation` 开，**零业务代码**。
+- **renderer/** = 纯 UI（视图切换、feature 卡片网格、日志、webview 事件），调 `window.xiao6` IPC，**无 Runtime/执行逻辑**。
+- **webview**（`renderer/index.html:122` `#dsh-webview`，`partition=persist:dsh`）= DSH Web 容器，**无逻辑**。
+- **features.json** = **47 条**（文档称 43），**全为路由/展示层**：cli×1 / url×3 / folder×3 / api×40（只读 GET `127.0.0.1:8010`）。它是「第二套能力目录（launcher registry）」—— catalog + 转发，**执行权全部委托外部**，不构成 second runtime / second capability system。
+- **端口**：DSH `3080`(复用)/`3210`(自拉)；小6/ZhuangZhou `127.0.0.1:8010`。
+- **与 ZhuangZhou 关系**：Xiao6Hub **不 import / 不 require / 不调用** ZhuangZhou 代码，仅通过 features.json 的 `api`(→8010) / `url`(→localhost:8010) / `folder`(`G:\zhuangzhou`) 作为**外部只读 HTTP 消费者**。
+
+**判定**：Xiao6Hub = **Presentation + Adapter（launcher / host GUI）**，**叠加在两个外部运行时之上**（DSH 由 main.js 托管、ZhuangZhou 8010 纯只读调用）。**不构成 second runtime / second product**。无 UI/Adapter 被误标为 Runtime/Capability/Execution。
+
+---
+
+## 5. DSH INTEGRATION MAP（DeepSeek Harness 集成地图）
+
+> 来源：真实读取 `G:\deepseek-harness`。
+
+- **版本**：`@deepseek-ai/dsh` / `dsh-web-frontend` 均 **0.1.0-rc.5**（developer preview）。
+- **结构**：pnpm monorepo，`packages/<group>/<pkg>`（`@deepseek-ai/dsh-*`：core/api/llm/shell/fs/interaction/workspace/session/agent-loop/subagent/web/host/sdk/acp/code-runtime/e2b…）；`apps/cli`(bin) + `apps/web`(Vite/React)。
+- **CLI**：`apps/cli/src/bin.ts` → 模式 `profile`(web/headless/tui) / `plugin` / `dump-config`。
+- **Web**：`apps/web`（React over `@deepseek-ai/dsh-client-web`），默认 `http://127.0.0.1:3080`。
+- **Runtime model**：Cordis 插件化 harness（"everything is a plugin"）。**确实运行自身 agent-loop** = `packages/core/agent-loop`（`ctx.agentLoop`，单一）。工具经 `ctx.tools`、模型经 `ctx.llm`。
+- **Workspace**：`packages/workspace`（`WorkspaceEntity`）= 持久用户目录 + session 成员；`dsh-data/` 存 profile/bundle。
+- **API/进程**：Typert RPC gateway（`packages/api/gateway`）默认 **3080**；另有 ACP / JSON-RPC SDK server。DSH **不拉起模型服务**（模型经 `ctx.llm` adapter + `DEEPSEEK_BASE_URL`/`DEEPSEEK_API_KEY`）。
+- **与 Xiao6Hub 连接**：**本仓库内零引用**（`xiao6|Xiao6` 全仓 0 匹配）。若 Xiao6Hub 驱动 DSH，只能是 DSH Typert/ACP/SDK 的**外部客户端**。
+- **与 ZhuangZhou 连接**：**零引用**（本仓库 `zhuang|Zhuang` 0 匹配），完全独立。
+- **第二 ZhuangZhou 类产物检查**：
+  - 第二 Runtime/agent-loop：**NO**（仅 `core/agent-loop` 一个；`CodeRuntime`/`SubprocessRuntime`/`WebRuntime`/`LlmRuntime`/`ToolRuntime`/`E2BRuntime` 是**能力接缝**，非 agent-loop）。
+  - 第二 Memory：**NO**（持久态 = `core/session` 追加式 `SessionEvent` 日志）。
+  - 第二 Tool/Capability：**NO**（单一 `core/tools`）。
+  - 第二 Policy/Approval：**NO**（单一 `packages/interaction`：`ctx.approval`/`ctx.permissionPresets`/`ctx.userQuestions`）。
+  - 第二 Lifecycle：**NO**（单一 agent 生命周期 + workspace 生命周期）。
+
+**定位**：DSH = **infrastructure / workspace / implementation substrate**（插件系统、profile、能力、session 日志、单一 agent-loop、Typert/ACP/SDK 服务）。**不是 ZhuangZhou 产品身份**，不携带独立的 ZhuangZhou 式 Memory/Policy/Lifecycle。任何外部产品（Xiao6Hub/ZhuangZhou）只能经 DSH 的 HTTP 表面集成，且本仓库无此类接线。
+
+---
+
+## 6. UI REALITY MATRIX（全 UI 现实矩阵）
+
+> 跨三仓库扫描；"active" = 被某启动器/引用接线。严禁删除。
+
+| UI | Entry | Purpose | Current Usage | Runtime Dep | Duplicate | Dead | Legacy | Keep | Replace | Final Role |
+|----|-------|---------|---------------|-------------|-----------|------|--------|------|---------|-------------|
+| **zz-space** | `zz-space/index.html` | canonical AI-OS 主页 | ACTIVE（根重定向 + 小6启动.bat） | ZhuangZhou 8010 | — | no | no | ✅ | — | **Primary Web Home** |
+| legacy app+Galaxy+Panel+Chat | `index.html`(redirect)+`app.js`/`panel-manager.js`/`galaxy-*.js` | 旧 AI-OS 主页/星系/面板/旧 chat | DORMANT（被重定向到 zz-space，永不渲染） | 8010 | — | 可达不可达 | yes | ✅(frozen) | 已被 zz-space 取代 | 冻结保留，可逆 |
+| desktop-avatar robot pet | `desktop-avatar/index.html`(robot.js) | 桌面机器人宠物 | ACTIVE（electron/main.js 320×480 置顶窗） | 8010 | — | no | yes | ✅ | — | 桌面宠物（legacy 路径） |
+| **Voice Orb — dyna-orb** | `desktop-avatar/dyna-orb.html`(+js) | 设计选定语音球 | ACTIVE(设计) PET_URL=gui/main.js | 8010 | vs orb-pet/gem/liquid/orb-ui | no | no | ✅ | — | **Primary Voice Orb (Electron)** |
+| Voice Orb — gem/liquid/orb-ui-orb | `desktop-avatar/*` | 实验变体 | DORMANT（零引用） | — | vs dyna-orb | 实质 dead | — | ✅ | 收敛删除待定 | 待 Phase 2 收敛 |
+| Voice Orb — orb-pet | `desktop-avatar/orb-pet.*` | 旧语音球 | superseded | — | vs dyna-orb | — | yes | ✅ | — | 待收敛 |
+| chat-window.html | `desktop-avatar/chat-window.html` | 懒加载聊天窗 | semi（依赖未接线的 gui shell） | 8010 | — | — | — | ✅ | — | Phase 3 评估 |
+| companion.html | `desktop-avatar/companion.html` | 桌面伴侣 | DORMANT（被 desktop-avatar 取代） | — | — | — | yes | ✅ | — | 冻结 |
+| mobile-app.html | `mobile-app.html`(+manifest/sw) | 移动 PWA 伴侣 | semi（仅冻结 index 引用） | 8010 | — | — | — | ✅ | — | 待评估 |
+| selfcheck.html | `selfcheck.html` | 开发自检 | dev-only | — | — | — | — | ✅ | — | 保留 |
+| weather-modal-preview.html | `weather-modal-preview.html` | 开发预览 | DEAD（零引用） | — | — | yes | — | ✅(unexposed) | — | 不删，仅不暴露 |
+| zz-space\_verify\lf-page.html | 测试夹具 | 测试 | 非产品 | — | — | — | — | ✅ | — | 测试用 |
+| **Xiao6Hub renderer** | `xiao6-hub/renderer/index.html` | CODEX 式集成外壳 | ACTIVE（start.bat→npm start） | 双：8010 + DSH 3080/3210 | 嵌入他者 | no | no | ✅ | — | **Integration Shell / 单一桌面入口** |
+| **DSH Web** | `deepseek-harness/apps/web/index.html` | agent 工作区 UI | ACTIVE（`dsh web`） | 自身 DSH host | 由 ~25 个 ui-* 库组成 | no | no | ✅ | — | Agent Workspace（被 Xiao6Hub 嵌入） |
+| DSH docs website | `deepseek-harness/website/` | VitePress 文档 | docs-only | — | — | — | — | ✅ | — | 非产品 UI |
+
+**过期文档（须修订，非删除）**：根 `index.html` 注释引用 `/final/`（已删）；`_audit/PHASE_G_ENTRY_MATRIX.md` 称 `/v4/` 为唯一 Home、`/v5/` 弃用 —— 但 `v4/`、`v5/`、`final/` **磁盘均不存在**。两文档已过期。
+
+---
+
+## 7. OWNERSHIP MATRIX（所有权矩阵）
+
+| 项 | CURRENT OWNER | CANONICAL OWNER | FORBIDDEN OWNER |
+|----|---------------|-----------------|-----------------|
+| Product Identity | ZhuangZhou | ZhuangZhou | Xiao6Hub / DSH 作为产品品牌 |
+| Persona | ZhuangZhou（`PERSONA_*` in config） | ZhuangZhou | DSH |
+| Memory | ZhuangZhou `memory.py` | ZhuangZhou | Cognitive 直写 / DSH / 第二 Memory |
+| Context | ZhuangZhou `context/facade` | ZhuangZhou | 第二 Context Builder |
+| Decision | AgentRuntime | ZhuangZhou | Cognitive 反向依赖 |
+| Policy | policy_engine | ZhuangZhou | 第二 Policy |
+| Approval | policy_engine | ZhuangZhou | 第二 Approval |
+| Lifecycle | AgentRuntime | ZhuangZhou | 第二状态机 / lifecycle authority |
+| Capability | capability_os / mcp_host / ai_core.execution | ZhuangZhou | 第二 Capability System |
+| Executor | `tools.execute_tool` | ZhuangZhou | 第二 Executor |
+| Security | permission_guard | ZhuangZhou | bypass / 第二 Security |
+| UI | zz-space(web) + dyna-orb(voice) + Xiao6Hub renderer(hub) | Presentation only | 持有 Runtime |
+| Workspace | DSH workspace + ZhuangZhou | DSH 作底座 / ZhuangZhou 作产品工作区 | DSH 作为产品身份 |
+| Infrastructure | DSH | DSH | 暴露为最终产品概念 |
+
+**满足**：ZhuangZhou owns Persona/Memory/Context/Decision/Policy/Approval/Lifecycle/Capability/Security；Voice/GUI owns Presentation only；DSH owns Infrastructure/Workspace capability；Xiao6Hub owns Desktop shell/presentation/adapter。
+
+---
+
+## 8. FINAL PRODUCT ARCHITECTURE（最终产品架构 — 冻结）
+
+```
+                    ZHUANGZHOU
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+          Voice OS                GUI OS
+          Voice Orb          Advanced Workspace
+              │                     │
+              └──────────┬──────────┘
+                         │
+                  Interaction Layer
+                         │
+                  ZhuangZhou Runtime
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+       Context         Memory        Decision
+          │              │              │
+          └──────────────┼──────────────┘
+                         │
+                     Lifecycle
+                         │
+                  Policy / Approval
+                         │
+               Capability / Executor
+                         │
+                   Security Boundary
+                         │
+                    Local Runtime
+                         │
+                  Infrastructure
+                         │
+                 DeepSeek Harness
+```
+
+- Voice OS 与 GUI OS **不是两个产品、不是两个 Runtime、不是两个 Memory、不是两个 Capability System**。
+- 二者必须共享：Runtime / Context / Memory / Decision / Policy / Approval / Lifecycle / Capability / Executor / Security Boundary。
+- DSH 位于 Infrastructure 层之下，作为底座/工作区，绝不作为产品面。
+
+---
+
+## 9. P5.5–P5.8 RE-EVALUATION（重新评估，仅评估不执行）
+
+| Phase | Current Value | Dependency | Risk | Product Benefit | Recommendation | Priority |
+|-------|--------------|-----------|------|-----------------|----------------|----------|
+| **P5.5 World State** | 设计文档存在（`P5-WORLD-STATE-DESIGN`），无实现 | Core(Context/Memory) 已冻结 | 低（延后无损） | 中（情境感知） | **C（Core 收口后做）** | P3 / Medium |
+| **P5.6 Learning** | 设计文档存在（`P5-LEARNING-REFLECTION-DESIGN`）；`memory_distill` 已支持蒸馏 | Memory Canonical 已冻结 | 低 | 高（长期自我改进） | **C（Core 收口后做）**；架构已支撑，避免重复制造 | P3 / Medium |
+| **P5.7 Proactive** | `proactive.py` 已存在（proactive_decision/result）；设计文档 `P5-PROACTIVE-UNIFICATION-DESIGN` | EventBus + Lifecycle | 中（须先解 P5.8 EventBus 计数失败） | 高（主动助理） | **C（EventBus/UI 之后）**；已部分存在，**不为"完成 P5"而制造代码** | P2 / Medium-High |
+| **P5.8 EventBus** | 7 个 event-count 失败（可观测层计数断言） | 无阻塞依赖 | 低（计数断言，非架构违规） | 低-中（可观测正确性） | **B（UI 重构后 / Phase 5 RUNTIME INTEGRATION 顺带修）**；现在不修（冻结） | P4 / Low |
+
+**明确禁止**："为了完成 P5 而继续开发"。P5.5–P5.8 均不立即进入。
+
+---
+
+## 10. NEW CLOSEOUT ROADMAP（新正式收口路线）
+
+### PHASE 0 — P5 CORE FREEZE ✅ DONE
+- Objective：冻结 Core Foundation。Scope：P5.1–P5.4。Red Lines：零生产代码（P5.3/P5.4 已 ALREADY SATISFIED）。Exit Gate：全量 518 passed / 9 failed（冻结基线）/ 0 errors，报告落盘。
+
+### PHASE 1 — PRODUCT ARCHITECTURE FREEZE ✅ THIS PHASE
+- Objective：建立最终产品架构唯一真实基线。Scope：本审计（Voice Orb / Xiao6Hub / DSH / 全 UI / Ownership）。Red Lines：READ ONLY，零修改。Exit Gate：本报告 + STOP。
+
+### PHASE 2 — VOICE ORB FINALIZATION
+- Objective：收敛到单一 canonical Voice Orb 作为 Primary UI。
+- Scope：选定并接线 web petOrb + Electron 语音球；清理 gem/liquid/orb-ui/orb-pet 多余 orb；解决 `electron/main.js` vs `gui/main.js` 入口冲突；固化 ASR→Chat→TTS 链路。
+- Dependencies：Phase 1 基线；`/api/asr|chat|speak` 后端。
+- Files/Modules：`zz-space/js/zz-space.js`、`desktop-avatar/dyna-orb.*`、`electron/main.js`、`gui/main.js`、`VOICE_ORB_CONFIG.md`。
+- Red Lines：不引入第二 Runtime；不改 Core；不改后端契约。
+- Acceptance：单一 web orb + 单一 Electron orb 活动，其余标记 frozen/移除接线。
+- Exit Gate：Voice Orb = Primary UI 成立，无竞争 orb。
+
+### PHASE 3 — GUI RECONSTRUCTION
+- Objective：ChatGPT-style 高级工作台（左：会话/项目/历史；中：对话/工作区；右：Context/Task/Memory/Result 按需）。
+- Scope：重构 Xiao6Hub renderer 为高级控制台；大留白、简洁、不做 HUD 堆砌/几十功能卡片。
+- Dependencies：Phase 2；DSH Web 作为工作区容器。
+- Files/Modules：`xiao6-hub/renderer/*`、`features.json`（明确为路由层）。
+- Red Lines：GUI 不拥有第二 Runtime；不把 features.json 误建成能力体系。
+- Acceptance：GUI = 庄周高级控制台，仅 Presentation/Adapter。
+- Exit Gate：GUI = Advanced Workspace 成立。
+
+### PHASE 4 — VOICE + GUI UNIFICATION
+- Objective：两入口共享同一 Runtime/Memory/Capability/Security。
+- Scope：统一状态/上下文投影到两种 UI；同一套能力路由。
+- Dependencies：Phase 2 + 3。
+- Files/Modules：Interaction Layer 契约；EventBus 观察投影。
+- Red Lines：不形成 Voice Runtime / GUI Runtime。
+- Acceptance：双入口行为一致、可审计、可恢复。
+- Exit Gate：UNIFICATION 验证通过。
+
+### PHASE 5 — RUNTIME INTEGRATION
+- Objective：端到端 Runtime 收口 + EventBus 计数修复（P5.8）。
+- Scope：DSH 经 HTTP（Typert/ACP/SDK 3080）集成；ZhuangZhou 为脑；修复 7 event-count 失败。
+- Dependencies：Phase 2–4；DSH 底座。
+- Files/Modules：`eventbus.py`、DSH 集成桥。
+- Red Lines：DSH 不作为产品面；不建第二 Memory/Policy/Lifecycle。
+- Acceptance：双运行时边界清晰，EventBus 计数绿。
+- Exit Gate：INTEGRATION 验证通过。
+
+### PHASE 6 — REAL USER E2E
+- Objective：真实用户端到端验证（Voice + GUI）。
+- Scope：E2E 脚本 + 人工走查。
+- Dependencies：Phase 5。
+- Acceptance：核心场景全通。
+- Exit Gate：E2E 绿。
+
+### PHASE 7 — RELEASE CANDIDATE
+- Objective：RC 构建。
+- Scope：打包、文档、回滚预案。
+- Acceptance：RC 通过。
+- Exit Gate：RC 签字。
+
+### PHASE 8 — FINAL CLOSEOUT
+- Objective：正式发布收口。
+- Scope：遗留清理（冻结旧 UI 归档）、最终报告。
+- Acceptance：产品 = 单一 ZhuangZhou，双入口共享 Core。
+- Exit Gate：CLOSEOUT 签字。
+
+---
+
+## 11. BLOCKERS / RISKS（阻塞与风险）
+
+1. **多竞争 Voice Orb 仍在磁盘**：dyna-orb 设计选定，但 gem/liquid/orb-ui/orb-pet 为 dormant duplicate —— Phase 2 必须收敛，避免混淆。
+2. **Electron 入口冲突（重要）**：`electron/main.js`（根 package.json 接线，加载 desktop-avatar robot）与 `gui/main.js`（最新，"纯语音球模式"，接线 dyna-orb，但**无 .bat/.ps1 引用、root main 指向 electron/**）—— `gui/` 是最新却**未接线孤儿**。canonical Electron orb 到底走哪条路径**未决**，须 Phase 2 明确。
+3. **过期文档**：PHASE38I 引用已删 `final/`；根 `index.html` 注释引用 `/final/`；`_audit/PHASE_G_ENTRY_MATRIX.md` 称 `/v4//v5/` 为 Home —— 均须修订（非删除）。
+4. **EventBus 7 event-count 失败**：可观测层计数断言（归 P5.8），不影响架构，但掩盖真实事件量，须 Phase 5 修。
+5. **DSH 自有 agent-loop 风险**：DSH 拥有单一 agent-loop + workspace + session + tool + interaction 平面 —— 必须仅作底座，经 HTTP 集成，**绝不作为 ZhuangZhou 产品身份/Memory/Policy/Lifecycle 暴露**。任何把 DSH/DPH 当最终用户产品概念的做法都是违规。
+6. **Xiao6Hub features.json = 第二能力目录（launcher）**：良性，但须明确文档化为路由层，非能力来源。
+7. **遗留冻结栈仍被 server.py 泛回退服务**：Galaxy/Panel/app.js 可达但不可达（重定向），保留磁盘、标记 frozen 即可。
+8. **双运行时并存**：ZhuangZhou(8010) + DSH(3080/3210) 同时运行；最终产品必须把 ZhuangZhou 呈现为「脑」，DSH 为「后端底座」。
+
+---
+
+## 12. EXACT NEXT PHASE（精确下一阶段）
+
+**§11 十问回答**
+1. P5.1–P5.4 是否正式冻结？**是**（核验通过，零变更）。
+2. P5.5–P5.8 是否立即继续？**否**（重新评估，均 C/B/D，不机械继续）。
+3. Voice Orb 是否成为 Primary UI？**是**（zz-space petOrb + dyna-orb）。
+4. GUI 是否成为 Advanced Workspace？**是**（Xiao6Hub renderer over DSH/ZhuangZhou）。
+5. Xiao6Hub 是否只是 Presentation / Adapter？**是**（非 second runtime）。
+6. DSH 是否只是 Infrastructure / Workspace？**是**（非产品身份）。
+7. 是否存在第二 Runtime？**否**（ZhuangZhou 单一；DSH 为底座，其 agent-loop 非 ZhuangZhou-second）。
+8. 最终产品是否只有一个 ZhuangZhou？**是**。
+9. 下一阶段是否为 Phase 1？**本任务即 Phase 1**；其后的精确下一阶段 = **Phase 2: VOICE ORB FINALIZATION**（须显式授权后进入，现不进入）。
+10. Phase 1 是否仍然 READ ONLY？**是**（本交付物仅审计，零代码改动）。
+
+**EXACT NEXT PHASE = Phase 2: VOICE ORB FINALIZATION**（仅在与架构评审确认后进入；现在不进入）。
+
+---
+
+## 13. STOP
+
+```
+READ ONLY
+AUDIT COMPLETE
+PRODUCT ARCHITECTURE FROZEN
+PLAN READY
+STOP
+```
+
+**本阶段未修改任何 production code / test / config / DB / UI / Voice Orb / GUI / Xiao6Hub / DeepSeek Harness。未进入 P5.5/P5.6/P5.7/P5.8。未修复任何现存测试失败。未自动重构/优化。**
+
+等待架构评审确认后，方可进入 Phase 2。
+
+---
+*本报告基于真实源码核验（grep + 全仓审计代理）与 P5.1–P5.4 既有冻结结论。所有 file:line 引文来自 `G:\ZhuangZhou\zhuangzhou-ui`、`G:\xiao6-hub`、`G:\deepseek-harness` 当前工作树。*

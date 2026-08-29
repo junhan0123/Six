@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "name": "ZhuangZhou Avatar State Binding",
+  "authority": "AvatarState (avatar-state.js) — 唯一状态权威；本文件仅为绑定配置，非状态系统",
+  "description": "AI 状态（语音态 + 任务/智能体态）→ Avatar 状态 的绑定规范。Avatar Controller 运行时读取本文件作为绑定来源（加载失败时回退内嵌常量）。",
+  "canonical_states": [
+    "IDLE", "LISTENING", "THINKING", "PLANNING",
+    "EXECUTING", "SPEAKING", "LEARNING", "WARNING", "ERROR"
+  ],
+  "sources": {
+    "voice": {
+      "attribute": ["#voiceOrb[data-voice]", "#aiCore[data-voice]"],
+      "api": "FinalVoice.getVoice()",
+      "values": ["idle", "listening", "thinking", "speaking", "error"]
+    },
+    "task": {
+      "attribute": "#aiCore[data-state]",
+      "derived_from": "AvatarState.deriveFromGlobals()",
+      "values": ["IDLE", "WAITING", "THINKING", "PLANNING", "EXECUTING", "COMPLETED", "ERROR", "OFFLINE", "LEARNING", "WARNING"]
+    }
+  },
+  "priority": [
+    "voice.listening",
+    "voice.speaking",
+    "voice.error",
+    "voice.thinking",
+    "task.ERROR",
+    "task.EXECUTING",
+    "task.THINKING",
+    "task.PLANNING",
+    "task.WARNING",
+    "task.LEARNING",
+    "task.WAITING",
+    "task.COMPLETED",
+    "task.OFFLINE",
+    "voice.idle",
+    "task.IDLE"
+  ],
+  "bindings": {
+    "IDLE":      { "body": "Idle",      "face": "neutral",   "gesture": null,     "environment": "Aura" },
+    "LISTENING": { "body": "Listening", "face": "attentive", "gesture": null,     "environment": "VoiceWave" },
+    "THINKING":  { "body": "Thinking",  "face": "focused",   "gesture": null,     "environment": "Particle" },
+    "PLANNING":  { "body": "Planning",  "face": "focused",   "gesture": "Explain", "environment": "Hologram" },
+    "EXECUTING": { "body": "Executing", "face": "focused",   "gesture": "Point",   "environment": "Particle" },
+    "SPEAKING":  { "body": "Speaking",  "face": "speaking",  "gesture": null,     "environment": "VoiceWave" },
+    "LEARNING":  { "body": "Learning",  "face": "curious",   "gesture": null,     "environment": "Particle" },
+    "WARNING":   { "body": "Warning",   "face": "concerned", "gesture": "Confirm", "environment": "Aura" },
+    "ERROR":     { "body": "Error",     "face": "alarmed",   "gesture": null,     "environment": "Aura" }
+  },
+  "resource_formats": ["svg", "png", "webp", "webm", "frames", "sprite", "live2d", "3d"],
+  "note": "当前不绑定具体资源文件。资源加载接口按 format 委派 AvatarAssets.urlFor（支持 svg/png/webp/webm/live2d），缺省降级 SVG/CSS 脸。frames/sprite/live2d/3d 为未来格式占位。"
+}

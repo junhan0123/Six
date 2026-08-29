@@ -1,0 +1,385 @@
+{
+  "shells": [
+    {
+      "sel": "#osShell",
+      "exists": true,
+      "visible": true,
+      "display": "grid",
+      "opacity": "1",
+      "zIndex": "5",
+      "position": "absolute",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      },
+      "area": 2073600,
+      "hiddenAttr": false,
+      "childCount": 5
+    },
+    {
+      "sel": "#app",
+      "exists": true,
+      "visible": false,
+      "display": "grid",
+      "opacity": "1",
+      "zIndex": "2",
+      "position": "relative",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      },
+      "area": 2073600,
+      "hiddenAttr": false,
+      "childCount": 4
+    },
+    {
+      "sel": "#universeView",
+      "exists": true,
+      "visible": false,
+      "display": "none",
+      "opacity": "1",
+      "zIndex": "30",
+      "position": "fixed",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "area": 0,
+      "hiddenAttr": false,
+      "childCount": 5
+    },
+    {
+      "sel": ".galaxy-veil",
+      "exists": true,
+      "visible": true,
+      "display": "block",
+      "opacity": "1",
+      "zIndex": "1",
+      "position": "fixed",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      },
+      "area": 2073600,
+      "hiddenAttr": false,
+      "childCount": 0
+    }
+  ],
+  "parts": [
+    {
+      "sel": ".os-nav",
+      "exists": true,
+      "visible": true,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "35",
+      "position": "static",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 22,
+        "y": 22,
+        "w": 76,
+        "h": 1036
+      },
+      "area": 78736,
+      "hiddenAttr": false,
+      "childCount": 2
+    },
+    {
+      "sel": ".os-hud",
+      "exists": true,
+      "visible": true,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "auto",
+      "position": "static",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 120,
+        "y": 22,
+        "w": 1778,
+        "h": 56
+      },
+      "area": 99568,
+      "hiddenAttr": false,
+      "childCount": 5
+    },
+    {
+      "sel": ".os-core",
+      "exists": true,
+      "visible": true,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "auto",
+      "position": "relative",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 120,
+        "y": 100,
+        "w": 1778,
+        "h": 697
+      },
+      "area": 1239266,
+      "hiddenAttr": false,
+      "childCount": 3
+    },
+    {
+      "sel": ".os-side",
+      "exists": true,
+      "visible": false,
+      "display": "flex",
+      "opacity": "0",
+      "zIndex": "22",
+      "position": "absolute",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 1942,
+        "y": 100,
+        "w": 360,
+        "h": 958
+      },
+      "area": 344880,
+      "hiddenAttr": false,
+      "childCount": 2
+    },
+    {
+      "sel": ".os-bottom",
+      "exists": true,
+      "visible": true,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "auto",
+      "position": "static",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 120,
+        "y": 819,
+        "w": 1778,
+        "h": 239
+      },
+      "area": 424942,
+      "hiddenAttr": false,
+      "childCount": 2
+    },
+    {
+      "sel": ".rail",
+      "exists": true,
+      "visible": false,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "auto",
+      "position": "relative",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 14,
+        "y": 14,
+        "w": 248,
+        "h": 1052
+      },
+      "area": 260896,
+      "hiddenAttr": false,
+      "childCount": 6
+    },
+    {
+      "sel": ".main",
+      "exists": true,
+      "visible": false,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "auto",
+      "position": "relative",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 276,
+        "y": 14,
+        "w": 1316,
+        "h": 1052
+      },
+      "area": 1384432,
+      "hiddenAttr": false,
+      "childCount": 2
+    },
+    {
+      "sel": ".tele",
+      "exists": true,
+      "visible": false,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "auto",
+      "position": "static",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 1606,
+        "y": 14,
+        "w": 300,
+        "h": 1052
+      },
+      "area": 315600,
+      "hiddenAttr": false,
+      "childCount": 8
+    }
+  ],
+  "overlays": [
+    {
+      "sel": "#settingsOverlay",
+      "exists": true,
+      "visible": false,
+      "display": "block",
+      "opacity": "0",
+      "zIndex": "80",
+      "position": "fixed",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      },
+      "area": 2073600,
+      "hiddenAttr": false,
+      "childCount": 0
+    },
+    {
+      "sel": "#settingsPanel",
+      "exists": true,
+      "visible": true,
+      "display": "flex",
+      "opacity": "1",
+      "zIndex": "81",
+      "position": "fixed",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 1920,
+        "y": 0,
+        "w": 560,
+        "h": 1080
+      },
+      "area": 604800,
+      "hiddenAttr": false,
+      "childCount": 2
+    },
+    {
+      "sel": "#sysPromptOverlay",
+      "exists": true,
+      "visible": false,
+      "display": "block",
+      "opacity": "0",
+      "zIndex": "82",
+      "position": "fixed",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      },
+      "area": 2073600,
+      "hiddenAttr": false,
+      "childCount": 0
+    },
+    {
+      "sel": "#capOverlay",
+      "exists": true,
+      "visible": false,
+      "display": "block",
+      "opacity": "0",
+      "zIndex": "82",
+      "position": "fixed",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      },
+      "area": 2073600,
+      "hiddenAttr": false,
+      "childCount": 0
+    },
+    {
+      "sel": "#memPanel",
+      "exists": true,
+      "visible": false,
+      "display": "none",
+      "opacity": "1",
+      "zIndex": "60",
+      "position": "fixed",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "area": 0,
+      "hiddenAttr": true,
+      "childCount": 1
+    },
+    {
+      "sel": "#zzPanel",
+      "exists": true,
+      "visible": false,
+      "display": "flex",
+      "opacity": "0",
+      "zIndex": "95",
+      "position": "fixed",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 1482,
+        "y": 82,
+        "w": 420,
+        "h": 65
+      },
+      "area": 27300,
+      "hiddenAttr": false,
+      "childCount": 1
+    },
+    {
+      "sel": "#toast",
+      "exists": true,
+      "visible": false,
+      "display": "block",
+      "opacity": "0",
+      "zIndex": "60",
+      "position": "fixed",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 939,
+        "y": 1048,
+        "w": 42,
+        "h": 26
+      },
+      "area": 1092,
+      "hiddenAttr": false,
+      "childCount": 0
+    },
+    {
+      "sel": "#onbOverlay",
+      "exists": false
+    }
+  ],
+  "centerStack": [
+    "canvas#osCoreCanvas",
+    "div#osCore.os-core",
+    "section#osShell.os-shell",
+    "canvas#solarCanvas.solar-canvas",
+    "body.kws-listening.kws-downclocked",
+    "html"
+  ],
+  "vw": 1920,
+  "vh": 1080,
+  "bodyClass": "kws-listening kws-downclocked",
+  "bodyTheme": "dark-cyan"
+}

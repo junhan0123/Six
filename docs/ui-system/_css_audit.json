@@ -1,0 +1,3187 @@
+{
+  "summary": {
+    "files": {
+      "styles.css": {
+        "bytes": 194616,
+        "lines": 3613,
+        "rule_blocks": 1413,
+        "selectors": 1476,
+        "keyframes": [
+          [
+            "pulse",
+            173
+          ],
+          [
+            "pulseStop",
+            211
+          ],
+          [
+            "fadeUp",
+            235
+          ],
+          [
+            "spin",
+            287
+          ],
+          [
+            "breathe",
+            294
+          ],
+          [
+            "eq",
+            308
+          ],
+          [
+            "shake",
+            309
+          ],
+          [
+            "listenPulse",
+            310
+          ],
+          [
+            "msgIn",
+            375
+          ],
+          [
+            "blink",
+            388
+          ],
+          [
+            "awakenPulse",
+            487
+          ],
+          [
+            "micPulse",
+            504
+          ],
+          [
+            "hsChatPulse",
+            692
+          ],
+          [
+            "hsChatIn",
+            752
+          ],
+          [
+            "hsStreamPulse",
+            772
+          ],
+          [
+            "hs-glitch-in",
+            865
+          ],
+          [
+            "hs-signal-sweep",
+            902
+          ],
+          [
+            "hs-blink",
+            966
+          ],
+          [
+            "hs-rp-in",
+            1427
+          ],
+          [
+            "hs-ticker",
+            1657
+          ],
+          [
+            "wxGlitch",
+            1715
+          ],
+          [
+            "wxPulse",
+            1818
+          ],
+          [
+            "wxGlitch",
+            1855
+          ],
+          [
+            "wxPulse",
+            1958
+          ],
+          [
+            "smGlitch",
+            1978
+          ],
+          [
+            "smPulse",
+            2039
+          ],
+          [
+            "tsBlink",
+            2077
+          ],
+          [
+            "tsBlink",
+            2110
+          ],
+          [
+            "memIn",
+            2255
+          ],
+          [
+            "memCardIn",
+            2264
+          ],
+          [
+            "modalMaskIn",
+            2393
+          ],
+          [
+            "modalCardInRight",
+            2394
+          ],
+          [
+            "hs-scan",
+            2501
+          ],
+          [
+            "zzTaskScan",
+            2902
+          ],
+          [
+            "zzTaskSlideIn",
+            2945
+          ],
+          [
+            "zzPanelFlashIn",
+            3143
+          ],
+          [
+            "zzPanelFlashOut",
+            3151
+          ],
+          [
+            "micOrbPulse",
+            3225
+          ],
+          [
+            "micOrbSpin",
+            3229
+          ],
+          [
+            "kwsPulse",
+            3460
+          ]
+        ],
+        "top_props": [
+          [
+            "color",
+            596
+          ],
+          [
+            "background",
+            462
+          ],
+          [
+            "font-size",
+            401
+          ],
+          [
+            "display",
+            357
+          ],
+          [
+            "border-radius",
+            260
+          ],
+          [
+            "padding",
+            242
+          ],
+          [
+            "gap",
+            233
+          ],
+          [
+            "border",
+            214
+          ],
+          [
+            "font-family",
+            192
+          ],
+          [
+            "width",
+            169
+          ],
+          [
+            "align-items",
+            155
+          ],
+          [
+            "transition",
+            148
+          ],
+          [
+            "height",
+            129
+          ],
+          [
+            "position",
+            127
+          ],
+          [
+            "flex",
+            124
+          ]
+        ],
+        "hardcode_total": 1306
+      },
+      "premium.css": {
+        "bytes": 11630,
+        "lines": 235,
+        "rule_blocks": 73,
+        "selectors": 80,
+        "keyframes": [
+          [
+            "premiumFadeUp",
+            89
+          ],
+          [
+            "premiumPop",
+            90
+          ],
+          [
+            "onb-pop",
+            164
+          ],
+          [
+            "onb-fade",
+            176
+          ],
+          [
+            "onb-float",
+            179
+          ]
+        ],
+        "top_props": [
+          [
+            "background",
+            18
+          ],
+          [
+            "color",
+            14
+          ],
+          [
+            "box-shadow",
+            13
+          ],
+          [
+            "font-size",
+            12
+          ],
+          [
+            "border-radius",
+            10
+          ],
+          [
+            "display",
+            10
+          ],
+          [
+            "border",
+            9
+          ],
+          [
+            "animation-delay",
+            9
+          ],
+          [
+            "transition",
+            8
+          ],
+          [
+            "padding",
+            7
+          ],
+          [
+            "animation",
+            7
+          ],
+          [
+            "width",
+            7
+          ],
+          [
+            "transform",
+            6
+          ],
+          [
+            "margin",
+            5
+          ],
+          [
+            "border-color",
+            4
+          ]
+        ],
+        "hardcode_total": 51
+      },
+      "runtime-viz.css": {
+        "bytes": 4632,
+        "lines": 162,
+        "rule_blocks": 32,
+        "selectors": 32,
+        "keyframes": [],
+        "top_props": [
+          [
+            "color",
+            17
+          ],
+          [
+            "background",
+            11
+          ],
+          [
+            "font-size",
+            11
+          ],
+          [
+            "display",
+            6
+          ],
+          [
+            "border-radius",
+            6
+          ],
+          [
+            "padding",
+            6
+          ],
+          [
+            "width",
+            5
+          ],
+          [
+            "border",
+            4
+          ],
+          [
+            "box-shadow",
+            4
+          ],
+          [
+            "font-family",
+            4
+          ],
+          [
+            "margin-bottom",
+            4
+          ],
+          [
+            "position",
+            3
+          ],
+          [
+            "letter-spacing",
+            3
+          ],
+          [
+            "gap",
+            3
+          ],
+          [
+            "height",
+            3
+          ]
+        ],
+        "hardcode_total": 68
+      },
+      "execution-channel.css": {
+        "bytes": 4007,
+        "lines": 144,
+        "rule_blocks": 23,
+        "selectors": 22,
+        "keyframes": [
+          [
+            "em-spin",
+            125
+          ]
+        ],
+        "top_props": [
+          [
+            "color",
+            9
+          ],
+          [
+            "border-radius",
+            7
+          ],
+          [
+            "background",
+            7
+          ],
+          [
+            "font-size",
+            7
+          ],
+          [
+            "padding",
+            6
+          ],
+          [
+            "display",
+            5
+          ],
+          [
+            "width",
+            4
+          ],
+          [
+            "border",
+            4
+          ],
+          [
+            "font-family",
+            4
+          ],
+          [
+            "align-items",
+            3
+          ],
+          [
+            "letter-spacing",
+            3
+          ],
+          [
+            "height",
+            3
+          ],
+          [
+            "box-shadow",
+            2
+          ],
+          [
+            "overflow",
+            2
+          ],
+          [
+            "font-weight",
+            2
+          ]
+        ],
+        "hardcode_total": 48
+      },
+      "ui2.css": {
+        "bytes": 94981,
+        "lines": 1690,
+        "rule_blocks": 370,
+        "selectors": 400,
+        "keyframes": [
+          [
+            "cp-fade",
+            469
+          ],
+          [
+            "cp-pop",
+            483
+          ],
+          [
+            "cp-pulse",
+            570
+          ],
+          [
+            "vitPulse",
+            728
+          ],
+          [
+            "ptIn",
+            778
+          ],
+          [
+            "ptOut",
+            779
+          ],
+          [
+            "tlFill",
+            814
+          ],
+          [
+            "zz-spin",
+            1298
+          ]
+        ],
+        "top_props": [
+          [
+            "background",
+            119
+          ],
+          [
+            "color",
+            114
+          ],
+          [
+            "display",
+            77
+          ],
+          [
+            "font-size",
+            71
+          ],
+          [
+            "border-radius",
+            55
+          ],
+          [
+            "width",
+            53
+          ],
+          [
+            "padding",
+            51
+          ],
+          [
+            "border",
+            45
+          ],
+          [
+            "gap",
+            44
+          ],
+          [
+            "height",
+            42
+          ],
+          [
+            "transition",
+            40
+          ],
+          [
+            "transform",
+            35
+          ],
+          [
+            "position",
+            34
+          ],
+          [
+            "box-shadow",
+            34
+          ],
+          [
+            "align-items",
+            31
+          ]
+        ],
+        "hardcode_total": 156
+      },
+      "companion.css": {
+        "bytes": 27762,
+        "lines": 624,
+        "rule_blocks": 117,
+        "selectors": 116,
+        "keyframes": [
+          [
+            "av-breathe",
+            366
+          ],
+          [
+            "av-halo-breathe",
+            370
+          ],
+          [
+            "av-blink-idle",
+            375
+          ],
+          [
+            "av-look",
+            379
+          ],
+          [
+            "av-think-l",
+            391
+          ],
+          [
+            "av-think-r",
+            392
+          ],
+          [
+            "av-think-bob",
+            394
+          ],
+          [
+            "av-spin",
+            398
+          ],
+          [
+            "av-pulse",
+            403
+          ],
+          [
+            "av-flow",
+            404
+          ],
+          [
+            "av-focus",
+            411
+          ],
+          [
+            "av-effort",
+            415
+          ],
+          [
+            "av-done",
+            422
+          ],
+          [
+            "av-blink",
+            427
+          ],
+          [
+            "av-shake",
+            431
+          ],
+          [
+            "av-float",
+            437
+          ],
+          [
+            "sb-in",
+            468
+          ],
+          [
+            "cn-in",
+            512
+          ],
+          [
+            "av-remind-pulse",
+            522
+          ]
+        ],
+        "top_props": [
+          [
+            "color",
+            24
+          ],
+          [
+            "animation",
+            24
+          ],
+          [
+            "background",
+            23
+          ],
+          [
+            "display",
+            15
+          ],
+          [
+            "border-radius",
+            15
+          ],
+          [
+            "transition",
+            14
+          ],
+          [
+            "width",
+            13
+          ],
+          [
+            "height",
+            12
+          ],
+          [
+            "position",
+            11
+          ],
+          [
+            "-webkit-app-region",
+            11
+          ],
+          [
+            "--companion-border",
+            10
+          ],
+          [
+            "--avatar-border",
+            10
+          ],
+          [
+            "--companion-chrome-border",
+            10
+          ],
+          [
+            "padding",
+            10
+          ],
+          [
+            "border",
+            10
+          ]
+        ],
+        "hardcode_total": 47
+      }
+    },
+    "total_selectors": 2126,
+    "unique_selectors": 1890,
+    "cross_file_dupes": 29,
+    "token_count_by_file": {
+      "styles.css": 0,
+      "premium.css": 0,
+      "runtime-viz.css": 0,
+      "execution-channel.css": 0,
+      "ui2.css": 158,
+      "companion.css": 38
+    }
+  },
+  "cross_file_dupes": {
+    "#runtime-viz .rv-empty": [
+      [
+        "runtime-viz.css",
+        141,
+        ""
+      ],
+      [
+        "ui2.css",
+        1587,
+        ""
+      ]
+    ],
+    "*": [
+      [
+        "styles.css",
+        25,
+        ""
+      ],
+      [
+        "premium.css",
+        111,
+        "@media (prefers-reduced-motion: reduce)"
+      ],
+      [
+        "ui2.css",
+        908,
+        "@media (prefers-reduced-motion: reduce)"
+      ],
+      [
+        "companion.css",
+        110,
+        ""
+      ]
+    ],
+    ".btn-new": [
+      [
+        "styles.css",
+        101,
+        ""
+      ],
+      [
+        "premium.css",
+        83,
+        ""
+      ]
+    ],
+    ".btn-new:hover": [
+      [
+        "styles.css",
+        110,
+        ""
+      ],
+      [
+        "premium.css",
+        84,
+        ""
+      ]
+    ],
+    ".chip": [
+      [
+        "styles.css",
+        130,
+        ""
+      ],
+      [
+        "premium.css",
+        85,
+        ""
+      ]
+    ],
+    ".chip:hover": [
+      [
+        "styles.css",
+        132,
+        ""
+      ],
+      [
+        "premium.css",
+        86,
+        ""
+      ]
+    ],
+    ".glass-panel": [
+      [
+        "premium.css",
+        25,
+        ""
+      ],
+      [
+        "ui2.css",
+        1070,
+        ""
+      ]
+    ],
+    ".ic": [
+      [
+        "styles.css",
+        40,
+        ""
+      ],
+      [
+        "ui2.css",
+        1083,
+        ""
+      ]
+    ],
+    ".ic.f": [
+      [
+        "styles.css",
+        41,
+        ""
+      ],
+      [
+        "ui2.css",
+        1084,
+        ""
+      ]
+    ],
+    ".onb-card": [
+      [
+        "premium.css",
+        154,
+        ""
+      ],
+      [
+        "ui2.css",
+        1071,
+        ""
+      ],
+      [
+        "ui2.css",
+        1637,
+        ""
+      ]
+    ],
+    ".onb-overlay": [
+      [
+        "premium.css",
+        142,
+        ""
+      ],
+      [
+        "ui2.css",
+        1633,
+        ""
+      ]
+    ],
+    ".premium-bg": [
+      [
+        "styles.css",
+        59,
+        ""
+      ],
+      [
+        "styles.css",
+        60,
+        "@media (prefers-reduced-motion:reduce)"
+      ],
+      [
+        "premium.css",
+        117,
+        "@media (prefers-reduced-motion: reduce)"
+      ]
+    ],
+    ".premium-focus:focus-visible": [
+      [
+        "premium.css",
+        51,
+        ""
+      ],
+      [
+        "ui2.css",
+        1015,
+        ""
+      ]
+    ],
+    ".settings-body": [
+      [
+        "styles.css",
+        2646,
+        ""
+      ],
+      [
+        "premium.css",
+        102,
+        ""
+      ],
+      [
+        "premium.css",
+        103,
+        ""
+      ]
+    ],
+    ".settings-head": [
+      [
+        "styles.css",
+        2639,
+        ""
+      ],
+      [
+        "premium.css",
+        102,
+        ""
+      ]
+    ],
+    ".settings-head-title": [
+      [
+        "styles.css",
+        2641,
+        ""
+      ],
+      [
+        "premium.css",
+        67,
+        ""
+      ]
+    ],
+    ".settings-nav-item": [
+      [
+        "styles.css",
+        2649,
+        ""
+      ],
+      [
+        "premium.css",
+        92,
+        ""
+      ]
+    ],
+    ".settings-panel": [
+      [
+        "styles.css",
+        2632,
+        ""
+      ],
+      [
+        "premium.css",
+        66,
+        ""
+      ]
+    ],
+    ".settings-switch": [
+      [
+        "styles.css",
+        2679,
+        ""
+      ],
+      [
+        "ui2.css",
+        1023,
+        ""
+      ]
+    ],
+    ".settings-switch input": [
+      [
+        "styles.css",
+        2680,
+        ""
+      ],
+      [
+        "ui2.css",
+        1024,
+        ""
+      ]
+    ],
+    ".settings-switch input:checked + .settings-switch-slider": [
+      [
+        "styles.css",
+        2685,
+        ""
+      ],
+      [
+        "ui2.css",
+        1033,
+        ""
+      ]
+    ],
+    ".settings-switch input:checked + .settings-switch-slider:before": [
+      [
+        "styles.css",
+        2687,
+        ""
+      ],
+      [
+        "ui2.css",
+        1034,
+        ""
+      ]
+    ],
+    ".settings-switch-slider": [
+      [
+        "styles.css",
+        2681,
+        ""
+      ],
+      [
+        "ui2.css",
+        1025,
+        ""
+      ]
+    ],
+    ".settings-switch-slider:before": [
+      [
+        "styles.css",
+        2683,
+        ""
+      ],
+      [
+        "ui2.css",
+        1029,
+        ""
+      ]
+    ],
+    ":root": [
+      [
+        "ui2.css",
+        14,
+        ""
+      ],
+      [
+        "ui2.css",
+        423,
+        ""
+      ],
+      [
+        "ui2.css",
+        1001,
+        ""
+      ],
+      [
+        "ui2.css",
+        1039,
+        ""
+      ],
+      [
+        "companion.css",
+        12,
+        ""
+      ]
+    ],
+    "body": [
+      [
+        "styles.css",
+        27,
+        ""
+      ],
+      [
+        "styles.css",
+        28,
+        ""
+      ],
+      [
+        "companion.css",
+        112,
+        ""
+      ]
+    ],
+    "body.reduced-motion *": [
+      [
+        "premium.css",
+        121,
+        ""
+      ],
+      [
+        "ui2.css",
+        910,
+        ""
+      ]
+    ],
+    "body.reduced-motion .premium-bg": [
+      [
+        "styles.css",
+        61,
+        ""
+      ],
+      [
+        "premium.css",
+        126,
+        ""
+      ]
+    ],
+    "html": [
+      [
+        "styles.css",
+        27,
+        ""
+      ],
+      [
+        "ui2.css",
+        1664,
+        ""
+      ],
+      [
+        "companion.css",
+        112,
+        ""
+      ]
+    ]
+  },
+  "same_file_multi": {
+    ".hotspot-panel": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    "body.hotspot-mode .hotspot-panel.hs-booting .hs-header": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    "body.hotspot-mode .hotspot-panel.hs-booting .hs-list-card": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    "body.hotspot-mode .hotspot-panel.hs-booting .hs-earth-container": [
+      [
+        "styles.css",
+        4
+      ]
+    ],
+    "body.hotspot-mode .hotspot-panel.hs-booting .hs-feed-bar": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    "body.hotspot-mode .hotspot-panel.hs-booting .hs-ticker-bar": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    ".wx-body": [
+      [
+        "styles.css",
+        4
+      ]
+    ],
+    ".wx-now": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    ".wx-foot": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    ".wx-hourly": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    ".wx-hb": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    ".zz-panel": [
+      [
+        "styles.css",
+        3
+      ]
+    ],
+    ":root": [
+      [
+        "ui2.css",
+        4
+      ]
+    ],
+    ".os-shell": [
+      [
+        "ui2.css",
+        5
+      ]
+    ],
+    ".os-core": [
+      [
+        "ui2.css",
+        5
+      ]
+    ],
+    ".os-core .os-core-state": [
+      [
+        "ui2.css",
+        3
+      ]
+    ],
+    ".os-hero": [
+      [
+        "ui2.css",
+        5
+      ]
+    ],
+    ".os-hero-title": [
+      [
+        "ui2.css",
+        5
+      ]
+    ],
+    ".os-hero-sub": [
+      [
+        "ui2.css",
+        5
+      ]
+    ],
+    ".os-hero-desc": [
+      [
+        "ui2.css",
+        4
+      ]
+    ],
+    ".os-side": [
+      [
+        "ui2.css",
+        4
+      ]
+    ],
+    ".os-bottom": [
+      [
+        "ui2.css",
+        3
+      ]
+    ]
+  },
+  "token_defs": {
+    "--ease-premium": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(0.16, 1, 0.3, 1)"
+      ],
+      [
+        "companion.css",
+        12,
+        "cubic-bezier(.16,1,.3,1)"
+      ]
+    ],
+    "--ease-soft": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(0.4, 0, 0.2, 1)"
+      ],
+      [
+        "companion.css",
+        12,
+        "cubic-bezier(.4,0,.2,1)"
+      ]
+    ],
+    "--ease-spring": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(0.34, 1.56, 0.64, 1)"
+      ]
+    ],
+    "--ease-out-soft": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(.22, .61, .36, 1)"
+      ],
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(.22, .61, .36, 1)"
+      ]
+    ],
+    "--ease-glitch": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(0.2, 0.9, 0.2, 1)"
+      ]
+    ],
+    "--dur-fast": [
+      [
+        "ui2.css",
+        14,
+        "var(--motion-fast)"
+      ]
+    ],
+    "--dur-base": [
+      [
+        "ui2.css",
+        14,
+        "var(--motion-base)"
+      ]
+    ],
+    "--dur-slow": [
+      [
+        "ui2.css",
+        14,
+        "var(--motion-slow)"
+      ]
+    ],
+    "--dur-focus": [
+      [
+        "ui2.css",
+        14,
+        "700ms"
+      ],
+      [
+        "companion.css",
+        12,
+        ".42s"
+      ]
+    ],
+    "--dur-micro": [
+      [
+        "ui2.css",
+        14,
+        "120ms"
+      ]
+    ],
+    "--dur-tick": [
+      [
+        "ui2.css",
+        14,
+        "80ms"
+      ]
+    ],
+    "--dur-meter": [
+      [
+        "ui2.css",
+        14,
+        "800ms"
+      ]
+    ],
+    "--motion-scale-hover": [
+      [
+        "ui2.css",
+        14,
+        "1.03"
+      ]
+    ],
+    "--motion-lift": [
+      [
+        "ui2.css",
+        14,
+        "-3px"
+      ]
+    ],
+    "--radius-xs": [
+      [
+        "ui2.css",
+        14,
+        "4px"
+      ],
+      [
+        "companion.css",
+        12,
+        "4px"
+      ]
+    ],
+    "--radius-sm": [
+      [
+        "ui2.css",
+        14,
+        "9px"
+      ],
+      [
+        "companion.css",
+        12,
+        "9px"
+      ]
+    ],
+    "--radius-md": [
+      [
+        "ui2.css",
+        14,
+        "14px"
+      ],
+      [
+        "companion.css",
+        12,
+        "14px"
+      ]
+    ],
+    "--radius-lg": [
+      [
+        "ui2.css",
+        14,
+        "22px"
+      ],
+      [
+        "companion.css",
+        12,
+        "22px"
+      ]
+    ],
+    "--radius-xl": [
+      [
+        "ui2.css",
+        14,
+        "28px"
+      ]
+    ],
+    "--radius-pill": [
+      [
+        "ui2.css",
+        14,
+        "999px"
+      ],
+      [
+        "companion.css",
+        12,
+        "999px"
+      ]
+    ],
+    "--icon-size": [
+      [
+        "ui2.css",
+        14,
+        "20px"
+      ]
+    ],
+    "--z-ground": [
+      [
+        "ui2.css",
+        14,
+        "0"
+      ]
+    ],
+    "--z-base": [
+      [
+        "ui2.css",
+        14,
+        "1"
+      ]
+    ],
+    "--z-stage": [
+      [
+        "ui2.css",
+        14,
+        "2"
+      ]
+    ],
+    "--z-stage-deco": [
+      [
+        "ui2.css",
+        14,
+        "3"
+      ]
+    ],
+    "--z-orb": [
+      [
+        "ui2.css",
+        14,
+        "4"
+      ]
+    ],
+    "--z-rail": [
+      [
+        "ui2.css",
+        14,
+        "5"
+      ]
+    ],
+    "--z-raised": [
+      [
+        "ui2.css",
+        14,
+        "7"
+      ]
+    ],
+    "--z-content": [
+      [
+        "ui2.css",
+        14,
+        "18"
+      ]
+    ],
+    "--z-hud": [
+      [
+        "ui2.css",
+        14,
+        "20"
+      ]
+    ],
+    "--z-popover": [
+      [
+        "ui2.css",
+        14,
+        "30"
+      ]
+    ],
+    "--z-scanlines": [
+      [
+        "ui2.css",
+        14,
+        "40"
+      ]
+    ],
+    "--z-float": [
+      [
+        "ui2.css",
+        14,
+        "55"
+      ]
+    ],
+    "--z-overlay": [
+      [
+        "ui2.css",
+        14,
+        "60"
+      ]
+    ],
+    "--z-overlay-raised": [
+      [
+        "ui2.css",
+        14,
+        "61"
+      ]
+    ],
+    "--z-mask": [
+      [
+        "ui2.css",
+        14,
+        "80"
+      ]
+    ],
+    "--z-panel": [
+      [
+        "ui2.css",
+        14,
+        "81"
+      ]
+    ],
+    "--z-dialog-mask": [
+      [
+        "ui2.css",
+        14,
+        "82"
+      ]
+    ],
+    "--z-dialog": [
+      [
+        "ui2.css",
+        14,
+        "83"
+      ]
+    ],
+    "--z-task-mask": [
+      [
+        "ui2.css",
+        14,
+        "85"
+      ]
+    ],
+    "--z-task": [
+      [
+        "ui2.css",
+        14,
+        "86"
+      ]
+    ],
+    "--z-command": [
+      [
+        "ui2.css",
+        14,
+        "90"
+      ]
+    ],
+    "--z-drawer": [
+      [
+        "ui2.css",
+        14,
+        "95"
+      ]
+    ],
+    "--z-top": [
+      [
+        "ui2.css",
+        14,
+        "100"
+      ]
+    ],
+    "--z-menu": [
+      [
+        "ui2.css",
+        14,
+        "200"
+      ]
+    ],
+    "--z-modal-mask": [
+      [
+        "ui2.css",
+        14,
+        "9000"
+      ]
+    ],
+    "--z-companion": [
+      [
+        "ui2.css",
+        14,
+        "9999"
+      ]
+    ],
+    "--z-onboarding": [
+      [
+        "ui2.css",
+        14,
+        "9999"
+      ]
+    ],
+    "--z-modal": [
+      [
+        "ui2.css",
+        14,
+        "var(--z-overlay)"
+      ]
+    ],
+    "--z-toast": [
+      [
+        "ui2.css",
+        14,
+        "var(--z-overlay)"
+      ]
+    ],
+    "--blur-glass": [
+      [
+        "ui2.css",
+        14,
+        "26px"
+      ]
+    ],
+    "--sw-dark": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#0a0c10,#1a1f2b)"
+      ]
+    ],
+    "--sw-quantum": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#22d3ee,#a78bfa)"
+      ]
+    ],
+    "--sw-midnight": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#04060f,#4f7bff)"
+      ]
+    ],
+    "--sw-cyan": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#22D3EE,#0E7490)"
+      ]
+    ],
+    "--sw-green": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#34d399,#0e7a52)"
+      ]
+    ],
+    "--sw-purple": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#c084fc,#6d28d9)"
+      ]
+    ],
+    "--sw-amber": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#fbbf24,#b45309)"
+      ]
+    ],
+    "--sw-rose": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#fb7185,#be123c)"
+      ]
+    ],
+    "--sw-light": [
+      [
+        "ui2.css",
+        14,
+        "linear-gradient(135deg,#f1f5f9,#cbd5e1)"
+      ]
+    ],
+    "--violet": [
+      [
+        "ui2.css",
+        14,
+        "#a78bfa"
+      ]
+    ],
+    "--ws-bg-base": [
+      [
+        "ui2.css",
+        14,
+        "var(--bg)"
+      ]
+    ],
+    "--ws-bg-blur": [
+      [
+        "ui2.css",
+        14,
+        "0px"
+      ]
+    ],
+    "--ws-context-surface": [
+      [
+        "ui2.css",
+        14,
+        "var(--surface)"
+      ]
+    ],
+    "--ws-context-blur": [
+      [
+        "ui2.css",
+        14,
+        "var(--blur-glass)"
+      ]
+    ],
+    "--ws-primary-surface": [
+      [
+        "ui2.css",
+        14,
+        "var(--surface)"
+      ]
+    ],
+    "--ws-primary-blur": [
+      [
+        "ui2.css",
+        14,
+        "var(--blur-glass)"
+      ]
+    ],
+    "--ws-primary-elev": [
+      [
+        "ui2.css",
+        14,
+        "var(--elev-1)"
+      ]
+    ],
+    "--ws-secondary-surface": [
+      [
+        "ui2.css",
+        14,
+        "var(--surface-2)"
+      ]
+    ],
+    "--ws-secondary-base": [
+      [
+        "ui2.css",
+        14,
+        "var(--bg-2)"
+      ]
+    ],
+    "--ws-secondary-blur": [
+      [
+        "ui2.css",
+        14,
+        "var(--blur-glass)"
+      ]
+    ],
+    "--ws-secondary-elev": [
+      [
+        "ui2.css",
+        14,
+        "var(--elev-3)"
+      ]
+    ],
+    "--ws-assistant-surface": [
+      [
+        "ui2.css",
+        14,
+        "var(--surface-2)"
+      ]
+    ],
+    "--ws-assistant-blur": [
+      [
+        "ui2.css",
+        14,
+        "var(--blur-glass)"
+      ]
+    ],
+    "--ws-overlay-scrim": [
+      [
+        "ui2.css",
+        14,
+        "color-mix(in srgb, var(--bg) 72%, transparent)"
+      ]
+    ],
+    "--ws-overlay-blur": [
+      [
+        "ui2.css",
+        14,
+        "var(--blur-glass)"
+      ]
+    ],
+    "--ws-overlay-elev": [
+      [
+        "ui2.css",
+        14,
+        "var(--elev-3)"
+      ]
+    ],
+    "--panel-radius": [
+      [
+        "ui2.css",
+        14,
+        "var(--radius-md)"
+      ]
+    ],
+    "--panel-border": [
+      [
+        "ui2.css",
+        14,
+        "var(--border)"
+      ]
+    ],
+    "--panel-header-pad-y": [
+      [
+        "ui2.css",
+        14,
+        "14px"
+      ]
+    ],
+    "--panel-header-pad-x": [
+      [
+        "ui2.css",
+        14,
+        "18px"
+      ]
+    ],
+    "--panel-header-divider": [
+      [
+        "ui2.css",
+        14,
+        "1px solid var(--border)"
+      ]
+    ],
+    "--panel-title-font": [
+      [
+        "ui2.css",
+        14,
+        "'Orbitron', sans-serif"
+      ]
+    ],
+    "--panel-title-size": [
+      [
+        "ui2.css",
+        14,
+        "18px"
+      ]
+    ],
+    "--panel-title-color": [
+      [
+        "ui2.css",
+        14,
+        "var(--accent)"
+      ]
+    ],
+    "--panel-content-pad-y": [
+      [
+        "ui2.css",
+        14,
+        "16px"
+      ]
+    ],
+    "--panel-content-pad-x": [
+      [
+        "ui2.css",
+        14,
+        "18px"
+      ]
+    ],
+    "--panel-footer-pad-y": [
+      [
+        "ui2.css",
+        14,
+        "12px"
+      ]
+    ],
+    "--panel-footer-pad-x": [
+      [
+        "ui2.css",
+        14,
+        "18px"
+      ]
+    ],
+    "--panel-toolbar-gap": [
+      [
+        "ui2.css",
+        14,
+        "10px"
+      ]
+    ],
+    "--panel-scrollbar": [
+      [
+        "ui2.css",
+        14,
+        "var(--border)"
+      ]
+    ],
+    "--bg": [
+      [
+        "ui2.css",
+        14,
+        "#04060f"
+      ]
+    ],
+    "--surface": [
+      [
+        "ui2.css",
+        14,
+        "rgba(90,120,200,0.05)"
+      ]
+    ],
+    "--border": [
+      [
+        "ui2.css",
+        14,
+        "rgba(110,140,220,0.14)"
+      ]
+    ],
+    "--text": [
+      [
+        "ui2.css",
+        14,
+        "#e6ecff"
+      ]
+    ],
+    "--text-dim": [
+      [
+        "ui2.css",
+        14,
+        "#9fb0d8"
+      ]
+    ],
+    "--muted": [
+      [
+        "ui2.css",
+        14,
+        "#5e6c96"
+      ]
+    ],
+    "--accent": [
+      [
+        "ui2.css",
+        14,
+        "#4f7bff"
+      ]
+    ],
+    "--glow": [
+      [
+        "ui2.css",
+        14,
+        "rgba(80,120,255,0.40)"
+      ]
+    ],
+    "--ok": [
+      [
+        "ui2.css",
+        14,
+        "#4fd6a0"
+      ]
+    ],
+    "--warn": [
+      [
+        "ui2.css",
+        14,
+        "#e0a94f"
+      ]
+    ],
+    "--danger": [
+      [
+        "ui2.css",
+        14,
+        "#ff6b8a"
+      ]
+    ],
+    "--grid-line": [
+      [
+        "ui2.css",
+        14,
+        "rgba(90,120,200,0.06)"
+      ]
+    ],
+    "--void": [
+      [
+        "ui2.css",
+        14,
+        "var(--bg)"
+      ]
+    ],
+    "--panel": [
+      [
+        "ui2.css",
+        14,
+        "var(--surface)"
+      ]
+    ],
+    "--panel-solid": [
+      [
+        "ui2.css",
+        14,
+        "var(--bg-2)"
+      ]
+    ],
+    "--glass": [
+      [
+        "ui2.css",
+        14,
+        "var(--surface)"
+      ]
+    ],
+    "--line": [
+      [
+        "ui2.css",
+        14,
+        "var(--border)"
+      ]
+    ],
+    "--line-strong": [
+      [
+        "ui2.css",
+        14,
+        "var(--border)"
+      ]
+    ],
+    "--cyan": [
+      [
+        "ui2.css",
+        14,
+        "var(--accent)"
+      ]
+    ],
+    "--teal": [
+      [
+        "ui2.css",
+        14,
+        "var(--accent-2)"
+      ]
+    ],
+    "--amber": [
+      [
+        "ui2.css",
+        14,
+        "var(--warn)"
+      ]
+    ],
+    "--red": [
+      [
+        "ui2.css",
+        14,
+        "var(--danger)"
+      ]
+    ],
+    "--txt": [
+      [
+        "ui2.css",
+        14,
+        "var(--text)"
+      ]
+    ],
+    "--dim": [
+      [
+        "ui2.css",
+        14,
+        "var(--text-dim)"
+      ]
+    ],
+    "--motion-fast": [
+      [
+        "ui2.css",
+        14,
+        ".18s"
+      ],
+      [
+        "companion.css",
+        12,
+        ".18s"
+      ]
+    ],
+    "--motion-base": [
+      [
+        "ui2.css",
+        14,
+        ".28s"
+      ],
+      [
+        "companion.css",
+        12,
+        ".28s"
+      ]
+    ],
+    "--motion-slow": [
+      [
+        "ui2.css",
+        14,
+        ".45s"
+      ],
+      [
+        "companion.css",
+        12,
+        ".45s"
+      ]
+    ],
+    "--r-sm": [
+      [
+        "ui2.css",
+        14,
+        "var(--radius-sm)"
+      ]
+    ],
+    "--r-md": [
+      [
+        "ui2.css",
+        14,
+        "var(--radius-md)"
+      ]
+    ],
+    "--r-lg": [
+      [
+        "ui2.css",
+        14,
+        "var(--radius-lg)"
+      ]
+    ],
+    "--r-xl": [
+      [
+        "ui2.css",
+        14,
+        "var(--radius-xl)"
+      ]
+    ],
+    "--input-bg": [
+      [
+        "ui2.css",
+        14,
+        "rgba(5,7,10,.6)"
+      ]
+    ],
+    "--input-bg-soft": [
+      [
+        "ui2.css",
+        14,
+        "rgba(255,255,255,.05)"
+      ]
+    ],
+    "--input-bg-deep": [
+      [
+        "ui2.css",
+        14,
+        "rgba(0,0,0,.35)"
+      ]
+    ],
+    "--input-border": [
+      [
+        "ui2.css",
+        14,
+        "var(--border)"
+      ]
+    ],
+    "--input-radius": [
+      [
+        "ui2.css",
+        14,
+        "var(--radius-sm)"
+      ]
+    ],
+    "--input-pad-y": [
+      [
+        "ui2.css",
+        14,
+        "10px"
+      ]
+    ],
+    "--input-pad-x": [
+      [
+        "ui2.css",
+        14,
+        "12px"
+      ]
+    ],
+    "--input-font": [
+      [
+        "ui2.css",
+        14,
+        "var(--fs-13)"
+      ]
+    ],
+    "--input-focus-border": [
+      [
+        "ui2.css",
+        14,
+        "var(--accent)"
+      ]
+    ],
+    "--input-focus-glow": [
+      [
+        "ui2.css",
+        14,
+        "var(--glow)"
+      ]
+    ],
+    "--input-placeholder": [
+      [
+        "ui2.css",
+        14,
+        "var(--muted)"
+      ]
+    ],
+    "--input-disabled-op": [
+      [
+        "ui2.css",
+        14,
+        ".5"
+      ]
+    ],
+    "--input-error-border": [
+      [
+        "ui2.css",
+        14,
+        "var(--danger)"
+      ]
+    ],
+    "--presence-idle": [
+      [
+        "ui2.css",
+        423,
+        "#5fb3c8"
+      ],
+      [
+        "companion.css",
+        12,
+        "#5fb3c8"
+      ]
+    ],
+    "--presence-waiting": [
+      [
+        "ui2.css",
+        423,
+        "#f0b35e"
+      ],
+      [
+        "companion.css",
+        12,
+        "#f0b35e"
+      ]
+    ],
+    "--presence-thinking": [
+      [
+        "ui2.css",
+        423,
+        "#8b9bff"
+      ],
+      [
+        "companion.css",
+        12,
+        "#8b9bff"
+      ]
+    ],
+    "--presence-planning": [
+      [
+        "ui2.css",
+        423,
+        "#c08bff"
+      ],
+      [
+        "companion.css",
+        12,
+        "#c08bff"
+      ]
+    ],
+    "--presence-executing": [
+      [
+        "ui2.css",
+        423,
+        "#56d364"
+      ],
+      [
+        "companion.css",
+        12,
+        "#56d364"
+      ]
+    ],
+    "--presence-completed": [
+      [
+        "ui2.css",
+        423,
+        "#56d3a0"
+      ],
+      [
+        "companion.css",
+        12,
+        "#56d3a0"
+      ]
+    ],
+    "--presence-error": [
+      [
+        "ui2.css",
+        423,
+        "#ff6b6b"
+      ],
+      [
+        "companion.css",
+        12,
+        "#ff6b6b"
+      ]
+    ],
+    "--presence-offline": [
+      [
+        "ui2.css",
+        423,
+        "#8a93a6"
+      ],
+      [
+        "companion.css",
+        12,
+        "#8a93a6"
+      ]
+    ],
+    "--presence-remind": [
+      [
+        "ui2.css",
+        423,
+        "#e0a94f"
+      ],
+      [
+        "companion.css",
+        12,
+        "#e0a94f"
+      ]
+    ],
+    "--presence-color": [
+      [
+        "ui2.css",
+        423,
+        "var(--presence-idle)"
+      ],
+      [
+        "companion.css",
+        12,
+        "#5fb3c8"
+      ]
+    ],
+    "--font-display": [
+      [
+        "ui2.css",
+        1001,
+        "'Orbitron', 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif"
+      ],
+      [
+        "companion.css",
+        12,
+        "'Orbitron', 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif"
+      ]
+    ],
+    "--font-ui": [
+      [
+        "ui2.css",
+        1001,
+        "'Rajdhani', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+      ],
+      [
+        "companion.css",
+        12,
+        "'Rajdhani', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+      ]
+    ],
+    "--font-mono": [
+      [
+        "ui2.css",
+        1001,
+        "'Share Tech Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace"
+      ]
+    ],
+    "--btn-radius": [
+      [
+        "ui2.css",
+        1039,
+        "var(--radius-md)"
+      ]
+    ],
+    "--btn-pad-y": [
+      [
+        "ui2.css",
+        1039,
+        "8px"
+      ]
+    ],
+    "--btn-pad-x": [
+      [
+        "ui2.css",
+        1039,
+        "18px"
+      ]
+    ],
+    "--btn-bg": [
+      [
+        "ui2.css",
+        1039,
+        "color-mix(in srgb, var(--accent) 16%, transparent)"
+      ]
+    ],
+    "--btn-bg-hover": [
+      [
+        "ui2.css",
+        1039,
+        "color-mix(in srgb, var(--accent) 26%, transparent)"
+      ]
+    ],
+    "--btn-border": [
+      [
+        "ui2.css",
+        1039,
+        "color-mix(in srgb, var(--accent) 45%, transparent)"
+      ]
+    ],
+    "--btn-danger-bg": [
+      [
+        "ui2.css",
+        1039,
+        "color-mix(in srgb, var(--danger) 12%, transparent)"
+      ]
+    ],
+    "--btn-danger-border": [
+      [
+        "ui2.css",
+        1039,
+        "color-mix(in srgb, var(--danger) 55%, transparent)"
+      ]
+    ],
+    "--btn-rail-bg": [
+      [
+        "ui2.css",
+        1039,
+        "linear-gradient(135deg, rgba(34,211,238,.16), rgba(45,212,191,.10))"
+      ]
+    ],
+    "--btn-pill-bg": [
+      [
+        "ui2.css",
+        1039,
+        "linear-gradient(135deg, rgba(34,211,238,.22), rgba(45,212,191,.12))"
+      ]
+    ],
+    "--companion-surface": [
+      [
+        "companion.css",
+        12,
+        "rgba(12,18,30,0.86)"
+      ]
+    ],
+    "--companion-surface-strong": [
+      [
+        "companion.css",
+        12,
+        "rgba(16,24,38,0.94)"
+      ]
+    ],
+    "--companion-border": [
+      [
+        "companion.css",
+        12,
+        "color-mix(in srgb, var(--presence-color) 30%, rgba(120,200,220,0.18))"
+      ]
+    ],
+    "--companion-text": [
+      [
+        "companion.css",
+        12,
+        "rgba(221,234,239,0.92)"
+      ]
+    ],
+    "--companion-text-strong": [
+      [
+        "companion.css",
+        12,
+        "#eaf4f8"
+      ]
+    ],
+    "--companion-muted": [
+      [
+        "companion.css",
+        12,
+        "rgba(159,176,216,0.72)"
+      ]
+    ],
+    "--companion-ok": [
+      [
+        "companion.css",
+        12,
+        "#56d364"
+      ]
+    ],
+    "--companion-danger": [
+      [
+        "companion.css",
+        12,
+        "#ff6b6b"
+      ]
+    ],
+    "--companion-warn": [
+      [
+        "companion.css",
+        12,
+        "#e0a94f"
+      ]
+    ],
+    "--avatar-color": [
+      [
+        "companion.css",
+        12,
+        "var(--presence-color)"
+      ]
+    ],
+    "--avatar-bg": [
+      [
+        "companion.css",
+        12,
+        "rgba(10,16,26,0.55)"
+      ]
+    ],
+    "--avatar-border": [
+      [
+        "companion.css",
+        12,
+        "var(--companion-border)"
+      ]
+    ],
+    "--companion-chrome-bg": [
+      [
+        "companion.css",
+        12,
+        "var(--companion-surface)"
+      ]
+    ],
+    "--companion-chrome-border": [
+      [
+        "companion.css",
+        12,
+        "var(--companion-border)"
+      ]
+    ],
+    "--companion-chrome-text": [
+      [
+        "companion.css",
+        12,
+        "var(--companion-text)"
+      ]
+    ]
+  },
+  "token_conflicts": {
+    "--ease-premium": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(0.16, 1, 0.3, 1)"
+      ],
+      [
+        "companion.css",
+        12,
+        "cubic-bezier(.16,1,.3,1)"
+      ]
+    ],
+    "--ease-soft": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(0.4, 0, 0.2, 1)"
+      ],
+      [
+        "companion.css",
+        12,
+        "cubic-bezier(.4,0,.2,1)"
+      ]
+    ],
+    "--ease-out-soft": [
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(.22, .61, .36, 1)"
+      ],
+      [
+        "ui2.css",
+        14,
+        "cubic-bezier(.22, .61, .36, 1)"
+      ]
+    ],
+    "--dur-focus": [
+      [
+        "ui2.css",
+        14,
+        "700ms"
+      ],
+      [
+        "companion.css",
+        12,
+        ".42s"
+      ]
+    ],
+    "--radius-xs": [
+      [
+        "ui2.css",
+        14,
+        "4px"
+      ],
+      [
+        "companion.css",
+        12,
+        "4px"
+      ]
+    ],
+    "--radius-sm": [
+      [
+        "ui2.css",
+        14,
+        "9px"
+      ],
+      [
+        "companion.css",
+        12,
+        "9px"
+      ]
+    ],
+    "--radius-md": [
+      [
+        "ui2.css",
+        14,
+        "14px"
+      ],
+      [
+        "companion.css",
+        12,
+        "14px"
+      ]
+    ],
+    "--radius-lg": [
+      [
+        "ui2.css",
+        14,
+        "22px"
+      ],
+      [
+        "companion.css",
+        12,
+        "22px"
+      ]
+    ],
+    "--radius-pill": [
+      [
+        "ui2.css",
+        14,
+        "999px"
+      ],
+      [
+        "companion.css",
+        12,
+        "999px"
+      ]
+    ],
+    "--motion-fast": [
+      [
+        "ui2.css",
+        14,
+        ".18s"
+      ],
+      [
+        "companion.css",
+        12,
+        ".18s"
+      ]
+    ],
+    "--motion-base": [
+      [
+        "ui2.css",
+        14,
+        ".28s"
+      ],
+      [
+        "companion.css",
+        12,
+        ".28s"
+      ]
+    ],
+    "--motion-slow": [
+      [
+        "ui2.css",
+        14,
+        ".45s"
+      ],
+      [
+        "companion.css",
+        12,
+        ".45s"
+      ]
+    ],
+    "--presence-idle": [
+      [
+        "ui2.css",
+        423,
+        "#5fb3c8"
+      ],
+      [
+        "companion.css",
+        12,
+        "#5fb3c8"
+      ]
+    ],
+    "--presence-waiting": [
+      [
+        "ui2.css",
+        423,
+        "#f0b35e"
+      ],
+      [
+        "companion.css",
+        12,
+        "#f0b35e"
+      ]
+    ],
+    "--presence-thinking": [
+      [
+        "ui2.css",
+        423,
+        "#8b9bff"
+      ],
+      [
+        "companion.css",
+        12,
+        "#8b9bff"
+      ]
+    ],
+    "--presence-planning": [
+      [
+        "ui2.css",
+        423,
+        "#c08bff"
+      ],
+      [
+        "companion.css",
+        12,
+        "#c08bff"
+      ]
+    ],
+    "--presence-executing": [
+      [
+        "ui2.css",
+        423,
+        "#56d364"
+      ],
+      [
+        "companion.css",
+        12,
+        "#56d364"
+      ]
+    ],
+    "--presence-completed": [
+      [
+        "ui2.css",
+        423,
+        "#56d3a0"
+      ],
+      [
+        "companion.css",
+        12,
+        "#56d3a0"
+      ]
+    ],
+    "--presence-error": [
+      [
+        "ui2.css",
+        423,
+        "#ff6b6b"
+      ],
+      [
+        "companion.css",
+        12,
+        "#ff6b6b"
+      ]
+    ],
+    "--presence-offline": [
+      [
+        "ui2.css",
+        423,
+        "#8a93a6"
+      ],
+      [
+        "companion.css",
+        12,
+        "#8a93a6"
+      ]
+    ],
+    "--presence-remind": [
+      [
+        "ui2.css",
+        423,
+        "#e0a94f"
+      ],
+      [
+        "companion.css",
+        12,
+        "#e0a94f"
+      ]
+    ],
+    "--presence-color": [
+      [
+        "ui2.css",
+        423,
+        "var(--presence-idle)"
+      ],
+      [
+        "companion.css",
+        12,
+        "#5fb3c8"
+      ]
+    ],
+    "--font-display": [
+      [
+        "ui2.css",
+        1001,
+        "'Orbitron', 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif"
+      ],
+      [
+        "companion.css",
+        12,
+        "'Orbitron', 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif"
+      ]
+    ],
+    "--font-ui": [
+      [
+        "ui2.css",
+        1001,
+        "'Rajdhani', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+      ],
+      [
+        "companion.css",
+        12,
+        "'Rajdhani', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+      ]
+    ]
+  },
+  "hardcode": {
+    "styles.css": {
+      "font-size = 13px": 88,
+      "font-size = 14px": 57,
+      "font-size = 12px": 57,
+      "font-size = 11px": 51,
+      "font-weight = 600": 43,
+      "color:#fff": 37,
+      "font-size = 15px": 35,
+      "font-weight = 700": 35,
+      "border-radius = 50%": 32,
+      "color:rgba(255,255,255,.04)": 29,
+      "font-size = 10px": 26,
+      "font-size = 16px": 20,
+      "font-size = 18px": 18,
+      "color:rgba(34,211,238,.08)": 17,
+      "letter-spacing = 1px": 15,
+      "color:rgba(34,211,238,.5)": 13,
+      "color:rgba(34,211,238,.12)": 12,
+      "font-size = 9px": 12,
+      "color:rgba(255,255,255,.06)": 11,
+      "color:#22d3ee": 11,
+      "color:rgba(34,211,238,.25)": 10,
+      "color:rgba(34,211,238,.10)": 10,
+      "color:#4ade80": 10,
+      "font-size = 22px": 10,
+      "letter-spacing = 2px": 9,
+      "color:rgba(255,255,255,.03)": 9,
+      "color:rgba(34,211,238,.18)": 8,
+      "letter-spacing = .04em": 8,
+      "color:#f5b544": 7,
+      "letter-spacing = .5px": 7,
+      "color:rgba(34,211,238,.14)": 7,
+      "color:rgba(255,255,255,.05)": 7,
+      "letter-spacing = .05em": 7,
+      "color:rgba(34,211,238,.4)": 6,
+      "letter-spacing = .4px": 6,
+      "color:rgba(255,255,255,.08)": 6,
+      "font-size = 64px": 6,
+      "color:rgba(10,16,22,.5)": 6,
+      "color:#fbbf24": 6,
+      "color:#05070a": 6,
+      "color:rgba(34,211,238,.07)": 5,
+      "color:rgba(245,181,68,.4)": 5,
+      "color:rgba(34,211,238,.06)": 5,
+      "color:rgba(34,211,238,.6)": 5,
+      "color:rgba(245,181,68,.08)": 5,
+      "color:rgba(5,7,10,.5)": 5,
+      "letter-spacing = .25em": 5,
+      "color:rgba(34,211,238,.1)": 5,
+      "color:rgba(255,80,80,.5)": 5,
+      "border-radius = inherit": 4,
+      "color:rgba(255,77,77,.12)": 4,
+      "font-size = 26px": 4,
+      "color:rgba(45,212,191,.4)": 4,
+      "font-size = 34px": 4,
+      "color:#03121a": 4,
+      "color:#2dd4bf": 4,
+      "color:#061018": 4,
+      "color:#ff4444": 4,
+      "letter-spacing = .06em": 4,
+      "color:rgba(45,212,191,.12)": 4,
+      "color:rgba(0,0,0,.3)": 4,
+      "color:rgba(255,255,255,.025)": 3,
+      "font-weight = 900": 3,
+      "color:rgba(245,181,68,.10)": 3,
+      "color:rgba(255,77,77,.45)": 3,
+      "color:rgba(167,139,250,.06)": 3,
+      "color:rgba(167,139,250,.28)": 3,
+      "color:rgba(34,211,238,.22)": 3,
+      "color:rgba(45,212,191,.55)": 3,
+      "color:rgba(34,211,238,.55)": 3,
+      "color:rgba(34,211,238,.38)": 3,
+      "color:rgba(45,212,191,.6)": 3,
+      "letter-spacing = .3px": 3,
+      "color:rgba(5,7,10,.55)": 3,
+      "color:rgba(245,181,68,.14)": 3,
+      "color:rgba(34,211,238,.45)": 3,
+      "color:rgba(120,180,255,.10)": 3,
+      "color:rgba(45,212,191,.45)": 3,
+      "color:rgba(34,211,238,.24)": 3,
+      "font-family = inherit": 3
+    },
+    "premium.css": {
+      "font-size = 14px": 4,
+      "color:rgba(34,211,238,.18)": 3,
+      "font-size = 13px": 3,
+      "box-shadow = 0 0 0 4px rgba(34,211,238,.18)": 2,
+      "color:#000": 2,
+      "color:rgba(34,211,238,.35)": 2,
+      "font-weight = 700": 2,
+      "font-family = 'Share Tech Mono', monospace": 2,
+      "color:#eafdff": 2,
+      "font-weight = 600": 2,
+      "color:#dbeafe": 2,
+      "color:rgba(12,20,28,.82)": 1,
+      "color:rgba(6,10,15,.86)": 1,
+      "color:rgba(0,0,0,.55)": 1,
+      "color:rgba(34,211,238,.25)": 1,
+      "box-shadow = -20px 0 70px rgba(0,0,0,.55), -1px 0 0 rgba(34,211,238,.25) ": 1,
+      "border-radius = inherit": 1,
+      "color:rgba(34,211,238,.55)": 1,
+      "color:rgba(45,212,191,.15)": 1,
+      "color:rgba(4, 9, 14, .72)": 1,
+      "color:rgba(13,22,31,.92)": 1,
+      "color:rgba(7,12,18,.94)": 1,
+      "border-radius = 50%": 1,
+      "color:rgba(45,212,191,.7)": 1,
+      "box-shadow = 0 0 10px rgba(45,212,191,.7)": 1,
+      "font-size = 44px": 1,
+      "font-size = 26px": 1,
+      "font-size = 22px": 1,
+      "letter-spacing = 1px": 1,
+      "box-shadow = 0 8px 24px rgba(34,211,238,.18)": 1,
+      "color:rgba(34,211,238,.3)": 1,
+      "box-shadow = 0 12px 30px rgba(34,211,238,.3)": 1,
+      "font-size = 12px": 1,
+      "color:rgba(255,255,255,.04)": 1,
+      "font-size = 11px": 1,
+      "color:rgba(255,255,255,.08)": 1
+    },
+    "runtime-viz.css": {
+      "color:#34d8ff": 7,
+      "color:#d8e6ef": 3,
+      "font-size = 12px": 3,
+      "font-size = 11px": 3,
+      "color:#7fb8cc": 3,
+      "color:#3ad29a": 3,
+      "color:#ff6b6b": 3,
+      "font-size = 10px": 3,
+      "font-family = 'Orbitron', 'Rajdhani', sans-serif": 2,
+      "letter-spacing = 0.04em": 2,
+      "font-size = 13px": 2,
+      "color:#9fe8ff": 2,
+      "border-radius = 50%": 2,
+      "z-index = 60": 1,
+      "color:rgba(10, 16, 24, 0.72)": 1,
+      "color:rgba(90, 200, 230, 0.22)": 1,
+      "color:rgba(0, 0, 0, 0.45)": 1,
+      "box-shadow = 0 10px 40px rgba(0, 0, 0, 0.45)": 1,
+      "font-family = 'Rajdhani', 'Share Tech Mono', system-ui, sans-serif": 1,
+      "color:rgba(90, 200, 230, 0.18)": 1,
+      "color:rgba(40, 120, 150, 0.25)": 1,
+      "color:rgba(20, 40, 60, 0.1)": 1,
+      "font-weight = 700": 1,
+      "box-shadow = 0 0 10px #34d8ff": 1,
+      "color:rgba(120, 200, 230, 0.3)": 1,
+      "color:rgba(52, 216, 255, 0.12)": 1,
+      "font-weight = 600": 1,
+      "letter-spacing = 0.06em": 1,
+      "color:rgba(90, 200, 230, 0.2)": 1,
+      "color:#2a3a48": 1,
+      "color:#3a5266": 1,
+      "box-shadow = 0 0 8px #34d8ff": 1,
+      "box-shadow = 0 0 8px #ff6b6b": 1,
+      "color:#ff8a8a": 1,
+      "color:#8aa6b4": 1,
+      "font-family = 'Share Tech Mono', monospace": 1,
+      "color:#cfe3ec": 1,
+      "color:rgba(90, 200, 230, 0.06)": 1,
+      "color:#6f8794": 1,
+      "color:rgba(120, 90, 200, 0.1)": 1,
+      "color:rgba(140, 110, 220, 0.22)": 1,
+      "color:#c9b8f0": 1,
+      "color:#e0d4ff": 1
+    },
+    "execution-channel.css": {
+      "font-size = 13px": 3,
+      "color:#34d8ff": 3,
+      "color:#9fe8ff": 2,
+      "border-radius = 50%": 2,
+      "font-family = 'Share Tech Mono', monospace": 2,
+      "font-size = 12px": 2,
+      "color:rgba(90, 200, 230, 0.4)": 2,
+      "color:rgba(52, 216, 255, 0.35)": 2,
+      "z-index = 60": 1,
+      "color:rgba(10, 16, 24, 0.72)": 1,
+      "color:rgba(90, 200, 230, 0.22)": 1,
+      "color:rgba(0, 0, 0, 0.45)": 1,
+      "box-shadow = 0 10px 40px rgba(0, 0, 0, 0.45)": 1,
+      "color:#d8e6ef": 1,
+      "font-family = 'Rajdhani', 'Share Tech Mono', system-ui, sans-serif": 1,
+      "color:rgba(90, 200, 230, 0.18)": 1,
+      "color:rgba(40, 120, 150, 0.25)": 1,
+      "color:rgba(20, 40, 60, 0.1)": 1,
+      "font-family = 'Orbitron', 'Rajdhani', sans-serif": 1,
+      "font-weight = 700": 1,
+      "letter-spacing = 0.04em": 1,
+      "box-shadow = 0 0 10px #34d8ff": 1,
+      "color:#cfe9f5": 1,
+      "color:rgba(52, 216, 255, 0.12)": 1,
+      "color:rgba(120, 200, 230, 0.3)": 1,
+      "color:#6f849a": 1,
+      "font-size = 11px": 1,
+      "letter-spacing = 0.05em": 1,
+      "color:#8fd0c4": 1,
+      "color:rgba(255, 255, 255, 0.03)": 1,
+      "color:rgba(52, 216, 255, 0.06)": 1,
+      "color:rgba(45, 212, 191, 0.22)": 1,
+      "color:#2dd4bf": 1,
+      "font-size = 14px": 1,
+      "color:#e6edf3": 1,
+      "font-weight = 600": 1,
+      "letter-spacing = 0.02em": 1,
+      "color:#9fb2c4": 1
+    },
+    "ui2.css": {
+      "font-size = 12px": 17,
+      "font-size = 13px": 16,
+      "font-weight = 600": 13,
+      "color:#04101a": 10,
+      "font-size = 11px": 10,
+      "border-radius = 50%": 9,
+      "font-size = 10px": 6,
+      "font-size = 16px": 4,
+      "z-index = 2": 3,
+      "color:#fff": 3,
+      "font-size = 14px": 3,
+      "letter-spacing = .04em": 3,
+      "font-size = 18px": 3,
+      "z-index = 32": 3,
+      "letter-spacing = .02em": 2,
+      "font-weight = 700": 2,
+      "letter-spacing = .14em": 2,
+      "font-size = 15px": 2,
+      "z-index = 30": 2,
+      "font-size = 22px": 2,
+      "letter-spacing = .3px": 2,
+      "font-size = 20px": 2,
+      "z-index = 35": 1,
+      "letter-spacing = 2px": 1,
+      "color:rgba(251, 191, 36, .12)": 1,
+      "color:rgba(244, 114, 182, .12)": 1,
+      "box-shadow = 0 0 8px currentColor": 1,
+      "letter-spacing = .22em": 1,
+      "font-size = 64px": 1,
+      "font-weight = 800": 1,
+      "letter-spacing = .2em": 1,
+      "color:rgba(0, 0, 0, 0.35)": 1,
+      "box-shadow = 0 12px 30px rgba(0, 0, 0, 0.35)": 1,
+      "letter-spacing = 0.04em": 1,
+      "color:rgba(86,211,100,.3)": 1,
+      "box-shadow = 0 0 0 3px rgba(86,211,100,.3)": 1,
+      "z-index = 31": 1,
+      "z-index = 25": 1,
+      "z-index = 24": 1,
+      "z-index = 5": 1,
+      "z-index = 29": 1,
+      "letter-spacing = 1px": 1,
+      "letter-spacing = .5px": 1,
+      "color:rgba(255,255,255,.1)": 1,
+      "color:rgba(0,0,0,.3)": 1,
+      "box-shadow = 0 0 6px rgba(0,0,0,.3)": 1,
+      "color:rgba(34,211,238,.25)": 1,
+      "color:rgba(34,211,238,.5)": 1,
+      "z-index = 0": 1,
+      "z-index = 1": 1,
+      "font-size = 28px": 1,
+      "letter-spacing = .06em": 1,
+      "letter-spacing = .18em": 1,
+      "letter-spacing = .01em": 1,
+      "z-index = 22": 1,
+      "color:rgba(0,0,0,.55)": 1,
+      "box-shadow = 0 24px 64px -32px rgba(0,0,0,.55)": 1,
+      "font-size = 24px": 1,
+      "color:rgba(4, 9, 14, .42)": 1
+    },
+    "companion.css": {
+      "border-radius = 50%": 5,
+      "font-family = inherit": 4,
+      "font-size = 13px": 4,
+      "font-size = 12px": 3,
+      "font-weight = 600": 3,
+      "font-size = 11px": 3,
+      "color:#0b0e16": 2,
+      "color:rgba(0,0,0,0.5)": 2,
+      "font-weight = 500": 2,
+      "color:rgba(0,0,0,0.55)": 2,
+      "box-shadow = 0 12px 32px rgba(0,0,0,0.55)": 2,
+      "z-index = 3": 1,
+      "color:rgba(255,255,255,0.6)": 1,
+      "box-shadow = 0 0 4px rgba(255,255,255,0.6)": 1,
+      "z-index = 2": 1,
+      "z-index = 1": 1,
+      "letter-spacing = 0.04em": 1,
+      "box-shadow = 0 18px 48px rgba(0,0,0,0.5)": 1,
+      "z-index = 10": 1,
+      "color:#fff": 1,
+      "z-index = 11": 1,
+      "font-weight = 700": 1,
+      "box-shadow = 0 8px 24px rgba(0,0,0,0.5)": 1,
+      "z-index = 12": 1,
+      "font-weight = 800": 1,
+      "z-index = 13": 1
+    }
+  }
+}

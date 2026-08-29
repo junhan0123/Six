@@ -1,0 +1,1559 @@
+{
+  "CANONICAL_COUNT": 33,
+  "DELETE_BLOCKED": {
+    "id": "delete",
+    "name": "删除",
+    "group": "Computer Action",
+    "risk": "CRITICAL",
+    "permission": "block",
+    "available": false,
+    "implemented": false,
+    "keywords": [
+      "删除",
+      "删掉",
+      "清空",
+      "rm",
+      "彻底删除"
+    ]
+  },
+  "SYSTEM_BLOCKED": {
+    "id": "system",
+    "name": "系统操作",
+    "group": "Computer Action",
+    "risk": "CRITICAL",
+    "permission": "block",
+    "available": false,
+    "implemented": false,
+    "keywords": [
+      "重启",
+      "关机",
+      "改配置",
+      "系统设置",
+      "格式化"
+    ]
+  },
+  "NETWORK_BLOCKED": {
+    "id": "network",
+    "name": "网络操作",
+    "group": "Computer Action",
+    "risk": "CRITICAL",
+    "permission": "block",
+    "available": false,
+    "implemented": false,
+    "keywords": [
+      "防火墙",
+      "代理",
+      "改网络",
+      "断网"
+    ]
+  },
+  "TOOLS_COUNT": 55,
+  "TOOL_FUNCS_COUNT": 62,
+  "READONLY_TOOLS_COUNT": 28,
+  "EXECUTORS_COUNT": 33,
+  "TTC_EM_COUNT": 15,
+  "TTC_INIT_COUNT": 18,
+  "TTC_DIVERGENCE": {
+    "only_in_execution_mapping": [
+      "file_read",
+      "get_hotspots",
+      "list_processes",
+      "scan_desktop"
+    ],
+    "only_in_init": [
+      "add_knowledge",
+      "archive_knowledge",
+      "hotspots",
+      "list_goals",
+      "plan_goal",
+      "tick_now",
+      "weather"
+    ],
+    "conflicting_values": {}
+  },
+  "LEGACY_COUNT": 3,
+  "LEGACY_CAPS": [
+    "hotspot",
+    "prefetch",
+    "computer_action"
+  ],
+  "MAP_A": {
+    "get_time": {
+      "init": "time",
+      "em": "time",
+      "in_schema": true
+    },
+    "calculator": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "note_save": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "note_list": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "profile_set": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "profile_get": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "reminder_set": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "reminder_list": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "set_task": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "update_task_step": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "complete_task": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "task_list": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "file_read": {
+      "init": "tools",
+      "em": "read_file",
+      "in_schema": true
+    },
+    "file_list": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "file_write": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "file_make_dir": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "file_delete": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "file_rename": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "list_processes": {
+      "init": "tools",
+      "em": "list_process",
+      "in_schema": true
+    },
+    "kill_process": {
+      "init": "kill_process",
+      "em": "kill_process",
+      "in_schema": true
+    },
+    "run_shell": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "session_state": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "reset_session": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "install_software": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "web_fetch": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "browser_read": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "scan_desktop": {
+      "init": "tools",
+      "em": "capture_screen",
+      "in_schema": true
+    },
+    "scan_installed_software": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "manage_prefetch_task": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "tick_now": {
+      "init": "time",
+      "em": "tools",
+      "in_schema": true
+    },
+    "memory_search": {
+      "init": "memory",
+      "em": "memory",
+      "in_schema": true
+    },
+    "web_search": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "media_generate": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "social_send": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "asr_transcribe": {
+      "init": "voice",
+      "em": "voice",
+      "in_schema": true
+    },
+    "get_weather": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "get_hotspots": {
+      "init": "tools",
+      "em": "world_pulse",
+      "in_schema": true
+    },
+    "open_hotspot_panel": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "typhoon_panel": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "person_card": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "map_query": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "open_doc_panel": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "open_memory_audit": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "review_output": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "remember": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "play_video": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "manage_rule": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "render_card": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "scan_resources": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "list_skills": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "use_skill": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "create_custom_tool": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "list_custom_tools": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "delete_custom_tool": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "delegate_agent": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": true
+    },
+    "set_goal": {
+      "init": "goals",
+      "em": "goals",
+      "in_schema": false
+    },
+    "update_goal": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": false
+    },
+    "list_goals": {
+      "init": "goals",
+      "em": "tools",
+      "in_schema": false
+    },
+    "delete_goal": {
+      "init": "tools",
+      "em": "tools",
+      "in_schema": false
+    },
+    "plan_goal": {
+      "init": "goals",
+      "em": "tools",
+      "in_schema": false
+    },
+    "add_knowledge": {
+      "init": "knowledge",
+      "em": "tools",
+      "in_schema": false
+    },
+    "archive_knowledge": {
+      "init": "knowledge",
+      "em": "tools",
+      "in_schema": false
+    }
+  },
+  "MAP_A_TOOL_UNIVERSE": 62,
+  "MAP_A_IN_SCHEMA": 55,
+  "MAP_A_NOT_IN_SCHEMA": [
+    "add_knowledge",
+    "archive_knowledge",
+    "delete_goal",
+    "list_goals",
+    "plan_goal",
+    "set_goal",
+    "update_goal"
+  ],
+  "MAP_A_BUCKETS_INIT": {
+    "goals": [
+      "list_goals",
+      "plan_goal",
+      "set_goal"
+    ],
+    "kill_process": [
+      "kill_process"
+    ],
+    "knowledge": [
+      "add_knowledge",
+      "archive_knowledge"
+    ],
+    "memory": [
+      "memory_search"
+    ],
+    "time": [
+      "get_time",
+      "tick_now"
+    ],
+    "tools": [
+      "browser_read",
+      "calculator",
+      "complete_task",
+      "create_custom_tool",
+      "delegate_agent",
+      "delete_custom_tool",
+      "delete_goal",
+      "file_delete",
+      "file_list",
+      "file_make_dir",
+      "file_read",
+      "file_rename",
+      "file_write",
+      "get_hotspots",
+      "get_weather",
+      "install_software",
+      "list_custom_tools",
+      "list_processes",
+      "list_skills",
+      "manage_prefetch_task",
+      "manage_rule",
+      "map_query",
+      "media_generate",
+      "note_list",
+      "note_save",
+      "open_doc_panel",
+      "open_hotspot_panel",
+      "open_memory_audit",
+      "person_card",
+      "play_video",
+      "profile_get",
+      "profile_set",
+      "remember",
+      "reminder_list",
+      "reminder_set",
+      "render_card",
+      "reset_session",
+      "review_output",
+      "run_shell",
+      "scan_desktop",
+      "scan_installed_software",
+      "scan_resources",
+      "session_state",
+      "set_task",
+      "social_send",
+      "task_list",
+      "typhoon_panel",
+      "update_goal",
+      "update_task_step",
+      "use_skill",
+      "web_fetch",
+      "web_search"
+    ],
+    "voice": [
+      "asr_transcribe"
+    ]
+  },
+  "MAP_A_BUCKETS_EM": {
+    "capture_screen": [
+      "scan_desktop"
+    ],
+    "goals": [
+      "set_goal"
+    ],
+    "kill_process": [
+      "kill_process"
+    ],
+    "list_process": [
+      "list_processes"
+    ],
+    "memory": [
+      "memory_search"
+    ],
+    "read_file": [
+      "file_read"
+    ],
+    "time": [
+      "get_time"
+    ],
+    "tools": [
+      "add_knowledge",
+      "archive_knowledge",
+      "browser_read",
+      "calculator",
+      "complete_task",
+      "create_custom_tool",
+      "delegate_agent",
+      "delete_custom_tool",
+      "delete_goal",
+      "file_delete",
+      "file_list",
+      "file_make_dir",
+      "file_rename",
+      "file_write",
+      "get_weather",
+      "install_software",
+      "list_custom_tools",
+      "list_goals",
+      "list_skills",
+      "manage_prefetch_task",
+      "manage_rule",
+      "map_query",
+      "media_generate",
+      "note_list",
+      "note_save",
+      "open_doc_panel",
+      "open_hotspot_panel",
+      "open_memory_audit",
+      "person_card",
+      "plan_goal",
+      "play_video",
+      "profile_get",
+      "profile_set",
+      "remember",
+      "reminder_list",
+      "reminder_set",
+      "render_card",
+      "reset_session",
+      "review_output",
+      "run_shell",
+      "scan_installed_software",
+      "scan_resources",
+      "session_state",
+      "set_task",
+      "social_send",
+      "task_list",
+      "tick_now",
+      "typhoon_panel",
+      "update_goal",
+      "update_task_step",
+      "use_skill",
+      "web_fetch",
+      "web_search"
+    ],
+    "voice": [
+      "asr_transcribe"
+    ],
+    "world_pulse": [
+      "get_hotspots"
+    ]
+  },
+  "MAP_A_DIVERGENT_TOOLS": [
+    "add_knowledge",
+    "archive_knowledge",
+    "file_read",
+    "get_hotspots",
+    "list_goals",
+    "list_processes",
+    "plan_goal",
+    "scan_desktop",
+    "tick_now"
+  ],
+  "WHITELIST": [
+    "browser_navigate",
+    "copy_text",
+    "focus_window",
+    "open_application",
+    "open_file",
+    "open_folder",
+    "search"
+  ],
+  "READONLY_ALLOWED": [
+    "capture_screen",
+    "get_window_info",
+    "list_process",
+    "perception.ocr",
+    "perception.screen",
+    "perception.window",
+    "read_file"
+  ],
+  "MAP_B": {
+    "voice": {
+      "name": "语音",
+      "group": "Voice",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "asr_transcribe",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "memory": {
+      "name": "记忆",
+      "group": "Memory",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "memory_search",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "knowledge": {
+      "name": "知识库",
+      "group": "Knowledge",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "knowledge.search",
+      "callable": true,
+      "callable_note": "knowledge.search present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "goals": {
+      "name": "目标",
+      "group": "Goals",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "set_goal",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "perception": {
+      "name": "屏幕感知",
+      "group": "Perception",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "perception.observe",
+      "callable": true,
+      "callable_note": "perception.observe present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "computer_action": {
+      "name": "电脑操作",
+      "group": "Computer Action",
+      "risk": "MEDIUM",
+      "permission": "confirm",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "umbrella",
+      "executor_ref": "computer_action",
+      "callable": true,
+      "callable_note": "aggregate overview",
+      "perm_expected": "confirm",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "tools": {
+      "name": "工具",
+      "group": "Tools",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "umbrella",
+      "executor_ref": "tools",
+      "callable": true,
+      "callable_note": "aggregate overview",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "world_pulse": {
+      "name": "世界脉动",
+      "group": "World Pulse",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "get_hotspots",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "user_model": {
+      "name": "用户画像",
+      "group": "User Model",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "cognitive.user_model.load_user_model",
+      "callable": true,
+      "callable_note": "cognitive.user_model.load_user_model present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "self_diagnosis": {
+      "name": "启动自检",
+      "group": "Self Diagnosis",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "self_diagnosis.run_check",
+      "callable": true,
+      "callable_note": "self_diagnosis.run_check present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "time": {
+      "name": "时间",
+      "group": "Tools",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "get_time",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "delete": {
+      "name": "删除",
+      "group": "Computer Action",
+      "risk": "CRITICAL",
+      "permission": "block",
+      "available": false,
+      "implemented": false,
+      "executor_kind": "none",
+      "executor_ref": "",
+      "callable": false,
+      "callable_note": "permanent deny",
+      "perm_expected": "block",
+      "perm_consistent": true,
+      "status": "BLOCKED",
+      "reason": "available=False or permission=block"
+    },
+    "system": {
+      "name": "系统操作",
+      "group": "Computer Action",
+      "risk": "CRITICAL",
+      "permission": "block",
+      "available": false,
+      "implemented": false,
+      "executor_kind": "none",
+      "executor_ref": "",
+      "callable": false,
+      "callable_note": "permanent deny",
+      "perm_expected": "block",
+      "perm_consistent": true,
+      "status": "BLOCKED",
+      "reason": "available=False or permission=block"
+    },
+    "network": {
+      "name": "网络操作",
+      "group": "Computer Action",
+      "risk": "CRITICAL",
+      "permission": "block",
+      "available": false,
+      "implemented": false,
+      "executor_kind": "none",
+      "executor_ref": "",
+      "callable": false,
+      "callable_note": "permanent deny",
+      "perm_expected": "block",
+      "perm_consistent": true,
+      "status": "BLOCKED",
+      "reason": "available=False or permission=block"
+    },
+    "read_file": {
+      "name": "读取文件",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "file_read",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "capture_screen": {
+      "name": "截取屏幕",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "scan_desktop",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "get_window_info": {
+      "name": "获取窗口信息",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "perception.get_state",
+      "callable": true,
+      "callable_note": "perception.get_state present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "list_process": {
+      "name": "列举进程",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "tool",
+      "executor_ref": "list_processes",
+      "callable": true,
+      "callable_note": "ref in TOOL_FUNCS",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "perception.screen": {
+      "name": "屏幕感知",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "perception.get_state",
+      "callable": true,
+      "callable_note": "perception.get_state present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "perception.window": {
+      "name": "窗口感知",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "perception.get_state",
+      "callable": true,
+      "callable_note": "perception.get_state present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "perception.ocr": {
+      "name": "屏幕文字识别",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "builtin",
+      "executor_ref": "perception",
+      "callable": true,
+      "callable_note": "module perception present",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "open_folder": {
+      "name": "打开文件夹",
+      "group": "Computer Action",
+      "risk": "MEDIUM",
+      "permission": "confirm",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "open_folder",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "confirm",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "open_file": {
+      "name": "打开文件",
+      "group": "Computer Action",
+      "risk": "MEDIUM",
+      "permission": "confirm",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "open_file",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "confirm",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "search": {
+      "name": "搜索文件",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "search",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "copy_text": {
+      "name": "复制文本",
+      "group": "Computer Action",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "copy_text",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "open_application": {
+      "name": "打开应用",
+      "group": "Computer Action",
+      "risk": "MEDIUM",
+      "permission": "confirm",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "open_application",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "confirm",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "focus_window": {
+      "name": "聚焦窗口",
+      "group": "Computer Action",
+      "risk": "MEDIUM",
+      "permission": "confirm",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "focus_window",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "confirm",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "browser_navigate": {
+      "name": "浏览器导航",
+      "group": "Computer Action",
+      "risk": "MEDIUM",
+      "permission": "confirm",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "computer_action",
+      "executor_ref": "browser_navigate",
+      "callable": true,
+      "callable_note": "in WHITELIST/_READONLY_ALLOWED",
+      "perm_expected": "confirm",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "modify_file": {
+      "name": "修改文件",
+      "group": "Computer Action",
+      "risk": "HIGH",
+      "permission": "block",
+      "available": false,
+      "implemented": false,
+      "executor_kind": "none",
+      "executor_ref": "",
+      "callable": false,
+      "callable_note": "permanent deny",
+      "perm_expected": "block",
+      "perm_consistent": true,
+      "status": "BLOCKED",
+      "reason": "available=False or permission=block"
+    },
+    "execute_command": {
+      "name": "执行命令",
+      "group": "Computer Action",
+      "risk": "HIGH",
+      "permission": "block",
+      "available": false,
+      "implemented": false,
+      "executor_kind": "none",
+      "executor_ref": "",
+      "callable": false,
+      "callable_note": "permanent deny",
+      "perm_expected": "block",
+      "perm_consistent": true,
+      "status": "BLOCKED",
+      "reason": "available=False or permission=block"
+    },
+    "kill_process": {
+      "name": "结束进程",
+      "group": "Computer Action",
+      "risk": "HIGH",
+      "permission": "block",
+      "available": false,
+      "implemented": false,
+      "executor_kind": "none",
+      "executor_ref": "",
+      "callable": false,
+      "callable_note": "permanent deny",
+      "perm_expected": "block",
+      "perm_consistent": true,
+      "status": "BLOCKED",
+      "reason": "available=False or permission=block"
+    },
+    "hotspot": {
+      "name": "热点上下文",
+      "group": "World Pulse",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "context",
+      "executor_ref": "hotspot",
+      "callable": true,
+      "callable_note": "ref in capabilities.CAPABILITIES",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    },
+    "prefetch": {
+      "name": "预取背景（天气/新闻）",
+      "group": "World Pulse",
+      "risk": "LOW",
+      "permission": "auto",
+      "available": true,
+      "implemented": true,
+      "executor_kind": "context",
+      "executor_ref": "prefetch",
+      "callable": true,
+      "callable_note": "ref in capabilities.CAPABILITIES",
+      "perm_expected": "auto",
+      "perm_consistent": true,
+      "status": "READY",
+      "reason": "registered+callable+perm-ok"
+    }
+  },
+  "MAP_B_STATUS_COUNTS": {
+    "READY": 27,
+    "BLOCKED": 6
+  },
+  "FEATURE_COUNT": 47,
+  "FAM_COUNT": 10,
+  "MAP_C": [
+    {
+      "id": "start-all",
+      "name": "启动小6",
+      "cat": "E",
+      "vis": "hidden",
+      "api": "/api/start/all",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "web-ui",
+      "name": "对话界面",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/web/ui",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "avatar-ui",
+      "name": "数字人界面",
+      "cat": "C",
+      "vis": "hidden",
+      "api": "/api/avatar/ui",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "open-project",
+      "name": "打开项目目录",
+      "cat": "C",
+      "vis": "hidden",
+      "api": "/api/open/project",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "health",
+      "name": "后端健康",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/health",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "ready",
+      "name": "就绪状态",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/ready",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "boot-state",
+      "name": "启动状态机",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/boot/state",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "sysmon",
+      "name": "系统监控",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/sysmon",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "logs",
+      "name": "后端日志",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/logs",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "selfcheck",
+      "name": "启动自检",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/selfcheck",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "capabilities",
+      "name": "能力目录",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/capabilities",
+      "deprecated": true,
+      "cap_link": "registry(catalog/foundation)"
+    },
+    {
+      "id": "capability-os",
+      "name": "Capability OS",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/capability_os/catalog",
+      "deprecated": false,
+      "cap_link": "catalog_view/foundation_view"
+    },
+    {
+      "id": "version",
+      "name": "版本信息",
+      "cat": "D",
+      "vis": "hidden",
+      "api": "/api/version",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "asr-status",
+      "name": "语音识别状态",
+      "cat": "D",
+      "vis": "advanced",
+      "api": "/api/asr/status",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "wakeword",
+      "name": "唤醒词状态",
+      "cat": "D",
+      "vis": "advanced",
+      "api": "/api/wakeword",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "system-prompt",
+      "name": "系统提示词",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/system-prompt",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "memory",
+      "name": "记忆中心",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/memory",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "conversations",
+      "name": "对话历史",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/memory/conversations",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "important-dates",
+      "name": "重要日期",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/memory/important-dates",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "notes",
+      "name": "笔记",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/notes",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "knowledge",
+      "name": "知识库",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/knowledge",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "user-model",
+      "name": "用户画像",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/user_model",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "personal-ai",
+      "name": "Personal AI 画像",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/personal_ai",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "episodes",
+      "name": "情节记忆",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/episodes",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "tasks",
+      "name": "任务列表",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/tasks",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "goals",
+      "name": "目标列表",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/goals",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "weather",
+      "name": "天气",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/weather",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "hotspots",
+      "name": "热点",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/hotspots",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "geo",
+      "name": "定位与天气",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/geo",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "briefing",
+      "name": "每日简报",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/briefing",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "calendar",
+      "name": "日历事件",
+      "cat": "A",
+      "vis": "conditional",
+      "api": "/api/calendar/events",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "perception-status",
+      "name": "感知状态",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/perception/status",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "perception-screen",
+      "name": "屏幕信息",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/perception/screen",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "perception-window",
+      "name": "活动窗口",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/perception/window",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "perception-ocr",
+      "name": "屏幕 OCR",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/perception/ocr",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "perception-describe",
+      "name": "屏幕描述",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/perception/describe",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "proactive-status",
+      "name": "主动智能状态",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/proactive/status",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "proactive-agent",
+      "name": "Proactive Agent",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/proactive_agent/status",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "self-awareness",
+      "name": "自我认知",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/self_awareness/status",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "agent-state",
+      "name": "Agent 状态",
+      "cat": "A",
+      "vis": "default",
+      "api": "/api/agent/state",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "hud-state",
+      "name": "HUD 状态",
+      "cat": "B",
+      "vis": "advanced",
+      "api": "/api/hud/state",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "focus-app",
+      "name": "应用焦点",
+      "cat": "A",
+      "vis": "conditional",
+      "api": "/api/focus/app",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "clipboard",
+      "name": "剪贴板历史",
+      "cat": "A",
+      "vis": "conditional",
+      "api": "/api/clipboard/history",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "export-data",
+      "name": "数据导出",
+      "cat": "C",
+      "vis": "hidden",
+      "api": "/api/export/data",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "open-config",
+      "name": "打开配置目录",
+      "cat": "C",
+      "vis": "hidden",
+      "api": "/api/open/config",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "open-docs",
+      "name": "打开文档目录",
+      "cat": "C",
+      "vis": "hidden",
+      "api": "/api/open/docs",
+      "deprecated": false,
+      "cap_link": null
+    },
+    {
+      "id": "github",
+      "name": "GitHub 仓库",
+      "cat": "C",
+      "vis": "hidden",
+      "api": "/api/github",
+      "deprecated": false,
+      "cap_link": null
+    }
+  ],
+  "MAP_C_DEPRECATED_FEATURES": [
+    "capabilities"
+  ],
+  "MAP_C_MAPPED_COUNT": 10
+}

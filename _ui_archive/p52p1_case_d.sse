@@ -1,0 +1,8 @@
+data: {"xiao6_event": "tool_start", "tool": "run_shell", "args": {"command": "echo hello 小6"}}
+
+data: {"xiao6_event": "tool_end", "tool": "run_shell", "result": "$ echo hello 小6\n[exit 0]（cwd=.）\n\nhello 小6"}
+
+data: {"choices": [{"delta": {"content": "执行成功，输出：hello 小6"}}]}
+
+data: "[DONE]"
+

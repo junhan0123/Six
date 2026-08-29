@@ -1,0 +1,134 @@
+# Canonical Voice Orb Contract
+
+> Phase 2 · VOICE ORB FINALIZATION — 唯一真实基线
+> 本文档取代旧版《小6 纯语音球模式 配置指南》（该版声称 "zz-space 已从启动流程移除 / PET_URL 加载 / 主界面已移除"，与当前真实源码矛盾，已作废）。
+> 所有内容均基于 `G:\ZhuangZhou\zhuangzhou-ui` 真实源码核验（2026-08-17）。
+
+---
+
+## 1. Product
+
+- **Single Product**: `ZhuangZhou`
+- 两个交互入口，但**不是两个产品、不是两个 Runtime**：
+  - **Voice OS** = Voice Orb（Primary UI）
+  - **GUI OS** = ChatGPT-style GUI（Advanced Workspace）
+- 两者共享同一 `ZhuangZhou Core`（Runtime / Context / Memory / Decision / Policy / Approval / Lifecycle / Capability / Executor / Security Boundary）。
+
+## 2. Web Orb（canonical web entry）
+
+- **zz-space petOrb**
+- 入口：`zz-space/index.html`
+- 状态机宿主：`zz-space/js/zz-space.js`，通过 `coreStage[data-state]` 驱动
+- 真实状态：`idle` / `listening` / `thinking` / `speaking` / `error`
+- 由全部 launcher 的 Web 步骤统一打开：
+  - `launcher/zz_launch.bat` → `http://localhost:8010/zz-space/index.html`
+  - `launcher/zz_launch.ps1` → `http://localhost:{PORT}/zz-space/index.html`
+  - `start-zhuangzhou.bat` → `http://localhost:8010/zz-space/index.html`（electron 缺失 fallback 与 open_chat 均指向此）
+  - `小6 启动.bat` → `http://localhost:8010/zz-space/index.html`
+
+## 3. Electron Orb（canonical desktop entry）
+
+- **desktop-avatar/dyna-orb**（动态点云能量球 v2）
+- 入口 HTML：`desktop-avatar/dyna-orb.html`
+- 渲染逻辑：`desktop-avatar/dyna-orb.js`（粒子球 + 状态形态） + `desktop-avatar/dyna-orb-voice.js`（语音管线）
+- 窗口交互（`dyna-orb.html` 内联脚本）：
+  - `electronAPI.setIgnoreMouse(!onBall)`（球面命中→窗口接收事件；球外透明区→鼠标穿透）
+  - `electronAPI.moveWindow(dx, dy)`（拖拽移动窗口）
+
+## 4. Canonical Electron Entry（已裁决）
+
+- **`electron/main.js`**（root `package.json` → `"main": "electron/main.js"`）
+- 与 `electron/avatar-window.js` + `electron/preload.js` 共同构成 canonical Electron 路径
+- 加载链：`launcher/*.bat|ps1` → `electron .` → `electron/main.js` → `createAvatarWindow({ url: /desktop-avatar/dyna-orb.html, preload: electron/preload.js })`
+- **`gui/main.js` 为孤儿（NOT CANONICAL）**：虽更新（dyna-orb + zz-space + 自动拉起后端/SoVITS + 托盘），但**无任何 launcher 引用**，不参与生产启动。保留于磁盘作为历史/实验参考，不删除。
+
+## 5. Voice States（唯一语义，两 UI 共享）
+
+| 状态 | 含义 |
+|---|---|
+| `idle` | 等待用户 |
+| `listening` | 正在采集用户语音（VAD 激活） |
+| `thinking` | ASR 已结束，ZhuangZhou 正在处理 |
+| `speaking` | TTS 正在输出最终回答 |
+| `error` | Voice pipeline 出错 |
+
+> 允许的内部视觉态（不构成产品级 Voice state）：`recognizing` / `processing` / `executing` / `done`（dyna-orb.js 内部过渡态，自动回落 idle）。
+> 禁止出现第二套状态名（`processing`/`working`/`generating`/`responding`/`waiting` 不得作为产品级 Voice state）。
+
+## 6. Pipeline（Microphone → Orb）
+
+```
+Microphone
+   ↓  (dyna-orb-voice.js: getUserMedia + VAD)
+ASR
+   ↓  POST /api/asr          (server.py @772)
+Chat
+   ↓  POST /api/chat  (SSE)  (server.py @756, 流式工具事件)
+ZhuangZhou Runtime
+   ↓  (AgentRuntime 编排: Decision→Policy→Approval→Executor→Lifecycle)
+Final Response
+   ↓
+TTS
+   ↓  POST /api/speak        (server.py @758)
+Audio
+   ↓  (Web Audio / <audio> 播放)
+Orb
+   ↓  (window.ZZDynaOrb.setState / zz-space.js data-state)
+```
+
+- 错误路径：`error` 态 + 回退提示（无静默崩溃）
+- `/api/stream`（server.py @379）**仅用于 HUD / 事件观察**，**不是** Orb 状态机；Orb 状态由前端管线显式 `setState` 驱动。
+- 后端 contract **未变更**（Phase 2 仅 Presentation/Integration 收口，禁止改 API）。
+
+## 7. Backend Contract
+
+| 端点 | 用途 | 调用方 |
+|---|---|---|
+| `POST /api/asr` | 语音识别 | dyna-orb-voice.js / zz-space |
+| `POST /api/chat` (SSE) | 对话 + 工具流 | dyna-orb-voice.js / zz-space |
+| `POST /api/speak` | 文本转语音 | dyna-orb-voice.js / zz-space |
+| `GET /api/stream` | HUD 事件观察（非状态机） | 附属面板 |
+
+## 8. Runtime Authority
+
+- **Runtime / Context / Memory / Decision / Policy / Approval / Lifecycle / Capability / Executor / Security** = ZhuangZhou（`server.py` + `agent_runtime.py` + `cognitive/` + `memory.py` + `policy_engine.py` …）
+- **Presentation Authority** = Voice Orb（仅展示 + 最小窗口控制，无执行语义）
+- **DSH（DeepSeek Harness）** = 基础设施 / 工作区底座，经 HTTP 集成，**不是** ZhuangZhou 产品身份 / Memory / Policy / Lifecycle
+
+## 9. Orb Classification Matrix
+
+| Orb | 路径 | 分类 | 生产连接 |
+|---|---|---|---|
+| dyna-orb | `desktop-avatar/dyna-orb.html` + `.js` + `-voice.js` | **CANONICAL (Electron)** | `electron/main.js` 经 `createAvatarWindow` 加载 |
+| petOrb | `zz-space/index.html` + `js/zz-space.js` | **CANONICAL (Web)** | 全部 launcher Web 步骤 |
+| robot (旧 lottie) | `desktop-avatar/index.html` + `robot.js` | **LEGACY / FROZEN** | 已无 launcher 引用；仅 `avatar-window.js` 旧默认回退曾指向（已改为 dyna-orb） |
+| orb-pet | `desktop-avatar/orb-pet.*` | DORMANT / EXPERIMENTAL | 无任何生产引用（仅自身 + `scripts/verify-speech-orb.js`） |
+| gem-orb | `desktop-avatar/gem-orb.*` | DORMANT / EXPERIMENTAL | 无任何生产引用 |
+| liquid-orb | `desktop-avatar/liquid-orb.*` | DORMANT / EXPERIMENTAL | 无任何生产引用 |
+| orb-ui-orb | `desktop-avatar/orb-ui-orb.*` | DORMANT / EXPERIMENTAL | 无任何生产引用 |
+
+> 分类原则：先证引用 → 分类 → 解除 active 接线 → 再据真实依赖决定是否删除。
+> 当前 legacy / experimental orb **安全删除条件不足**（保留用于回滚与历史参考），统一标记 `NON-CANONICAL / NOT EXPOSED`，不删。
+
+## 10. Forbidden
+
+- 第二 Runtime / Voice Runtime / GUI Runtime
+- 第二 Memory / Capability System / Policy / Lifecycle
+- 把 DSH agent-loop 当 ZhuangZhou Runtime
+- 把 DSH session 当 ZhuangZhou Memory
+- 把 DSH approval 当 ZhuangZhou Approval
+- 把 DSH tools 当 ZhuangZhou Capability authority
+- 把 DSH UI 当 ZhuangZhou Voice UI
+- 把 Xiao6Hub renderer 当 Runtime
+
+## 11. Electron ↔ Preload IPC（最小窗口控制，无执行语义）
+
+| 渲染页调用 | preload 桥 | main 处理 |
+|---|---|---|
+| `electronAPI.close()` | `avatar:close` | `win.close()` |
+| `electronAPI.hide()` | `avatar:hide` | `win.hide()` |
+| `electronAPI.openChat()` | `avatar:open-chat` | `shell.openExternal(localhost:PORT)` |
+| `electronAPI.setIgnoreMouse(ignore)` | `avatar:set-ignore-mouse` | `win.setIgnoreMouseEvents(ignore, {forward:true})` |
+| `electronAPI.moveWindow(dx,dy)` | `avatar:move` | `win.setPosition(x+dx, y+dy)` |
+
+> Phase 2 新增：`setIgnoreMouse` / `moveWindow`（dyna-orb 拖拽/穿透所需，原仅 `gui/preload.js` 提供，已并入 canonical `electron/preload.js`）。

@@ -1,0 +1,14 @@
+{
+  "RESULT": "CHECK",
+  "onSphereIgnoreFalseCount": 4,
+  "offSphereIgnoreTrueCount": 2,
+  "moveWindowCalls": 5,
+  "moveWindowTotalDelta": [
+    30,
+    20
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (File not found)"
+  ],
+  "summary": "see counts"
+}

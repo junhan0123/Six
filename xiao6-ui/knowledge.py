@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ZhuangZhou · Knowledge Platform — file-based knowledge runtime (facade).
+"""Xiao6 · Knowledge Platform — file-based knowledge runtime (facade).
 
 This module is the single public entry point for the knowledge layer. It
 replaces the legacy RAG/embedding backend (``knowledge.py`` RAG) with a
@@ -24,7 +24,7 @@ from pathlib import Path
 
 from knowledge_runtime import KnowledgeRuntime, get_runtime
 
-# Vault root: sibling of zhuangzhou-ui/ -> G:/ZhuangZhou/knowledge
+# Vault root: sibling of xiao6-ui/ -> G:/Xiao6/knowledge
 _ROOT = Path(__file__).resolve().parent.parent / "knowledge"
 _runtime = get_runtime(root=_ROOT)
 

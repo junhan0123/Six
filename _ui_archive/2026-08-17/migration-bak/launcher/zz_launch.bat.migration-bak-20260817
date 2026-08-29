@@ -1,0 +1,100 @@
+@echo off
+chcp 65001 >nul 2>&1
+title 小6一键启动
+setlocal EnableDelayedExpansion
+
+set "ROOT=G:\ZhuangZhou\zhuangzhou-ui"
+set "LOGDIR=%ROOT%\launcher\logs"
+if not exist "%LOGDIR%" mkdir "%LOGDIR%"
+set "LOG=%LOGDIR%\zz_launch.log"
+
+echo [%date% %time%] ===== 小6启动器开始 ===== >> "%LOG%"
+
+set "PY=%USERPROFILE%\.workbuddy\binaries\python\envs\default\Scripts\python.exe"
+if not exist "%PY%" (
+  echo [%date% %time%] venv python not found, fallback to python >> "%LOG%"
+  set "PY=python"
+)
+if not exist "%PY%" (
+  echo [%date% %time%] [ERROR] Python not found: %PY% >> "%LOG%"
+  echo [错误] 未找到 Python。请检查 .workbuddy 是否已安装。
+  goto :fail
+)
+
+echo [%date% %time%] ROOT=%ROOT% >> "%LOG%"
+echo [%date% %time%] PY=%PY% >> "%LOG%"
+
+cd /d "%ROOT%"
+echo [%date% %time%] CWD=%CD% >> "%LOG%"
+
+"%PY%" -c "import socket,sys; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',8010)); sys.exit(0)" >nul 2>&1
+if %errorlevel%==0 (
+  echo [%date% %time%] backend already running on 8010, skip startup >> "%LOG%"
+  goto :electron
+)
+
+echo [%date% %time%] starting backend server.py ... >> "%LOG%"
+set "SRVOUT=%LOGDIR%\server.out"
+set "SRVERR=%LOGDIR%\server.err"
+if exist "%SRVOUT%" del "%SRVOUT%" >nul 2>&1
+if exist "%SRVERR%" del "%SRVERR%" >nul 2>&1
+start "" /min "%PY%" "%ROOT%\server.py" > "%SRVOUT%" 2> "%SRVERR%"
+echo [%date% %time%] server.py started as separate process >> "%LOG%"
+
+set "OK=0"
+for /L %%i in (1,1,40) do (
+  "%PY%" -c "import socket; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',8010))" >nul 2>&1
+  if not errorlevel 1 (
+    set "OK=1"
+    echo [%date% %time%] backend is listening after %%i attempts >> "%LOG%"
+    goto :backend_up
+  )
+  ping -n 1 -w 500 127.0.0.1 >nul
+)
+:backend_up
+if %OK%==0 (
+  echo [%date% %time%] [FAILED] backend did not become ready within timeout >> "%LOG%"
+  echo [错误] 后端启动超时。正在打开错误日志，请查看。 >> "%LOG%"
+  if exist "%SRVERR%" (
+    echo [%date% %time%] --- server.err --- >> "%LOG%"
+    type "%SRVERR%" >> "%LOG%"
+  )
+  if exist "%SRVERR%" notepad "%SRVERR%"
+  goto :fail
+)
+
+:electron
+set "ELECTRON=%ROOT%\launcher\electron-bin\electron.exe"
+tasklist /nh /fi "imagename eq electron.exe" 2>nul | find /i "electron.exe" >nul
+if not errorlevel 1 (
+  echo [%date% %time%] electron already running, skip >> "%LOG%"
+) else (
+  if exist "%ELECTRON%" (
+    set "ELECTRON_RUN_AS_NODE="
+    set "NODE_OPTIONS="
+    start "" "%ELECTRON%" . --disable-gpu-sandbox
+    echo [%date% %time%] electron desktop avatar started >> "%LOG%"
+  ) else (
+    echo [%date% %time%] electron binary not found, skip >> "%LOG%"
+  )
+)
+
+:web
+if /i "%~1"=="noweb" (
+  echo [%date% %time%] noweb mode, skip browser >> "%LOG%"
+  goto :end
+)
+echo [%date% %time%] opening web UI http://localhost:8010/zz-space/index.html >> "%LOG%"
+start "" "http://localhost:8010/zz-space/index.html"
+echo [%date% %time%] web UI opened >> "%LOG%"
+goto :end
+
+:fail
+echo [%date% %time%] ===== 小6启动器异常结束 ===== >> "%LOG%"
+endlocal
+goto :eof
+
+:end
+echo [%date% %time%] ===== 小6启动器结束 ===== >> "%LOG%"
+endlocal
+goto :eof

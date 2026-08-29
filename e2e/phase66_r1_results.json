@@ -1,0 +1,102 @@
+{
+  "phase": "6.6-R1",
+  "passed": 14,
+  "total": 14,
+  "results": [
+    {
+      "mission": "T01",
+      "status": "PASS",
+      "elapsed_ms": 554,
+      "ai_relevance": 0.7,
+      "weather_relevance": 0.0
+    },
+    {
+      "mission": "T02",
+      "status": "PASS",
+      "elapsed_ms": 609,
+      "decision": "ACT",
+      "score": 0.699
+    },
+    {
+      "mission": "T03",
+      "status": "PASS",
+      "elapsed_ms": 535,
+      "decision": "ACT"
+    },
+    {
+      "mission": "T04",
+      "status": "PASS",
+      "elapsed_ms": 576,
+      "decision": "ACT",
+      "interrupt": "IMPORTANT"
+    },
+    {
+      "mission": "T05",
+      "status": "PASS",
+      "elapsed_ms": 508,
+      "first_score": 0.5675,
+      "dup_score": 0.5675,
+      "is_dup": false
+    },
+    {
+      "mission": "T06",
+      "status": "PASS",
+      "elapsed_ms": 635,
+      "tasks_count": 1,
+      "has_task": true
+    },
+    {
+      "mission": "T07",
+      "status": "PASS",
+      "elapsed_ms": 412,
+      "has_goal": true
+    },
+    {
+      "mission": "T08",
+      "status": "PASS",
+      "elapsed_ms": 866,
+      "submitted": 5,
+      "stored": 5
+    },
+    {
+      "mission": "T09",
+      "status": "PASS",
+      "elapsed_ms": 6783,
+      "score": 0.21500000000000002
+    },
+    {
+      "mission": "T10",
+      "status": "PASS",
+      "elapsed_ms": 461,
+      "decision": "ACT"
+    },
+    {
+      "mission": "T11",
+      "status": "PASS",
+      "elapsed_ms": 464,
+      "decision": "ACT",
+      "interrupt": "IMPORTANT"
+    },
+    {
+      "mission": "T12",
+      "status": "PASS",
+      "elapsed_ms": 564,
+      "score": 0.724,
+      "interrupt": "IMPORTANT"
+    },
+    {
+      "mission": "T13",
+      "status": "PASS",
+      "elapsed_ms": 578,
+      "decision": "ACT"
+    },
+    {
+      "mission": "T14",
+      "status": "PASS",
+      "elapsed_ms": 795,
+      "safe_risk": 0.1,
+      "danger_risk": 0.1
+    }
+  ],
+  "elapsed_ms": 14340
+}

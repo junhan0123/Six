@@ -1,0 +1,25 @@
+# Web Research Report
+
+## Source
+URL: https://example.com
+
+## Title
+Example Domain
+
+## Content Summary
+This domain is for use in illustrative examples in documents. You may use this
+domain in literature without prior coordination or asking for permission.
+
+## Data Extracted
+- Page Title: Example Domain
+- Main Heading: Example Domain
+- Content Length: ~100 characters
+- Language: English
+
+## Generated
+2026-08-26 10:12:38
+
+## Verification
+- File created: YES
+- Content readable: YES
+- Data accurate: YES

@@ -1,0 +1,164 @@
+# P4.1 · P4-KNOWLEDGE-BOUNDARY-DESIGN
+
+> 阶段：P4.1 DESIGN ONLY · 项目：ZhuangZhou Core v1.4.0
+> 关联：`P4-MEMORY-CANONICAL-CONTRACT.md`
+
+---
+
+## 1. 边界定义（Boundary）
+
+Knowledge 是**文件化的领域知识**，与 Memory（个性化长期记忆）严格分离。一句话：**Knowledge ≠ Memory；Knowledge 不入 `memories`；Knowledge 不走 RAG/向量库。**
+
+```mermaid
+graph TD
+    subgraph MEM[Memory 域]
+      M[(memories 表<br/>个性化/私有)]
+    end
+    subgraph KN[Knowledge 域]
+      KF[knowledge/*.md 文件]
+      KRT[knowledge_runtime]
+    end
+    subgraph CONV[Conversation 域]
+      CL[(chat_log)]
+    end
+    subgraph EXT[外部域 边界外]
+      ES[外部搜索结果]
+      TR[工具执行结果]
+      WS[世界状态]
+    end
+
+    KF --> KRT
+    KRT -.注入上下文.-> CE[Context Engine]
+    M -.经 Retrieval.-> CE
+    CL -.经 ConversationSource.-> CE
+    ES -.不入 Memory.-> CE
+    TR -.不入 Memory.-> CE
+    WS -.不入 Memory.-> CE
+```
+
+---
+
+## 2. 六域分离总图
+
+```mermaid
+flowchart LR
+    subgraph IN[输入事实]
+      A[对话] --> CL[(chat_log)]
+      B[蒸馏/热点/导入] --> M[(memories)]
+      C[知识文档] --> KF[(knowledge/*.md)]
+      D[外部搜索] --> EXT1[边界外·不入 Memory]
+      E[工具结果] --> EXT2[边界外·不入 Memory]
+      F[世界状态] --> EXT3[边界外·不入 Memory]
+    end
+```
+
+| 域 | 存储 | 是否 Memory | 是否 Knowledge | 入上下文方式 |
+|---|---|---|---|---|
+| Memory | `memories` | ✓ | ✗ | Retrieval → Context |
+| Conversation | `chat_log` | ✗ | ✗ | ConversationSource |
+| Knowledge | `knowledge/*.md` | ✗ | ✓ | knowledge_runtime |
+| External Search | （瞬态） | ✗ | ✗ | 不入 Memory |
+| Tool Result | （瞬态） | ✗ | ✗ | 不入 Memory |
+| World State | （瞬态） | ✗ | ✗ | 不入 Memory |
+
+---
+
+## 3. Knowledge 实现（文件化，非 RAG）
+
+```mermaid
+sequenceDiagram
+    participant U as 用户/系统
+    participant KR as knowledge_runtime
+    participant FS as knowledge/*.md
+    participant CE as Context Engine
+    participant KSrc as KnowledgeSource
+    U->>KR: 写入/更新知识
+    KR->>FS: 落盘 markdown 文件
+    CE->>KSrc: collect(ctx)
+    KSrc->>KR: 读取相关 *.md
+    KR-->>KSrc: 文本块
+    KSrc-->>CE: ContextItem(KNOWLEDGE)
+```
+
+- Knowledge = **纯文件**（markdown），无 embedding、无向量表、无 `knowledge_docs`/`knowledge_chunks` 写入。
+- `knowledge_runtime` 负责读文件 → 返回 `ContextItem(source=KNOWLEDGE)`。
+- 更新知识 = 改写文件 + 发 `KNOWLEDGE_UPDATED` 事件（见 Event Contract）。
+
+---
+
+## 4. 孤儿表处置（knowledge_docs / knowledge_chunks）
+
+真实复核：`knowledge_docs`/`knowledge_chunks`（db.py:162–168）**仅 CREATE TABLE，全仓零 INSERT**（grep 确认）。属于无历史数据的孤儿派生表。
+
+```mermaid
+graph LR
+    A[knowledge_docs/chunks] -->|0 行 0 写入| B[孤儿]
+    B -->|P4.5 迁移: count 校验为空| C[安全 DROP]
+    C --> D[彻底移除派生层]
+```
+
+处置原则（红线：不丢历史数据）：
+- 因零数据，DROP 不损失任何信息 → **允许在 P4.5 迁移中 DROP**（这是唯一被放行 DROP 的表，因无数据）。
+- 迁移前必须 `SELECT COUNT(*)` 二次校验为空，非空则中止迁移（fail closed）。
+
+---
+
+## 5. Knowledge 不越界清单
+
+```mermaid
+graph TD
+    A[Knowledge 边界] --> B[不写入 memories]
+    A --> C[不进 mem_vectors]
+    A --> D[不做 embedding/RAG]
+    A --> E[不存用户私有事实]
+    A --> F[更新走文件+事件]
+```
+
+| 禁止项 | 原因 |
+|---|---|
+| Knowledge 写入 `memories` | 污染个性化记忆、破坏 Source Ownership |
+| Knowledge 进 `mem_vectors` | 混淆 scope（mem_vectors 仅 memory/knowledge 投影，且 knowledge 投影当前无写入） |
+| Knowledge 做 RAG 召回 | 设计定位为文件召回，避免引入第二检索权威 |
+| 用户私有事实进 Knowledge | 隐私/合规（Knowledge 可能多人共享） |
+
+---
+
+## 6. 与 Memory 的协同（不混淆）
+
+```mermaid
+graph LR
+    M[(memories)] -->|个性化经验| CE[Context Engine]
+    K[(knowledge/*.md)] -->|领域知识| CE
+    CE -->|两者并列注入| P[Prompt]
+```
+
+- Memory 回答"这个用户/这件事怎样"；Knowledge 回答"这件事的领域知识是什么"。
+- 二者在 Context Engine 中作为**不同 Source、不同 DEDUP_SCOPE** 并列，互不替代。
+
+---
+
+## 7. 配置与事件
+
+| 项 | 当前 | P4.1 |
+|---|---|---|
+| `FEATURE_KNOWLEDGE_PLATFORM` | env 默认 true | 保留（KnowledgeSource 注册总闸） |
+| 知识更新事件 | 无 | 新增 `KNOWLEDGE_UPDATED`（EventBus） |
+
+---
+
+## 8. 测试策略（DESIGN，P4.5 执行）
+
+| 测试 | 验证 |
+|---|---|
+| 边界 | 无代码路径把 Knowledge 写入 `memories` / `mem_vectors` |
+| 文件召回 | knowledge_runtime 读文件返回 ContextItem |
+| 孤儿移除 | 迁移前 count 校验；非空 fail closed |
+| 事件 | 知识更新发 `KNOWLEDGE_UPDATED` |
+
+---
+
+## 9. P4.5 执行入口（摘要）
+
+- **修改**：`knowledge_runtime.py`（固化边界契约）、`eventbus.py`（加 `KNOWLEDGE_UPDATED`）、`db.py`（P4.5 迁移 DROP 孤儿表，前置 count 校验）、知识写入点（发事件）。
+- **回归门**：边界测试 + 孤儿表 count 校验 + 文件召回一致。
+- 详见 `P4-IMPLEMENTATION-ROADMAP.md` P4.5。

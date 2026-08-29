@@ -1,0 +1,131 @@
+/* ═════════════════════════════════════════════════════════════════
+   Xiao6 UI-R1 · workspace.css — Conversation Timeline 组件细节（Phase 2）
+   迁移自 xiao6-workspace.css：typed ChatNode / tool·approval·result /
+   file chips / WS·Results·Agent
+   保持所有 xiao6-* class 名
+   ═════════════════════════════════════════════════════════════════ */
+
+/* ═══════════ typed ChatNode ═══════════ */
+.xiao6-node { display: flex; gap: 12px; max-width: 100%; animation: xiao6Fade .18s ease; }
+@keyframes xiao6Fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.xiao6-node.user { flex-direction: row-reverse; }
+.xiao6-avatar {
+  width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center;
+  font-size: 13px; font-weight: 600;
+}
+.xiao6-node.user .xiao6-avatar { background: var(--xiao6-accent-soft); color: var(--xiao6-accent); }
+.xiao6-node.assistant .xiao6-avatar { background: radial-gradient(circle at 35% 30%, var(--xiao6-accent), var(--xiao6-accent-deep) 70%); color: var(--xiao6-on-accent); }
+.xiao6-node.tool .xiao6-avatar { background: var(--xiao6-accent-2-soft); color: var(--xiao6-accent-2); }
+.xiao6-node.error .xiao6-avatar { background: rgba(248,113,113,0.16); color: var(--xiao6-danger); }
+.xiao6-node.approval .xiao6-avatar { background: rgba(251,191,36,0.16); color: var(--xiao6-warning); }
+.xiao6-node.result .xiao6-avatar { background: rgba(52,211,153,0.16); color: var(--xiao6-success); }
+.xiao6-bubble {
+  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 12px;
+  padding: 11px 14px; min-width: 0; max-width: 78%;
+}
+.xiao6-node.user .xiao6-bubble { background: var(--xiao6-accent-soft); border-color: rgba(34,211,238,0.2); }
+.xiao6-bubble-meta { font-size: 11px; color: var(--xiao6-text-faint); margin-bottom: 5px; display: flex; gap: 8px; }
+.xiao6-bubble-body { font-size: 14px; word-break: break-word; }
+.xiao6-bubble-body p { margin: 0 0 8px; } .xiao6-bubble-body p:last-child { margin-bottom: 0; }
+.xiao6-bubble-body pre {
+  background: var(--xiao6-code-bg); border: 1px solid var(--xiao6-border); border-radius: 9px;
+  padding: 11px 13px; overflow-x: auto; font-family: var(--xiao6-font-mono); font-size: 12.5px; line-height: 1.5;
+}
+.xiao6-bubble-body code { font-family: var(--xiao6-font-mono); font-size: 12.5px; background: rgba(140,165,200,0.1); padding: 1px 5px; border-radius: 5px; }
+.xiao6-bubble-body pre code { background: none; padding: 0; }
+.xiao6-bubble-body ul, .xiao6-bubble-body ol { margin: 0 0 8px; padding-left: 20px; }
+.xiao6-bubble-body table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 6px 0; }
+.xiao6-bubble-body th, .xiao6-bubble-body td { border: 1px solid var(--xiao6-border); padding: 5px 9px; text-align: left; }
+.xiao6-bubble-body blockquote { border-left: 3px solid var(--xiao6-accent); margin: 6px 0; padding: 2px 12px; color: var(--xiao6-text-muted); }
+.xiao6-node.streaming .xiao6-bubble { border-color: rgba(34,211,238,0.3); }
+.xiao6-stream-flag { font-size: 10.5px; color: var(--xiao6-text-faint); margin-top: 4px; }
+.xiao6-md-block { min-width: 0; }
+
+/* ═══════════ tool / approval / result 卡片层级 ═══════════ */
+.xiao6-tool-summary { font-size: 12.5px; color: var(--xiao6-text-muted); }
+.xiao6-tool-summary b { color: var(--xiao6-text); font-family: var(--xiao6-font-mono); font-size: 12px; }
+
+/* tool 执行卡片：running（紫）/ done（绿）状态 */
+.xiao6-node.tool .xiao6-bubble {
+  background: var(--xiao6-accent-2-soft);
+  border-left: 2px solid var(--xiao6-accent-2);
+}
+.xiao6-node.tool.tool-running .xiao6-avatar { animation: xiao6Pulse 1.2s ease-in-out infinite; }
+.xiao6-node.tool.tool-running .xiao6-bubble { border-left-color: var(--xiao6-accent-2); }
+.xiao6-node.tool.tool-done .xiao6-bubble { border-left-color: var(--xiao6-success); background: var(--xiao6-success-soft); }
+.xiao6-node.tool.tool-done .xiao6-tool-summary b { color: var(--xiao6-success); }
+.xiao6-node.tool.tool-done .xiao6-avatar { background: var(--xiao6-success-soft); color: var(--xiao6-success); }
+
+/* approval 审批卡：警示层级 */
+.xiao6-approval-card {
+  border: 1px solid var(--xiao6-border-strong); border-left: 3px solid var(--xiao6-warning);
+  background: var(--xiao6-warning-soft); border-radius: var(--xiao6-radius-sm); padding: 12px 14px;
+}
+.xiao6-approval-card .xiao6-approval-act { display: flex; gap: 8px; margin-top: 10px; }
+.xiao6-approval-card button { padding: 7px 16px; border-radius: 8px; border: 1px solid var(--xiao6-border); background: var(--xiao6-surface); font-size: 13px; transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease); }
+.xiao6-approval-card .approve { color: var(--xiao6-success); border-color: var(--xiao6-success); background: var(--xiao6-success-soft); }
+.xiao6-approval-card .approve:hover { filter: brightness(1.1); }
+.xiao6-approval-card .reject { color: var(--xiao6-danger); border-color: var(--xiao6-danger); background: var(--xiao6-danger-soft); }
+.xiao6-approval-card .reject:hover { filter: brightness(1.1); }
+
+.xiao6-file-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.xiao6-file-chip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 220px;
+  padding: 4px 10px; border-radius: 999px; background: var(--xiao6-surface-elevated);
+  border: 1px solid var(--xiao6-border); font-size: 12px; overflow: hidden;
+}
+.xiao6-file-chip .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xiao6-file-chip .more { color: var(--xiao6-text-faint); }
+
+/* ═══════════ WS / Results / Agent ═══════════ */
+.xiao6-ws-card, .xiao6-res-card, .xiao6-agent-item {
+  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: 10px; padding: 13px 15px;
+  transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease);
+}
+.xiao6-ws-card { border-left: 2px solid var(--xiao6-accent); }
+.xiao6-res-card { border-left: 2px solid var(--xiao6-success); }
+.xiao6-ws-card:hover, .xiao6-res-card:hover { border-color: var(--xiao6-border-strong); }
+.xiao6-ws-card .ttl { font-weight: 600; display: flex; align-items: center; gap: 9px; }
+.xiao6-ws-card .meta { color: var(--xiao6-text-muted);; font-size: 12.5px; margin-top: 6px; }
+.xiao6-prog { height: 5px; border-radius: 999px; background: var(--xiao6-surface-elevated); margin-top: 10px; overflow: hidden; }
+.xiao6-prog > i { display: block; height: 100%; background: var(--xiao6-accent); border-radius: 999px; transition: width .3s; }
+.xiao6-agent-item { display: flex; gap: 11px; align-items: flex-start; }
+.xiao6-agent-ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; flex: none; background: var(--xiao6-surface-elevated); }
+.xiao6-agent-item.input .xiao6-agent-ic { color: var(--xiao6-info); }
+.xiao6-agent-item.model .xiao6-agent-ic { color: var(--xiao6-accent); }
+.xiao6-agent-item.tool .xiao6-agent-ic { color: var(--xiao6-accent-2); }
+.xiao6-agent-item.result .xiao6-agent-ic { color: var(--xiao6-success); }
+.xiao6-agent-item.error .xiao6-agent-ic { color: var(--xiao6-danger); }
+.xiao6-agent-item.approval .xiao6-agent-ic { color: var(--xiao6-warning); }
+.xiao6-agent-body-txt { font-size: 13px; }
+.xiao6-agent-body-txt .t { color: var(--xiao6-text-faint); font-size: 11px; }
+
+/* ═══════════ Phase 8 · Trust 透明节点（intent / risk）═══════════ */
+.xiao6-node.intent .xiao6-avatar { background: var(--xiao6-info-soft); color: var(--xiao6-info); }
+.xiao6-node.risk .xiao6-avatar { background: var(--xiao6-warning-soft); color: var(--xiao6-warning); }
+
+.intent-card, .risk-card {
+  font-size: 12.5px; padding: 10px 12px;
+  border-radius: var(--xiao6-radius-sm);
+  border: 1px solid var(--xiao6-border); background: var(--xiao6-surface);
+}
+.intent-card { border-left: 2px solid var(--xiao6-info); }
+.risk-card.risk-safe { border-left: 2px solid var(--xiao6-success); }
+.risk-card.risk-confirm { border-left: 2px solid var(--xiao6-warning); }
+.risk-card.risk-block { border-left: 2px solid var(--xiao6-danger); }
+
+.ic-title { font-weight: 600; margin-bottom: 6px; font-size: 12.5px; }
+.intent-card .ic-title { color: var(--xiao6-info); }
+.risk-card.risk-safe .ic-title { color: var(--xiao6-success); }
+.risk-card.risk-confirm .ic-title { color: var(--xiao6-warning); }
+.risk-card.risk-block .ic-title { color: var(--xiao6-danger); }
+.ic-row { color: var(--xiao6-text-muted); margin-top: 3px; }
+
+/* 风险标签（Trust Inspector 信任卡 / 透明节点内）*/
+.risk-tag {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 1px 8px; border-radius: 999px; letter-spacing: .03em;
+}
+.risk-tag.risk-safe { color: var(--xiao6-success); background: var(--xiao6-success-soft); }
+.risk-tag.risk-confirm { color: var(--xiao6-warning); background: var(--xiao6-warning-soft); }
+.risk-tag.risk-block { color: var(--xiao6-danger); background: var(--xiao6-danger-soft); }

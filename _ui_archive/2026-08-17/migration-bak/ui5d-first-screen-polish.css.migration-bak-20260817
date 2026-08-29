@@ -1,0 +1,211 @@
+/* ============================================================
+ * UI-5D · First Screen Product Polish v1.0
+ * 身份：Senior Product Designer / AI OS Experience Architect
+ * 性质：纯表现层 ADDITIVE 最高覆盖（必须位于 ui4d-home-experience.css 之后）
+ * ------------------------------------------------------------
+ * 纪律（严格遵守 brief 红线）：
+ *  - 不修改 Backend / Agent / AppState / EventBus / Galaxy 逻辑 / 新增功能 / 新增事件契约。
+ *  - 不触碰 fixed 定位、不修改三面板外层、零逻辑改动、不新增/重定义令牌体系。
+ *  - 仅消费既有令牌（--accent / --accent-2 / --presence-color / --presence-error / --bg /
+ *    --surface / --surface-2 / --border / --text / --text-dim / --muted / --glow /
+ *    --input-placeholder / --sp-* / --radius-* / --glass-* / --dur-* / --ease-*）。
+ *  - 保护 Phase 8 AI Presence 三唯一：只消费 body[data-presence] 与 --presence-color，不重定义。
+ *  - 复用唯一呼吸动效 vitPulse（ui2.css）：THINKING/PLANNING/EXECUTING 脉动，ERROR 静止。
+ * 目标映射（把「架构融合完成」提升到「产品视觉完成」）：
+ *  - D1 · 顶部 HUD 收敛：品牌轻量化去冗余、主题选择降级为可收起、建立「AI 状态 > 身份 > 环境」主次。
+ *  - D2 · 左导航 Capability Navigation：图标栏补可见能力名标签，重述为「能力脊柱」（不改 JS / syncNav）。
+ *  - D3 · Command Dock → AI Intent Console 精炼：聚焦态 presence 辉光增强、工具按钮次级化。
+ *  - D4 · Galaxy 默认环境化 + 探索态增强：默认从「暗壁纸」调为「活的氛围环境」；探索态更沉浸。
+ * 作用域护栏：
+ *  - 首页态规则限定 body:not(.chat-mode):not(.universe-mode)；
+ *  - 探索态规则显式 body.universe-mode, body.zz-explore；
+ *  - 绝不覆盖 UI-5C-1 的 body.chat-mode 规则。
+ * ============================================================ */
+
+/* ═══════════════ D1 · 顶部 HUD 收敛 ═══════════════ */
+
+/* D1-a · 品牌轻量化（去冗余）：HUD 品牌降为次级身份标记，
+ * 首屏英雄区已承担主身份，消除三重「庄周」的视觉竞争。 */
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-brand {
+  font-size: 11px;
+  letter-spacing: .10em;
+  color: var(--text-dim);
+  opacity: .7;
+  font-weight: 600;
+}
+
+/* D1-b · 主题选择降级（可收起感）：9 色板缩为低调小点，悬停/聚焦才满权；
+ * 移除「彩色方块阵列」的视觉重量，仍完全可用（点击切换主题不变）。 */
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-theme-picker {
+  gap: var(--sp-4);
+  padding: var(--sp-2);
+  opacity: .55;
+  transition: opacity var(--dur-base) var(--ease-soft);
+}
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-theme-picker:hover,
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-theme-picker:focus-within {
+  opacity: 1;
+}
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-theme-picker button {
+  width: 20px;
+  height: 20px;
+}
+
+/* D1-c · 主次明确：状态药丸为 HUD 主焦点（UI-4D-1 已 glass+presence 化，此处强化辉光）；
+ * 时钟/品牌次级。 */
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-state {
+  box-shadow: 0 0 16px -6px color-mix(in srgb, var(--presence-color) 50%, transparent);
+}
+body:not(.chat-mode):not(.universe-mode) .os-hud .os-clock {
+  opacity: .7;
+}
+
+/* ═══════════════ D2 · 左导航 Capability Navigation ═══════════════ */
+
+/* D2-a · 按钮竖排 图标+标签：在 76px nav 列内「图标(20)+标签(2字)」成立，不改网格列宽。
+ * 注：ui2 原 .os-nav-btn 为 display:grid，改用 flex 列向以堆叠图标与标签。 */
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  min-height: 46px;
+  padding: var(--sp-6) 0;
+  gap: 5px;
+}
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* D2-b · 能力名标签（按 data-nav 注入）：导航读作「对话/指令/星图/语音/设置」能力清单。 */
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn::after {
+  content: "";
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+}
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn[data-nav="workspace"]::after { content: "对话"; }
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn[data-nav="command"]::after   { content: "指令"; }
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn[data-nav="galaxy"]::after    { content: "星图"; }
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn[data-nav="assistant"]::after { content: "语音"; }
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn[data-nav="settings"]::after  { content: "设置"; }
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn:hover::after,
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn.active::after {
+  color: var(--text);
+}
+
+/* D2-c · 品牌锚点补「庄周」标签（与能力按钮同构为「标识 + 名」脊柱）。
+ * 注：ui2 原 .os-nav-brand 为 display:grid，改用 flex 列向。 */
+body:not(.chat-mode):not(.universe-mode) .os-nav-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: auto;
+}
+body:not(.chat-mode):not(.universe-mode) .os-nav-brand::after {
+  content: "庄周";
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+}
+
+/* D2-d · galaxy 次级环境入口保持（沿用 UI-4C-2，本任务不回退）；标签也次级化。 */
+body:not(.chat-mode):not(.universe-mode) .os-nav-btn[data-nav="galaxy"]::after {
+  opacity: .7;
+}
+
+/* ═══════════════ D3 · Command Dock → AI Intent Console（精炼升级）═════════════ */
+
+/* D3-a · 占位符语义与控制台调性一致（文案由 JS 固定，仅调色）。 */
+body:not(.chat-mode):not(.universe-mode) .os-dock input::placeholder {
+  color: var(--text-dim);
+}
+
+/* D3-b · 聚焦态 presence 辉光增强：输入即「意图」，聚焦时控制台随 AI 态发光。 */
+body:not(.chat-mode):not(.universe-mode) .os-dock .os-dock-bar:focus-within {
+  border-color: color-mix(in srgb, var(--presence-color) 55%, var(--border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--presence-color) 45%, transparent),
+    0 0 36px -8px color-mix(in srgb, var(--presence-color) 40%, transparent);
+}
+
+/* D3-c · 工具按钮次级化：语音/文件/截图/快捷 降为低调次级工具，
+ * 发送(.send) 保持 accent 主行动；凸显「意图控制台」而非「工具条」。 */
+body:not(.chat-mode):not(.universe-mode) .os-dock .os-dock-btn:not(.send) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-dim);
+  width: 34px;
+  height: 34px;
+}
+body:not(.chat-mode):not(.universe-mode) .os-dock .os-dock-btn:not(.send):hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* D3-d / D3-e · 面板标题与 conversation 态一致性：沿用 UI-4D-1「AI Intent Console · 意图控制台」
+ * 标题（不重复改名）；Dock 在 chat-mode 下已隐藏（ui2.css:958），本任务仅作用于首页态，
+ * 不改动 UI-5C-1 既有声明。 */
+
+/* ═══════════════ D4 · Galaxy 默认环境化 + 探索态增强 ═══════════════ */
+
+/* D4-a · 默认环境化（Home）：从「暗壁纸」调为「活的氛围环境」——
+ * 略提亮、更通透的渐晕、细微景深；仍弱于 Operation Layer，维持环境层级。 */
+body:not(.chat-mode):not(.universe-mode) #solarCanvas {
+  filter: brightness(0.56) saturate(0.72) contrast(1.0);
+}
+body:not(.chat-mode):not(.universe-mode) .galaxy-veil {
+  opacity: 0.42;
+}
+body:not(.chat-mode):not(.universe-mode) .galaxy-veil::after {
+  background: radial-gradient(130% 125% at 50% 42%,
+    transparent 42%,
+    color-mix(in srgb, var(--bg) 38%, transparent) 80%,
+    color-mix(in srgb, var(--bg) 60%, transparent) 100%);
+}
+
+/* D4-b · 探索态增强（universe-mode / zz-explore）：世界层上浮为焦点、操作层更干净沉入。
+ * 注：filter 保留 ui4b-explore 的 scale(.984) 仅加深 blur，避免丢失既有轻微缩放退后。 */
+body.universe-mode #solarCanvas,
+body.zz-explore #solarCanvas {
+  filter: brightness(1.02) saturate(1.08) contrast(1.02);
+  transform: scale(1.03);
+  transform-origin: center;
+  transition: filter var(--dur-slow) var(--ease-soft), transform var(--dur-slow) var(--ease-soft);
+}
+body.universe-mode .galaxy-veil,
+body.zz-explore .galaxy-veil {
+  opacity: 0;
+}
+body.universe-mode #osShell,
+body.universe-mode #app,
+body.zz-explore #osShell,
+body.zz-explore #app {
+  filter: blur(9px);
+  transform: scale(.984);
+  opacity: .30;
+}
+
+/* D4-c · 持久背景不变：chat-mode 下 Galaxy 仍按 UI-5C-1/ui4c 既有权威（brightness 0.46）保持；
+ * 本文件 D4-a 仅覆盖 Home 默认、D4-b 仅覆盖探索态，不触 chat-mode。 */
+
+/* ═══════════════ 响应式 · Narrow（≤980）═════════════
+ * ui2 在此宽度把 .os-nav 转为横排（flex-direction:row）。D2 列向按钮在横排中仍为
+ * 「图标在上、标签在下」的紧凑单元，保持 Capability 标签可见且不破坏横排导航。 */
+@media (max-width: 980px) {
+  body:not(.chat-mode):not(.universe-mode) .os-nav-btn::after {
+    margin-top: 2px;
+  }
+  body:not(.chat-mode):not(.universe-mode) .os-nav-brand::after {
+    margin-top: 4px;
+  }
+}

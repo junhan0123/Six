@@ -1,0 +1,42 @@
+# P3-B · Durable Task / Recovery（持久任务与重启恢复）
+
+> 核心问题：庄周进程退出/重启后，进行中的任务怎么办？副作用操作绝不能因重启被自动重执行。
+
+## 1. 当前恢复机制（实测）
+
+- **持久化**：所有 Task 经 `db_conn()` 落 SQLite WAL（`tasks.py` 全程使用），进程退出不丢状态。
+- **启动恢复**：`server.py:905` 在 `main()` 调 `recover_tasks()`（`tasks.py:165-177`）。
+  ```python
+  def recover_tasks():
+      conn = db_conn()
+      n = conn.execute("SELECT count(*) FROM tasks WHERE status='running'").fetchone()[0]
+      if n:
+          conn.execute("UPDATE tasks SET status='open',updated=? WHERE status='running'", (_now(),))
+          conn.commit()
+      return n
+  ```
+- **语义**：仅把"被中断的 running"翻回 `open`，**绝不自动重执行任何 executor**；续跑由下一轮编排（ACI 注入"未完成任务"上下文 + `_run_goal`）显式驱动。
+
+## 2. 重启恢复正确性验证（测试）
+
+`tests/test_p3_recovery.py`（全绿）：
+- `test_recover_running_task_to_open`：running→open 翻转正确。
+- `test_no_auto_execution_on_restart`：**重启阶段 executor 调用次数 = 0**（防重复执行危险操作）。
+- `test_idempotent_recovery_is_safe_for_side_effect`：副作用任务重启后**绝不自动重执行**，状态翻回 open。
+- `test_resume_after_recovery_executes_once`：续跑时真实 Runtime 仅执行一次（不重复）。
+
+## 3. 关键安全属性
+
+| 问题 | 结论 | 证据 |
+|---|---|---|
+| 重启后任务是否丢失 | 否（SQLite 持久化） | `tasks.py` 全程 `db_conn()` |
+| 重启是否自动重执行副作用 | **否** | `recover_tasks` 只翻状态，不调 executor |
+| 续跑是否重复执行 | 否（一次） | `test_resume_after_recovery_executes_once` |
+| 幂等依据 | Task 状态守卫（done 不重选） | `get_open_tasks` 过滤 + `_run_goal` 选 `open/running/paused` |
+
+## 4. 增强建议（非阻塞，留 backlog）
+
+- **(task_id, execution_id) 去重账本**：当前幂等性依赖 `tasks.status` 守卫，缺少框架级执行账本（见 `P3-IDEMPOTENCY-AUDIT.md` O2）。并发重入（同一 goal 被并发触发两次）理论上可能双跑 running 任务——单调用模型下安全，建议后续加 `execution_ledger` 表（task_id + attempt_id + status UNIQUE）强化。
+- **`recover_tasks` 时机**：目前仅在 `server.main` 调用一次；若 Core 以库形式被多次实例化需保证幂等（当前单进程模型已满足）。
+
+**裁定**：Durable Recovery = **PASS**（不丢失、不自动重执行、续跑一次）。O2 留作 backlog。

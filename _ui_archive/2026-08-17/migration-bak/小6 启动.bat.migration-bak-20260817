@@ -1,0 +1,45 @@
+@echo off
+chcp 65001 >nul
+title 小6 · 启动器
+cd /d "G:\ZhuangZhou\zhuangzhou-ui"
+
+:: 优先使用已装好的 python（isolated venv 优先，否则退回系统 python）
+set "VENV_PY=%USERPROFILE%\.workbuddy\binaries\python\envs\default\Scripts\python.exe"
+if exist "%VENV_PY%" (set "PY=%VENV_PY%") else (set "PY=python")
+
+:: 检查 8010 端口是否已有 小6 核心在跑
+"%PY%" -c "import socket; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',8010)); print('RUNNING')" >nul 2>&1
+if %errorlevel%==0 (
+    start "" "http://localhost:8010/zz-space/index.html"
+    exit /b
+)
+
+echo 正在启动 小6 指挥核心...
+start "小6 Core" "%PY%" server.py
+
+:: ── SoVITS 语音服务（GPT-SoVITS · 9880）：检测未运行则同时拉起 ──
+set "SOVITS_PY=D:\GPT-SoVITS\venv\Scripts\python.exe"
+if exist "%SOVITS_PY%" (
+    "%SOVITS_PY%" -c "import socket; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',9880)); print('OK')" >nul 2>&1
+    if not %errorlevel%==0 (
+        echo 启动 SoVITS 语音服务...
+        start "SoVITS" cmd /c "cd /d D:\GPT-SoVITS && %SOVITS_PY% api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml"
+    ) else (
+        echo SoVITS 语音服务已在运行（9880）
+    )
+)
+
+:: 等待核心启动（最长 12 秒）
+for /L %%i in (1,1,24) do (
+    "%PY%" -c "import socket; s=socket.socket(); s.settimeout(0.5); s.connect(('127.0.0.1',8010))" >nul 2>&1
+    if %errorlevel%==0 goto launch
+    timeout /t 0.5 /nobreak >nul
+)
+
+echo 启动超时，请检查 Python 是否可用。
+pause
+exit /b
+
+:launch
+start "" "http://localhost:8010/zz-space/index.html"
+exit /b

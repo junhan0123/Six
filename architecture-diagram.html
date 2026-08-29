@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xiao6 系统架构全景</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#111722; --panel2:#0e141d; --line:#1d2733;
+    --cyan:#22d3ee; --blue:#3b82f6; --green:#34d399; --amber:#fbbf24;
+    --purple:#a78bfa; --pink:#f472b6; --txt:#e6edf3; --dim:#8b98a9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 700px at 70% -10%,#10202e 0%,var(--bg) 60%);
+    color:var(--txt);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    padding:28px 20px 60px;min-height:100vh}
+  h1{font-size:22px;font-weight:700;letter-spacing:1px}
+  h1 .g{color:var(--cyan)}
+  .sub{color:var(--dim);font-size:13px;margin:6px 0 22px}
+  .stack{display:flex;flex-direction:column;gap:14px;max-width:1000px;margin:0 auto}
+  .layer{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--panel2));
+    padding:14px 16px;position:relative;overflow:hidden}
+  .layer::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+  .lt{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .badge{font-size:11px;color:#0a0e14;background:var(--c);padding:2px 9px;border-radius:20px;font-weight:700}
+  .lt h2{font-size:15px}
+  .lt .en{color:var(--dim);font-size:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12px;border:1px solid var(--line);background:#0c121b;border-radius:8px;padding:6px 10px;color:var(--txt)}
+  .chip b{color:var(--c)}
+  .arrow{text-align:center;color:var(--dim);font-size:18px;line-height:1}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px auto 0;max-width:1000px}
+  .fnode{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:6px 13px;background:#0c121b}
+  .fnode.hl{border-color:var(--cyan);color:var(--cyan)}
+  .foot{text-align:center;color:var(--dim);font-size:12px;margin-top:26px;max-width:1000px;margin-left:auto;margin-right:auto;line-height:1.7}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <h1>🧠 <span class="g">Xiao6</span> 级助手 · 系统架构全景</h1>
+  <div class="sub">六层结构 · 本地优先 · MCP 工具总线 · 中文优化（FunASR + CosyVoice + Qwen）</div>
+
+  <div class="stack">
+    <div class="layer" style="--c:var(--pink)">
+      <div class="lt"><span class="badge">L6</span><h2>交互层 Interface</h2><span class="en">它怎么出场</span></div>
+      <div class="chips">
+        <span class="chip"><b>TTS</b> CosyVoice / Edge-TTS / GPT-SoVITS(克隆嗓音)</span>
+        <span class="chip"><b>界面</b> React+WebSocket / Tauri 桌面 / 全屋屏</span>
+        <span class="chip"><b>移动端</b> 健康 APP 打通</span>
+      </div>
+    </div>
+    <div class="arrow">▲ 回答(语音/文本) ｜ 你说的(文本) ▼</div>
+
+    <div class="layer" style="--c:var(--purple)">
+      <div class="lt"><span class="badge">L5</span><h2>感知层 Perception</h2><span class="en">它怎么听和看</span></div>
+      <div class="chips">
+        <span class="chip"><b>唤醒</b> openWakeWord（可训练"阿枢"）</span>
+        <span class="chip"><b>ASR</b> FunASR(中文首选) / Whisper</span>
+        <span class="chip"><b>视觉</b> Qwen-VL / 摄像头</span>
+        <span class="chip"><b>传感器</b> 温度/心率/位置</span>
+      </div>
+    </div>
+    <div class="arrow">▲ 用户意图 ▼</div>
+
+    <div class="layer" style="--c:var(--cyan)">
+      <div class="lt"><span class="badge">L4</span><h2>认知 / 编排层 Cognition</h2><span class="en">它怎么想</span></div>
+      <div class="chips">
+        <span class="chip"><b>大脑</b> Ollama: Qwen3 / DeepSeek（本地）</span>
+        <span class="chip"><b>编排</b> LangGraph（状态机）/ n8n</span>
+        <span class="chip"><b>人格</b> Persona prompt + 主动规则引擎</span>
+        <span class="chip"><b>云端兜底</b> Agnes / 通义 / DeepSeek API</span>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="layer" style="--c:var(--green)">
+        <div class="lt"><span class="badge">L3</span><h2>记忆层 Memory</h2><span class="en">它怎么记得你</span></div>
+        <div class="chips">
+          <span class="chip"><b>向量</b> Chroma / Qdrant</span>
+          <span class="chip"><b>结构化</b> SQLite / PostgreSQL</span>
+          <span class="chip"><b>画像</b> user_profile.json</span>
+        </div>
+      </div>
+      <div class="layer" style="--c:var(--amber)">
+        <div class="lt"><span class="badge">L2</span><h2>行动层 Action</h2><span class="en">它怎么动手</span></div>
+        <div class="chips">
+          <span class="chip"><b>MCP 总线</b> 自定义/社区 Server</span>
+          <span class="chip"><b>设备</b> Home Assistant</span>
+          <span class="chip"><b>自动化</b> n8n</span>
+          <span class="chip"><b>健康</b> 穿戴数据</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <span class="fnode">① 静默监听(唤醒词)</span>→
+    <span class="fnode">② 语音→文本(FunASR)</span>→
+    <span class="fnode hl">③ 入脑+检索记忆</span>→
+    <span class="fnode">④ 规划/调工具(MCP)</span>→
+    <span class="fnode">⑤ 行动(设备/API)</span>→
+    <span class="fnode hl">⑥ 生成回答</span>→
+    <span class="fnode">⑦ TTS+界面输出</span>→
+    <span class="fnode">⑧ 异步主动巡检</span>
+  </div>
+
+  <div class="foot">
+    每一层可独立替换：把 Ollama 换成云端 API、把 Chroma 换成 Milvus，都不影响整体。<br>
+    所有"手脚"经 <b style="color:var(--amber)">MCP</b> 统一接入 → 加功能不重构架构。<br>
+    健康数据强制本地处理，符合隐私与合规要求。
+  </div>
+</body>
+</html>

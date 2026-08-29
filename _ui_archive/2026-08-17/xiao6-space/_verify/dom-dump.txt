@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小6 · 个人 AI 副驾</title>
+<meta name="description" content="Xiao6 Space — 小6个人 AI OS 主界面">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%235fb8d4' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%235fb8d4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/xiao6-space.css?v=1">
+</head>
+<body>
+
+<div class="zz-shell">
+
+  <!-- 环境层：星尘画布 + 暗角，永不消失 -->
+  <canvas id="starCanvas" class="zz-stars" aria-hidden="true" width="758" height="482"></canvas>
+  <div class="zz-vignette" aria-hidden="true"></div>
+  <div class="zz-grid" aria-hidden="true"></div>
+
+  <!-- ═══════════ Top Bar ═══════════ -->
+  <header class="zz-topbar">
+    <div class="zz-brand">
+      <span class="zz-brand-avatar" id="brandAvatar" title="小6">
+        <img src="assets/avatar-xiao6.png" alt="" draggable="false">
+        <i class="zz-avatar-dot" id="avatarDot"></i>
+      </span>
+      <span class="zz-brand-name">小6</span>
+      <span class="zz-brand-en">·&nbsp;AIOS</span>
+      <span class="zz-brand-state" id="brandState" data-mode="online"><i></i><b>在线</b></span>
+    </div>
+    <div class="zz-top-right">
+      <span class="zz-top-chip ok" id="sysChip"><i></i><b>系统正常</b></span>
+      <span class="zz-top-sep"></span>
+      <span class="zz-top-chip" id="aiChip"><i></i><b>AI 就绪</b></span>
+      <span class="zz-top-sep"></span>
+      <time class="zz-clock" id="clockTime">05:26</time>
+      <span class="zz-date" id="clockDate">8月16日 周日</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ Navigation Rail ═══════════ -->
+  <nav class="zz-rail" id="rail" aria-label="主导航">
+    <button type="button" class="zz-rail-brand" data-nav="home" title="小6 · 首页" aria-label="首页">
+      <span class="zz-rail-mark">庄</span>
+    </button>
+    <div class="zz-rail-items">
+      <button type="button" class="zz-rail-btn" data-nav="chat" title="对话 · 与小6交流" aria-label="对话">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+        <span>对话</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="search" title="搜索 · 指令中心" aria-label="搜索">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <span>搜索</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="files" title="文件 · 笔记与资料" aria-label="文件">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        <span>文件</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="compute" title="计算 · 快速运算" aria-label="计算">
+        <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"></path></svg>
+        <span>计算</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="projects" title="项目 · 目标与任务" aria-label="项目">
+        <svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="m2 17 10 5 10-5M2 12l10 5 10-5"></path></svg>
+        <span>项目</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="browse" title="浏览 · 联网探索" aria-label="浏览">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2 5-5 2 2-5 5-2z"></path></svg>
+        <span>浏览</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="knowledge" title="知识 · 知识星球" aria-label="知识">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg>
+        <span>知识</span>
+      </button>
+      <button type="button" class="zz-rail-btn" data-nav="settings" title="设置 · 系统状态" aria-label="设置">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>设置</span>
+      </button>
+    </div>
+    <div class="zz-rail-foot">
+      <span class="zz-rail-foot-dot"></span>
+    </div>
+  </nav>
+
+  <!-- ═══════════ Center · World + Dock ═══════════ -->
+  <main class="zz-center">
+
+    <!-- World Layer · 小6星球系统 -->
+    <section class="zz-world" id="world" aria-label="小6世界">
+      <div class="zz-orbit zz-orbit-a" aria-hidden="true"></div>
+      <div class="zz-orbit zz-orbit-b" aria-hidden="true"></div>
+
+      <div class="zz-core" id="core" data-state="idle">
+        <div class="zz-core-halo" aria-hidden="true"></div>
+        <div class="zz-core-ring" aria-hidden="true"></div>
+        <div class="zz-core-disc">
+          <span class="zz-core-glyph">庄</span>
+          <span class="zz-core-sub">XIAO6</span>
+        </div>
+        <div class="zz-core-status" id="coreStatus">在线待命</div>
+      </div>
+
+      <button type="button" class="zz-planet zz-planet-k" data-nav="knowledge" data-count="0" title="知识星球">
+        <span class="zz-planet-orb"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"></path><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"></path></svg></span>
+        <span class="zz-planet-name">知识星球</span>
+        <span class="zz-planet-count" data-k="0">329</span>
+      </button>
+      <button type="button" class="zz-planet zz-planet-m" data-nav="memory" data-count="0" title="记忆星球">
+        <span class="zz-planet-orb"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7z"></path><path d="M9 22h6"></path></svg></span>
+        <span class="zz-planet-name">记忆星球</span>
+        <span class="zz-planet-count" data-m="0">84</span>
+      </button>
+      <button type="button" class="zz-planet zz-planet-c" data-nav="capabilities" data-count="0" title="能力星球">
+        <span class="zz-planet-orb"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg></span>
+        <span class="zz-planet-name">能力星球</span>
+        <span class="zz-planet-count" data-c="0">3</span>
+      </button>
+      <button type="button" class="zz-planet zz-planet-p" data-nav="projects" data-count="0" title="项目星球">
+        <span class="zz-planet-orb"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="m2 17 10 5 10-5M2 12l10 5 10-5"></path></svg></span>
+        <span class="zz-planet-name">项目星球</span>
+        <span class="zz-planet-count" data-p="0">15</span>
+      </button>
+    </section>
+
+    <!-- 欢迎语 -->
+    <div class="zz-greeting" id="greeting">
+      <p class="zz-greet-line"><span>老板，</span><em id="greetWord">早上好</em></p>
+      <p class="zz-greet-sub">我是小6，你的个人 AI 副驾 · 今天有什么想一起完成的吗？</p>
+    </div>
+
+    <!-- 对话回复卡 -->
+    <div class="zz-chat-card" id="chatCard" hidden="">
+      <div class="zz-chat-head">
+        <span class="zz-chat-avatar">庄</span>
+        <span class="zz-chat-title">小6的回复</span>
+        <span class="zz-chat-close" id="chatClose" title="收起">×</span>
+      </div>
+      <div class="zz-chat-body" id="chatBody"></div>
+    </div>
+
+    <!-- Command Dock -->
+    <section class="zz-dock" id="dock" aria-label="AI 指令坞">
+      <form class="zz-dock-bar" id="dockForm" autocomplete="off">
+        <span class="zz-dock-dot" id="dockDot" data-state="idle"><i></i></span>
+        <input class="zz-dock-input" id="dockInput" type="text" placeholder="告诉小6你想完成什么..." autocomplete="off" spellcheck="false" aria-label="指令输入">
+        <span class="zz-dock-voicehint" id="voiceHint" hidden=""></span>
+        <button type="button" class="zz-dock-mic" id="dockMic" title="语音输入（Ctrl+Space）" aria-label="语音输入">
+          <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path><path d="M19 11a7 7 0 0 1-14 0M12 18v3"></path></svg>
+        </button>
+        <button type="submit" class="zz-dock-send" id="dockSend" title="发送" aria-label="发送">
+          <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+        </button>
+      </form>
+      <div class="zz-dock-tools">
+        <button type="button" class="zz-tool" data-tool="think" title="深度思考">深度思考</button>
+        <button type="button" class="zz-tool" data-tool="web" title="联网搜索">联网搜索</button>
+        <button type="button" class="zz-tool" data-tool="code" title="代码执行">代码执行</button>
+        <button type="button" class="zz-tool" data-tool="file" title="上传文件">上传文件</button>
+        <input type="file" id="dockFile" hidden="">
+      </div>
+      <div class="zz-dock-foot">
+        <span class="zz-tagline">小6会思考，也会行动</span>
+        <span class="zz-hint"><kbd>Ctrl</kbd>+<kbd>Space</kbd> 唤起指令 · <kbd>Esc</kbd> 收起</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════ Side · 工作面板 + 今日概览 ═══════════ -->
+  <aside class="zz-side" aria-label="工作面板">
+    <div class="zz-side-head">
+      <span class="zz-side-title"><i></i>正在为你工作</span>
+      <button type="button" class="zz-side-all" data-nav="projects">全部任务</button>
+    </div>
+    <div class="zz-side-scroll">
+      <div class="zz-work-goal" id="workGoal">
+        <span class="zz-work-goal-label">当前目标</span>
+        <span class="zz-work-goal-title" id="workGoalTitle">depth-ok</span>
+      </div>
+      <div class="zz-work-list" id="workList"><div class="zz-task-row"><span class="zz-task-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div class="zz-task-main"><div class="zz-task-title">分析目标上下文</div><div class="zz-task-sub"><span style="color:var(--zz-faint)">◌</span><span>等待执行</span></div></div><div class="zz-task-progress"><span class="zz-task-bar"><i style="width:0%"></i></span><span class="zz-task-pct">0%</span></div></div><div class="zz-task-row"><span class="zz-task-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div class="zz-task-main"><div class="zz-task-title">定义目标范围与指标</div><div class="zz-task-sub"><span style="color:var(--zz-faint)">◌</span><span>等待执行</span></div></div><div class="zz-task-progress"><span class="zz-task-bar"><i style="width:0%"></i></span><span class="zz-task-pct">0%</span></div></div><div class="zz-task-row"><span class="zz-task-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div class="zz-task-main"><div class="zz-task-title">收集必要资源</div><div class="zz-task-sub"><span style="color:var(--zz-faint)">◌</span><span>等待执行</span></div></div><div class="zz-task-progress"><span class="zz-task-bar"><i style="width:0%"></i></span><span class="zz-task-pct">0%</span></div></div><div class="zz-task-row"><span class="zz-task-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div class="zz-task-main"><div class="zz-task-title">执行核心任务</div><div class="zz-task-sub"><span style="color:var(--zz-faint)">◌</span><span>等待执行</span></div></div><div class="zz-task-progress"><span class="zz-task-bar"><i style="width:0%"></i></span><span class="zz-task-pct">0%</span></div></div><div class="zz-task-row"><span class="zz-task-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div class="zz-task-main"><div class="zz-task-title">验证与审查结果</div><div class="zz-task-sub"><span style="color:var(--zz-faint)">◌</span><span>等待执行</span></div></div><div class="zz-task-progress"><span class="zz-task-bar"><i style="width:0%"></i></span><span class="zz-task-pct">0%</span></div></div><div class="zz-task-row"><span class="zz-task-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div class="zz-task-main"><div class="zz-task-title">归档与总结</div><div class="zz-task-sub"><span style="color:var(--zz-faint)">◌</span><span>等待执行</span></div></div><div class="zz-task-progress"><span class="zz-task-bar"><i style="width:0%"></i></span><span class="zz-task-pct">0%</span></div></div></div>
+
+      <div class="zz-side-sec">最近完成</div>
+      <div class="zz-done-list" id="doneList"><div class="zz-task-row is-done"><span class="zz-task-state"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span><div class="zz-task-main"><div class="zz-task-title">读取页面标题</div></div><span class="zz-task-time">13:50</span></div><div class="zz-task-row is-done"><span class="zz-task-state"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span><div class="zz-task-main"><div class="zz-task-title">打开 example.com</div></div><span class="zz-task-time">13:50</span></div><div class="zz-task-row is-done"><span class="zz-task-state"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span><div class="zz-task-main"><div class="zz-task-title">读取页面标题</div></div><span class="zz-task-time">13:38</span></div><div class="zz-task-row is-done"><span class="zz-task-state"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span><div class="zz-task-main"><div class="zz-task-title">打开 example.com</div></div><span class="zz-task-time">13:38</span></div></div>
+    </div>
+
+    <div class="zz-overview">
+      <div class="zz-ov-title">今日概览</div>
+      <div class="zz-ov-stats">
+        <div class="zz-ov-cell"><b id="ovProjects">15</b><span>进行中项目</span></div>
+        <div class="zz-ov-cell"><b id="ovTasks">46</b><span>待办任务</span></div>
+        <div class="zz-ov-cell"><b id="ovMemory">84</b><span>新记忆</span></div>
+      </div>
+      <div class="zz-ov-activity" id="ovActivity"><div class="zz-ov-item"><span>原来古诗词里的河南真的存在</span><span class="zz-ov-kind">热点</span></div><div class="zz-ov-item"><span>首次！中国印尼在台岛以东联演</span><span class="zz-ov-kind">热点</span></div><div class="zz-ov-item"><span>梁家辉在《人民日报》撰文</span><span class="zz-ov-kind">热点</span></div></div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ Overlay Layer ═══════════ -->
+  <div class="zz-overlay" id="overlay" aria-hidden="true">
+    <div class="zz-overlay-scrim" id="overlayScrim"></div>
+    <section class="zz-overlay-sheet" role="dialog" aria-modal="true" aria-label="面板">
+      <div class="zz-overlay-head">
+        <span class="zz-overlay-title" id="overlayTitle">面板</span>
+        <span class="zz-overlay-hint" id="overlayHint"></span>
+        <button type="button" class="zz-overlay-close" id="overlayClose" aria-label="关闭">×</button>
+      </div>
+      <div class="zz-overlay-body" id="overlayBody"></div>
+    </section>
+  </div>
+
+</div>
+
+<script src="js/xiao6-space.js?v=1"></script>
+
+
+</body></html>

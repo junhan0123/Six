@@ -1,0 +1,484 @@
+{
+  "url": "http://127.0.0.1:8010/xiao6-space/index.html",
+  "states": {
+    "idle": {
+      "#orbPresence": {
+        "sel": "#orbPresence",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "0px",
+          "boxSizing": "border-box",
+          "position": "fixed",
+          "display": "grid",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": null
+        }
+      },
+      ".zz-orb-presence .zz-orb-core": {
+        "sel": ".zz-orb-presence .zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1206,
+          "y": 726,
+          "w": 40,
+          "h": 40
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-ring": {
+        "sel": ".zz-orb-ring",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "1px",
+          "borderLeftWidth": "1px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-core": {
+        "sel": ".zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1206,
+          "y": 726,
+          "w": 40,
+          "h": 40
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      }
+    },
+    "listening": {
+      "#orbPresence": {
+        "sel": "#orbPresence",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "0px",
+          "boxSizing": "border-box",
+          "position": "fixed",
+          "display": "grid",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": null
+        }
+      },
+      ".zz-orb-presence .zz-orb-core": {
+        "sel": ".zz-orb-presence .zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1199.85,
+          "y": 719.85,
+          "w": 52.3,
+          "h": 52.3
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "matrix(1.30755, 0, 0, 1.30755, 0, 0)",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-ring": {
+        "sel": ".zz-orb-ring",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "1px",
+          "borderLeftWidth": "1px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-core": {
+        "sel": ".zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1199.85,
+          "y": 719.85,
+          "w": 52.3,
+          "h": 52.3
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "matrix(1.30755, 0, 0, 1.30755, 0, 0)",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      }
+    },
+    "speaking": {
+      "#orbPresence": {
+        "sel": "#orbPresence",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "0px",
+          "boxSizing": "border-box",
+          "position": "fixed",
+          "display": "grid",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": null
+        }
+      },
+      ".zz-orb-presence .zz-orb-core": {
+        "sel": ".zz-orb-presence .zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1206,
+          "y": 726,
+          "w": 40,
+          "h": 40
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-ring": {
+        "sel": ".zz-orb-ring",
+        "found": true,
+        "rect": {
+          "x": 1189.03,
+          "y": 709.03,
+          "w": 73.94,
+          "h": 73.94
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "matrix(0.913513, 0.406809, -0.406809, 0.913513, 0, 0)",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "1px",
+          "borderLeftWidth": "1px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-core": {
+        "sel": ".zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1206,
+          "y": 726,
+          "w": 40,
+          "h": 40
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      }
+    },
+    "thinking": {
+      "#orbPresence": {
+        "sel": "#orbPresence",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "0px",
+          "boxSizing": "border-box",
+          "position": "fixed",
+          "display": "grid",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": null
+        }
+      },
+      ".zz-orb-presence .zz-orb-core": {
+        "sel": ".zz-orb-presence .zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1200.08,
+          "y": 720.08,
+          "w": 51.84,
+          "h": 51.84
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "matrix(1.296, 0, 0, 1.296, 0, 0)",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-ring": {
+        "sel": ".zz-orb-ring",
+        "found": true,
+        "rect": {
+          "x": 1198,
+          "y": 718,
+          "w": 56,
+          "h": 56
+        },
+        "computed": {
+          "width": "56px",
+          "height": "56px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "none",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "1px",
+          "borderLeftWidth": "1px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      },
+      ".zz-orb-core": {
+        "sel": ".zz-orb-core",
+        "found": true,
+        "rect": {
+          "x": 1200.08,
+          "y": 720.08,
+          "w": 51.84,
+          "h": 51.84
+        },
+        "computed": {
+          "width": "40px",
+          "height": "40px",
+          "borderRadius": "50%",
+          "boxSizing": "border-box",
+          "position": "absolute",
+          "display": "block",
+          "aspectRatio": "auto",
+          "transform": "matrix(1.296, 0, 0, 1.296, 0, 0)",
+          "paddingTop": "0px",
+          "paddingLeft": "0px",
+          "borderTopWidth": "0px",
+          "borderLeftWidth": "0px",
+          "marginTop": "0px",
+          "marginLeft": "0px",
+          "alignSelf": "auto",
+          "justifySelf": "auto",
+          "offsetParent": "orbPresence"
+        }
+      }
+    }
+  },
+  "orbBox": {
+    "x": 1198,
+    "y": 718,
+    "width": 56,
+    "height": 56
+  },
+  "fails": []
+}

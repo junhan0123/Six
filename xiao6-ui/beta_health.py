@@ -96,7 +96,7 @@ def _check_avatar() -> dict:
             states_present = os.path.exists(os.path.join(_ROOT, "avatar-state.js"))
         detail["state_vocab_present"] = states_present
         # Body 帧目录至少含 Idle/Listening/Thinking
-        body = os.path.join(_ROOT, "ZhuangZhou_Avatar", "Body")
+        body = os.path.join(_ROOT, "Xiao6_Avatar", "Body")
         required = ["Idle", "Listening", "Thinking"]
         present = [d for d in required if os.path.isdir(os.path.join(body, d))]
         detail["body_folders"] = present

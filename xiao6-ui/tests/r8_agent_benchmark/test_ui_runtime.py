@@ -55,7 +55,7 @@ def _http(method, path, body=None, timeout=60):
 def _start():
     global _SERVER
     env = dict(os.environ)
-    env["ZhuangZhou_PORT"] = str(PORT)
+    env["Xiao6_PORT"] = str(PORT)
     env["BIND_HOST"] = "127.0.0.1"
     _SERVER = subprocess.Popen([PY, "server.py"], cwd=_PROJECT, env=env,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -160,7 +160,7 @@ def run_ui_runtime():
     deadline = time.time() + 25
     while time.time() < deadline and goal_ev is None:
         for e in events:
-            if (e.get("zhuangzhou_event") == "GOAL_CREATED"
+            if (e.get("xiao6_event") == "GOAL_CREATED"
                     or (e.get("payload") or {}).get("goalId")):
                 goal_ev = e
                 break

@@ -1,0 +1,63 @@
+// review.js —— 全屏「审视分身」双栏点评面板
+// 由 app.js handleToolEvent 收到 { xiao6_event:'panel', panel:'review', data } 时调用 window.ZZReview.open(data)
+// data = { original:string, critique:string }
+// 左栏「小6原回答」，右栏「审视分身点评」，保留换行。
+
+const REV = { panel: null, open: false };
+
+function revBuild() {
+  if (REV.panel) return;
+  const html = `
+  <div class="review-panel" id="review-panel" role="dialog" aria-label="审视分身">
+    <div class="review-backdrop" data-close="1"></div>
+    <div class="review-stage glass">
+      <div class="review-bar">
+        <div class="review-title"><span class="review-dot"></span>审视分身</div>
+        <button class="review-close" id="review-close" title="关闭（Esc）" aria-label="关闭"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-close"/></svg></button>
+      </div>
+      <div class="review-body" id="review-body">
+        <section class="review-col review-left">
+          <div class="review-col-head">小6原回答</div>
+          <div class="review-col-content" id="review-original"></div>
+        </section>
+        <section class="review-col review-right">
+          <div class="review-col-head review-col-head-crit">审视分身点评</div>
+          <div class="review-col-content" id="review-critique"></div>
+        </section>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  REV.panel = document.getElementById('review-panel');
+  document.getElementById('review-close').addEventListener('click', revClose);
+  REV.panel.querySelector('[data-close]').addEventListener('click', revClose);
+}
+
+function revOpen(data) {
+  revBuild();
+  const orig = document.getElementById('review-original');
+  const crit = document.getElementById('review-critique');
+  const original = (data && data.original != null) ? String(data.original) : '';
+  const critique = (data && data.critique != null) ? String(data.critique) : '';
+  // 用 textContent + white-space:pre-wrap 保留换行
+  orig.textContent = original || '（无原回答内容）';
+  crit.textContent = critique || '（无点评内容）';
+  requestAnimationFrame(() => document.body.classList.add('review-mode'));
+  REV.open = true;
+  window.dispatchEvent(new CustomEvent('xiao6:review-mode', { detail: { active: true } }));
+  // Sprint 1/2：登记到 OverlayManager（统一 ESC / 焦点 / 栈）
+  if (window.OverlayManager) window.OverlayManager.track('review', { el: REV.panel, onClose: revCloseImpl, type: window.OverlayManager.OverlayType.PANEL, trap: false });
+}
+
+function revCloseImpl() {
+  document.body.classList.remove('review-mode');
+  REV.open = false;
+  window.dispatchEvent(new CustomEvent('xiao6:review-mode', { detail: { active: false } }));
+}
+
+function revClose() {
+  if (window.OverlayManager && window.OverlayManager.isOpen('review')) window.OverlayManager.close('review');
+  else revCloseImpl();
+}
+
+window.ZZReview = { open: revOpen, close: revClose };

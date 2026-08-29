@@ -1,0 +1,587 @@
+{
+  "meta": {
+    "startedAt": "2026-08-17T18:44:19.275Z",
+    "endedAt": "2026-08-17T18:48:16.824Z",
+    "finalDot": "connected",
+    "domNodes": 573,
+    "esCreationsTotal": 1
+  },
+  "tests": {
+    "A": {
+      "steps": [],
+      "dotSamples": [
+        "connecting",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected",
+        "connected"
+      ],
+      "finalDot": "connected",
+      "esCreations": 1,
+      "streamRequests": 1,
+      "maxConcurrentES": 1,
+      "pass": true
+    },
+    "B": {
+      "agentStateSeen": [],
+      "guiUpdatedWithin1s": false,
+      "pass": false
+    },
+    "C": {
+      "hudStateSeen": [],
+      "pass": false
+    },
+    "D": {
+      "attempts": [
+        {
+          "tag": "modal-weather",
+          "text": "北京今天天气怎么样？",
+          "overlay": null,
+          "speakDuring": 1
+        },
+        {
+          "tag": "modal-hotspots",
+          "text": "今天有什么热点新闻？",
+          "overlay": {
+            "title": "热点",
+            "bodyLen": 44,
+            "forbiddenWord": false,
+            "secondModal": true
+          },
+          "speakDuring": 2
+        },
+        {
+          "tag": "panel-video",
+          "text": "播放一个关于太空的短片",
+          "overlay": null,
+          "speakDuring": 2
+        },
+        {
+          "tag": "panel-map",
+          "text": "帮我查一下上海的地图",
+          "overlay": null,
+          "speakDuring": 3
+        },
+        {
+          "tag": "panel-memory",
+          "text": "打开记忆审计面板",
+          "overlay": {
+            "title": "记忆审计",
+            "bodyLen": 181,
+            "forbiddenWord": false,
+            "secondModal": true
+          },
+          "speakDuring": 4
+        },
+        {
+          "tag": "panel-review",
+          "text": "帮我审视这段话：小6真棒",
+          "overlay": null,
+          "speakDuring": 4
+        }
+      ],
+      "pass": false,
+      "speakCountTotal": 4
+    },
+    "E": {
+      "sawChatDomainOnStream": [
+        "MEMORY_RETRIEVED",
+        "CONTEXT_BUILT",
+        "INTENT_RECEIVED",
+        "INTENT_ANALYZING",
+        "INTENT_CLASSIFIED",
+        "execution_started",
+        "tool_started",
+        "tool_finished",
+        "execution_completed",
+        "INTENT_REJECTED"
+      ],
+      "toolNodesBefore": 17,
+      "toolNodesAfter": 17,
+      "pass": true
+    },
+    "F": {
+      "blockSamples": [
+        {
+          "t": 2,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 1012,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 2018,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 3029,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 4036,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 5040,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 6051,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 7053,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 8059,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 9063,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 10069,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 11077,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 12081,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 13081,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 14090,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 15102,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 16111,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 17116,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 18128,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 19131,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 20143,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 21147,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 22151,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 23158,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 24168,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 25179,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 26184,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 27193,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 28196,
+          "dot": "connected",
+          "esCreations": 1
+        },
+        {
+          "t": 29201,
+          "dot": "connected",
+          "esCreations": 1
+        }
+      ],
+      "backoffIntervals": [],
+      "maxConcurrentDuringBlock": 1,
+      "recovered": true,
+      "errorStorm": false,
+      "pass": true
+    },
+    "G": {
+      "hiddenTextDuring": "在线待命",
+      "textAfterRestore": "在线待命",
+      "changedWhileHidden": false,
+      "caughtUpAfter": true,
+      "pass": true
+    },
+    "H": {
+      "intervals": [
+        8001,
+        8006,
+        7994,
+        648,
+        5353,
+        1999,
+        7999,
+        8007,
+        8004,
+        3989,
+        4014,
+        802,
+        7183,
+        8007,
+        7995,
+        2015,
+        5989,
+        8007,
+        7988,
+        8014,
+        0,
+        2681,
+        5307,
+        8011,
+        7993,
+        4157,
+        1847,
+        2003,
+        7999,
+        7996,
+        7996,
+        4008,
+        3995,
+        8007,
+        7990,
+        7234,
+        773,
+        1998,
+        6001,
+        7995,
+        8006
+      ],
+      "pass": true,
+      "pollCount": 42
+    }
+  },
+  "network": {
+    "stream": [
+      {
+        "ts": 1786992260296,
+        "method": "GET"
+      }
+    ],
+    "agentState": [
+      {
+        "ts": 1786992260291
+      },
+      {
+        "ts": 1786992268292
+      },
+      {
+        "ts": 1786992276298
+      },
+      {
+        "ts": 1786992284292
+      },
+      {
+        "ts": 1786992284940
+      },
+      {
+        "ts": 1786992290293
+      },
+      {
+        "ts": 1786992292292
+      },
+      {
+        "ts": 1786992300291
+      },
+      {
+        "ts": 1786992308298
+      },
+      {
+        "ts": 1786992316302
+      },
+      {
+        "ts": 1786992320291
+      },
+      {
+        "ts": 1786992324305
+      },
+      {
+        "ts": 1786992325107
+      },
+      {
+        "ts": 1786992332290
+      },
+      {
+        "ts": 1786992340297
+      },
+      {
+        "ts": 1786992348292
+      },
+      {
+        "ts": 1786992350307
+      },
+      {
+        "ts": 1786992356296
+      },
+      {
+        "ts": 1786992364303
+      },
+      {
+        "ts": 1786992372291
+      },
+      {
+        "ts": 1786992380305
+      },
+      {
+        "ts": 1786992380305
+      },
+      {
+        "ts": 1786992382986
+      },
+      {
+        "ts": 1786992388293
+      },
+      {
+        "ts": 1786992396304
+      },
+      {
+        "ts": 1786992404297
+      },
+      {
+        "ts": 1786992408454
+      },
+      {
+        "ts": 1786992410301
+      },
+      {
+        "ts": 1786992412304
+      },
+      {
+        "ts": 1786992420303
+      },
+      {
+        "ts": 1786992428299
+      },
+      {
+        "ts": 1786992436295
+      },
+      {
+        "ts": 1786992440303
+      },
+      {
+        "ts": 1786992444298
+      },
+      {
+        "ts": 1786992452305
+      },
+      {
+        "ts": 1786992460295
+      },
+      {
+        "ts": 1786992467529
+      },
+      {
+        "ts": 1786992468302
+      },
+      {
+        "ts": 1786992470300
+      },
+      {
+        "ts": 1786992476301
+      },
+      {
+        "ts": 1786992484296
+      },
+      {
+        "ts": 1786992492302
+      }
+    ],
+    "chat": [
+      {
+        "ts": 1786992260292,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992261514,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992267484,
+        "method": "POST"
+      },
+      {
+        "ts": 1786992286229,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992291631,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992310772,
+        "method": "POST"
+      },
+      {
+        "ts": 1786992321723,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992324528,
+        "method": "POST"
+      },
+      {
+        "ts": 1786992326334,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992351556,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992381725,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992384439,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992385782,
+        "method": "POST"
+      },
+      {
+        "ts": 1786992407882,
+        "method": "POST"
+      },
+      {
+        "ts": 1786992409795,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992411623,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992441623,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992468856,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992471702,
+        "method": "GET"
+      },
+      {
+        "ts": 1786992481386,
+        "method": "POST"
+      }
+    ],
+    "speak": [
+      {
+        "ts": 1786992283733
+      },
+      {
+        "ts": 1786992323906
+      },
+      {
+        "ts": 1786992381778
+      },
+      {
+        "ts": 1786992407252
+      },
+      {
+        "ts": 1786992466326
+      }
+    ]
+  },
+  "console": [
+    {
+      "t": "error",
+      "x": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "t": "error",
+      "x": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "t": "error",
+      "x": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "t": "error",
+      "x": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "t": "error",
+      "x": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    }
+  ],
+  "pageErrors": [],
+  "esLog": [],
+  "esMessages": [],
+  "esCloses": []
+}

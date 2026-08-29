@@ -266,7 +266,7 @@ def build_memory_block(recent=12):
     if summary:
         parts.append("【长期记忆摘要】\n" + summary)
     # Phase 38J · 打断「AI 历史回复 → 回灌 system prompt → 复述坏回复」回声闭环。
-    # 仅保留用户侧内容作为记忆锚点；AI 自身历史回复（role=zhuangzhou/assistant）
+    # 仅保留用户侧内容作为记忆锚点；AI 自身历史回复（role=xiao6/assistant）
     # 不再作为示范台词回灌 system prompt，避免坏回复被模型复述放大形成回声。
     if rows:
         turns = []

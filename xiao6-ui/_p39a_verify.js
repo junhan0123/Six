@@ -1,0 +1,41 @@
+// 39-A verification: load the REAL intent-understanding.js in a fake DOM and test classify()
+const el = {
+  className: '', id: '', innerHTML: '',
+  setAttribute() {}, querySelector() { return { textContent: '', innerHTML: '' }; },
+  classList: { add() {}, remove() {}, contains() { return false; } },
+  insertBefore() {}, appendChild() {},
+};
+global.document = {
+  getElementById() { return el; },
+  createElement() { return el; },
+};
+global.window = global;
+global.setTimeout = () => 0;
+global.clearTimeout = () => {};
+
+require('G:/xiao6/xiao6-ui/final/components/intent-understanding.js');
+
+const F = global.FinalIntentUnderstand;
+const cases = [
+  // [input, expectOpen(bool), expectOverlayOrNull, desc]
+  ['任务超过3次未完成就立即停止，并告诉我原因，以及别的解决办法', false, null, 'no task popup'],
+  ['热点新闻', false, null, 'no hotspot popup on bare keyword'],
+  ['打开时事热点', true, 'pulse', 'opens pulse'],
+  ['打开天气', true, 'world', 'opens weather'],
+  ['给我看看天气', true, 'world', 'weather query+show'],
+  ['帮我看看今天的热点新闻', true, 'pulse', 'opens pulse (看看)'],
+  ['我想查看我的任务', true, 'tasks', 'opens tasks (查看)'],
+  ['创建任务', false, null, 'action verb -> deliver to agent'],
+  ['今天有什么热点？', false, null, 'query not forced to UI'],
+  ['查一下天气', false, null, 'query delivered (agent shows weather)'],
+];
+let pass = 0, fail = 0;
+for (const [text, expOpen, expOverlay, desc] of cases) {
+  const hit = F.classify(text);
+  const opened = !!hit;
+  const ok = opened === expOpen && (!expOverlay || (hit && hit.overlay === expOverlay));
+  console.log((ok ? 'PASS' : 'FAIL'), '|', desc, '=>', opened ? ('OPEN ' + hit.overlay) : 'DELIVER', '|', text);
+  ok ? pass++ : fail++;
+}
+console.log('\n' + pass + ' pass, ' + fail + ' fail');
+process.exit(fail ? 1 : 0);

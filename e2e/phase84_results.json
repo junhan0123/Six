@@ -1,0 +1,5 @@
+{
+  "TEST-01_CHECKPOINT": true,
+  "TEST-02_PERSISTENCE": false,
+  "TEST-03_RECOVERY_CHAIN": false
+}

@@ -1,0 +1,692 @@
+{
+  "rows": [
+    {
+      "cat": "App Shell / 布局",
+      "total": 121,
+      "files": {
+        "styles.css": 63,
+        "premium.css": 5,
+        "ui2.css": 37,
+        "companion.css": 16
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "HUD / 顶栏",
+      "total": 54,
+      "files": {
+        "styles.css": 27,
+        "ui2.css": 27
+      },
+      "multiFile": true,
+      "js": "app.js"
+    },
+    {
+      "cat": "Navigation / 导航",
+      "total": 25,
+      "files": {
+        "styles.css": 9,
+        "ui2.css": 16
+      },
+      "multiFile": true,
+      "js": "app.js / panel-manager.js"
+    },
+    {
+      "cat": "Galaxy / 星系",
+      "total": 24,
+      "files": {
+        "ui2.css": 24
+      },
+      "multiFile": false,
+      "js": "galaxy-experience.js / galaxy-runtime.js"
+    },
+    {
+      "cat": "Avatar / 化身",
+      "total": 76,
+      "files": {
+        "styles.css": 24,
+        "ui2.css": 11,
+        "companion.css": 41
+      },
+      "multiFile": true,
+      "js": "avatar-renderer.js / avatar-state.js"
+    },
+    {
+      "cat": "Command Dock",
+      "total": 20,
+      "files": {
+        "styles.css": 1,
+        "ui2.css": 19
+      },
+      "multiFile": true,
+      "js": "command-dock.js"
+    },
+    {
+      "cat": "Command Palette",
+      "total": 38,
+      "files": {
+        "ui2.css": 38
+      },
+      "multiFile": false,
+      "js": "command-palette.js"
+    },
+    {
+      "cat": "Settings / 设置",
+      "total": 82,
+      "files": {
+        "styles.css": 58,
+        "premium.css": 17,
+        "ui2.css": 7
+      },
+      "multiFile": true,
+      "js": "settings.js"
+    },
+    {
+      "cat": "Context Drawer / 抽屉",
+      "total": 43,
+      "files": {
+        "styles.css": 38,
+        "ui2.css": 5
+      },
+      "multiFile": true,
+      "js": "panel-manager.js"
+    },
+    {
+      "cat": "Capability Matrix",
+      "total": 49,
+      "files": {
+        "styles.css": 39,
+        "ui2.css": 10
+      },
+      "multiFile": true,
+      "js": "capability-matrix.js / capabilities-view.js"
+    },
+    {
+      "cat": "Insight / 洞察",
+      "total": 44,
+      "files": {
+        "styles.css": 26,
+        "ui2.css": 18
+      },
+      "multiFile": true,
+      "js": "insight-panel.js"
+    },
+    {
+      "cat": "Execution / 执行",
+      "total": 22,
+      "files": {
+        "execution-channel.css": 22
+      },
+      "multiFile": false,
+      "js": "execution-channel.js / execution-timeline.js"
+    },
+    {
+      "cat": "Runtime Viz",
+      "total": 33,
+      "files": {
+        "runtime-viz.css": 32,
+        "ui2.css": 1
+      },
+      "multiFile": true,
+      "js": "runtime-visualization.js"
+    },
+    {
+      "cat": "Workspace",
+      "total": 1,
+      "files": {
+        "styles.css": 1
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Chat / 对话",
+      "total": 65,
+      "files": {
+        "styles.css": 59,
+        "companion.css": 6
+      },
+      "multiFile": true,
+      "js": "app.js"
+    },
+    {
+      "cat": "Tasks / 任务",
+      "total": 38,
+      "files": {
+        "styles.css": 38
+      },
+      "multiFile": false,
+      "js": "tasks.js"
+    },
+    {
+      "cat": "Goals / 目标",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Memory / 记忆",
+      "total": 171,
+      "files": {
+        "styles.css": 171
+      },
+      "multiFile": false,
+      "js": "memory.js / memory-panel.js / memory-query.js"
+    },
+    {
+      "cat": "Agent / 代理",
+      "total": 26,
+      "files": {
+        "styles.css": 26
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Profile / 档案",
+      "total": 1,
+      "files": {
+        "styles.css": 1
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Notifications / 通知",
+      "total": 35,
+      "files": {
+        "styles.css": 35
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Toast",
+      "total": 2,
+      "files": {
+        "styles.css": 2
+      },
+      "multiFile": false,
+      "js": "app.js"
+    },
+    {
+      "cat": "Modal / 模态",
+      "total": 15,
+      "files": {
+        "styles.css": 13,
+        "premium.css": 2
+      },
+      "multiFile": true,
+      "js": "overlay-manager.js"
+    },
+    {
+      "cat": "Onboarding / 引导",
+      "total": 46,
+      "files": {
+        "premium.css": 34,
+        "ui2.css": 12
+      },
+      "multiFile": true,
+      "js": "onboarding.js"
+    },
+    {
+      "cat": "Loading / 加载",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Empty / 空态",
+      "total": 21,
+      "files": {
+        "styles.css": 17,
+        "runtime-viz.css": 1,
+        "execution-channel.css": 1,
+        "ui2.css": 2
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Error / 错误",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": "error-boundary.js"
+    },
+    {
+      "cat": "Provider Settings",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Theme Selector",
+      "total": 30,
+      "files": {
+        "styles.css": 17,
+        "premium.css": 4,
+        "ui2.css": 9
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Buttons / 按钮",
+      "total": 13,
+      "files": {
+        "styles.css": 3,
+        "premium.css": 2,
+        "ui2.css": 8
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Inputs / 输入",
+      "total": 12,
+      "files": {
+        "styles.css": 5,
+        "ui2.css": 7
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Select / 选择器",
+      "total": 2,
+      "files": {
+        "ui2.css": 2
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Cards / 卡片",
+      "total": 4,
+      "files": {
+        "premium.css": 3,
+        "ui2.css": 1
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Badges / 徽标",
+      "total": 1,
+      "files": {
+        "styles.css": 1
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Chips / 芯片",
+      "total": 5,
+      "files": {
+        "styles.css": 3,
+        "premium.css": 2
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Tabs / 标签页",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Tooltips / 提示",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Dropdown / 下拉",
+      "total": 9,
+      "files": {
+        "styles.css": 9
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Scrollbars / 滚动条",
+      "total": 17,
+      "files": {
+        "styles.css": 13,
+        "execution-channel.css": 2,
+        "ui2.css": 2
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Status / 状态指示",
+      "total": 109,
+      "files": {
+        "styles.css": 103,
+        "companion.css": 6
+      },
+      "multiFile": true,
+      "js": "sysmon.js"
+    },
+    {
+      "cat": "Presence / 存在感",
+      "total": 10,
+      "files": {
+        "ui2.css": 10
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Mobile / 移动",
+      "total": 0,
+      "files": {},
+      "multiFile": false,
+      "js": "mobile-app.js"
+    },
+    {
+      "cat": "Companion / 伴生窗",
+      "total": 13,
+      "files": {
+        "companion.css": 13
+      },
+      "multiFile": false,
+      "js": "companion.js"
+    },
+    {
+      "cat": "Icons / 图标",
+      "total": 15,
+      "files": {
+        "styles.css": 2,
+        "ui2.css": 13
+      },
+      "multiFile": true,
+      "js": ""
+    },
+    {
+      "cat": "Hotspot / 热点(领域)",
+      "total": 210,
+      "files": {
+        "styles.css": 210
+      },
+      "multiFile": false,
+      "js": "hotspot.js"
+    },
+    {
+      "cat": "Weather / 天气(领域)",
+      "total": 139,
+      "files": {
+        "styles.css": 139
+      },
+      "multiFile": false,
+      "js": "weather.js"
+    },
+    {
+      "cat": "Map / 地图(领域)",
+      "total": 36,
+      "files": {
+        "styles.css": 36
+      },
+      "multiFile": false,
+      "js": "map.js"
+    },
+    {
+      "cat": "Doc / 文档(领域)",
+      "total": 26,
+      "files": {
+        "styles.css": 26
+      },
+      "multiFile": false,
+      "js": "doc.js"
+    },
+    {
+      "cat": "Scene / 场景(领域)",
+      "total": 73,
+      "files": {
+        "styles.css": 73
+      },
+      "multiFile": false,
+      "js": "scene.js"
+    },
+    {
+      "cat": "Mic / 语音(领域)",
+      "total": 36,
+      "files": {
+        "styles.css": 36
+      },
+      "multiFile": false,
+      "js": "kws.js"
+    },
+    {
+      "cat": "Review / 复核(领域)",
+      "total": 31,
+      "files": {
+        "styles.css": 31
+      },
+      "multiFile": false,
+      "js": ""
+    },
+    {
+      "cat": "Tools / 工具(领域)",
+      "total": 8,
+      "files": {
+        "styles.css": 8
+      },
+      "multiFile": false,
+      "js": ""
+    }
+  ],
+  "unclaimed_count": 503,
+  "unclaimed_sample": [
+    "styles.css :: [hidden]",
+    "styles.css :: .bg-glow",
+    "styles.css :: .scanlines",
+    "styles.css :: .premium-bg",
+    "styles.css :: .premium-bg",
+    "styles.css :: .brand",
+    "styles.css :: .brand-mark",
+    "styles.css :: .brand-mark .ic.f",
+    "styles.css :: .brand-name",
+    "styles.css :: .brand-sub",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: .main",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: .main",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: .earth-glow",
+    "styles.css :: to",
+    "styles.css :: .orb",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: .hero-title",
+    "styles.css :: .hero-sub",
+    "styles.css :: .hero-hints",
+    "styles.css :: .hint",
+    "styles.css :: .hint:hover",
+    "styles.css :: .messages",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: .speak-btn",
+    "styles.css :: .speak-btn .ic",
+    "styles.css :: .speak-btn:hover",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: #btnImage .ic",
+    "styles.css :: #btnMedia .ic",
+    "styles.css :: #btnScreen .ic",
+    "styles.css :: #btnImage:hover .ic",
+    "styles.css :: #btnMedia:hover .ic",
+    "styles.css :: #btnScreen:hover .ic",
+    "styles.css :: #btnImage:hover",
+    "styles.css :: #btnMedia:hover",
+    "styles.css :: #btnScreen:hover",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: #input",
+    "styles.css :: #input::placeholder",
+    "styles.css :: .send-btn",
+    "styles.css :: .send-btn .ic",
+    "styles.css :: .send-btn:hover",
+    "styles.css :: .send-btn:disabled",
+    "styles.css :: .meter",
+    "styles.css :: .meter-label",
+    "styles.css :: .meter-val",
+    "styles.css :: .meter-bar",
+    "styles.css :: .meter-bar i",
+    "styles.css :: .tcell",
+    "styles.css :: .tk",
+    "styles.css :: .tv",
+    "styles.css :: .trait-list",
+    "styles.css :: .trait-list li",
+    "styles.css :: .trait-list li::before",
+    "styles.css :: .file-protocol-warning",
+    "styles.css :: .file-protocol-warning .title",
+    "styles.css :: .file-protocol-warning p",
+    "styles.css :: .file-protocol-warning ol",
+    "styles.css :: .file-protocol-warning code",
+    "styles.css :: .file-protocol-warning .hint",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: 0%",
+    "styles.css :: 14%",
+    "styles.css :: 22%",
+    "styles.css :: 34%",
+    "styles.css :: 46%",
+    "styles.css :: 100%",
+    "styles.css :: 0%",
+    "styles.css :: 18%",
+    "styles.css :: 100%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 0%",
+    "styles.css :: 20%",
+    "styles.css :: 40%",
+    "styles.css :: 60%",
+    "styles.css :: 100%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: 0%",
+    "styles.css :: 20%",
+    "styles.css :: 40%",
+    "styles.css :: 60%",
+    "styles.css :: 100%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: .sysmon-panel",
+    "styles.css :: 0%",
+    "styles.css :: 20%",
+    "styles.css :: 40%",
+    "styles.css :: 60%",
+    "styles.css :: 100%",
+    "styles.css :: 0%",
+    "styles.css :: 100%",
+    "styles.css :: 50%",
+    "styles.css :: 50%",
+    "styles.css :: 50%",
+    "styles.css :: #wxAqi.aqi-good",
+    "styles.css :: #wxAqi.aqi-mod",
+    "styles.css :: #wxAqi.aqi-bad",
+    "styles.css :: #wxAqi.aqi-severe",
+    "styles.css :: #wxAqi.aqi-good",
+    "styles.css :: #wxAqi.aqi-mod",
+    "styles.css :: #wxAqi.aqi-bad",
+    "styles.css :: #wxAqi.aqi-severe",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: .md-h",
+    "styles.css :: .md-h:first-child",
+    "styles.css :: .md-p",
+    "styles.css :: .md-ul",
+    "styles.css :: .md-ul li",
+    "styles.css :: .md-quote",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: 0%",
+    "styles.css :: 8%",
+    "styles.css :: 90%",
+    "styles.css :: 100%",
+    "styles.css :: .stream-line",
+    "styles.css :: .line-header",
+    "styles.css :: .line-dot",
+    "styles.css :: .line-type",
+    "styles.css :: .line-time",
+    "styles.css :: .line-status",
+    "styles.css :: .line-status.busy",
+    "styles.css :: .line-status.done",
+    "styles.css :: .line-text",
+    "styles.css :: .line-tool",
+    "styles.css :: .line-tool .tool-spinner",
+    "styles.css :: .line-tool.done .tool-spinner",
+    "styles.css :: .zz-toggle",
+    "styles.css :: .zz-toggle input",
+    "styles.css :: .zz-toggle-track",
+    "styles.css :: .zz-toggle-track::after",
+    "styles.css :: .zz-toggle input:checked + .zz-toggle-track",
+    "styles.css :: .zz-toggle input:checked + .zz-toggle-track::after",
+    "styles.css :: .kbd-list",
+    "styles.css :: .kbd-row",
+    "styles.css :: .kbd-row kbd",
+    "styles.css :: .zz-task-overlay",
+    "styles.css :: .zz-task-overlay.show",
+    "styles.css :: .zz-task-panel",
+    "styles.css :: .zz-task-panel.show",
+    "styles.css :: .zz-task-hud",
+    "styles.css :: .zz-task-corner",
+    "styles.css :: .zz-task-corner.tl",
+    "styles.css :: .zz-task-corner.tr",
+    "styles.css :: .zz-task-corner.bl",
+    "styles.css :: .zz-task-corner.br",
+    "styles.css :: .zz-task-scanline",
+    "styles.css :: from",
+    "styles.css :: to",
+    "styles.css :: .zz-task-head",
+    "styles.css :: .zz-task-title-wrap"
+  ]
+}

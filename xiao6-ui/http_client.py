@@ -5,7 +5,7 @@ import json
 import ssl
 import urllib.request
 
-HOTSPOT_UA = "Mozilla/5.0 (compatible; ZhuangZhou/1.0)"
+HOTSPOT_UA = "Mozilla/5.0 (compatible; Xiao6/1.0)"
 
 
 def http_get_json(url, headers=None, timeout=10):

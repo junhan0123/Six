@@ -1,0 +1,12 @@
+{
+  "scenario1_reject": {
+    "execute_called": false,
+    "run_return": "工具 run_shell 未经用户批准，未执行（reject）",
+    "passed": true
+  },
+  "scenario2_approve": {
+    "execute_called": true,
+    "run_return": "XIAO6_CONFIRM_TEST_EXECUTED_AFTER_APPROVAL",
+    "passed": true
+  }
+}

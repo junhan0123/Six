@@ -1,0 +1,354 @@
+/* ═══════════════════════════════════════════════════════════════════
+   小6 · 动态点云能量球驱动（dyna-orb-voice.js）
+   - 持续麦克风监听（VAD）：说话→recognizing，停顿→ASR→对话
+   - 执行任务时弹出「执行过程」对话框
+   - 完成后弹出「完成内容 + 回复」对话框 + TTS 朗读
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var orb = window.ZZDynaOrb;
+  var canvas = document.getElementById('orb-canvas');
+  if (!orb || !canvas) return;
+
+  // 渲染初始化优先由 dyna-orb.html 内联兜底保证；此处仅在尚未启动时补启动，避免与 HTML 重复 init
+  if (!(orb.getState && orb.getState())) {
+    try { orb.init(canvas); orb.start(); } catch (e) {}
+  }
+  orb.setState('idle');
+
+  // ── 会话 id（与聊天窗口/主界面共享） ──
+  var sessionId = null;
+  try { sessionId = localStorage.getItem('zhuangzhou_sid'); } catch (e) {}
+  if (!sessionId) { sessionId = 'orb-' + Date.now(); try { localStorage.setItem('zhuangzhou_sid', sessionId); } catch (e) {} }
+
+  // ── 麦克风 VAD ──
+  var micStream = null, audioCtx = null, analyser = null, timeData = null;
+  var pcmChunks = [], sampleRate = 16000;
+  var speechActive = false, listening = false, busy = false;
+  var lastSpeechTs = 0, utterStartTs = 0;
+  var RMS_SPEECH = 0.018, SILENCE_MS = 900, MIN_UTTER_MS = 500, MAX_UTTER_MS = 12000;
+  var rafId = 0;
+
+  function computeRms() {
+    if (!analyser || !timeData) return 0;
+    try {
+      analyser.getByteTimeDomainData(timeData);
+      var sum = 0;
+      for (var i = 0; i < timeData.length; i++) {
+        var v = (timeData[i] - 128) / 128;
+        sum += v * v;
+      }
+      return Math.sqrt(sum / timeData.length);
+    } catch (e) { return 0; }
+  }
+
+  function encodeWav(pcm) {
+    var numFrames = pcm.length;
+    var buffer = new ArrayBuffer(44 + numFrames * 2);
+    var view = new DataView(buffer);
+    function writeStr(offset, s) { for (var i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); }
+    writeStr(0, 'RIFF'); view.setUint32(4, 36 + numFrames * 2, true); writeStr(8, 'WAVE');
+    writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true); view.setUint32(24, 16000, true);
+    view.setUint32(28, 16000 * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    writeStr(36, 'data'); view.setUint32(40, numFrames * 2, true);
+    var off = 44;
+    for (var k = 0; k < numFrames; k++) {
+      var s = Math.max(-1, Math.min(1, pcm[k]));
+      view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      off += 2;
+    }
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  // ── 一句话结束 → ASR → 对话 → 执行跟踪 → TTS ──
+  var chatHistory = [];
+  try { chatHistory = JSON.parse(localStorage.getItem('six_orb_chat_v1') || '[]'); } catch (e) {}
+
+  async function finalizeUtterance() {
+    if (busy || !listening) return;
+    busy = true;
+    var pcm = mergeChunks(pcmChunks);
+    pcmChunks = [];
+    if (!pcm || !pcm.length) { busy = false; return; }
+    try {
+      orb.setState('thinking');
+      var wavBlob = await encodeWav(pcm);
+      var buf = await wavBlob.arrayBuffer();
+      var r = await fetch('/api/asr?ext=.wav', { method: 'POST', body: buf });
+      var d = await r.json();
+      var text = (d && d.ok && d.text) ? d.text.trim() : '';
+      if (!text) { orb.setState('listening'); busy = false; return; }
+
+      chatHistory.push({ role: 'user', content: text });
+      try { localStorage.setItem('six_orb_chat_v1', JSON.stringify(chatHistory.slice(-30))); } catch (e) {}
+
+      // 打开「执行过程」对话框
+      openExecDialog(text);
+      orb.setState('executing');
+
+      // 流式对话 + 执行事件监听
+      var reply = await chatStream(text);
+      if (reply) {
+        orb.setState('speaking');
+        closeExecDialog();
+        openDoneDialog(text, reply);
+        await speakText(reply);
+      }
+      chatHistory.push({ role: 'zhuangzhou', content: reply || '' });
+      try { localStorage.setItem('six_orb_chat_v1', JSON.stringify(chatHistory.slice(-30))); } catch (e) {}
+    } catch (e) {
+      // 失败静默回待机
+    } finally {
+      busy = false;
+      if (listening) orb.setState('listening');
+      else orb.setState('idle');
+    }
+  }
+
+  function mergeChunks(chunks) {
+    if (!chunks.length) return null;
+    var len = 0;
+    for (var i = 0; i < chunks.length; i++) len += chunks[i].length;
+    var out = new Float32Array(len);
+    var off = 0;
+    for (var j = 0; j < chunks.length; j++) { out.set(chunks[j], off); off += chunks[j].length; }
+    return out;
+  }
+
+  // ── SSE 流式对话（带执行事件跟踪 + 超时保护） ──
+  function chatStream(userText) {
+    var msgs = chatHistory.slice(-16);
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { try { controller.abort(); } catch (e) {} }, 120000);
+    return fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: msgs, session_id: sessionId, temperature: 0.7, reasoning: false }),
+      signal: controller.signal,
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.body.getReader();
+    }).then(function (reader) {
+      var decoder = new TextDecoder();
+      var buf = '';
+      var full = '';
+      var done = false;
+      function pump() {
+        return reader.read().then(function (rr) {
+          if (rr.done || done) return full;
+          buf += decoder.decode(rr.value, { stream: true });
+          var lines = buf.split('\n');
+          buf = lines.pop();
+          lines.forEach(function (line) {
+            var s = line.trim();
+            if (!s.startsWith('data:')) return;
+            var payload = s.slice(5).trim();
+            if (payload === '[DONE]') { done = true; return; }
+            try {
+              var j = JSON.parse(payload);
+              if (j.zhuangzhou_event) {
+                handleExecEvent(j);
+                return;
+              }
+              var delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+              if (delta) {
+                full += delta;
+                appendExecReply(delta);
+              }
+            } catch (e) {}
+          });
+          if (done) return full;
+          return pump();
+        });
+      }
+      return pump().then(function (v) { clearTimeout(timeout); return v; });
+    }).catch(function (e) {
+      clearTimeout(timeout);
+      throw e;
+    });
+  }
+
+  // ── 执行过程跟踪 ──
+  var execDialog = null;
+  var execStepEl = null;
+  var execReplyEl = null;
+  var currentTool = '';
+
+  function openExecDialog(userText) {
+    closeExecDialog();
+    execDialog = document.createElement('div');
+    execDialog.className = 'orb-exec-dialog';
+    execDialog.innerHTML =
+      '<div class="orb-exec-head">' +
+        '<span class="orb-exec-title">⚡ 小6 正在执行</span>' +
+        '<span class="orb-exec-close" id="orbExecClose">×</span>' +
+      '</div>' +
+      '<div class="orb-exec-user">' + esc(userText) + '</div>' +
+      '<div class="orb-exec-steps"><div class="orb-exec-step" id="orbExecStep">准备中…</div></div>' +
+      '<div class="orb-exec-reply" id="orbExecReply"></div>';
+    document.body.appendChild(execDialog);
+    execStepEl = execDialog.querySelector('#orbExecStep');
+    execReplyEl = execDialog.querySelector('#orbExecReply');
+    var closeBtn = execDialog.querySelector('#orbExecClose');
+    if (closeBtn) closeBtn.addEventListener('click', closeExecDialog);
+    setTimeout(function () { if (execDialog) execDialog.classList.add('show'); }, 30);
+  }
+
+  function closeExecDialog() {
+    if (execDialog) {
+      execDialog.classList.remove('show');
+      setTimeout(function () { if (execDialog && execDialog.parentNode) execDialog.parentNode.removeChild(execDialog); execDialog = null; }, 240);
+    }
+  }
+
+  function handleExecEvent(ev) {
+    var type = ev.zhuangzhou_event || ev.event;
+    if (!execDialog) return;
+    if (type === 'tool_start') {
+      currentTool = ev.tool || '工具';
+      if (execStepEl) execStepEl.textContent = '→ ' + currentTool + ' 执行中…';
+      orb.setState('executing');
+    } else if (type === 'tool_end') {
+      if (execStepEl) execStepEl.textContent = '✓ ' + currentTool + ' 完成';
+      orb.setState('executing');
+    }
+  }
+
+  function appendExecReply(delta) {
+    if (execReplyEl && delta) {
+      execReplyEl.textContent += delta;
+      if (execDialog) execDialog.classList.add('has-reply');
+    }
+  }
+
+  // ── 完成对话框 ──
+  function openDoneDialog(userText, reply) {
+    closeExecDialog();
+    var doneDlg = document.createElement('div');
+    doneDlg.className = 'orb-done-dialog';
+    doneDlg.innerHTML =
+      '<div class="orb-done-head"><span class="orb-done-icon">✅</span><span class="orb-done-title">任务完成</span>' +
+      '<span class="orb-done-close" id="orbDoneClose">×</span></div>' +
+      '<div class="orb-done-user">你：' + esc(userText) + '</div>' +
+      '<div class="orb-done-divider"></div>' +
+      '<div class="orb-done-reply-label">小6 回复</div>' +
+      '<div class="orb-done-reply">' + esc(reply || '') + '</div>';
+    document.body.appendChild(doneDlg);
+    var closeBtn = doneDlg.querySelector('#orbDoneClose');
+    if (closeBtn) closeBtn.addEventListener('click', function () { doneDlg.remove(); });
+    setTimeout(function () { doneDlg.classList.add('show'); }, 30);
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── TTS 播放（声线交给后端按 TTS_BACKEND 决定） ──
+  function speakText(text) {
+    var clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return Promise.resolve();
+    return fetch('/api/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean, rate: '+0%' }),
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.arrayBuffer();
+    }).then(function (ab) {
+      return new Promise(function (resolve) {
+        try {
+          var audio = new Audio(URL.createObjectURL(new Blob([ab], { type: 'audio/mpeg' })));
+          audio.onended = function () { resolve(); };
+          audio.onerror = function () { resolve(); };
+          audio.play().catch(function () { resolve(); });
+        } catch (e) { resolve(); }
+      });
+    }).catch(function () {});
+  }
+
+  // ── VAD 主循环 ──
+  function loop() {
+    if (!listening) return;
+    var rms = computeRms();
+    orb.setVolume(rms * 3);
+    if (busy) {
+      pcmChunks = [];
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
+    var now = Date.now();
+    if (rms > RMS_SPEECH) {
+      if (!speechActive) {
+        speechActive = true;
+        utterStartTs = now;
+        pcmChunks = [];
+        orb.setState('recognizing');
+      }
+      lastSpeechTs = now;
+      if (analyser) {
+        try {
+          var buf = audioCtx.createBuffer(1, analyser.fftSize, sampleRate);
+          var ch = buf.getChannelData(0);
+          if (analyser.getFloatTimeDomainData) analyser.getFloatTimeDomainData(ch);
+          pcmChunks.push(new Float32Array(ch));
+        } catch (e) {}
+      }
+      if (now - utterStartTs > MAX_UTTER_MS) {
+        speechActive = false;
+        finalizeUtterance();
+      }
+    } else if (speechActive) {
+      if (now - lastSpeechTs > SILENCE_MS) {
+        var dur = now - utterStartTs;
+        speechActive = false;
+        if (dur >= MIN_UTTER_MS) finalizeUtterance();
+        else pcmChunks = [];
+      }
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  async function startMic() {
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      sampleRate = audioCtx.sampleRate || 16000;
+      var src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      src.connect(analyser);
+      timeData = new Uint8Array(analyser.fftSize);
+      micStream = stream;
+      listening = true;
+      orb.setState('listening');
+      rafId = requestAnimationFrame(loop);
+      return true;
+    } catch (e) {
+      orb.setState('error');
+      return false;
+    }
+  }
+
+  function stopMic() {
+    listening = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
+    if (micStream) { try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }
+    if (audioCtx && audioCtx.state !== 'closed') { try { audioCtx.close(); } catch (e) {} }
+    audioCtx = null; analyser = null; timeData = null; micStream = null;
+    orb.setState('idle');
+  }
+
+  // ── 启动 ──
+  startMic();
+  canvas.addEventListener('click', function () {
+    if (listening) stopMic();
+    else startMic();
+  });
+  setInterval(function () { if (!listening && !busy) startMic(); }, 30000);
+  window.addEventListener('beforeunload', stopMic);
+})();

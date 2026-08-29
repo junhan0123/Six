@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>庄周 NEXUS · 个人 AI 副驾</title>
+<meta name="description" content="ZhuangZhou NEXUS — 庄周个人 AI OS 量子中枢">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%238b5cf6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/zz-space.css?v=4">
+</head>
+<body>
+
+<div class="nx-shell">
+
+  <!-- 环境层 -->
+  <canvas id="starCanvas" class="nx-stars" aria-hidden="true" width="758" height="482"></canvas>
+  <div class="nx-grid" aria-hidden="true"></div>
+  <div class="nx-scan" aria-hidden="true"></div>
+  <div class="nx-vignette" aria-hidden="true"></div>
+
+  <!-- ═══════════ TOP HUD ═══════════ -->
+  <header class="nx-hud">
+    <div class="nx-hud-left">
+      <span class="nx-brand-mark">◈</span>
+      <span class="nx-brand">庄周</span>
+      <span class="nx-brand-en">NEXUS&nbsp;·&nbsp;AIOS</span>
+      <span class="nx-hud-state" id="topState" data-mode="online"><i></i><b>在线</b></span>
+    </div>
+    <div class="nx-hud-right">
+      <span class="nx-chip ok" id="sysChip"><i></i><b>系统正常</b></span>
+      <span class="nx-chip" id="aiChip"><i></i><b>AI 就绪</b></span>
+      <span class="nx-chip mono" id="modelChip">agnes-2.0-flash</span>
+      <span class="nx-sep"></span>
+      <time class="nx-clock" id="clockTime">05:56</time>
+      <span class="nx-date" id="clockDate">8月16日 周日</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ LEFT · 数据列 ═══════════ -->
+  <aside class="nx-left" aria-label="数据读数">
+    <div class="nx-left-title">DATA&nbsp;·&nbsp;读数</div>
+    <div class="nx-stat" data-nav="memory"><span class="nx-stat-label">记忆</span><b id="statMem">84</b><span class="nx-stat-bar"><i id="barMem" style="width: 26%;"></i></span></div>
+    <div class="nx-stat" data-nav="knowledge"><span class="nx-stat-label">知识</span><b id="statKn">329</b><span class="nx-stat-bar"><i id="barKn" style="width: 100%;"></i></span></div>
+    <div class="nx-stat" data-nav="projects"><span class="nx-stat-label">任务</span><b id="statTask">46</b><span class="nx-stat-bar"><i id="barTask" style="width: 14%;"></i></span></div>
+    <div class="nx-stat" data-nav="capabilities"><span class="nx-stat-label">能力</span><b id="statCap">3</b><span class="nx-stat-bar"><i id="barCap" style="width: 1%;"></i></span></div>
+    <div class="nx-stat" data-nav="projects"><span class="nx-stat-label">项目</span><b id="statGoal">15</b><span class="nx-stat-bar"><i id="barGoal" style="width: 5%;"></i></span></div>
+    <div class="nx-stat" data-nav="world"><span class="nx-stat-label">设备</span><b id="statDev">22</b><span class="nx-stat-bar"><i id="barDev" style="width: 7%;"></i></span></div>
+    <div class="nx-left-foot">
+      <span class="nx-dot"></span>
+      <span>NEXUS v2.0</span>
+    </div>
+  </aside>
+
+  <!-- ═══════════ CENTER · 语音球 + 轨道节点 ═══════════ -->
+  <main class="nx-center">
+    <div class="nx-orb-stage" id="orbStage">
+      <canvas id="orbCanvas" class="nx-orb-canvas" width="289" height="180"></canvas>
+      <div class="nx-orb-ring" aria-hidden="true"></div>
+      <div class="nx-orb-ring2" aria-hidden="true"></div>
+      <div class="nx-orb-status" id="orbStatus">在线待命</div>
+
+      <!-- 轨道数据节点 -->
+      <button type="button" class="nx-node nx-node-1" data-nav="projects">
+        <span class="nx-node-name">项目</span><span class="nx-node-num" data-pj="0">15</span>
+      </button>
+      <button type="button" class="nx-node nx-node-2" data-nav="memory">
+        <span class="nx-node-name">记忆</span><span class="nx-node-num" data-mem="0">84</span>
+      </button>
+      <button type="button" class="nx-node nx-node-3" data-nav="knowledge">
+        <span class="nx-node-name">知识</span><span class="nx-node-num" data-kn="0">329</span>
+      </button>
+      <button type="button" class="nx-node nx-node-4" data-nav="projects">
+        <span class="nx-node-name">任务</span><span class="nx-node-num" data-task="0">46</span>
+      </button>
+      <button type="button" class="nx-node nx-node-5" data-nav="capabilities">
+        <span class="nx-node-name">能力</span><span class="nx-node-num" data-cap="0">3</span>
+      </button>
+      <button type="button" class="nx-node nx-node-6" data-nav="projects">
+        <span class="nx-node-name">目标</span><span class="nx-node-num" data-goal="0">46</span>
+      </button>
+    </div>
+
+    <!-- 对话回复卡 -->
+    <div class="nx-chat-card" id="chatCard" hidden="">
+      <div class="nx-chat-head">
+        <span class="nx-chat-avatar">◈</span>
+        <span class="nx-chat-title">庄周 NEXUS · 回复</span>
+        <span class="nx-chat-close" id="chatClose" title="收起">×</span>
+      </div>
+      <div class="nx-chat-body" id="chatBody"></div>
+    </div>
+  </main>
+
+  <!-- ═══════════ RIGHT · 系统面板 ═══════════ -->
+  <aside class="nx-right" aria-label="系统面板">
+    <div class="nx-panel-title">SYSTEM&nbsp;·&nbsp;状态</div>
+    <div class="nx-sys-row ok" id="sysRowAI"><i></i><span>AI 核心</span><b id="sysAI">运行中</b></div>
+    <div class="nx-sys-row"><i></i><span>模型</span><b id="sysModel">agnes-2.0-flash</b></div>
+    <div class="nx-sys-row"><i></i><span>已挂载工具</span><b id="sysTools">62 项</b></div>
+    <div class="nx-sys-row"><i></i><span>语音合成</span><b id="sysTTS">edge</b></div>
+    <div class="nx-sys-row"><i></i><span>当前状态</span><b id="sysState">在线待命</b></div>
+
+    <div class="nx-panel-title">TODAY&nbsp;·&nbsp;今日</div>
+    <div class="nx-ov-stats">
+      <div class="nx-ov-cell"><b id="ovProjects">15</b><span>进行中</span></div>
+      <div class="nx-ov-cell"><b id="ovTasks">46</b><span>待办任务</span></div>
+      <div class="nx-ov-cell"><b id="ovMemory">84</b><span>新记忆</span></div>
+    </div>
+
+    <div class="nx-panel-title">ACTIVITY&nbsp;·&nbsp;近期</div>
+    <div class="nx-act" id="ovActivity"><div class="nx-act-item"><span class="nx-act-text">记忆「2026-08-15」已保存</span><span class="nx-act-meta"><span class="kind">记忆</span><span>9 小时前</span></span></div><div class="nx-act-item"><span class="nx-act-text">项目「归档与总结」进度更新</span><span class="nx-act-meta"><span class="kind">项目</span><span>11 小时前</span></span></div><div class="nx-act-item"><span class="nx-act-text">项目「验证与审查结果」进度更新</span><span class="nx-act-meta"><span class="kind">项目</span><span>11 小时前</span></span></div><div class="nx-act-item"><span class="nx-act-text">项目「执行核心任务」进度更新</span><span class="nx-act-meta"><span class="kind">项目</span><span>11 小时前</span></span></div></div>
+  </aside>
+
+  <!-- ═══════════ BOTTOM · 命令行 ═══════════ -->
+  <footer class="nx-cmd">
+    <form class="nx-cmd-bar" id="cmdForm" autocomplete="off">
+      <span class="nx-cmd-prompt">&gt;</span>
+      <input class="nx-cmd-input" id="cmdInput" type="text" placeholder="告诉庄周你想完成什么..." autocomplete="off" spellcheck="false" aria-label="指令输入">
+      <span class="nx-cmd-hint" id="voiceHint" hidden=""></span>
+      <div class="nx-cmd-tools">
+        <button type="button" class="nx-tool" data-tool="think" title="深度思考">深度思考</button>
+        <button type="button" class="nx-tool" data-tool="web" title="联网搜索">联网搜索</button>
+        <button type="button" class="nx-tool" data-tool="code" title="代码执行">代码执行</button>
+      </div>
+      <button type="button" class="nx-cmd-mic" id="cmdMic" title="语音输入（按住空格）" aria-label="语音输入">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"></path><path d="M19 11a7 7 0 0 1-14 0M12 18v3"></path></svg>
+      </button>
+      <button type="submit" class="nx-cmd-send" id="cmdSend" title="发送" aria-label="发送">
+        <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+      </button>
+    </form>
+    <div class="nx-cmd-foot">
+      <span class="nx-tagline">庄周会思考，也会行动</span>
+      <span class="nx-hint"><kbd>空格</kbd> 按住说话 · <kbd>Ctrl</kbd>+<kbd>Space</kbd> 唤起</span>
+    </div>
+  </footer>
+
+  <!-- ═══════════ Overlay ═══════════ -->
+  <div class="nx-overlay" id="overlay" aria-hidden="true">
+    <div class="nx-overlay-scrim" id="overlayScrim"></div>
+    <section class="nx-overlay-sheet" role="dialog" aria-modal="true" aria-label="面板">
+      <div class="nx-overlay-head">
+        <span class="nx-overlay-title" id="overlayTitle">面板</span>
+        <span class="nx-overlay-hint" id="overlayHint"></span>
+        <button type="button" class="nx-overlay-close" id="overlayClose" aria-label="关闭">×</button>
+      </div>
+      <div class="nx-overlay-body" id="overlayBody"></div>
+    </section>
+  </div>
+
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/voice-orb.js?v=1"></script>
+<script src="js/zz-space.js?v=4"></script>
+
+
+</body></html>

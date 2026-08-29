@@ -1,0 +1,394 @@
+# ZhuangZhou UI 2.0 · DESIGN.md
+
+> 单一权威设计系统规格（AI 可读）。本文档由 Component System Sprint v1.0 的 8 份碎片化报告（审计 / 架构 / 原语 / Overlay / 命名 / 迁移 / 验证 / 总报告）收敛而成，是 Cursor / Claude Code / Google Stitch 等 AI 编程代理消费 ZhuangZhou 前端时的**唯一设计真相来源**。
+>
+> **令牌权威源**：`ui2.css`（最后加载，`:root` + `[data-theme]` 双命名空间 NEW+LEGACY，增量覆盖 `styles.css` / `premium.css`）。本文档所有色值、间距、阴影、动效取值均直接取自 `ui2.css`，与运行时逐字节一致。
+>
+> **纪律红线（继承自 Sprint）**：本文件仅描述设计系统，**不新增业务功能 / 不修改 Runtime / EventBus / 通信协议 / 庄周设定 / 架构**。缺失组件仅预留命名（见 §4、§9），不实现。
+
+---
+
+## 1. Visual Theme & Atmosphere（视觉主题与氛围）
+
+- **设计哲学**：深空 AI 操作系统（"贾维斯式"本地助手）。以沉静的深色基底承载信息密度高的工作面板，强调色作为"意识核心"的视觉信号，玻璃拟态让面板悬浮于星空背景之上。
+- **视觉基调**：科技感、冷静、精密、略带未来主义；信息有序、动效克制。
+- **核心视觉特征**：`深空基底` · `玻璃拟态` · `青蓝强调` · `网格秩序` · `微动效`。
+- **光影与质感倾向**：毛玻璃（backdrop-filter blur 26px）+ 顶部 1px 内高光（inset highlight）+ 强调色 glow 光晕；无纯扁平、无重投影，层级靠透明度与 blur 区分。
+
+---
+
+## 2. Color Palette & Roles（调色板与角色）
+
+设计令牌以双命名空间声明：**NEW**（`--bg`/`--surface`/`--accent`/`--text`…）供新 UI；**LEGACY**（`--void`/`--cyan`/`--txt`/`--dim`…）供旧 `.app` / settings 组件，二者映射到同一值，消除混用冲突。
+
+### 2.1 主题矩阵（默认 = `midnight`）
+
+| 主题 | `--bg` | `--bg-2` | `--accent` | `--accent-2` | `--text` | `--text-dim` | `--muted` |
+|------|--------|----------|------------|--------------|----------|--------------|-----------|
+| `midnight`(默认) | `#04060f` | `#070b18` | `#4f7bff` | `#7c5cff` | `#e6ecff` | `#9fb0d8` | `#5e6c96` |
+| `dark` | `#0a0c10` | `#0e1117` | `#5fb3c8` | `#8b9bff` | `#eef2f7` | `#aeb8c7` | `#6b7689` |
+| `quantum` | `#060814` | `#0a0c20` | `#22d3ee` | `#a78bfa` | `#eaf0ff` | `#b3c0e8` | `#6f7bb0` |
+| `light` | `#eef2f7` | `#e2e8f0` | `#0E7490` | `#0F766E` | `#0f172a` | `#475569` | `#64748b` |
+| `dark-cyan` | `#060a0f` | `#0a0f16` | `#22d3ee` | `#2dd4bf` | `#e8f6fa` | `#9fc6d2` | `#6b8a95` |
+| `dark-green` | `#060f0b` | `#0a1410` | `#34d399` | `#10b981` | `#e6faf0` | `#9fd2b8` | `#6b957e` |
+| `dark-purple` | `#0a0610` | `#0f0a16` | `#c084fc` | `#a855f7` | `#f3eafb` | `#c6b2e0` | `#8a7b9e` |
+| `dark-amber` | `#100c06` | `#16110a` | `#fbbf24` | `#f59e0b` | `#fbf3e0` | `#d8c69f` | `#9e8c6b` |
+| `dark-rose` | `#100609` | `#160a0f` | `#fb7185` | `#f43f5e` | `#fbeaf0` | `#d8a6b2` | `#9e6b78` |
+
+> `light` 主题采用 `#0E7490`(cyan) / `#0F766E`(teal) 满足 WCAG 2.1 AA 深色文字对比；深主题以 `#5e6c96`(muted) 为最低对比灰阶，**禁用更深灰阶**以免跌破 AA。
+
+### 2.2 角色化令牌
+
+| 角色 | CSS 变量 | 值（midnight） | 使用场景 |
+|------|----------|----------------|----------|
+| Primary Colors | `--bg` / `--bg-2` | `#04060f` / `#070b18` | 页面底色 / 面板实心底 |
+| Brand & Dark | `--accent` / `--accent-2` | `#4f7bff` / `#7c5cff` | 主强调 / 次强调、渐变、光晕 |
+| Accent / Interactive | `--glow` | `rgba(80,120,255,0.40)` | 焦点环光晕、激活投影、品牌辉光 |
+| Neutral / Gray Scale | `--text` / `--text-dim` / `--muted` | `#e6ecff` / `#9fb0d8` / `#5e6c96` | 正文 / 次要文字 / 占位与禁用 |
+| Surface & Borders | `--surface` / `--surface-2` / `--border` | `rgba(90,120,200,.05)` / `rgba(90,120,200,.09)` / `rgba(110,140,220,.14)` | 玻璃面 / 抬升面 / 描边 |
+| Semantic - OK | `--ok` | `#4fd6a0` | 成功、在线状态点 |
+| Semantic - Warn | `--warn` | `#e0a94f` | 警告、待处理 |
+| Semantic - Danger | `--danger` | `#ff6b8a` | 错误、危险操作、关键通知 |
+| Semantic - Info | `--accent` | `#4f7bff` | 信息提示（复用强调色） |
+| Shadow Color | `--glow` | `rgba(80,120,255,0.40)` | 阴影辉光（见 §6） |
+| Grid Line | `--grid-line` | `rgba(90,120,200,0.06)` | 背景网格、分隔细线 |
+
+---
+
+## 3. Typography Rules（排版规则）
+
+### 3.1 Font Family
+
+```css
+--font-display: 'Orbitron', 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif;
+--font-ui:      'Rajdhani', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+--font-mono:    'Share Tech Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+```
+
+> 离线优先、禁 CDN：字体栈优先本地 webfont 名，无网络回落系统字体。自托管只需新增 `@font-face` 指向 `fonts/*.woff2`，无需改动各处 `font-family`。
+
+### 3.2 Type Scale
+
+| Level | Font | Size | Weight | Line-Height | Letter-Spacing | 用途 |
+|-------|------|------|--------|-------------|----------------|------|
+| Display Hero | display | 18px | 700 | 1.1 | `.14em` | HUD 品牌字、意识核心标题 |
+| H1 | display | 16px | 700 | 1.2 | `.08em` | 主面板标题 |
+| H2 | ui | 14px | 600 | 1.3 | `.04em` | 卡片标题 |
+| H3 (Section) | ui | 12px | 600 | 1.4 | `.20em` (uppercase) | 面板分区标题（`.os-panel > h3`） |
+| Body | ui | 14px | 400 | 1.5 | `.01em` | 正文、输入框、聊天 |
+| Body SM | ui | 13px | 400/600 | 1.45 | `.01em` | 按钮、列表项、元信息 |
+| Caption | ui | 12px | 400 | 1.4 | `.02em` | 辅助说明、时间戳 |
+| Meta / Tabular | mono | 11px | 400 | 1.3 | `.02em` | 数值、状态码（tabular-nums） |
+| Nano | ui | 10px | 500 | 1.3 | `.04em` | 标签徽章、极小注脚 |
+
+### 3.3 设计哲学
+
+字重克制（正文中字重 400，强调 600/700）；字距随字号收窄（大标题 `.14em`、正文 `.01em`）；数字一律 `font-variant-numeric: tabular-nums` 对齐；分区标题用大写 + `.20em` 宽字距营造"控制台"秩序感。
+
+---
+
+## 4. Component Stylings（组件样式）
+
+> 命名规范：`zz-` 前缀为官方组件（`.zz-panel` / `.zz-toggle` / `.zz-icon`）。遗留类（`.btn-new` / `.glass-panel` / `.settings-*` / `.os-*`）经令牌别名收敛（见 `ui2.css` 注释），**不新建第二套组件**。缺失组件（§9 预留 `zz-dialog` / `zz-dropdown` / `zz-menu` / `zz-tabs` / `zz-tooltip`）本规范仅定义命名，不实现。
+
+### 4.1 Buttons（单一来源 = `.btn`，ui2.css:591）
+
+```css
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 18px;                      /* --btn-pad-y / --btn-pad-x */
+  border-radius: 16px;                    /* --btn-radius = --r-md */
+  font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);   /* --btn-bg */
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); /* --btn-border */
+  transition: transform .18s var(--ease-premium), box-shadow .18s var(--ease-premium), background .18s;
+}
+.btn:hover  { background: color-mix(in srgb, var(--accent) 26%, transparent); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #04101a; }
+.btn.ghost   { background: transparent; border-color: var(--border); }
+.btn.danger  { background: color-mix(in srgb, var(--danger) 12%, transparent);
+               border-color: color-mix(in srgb, var(--danger) 55%, transparent); color: var(--danger); }
+```
+
+- **变体**：`.primary`（实心强调） / `.ghost`（描边中性） / `.danger`（危险）。
+- **遗留 CTA 变体（令牌单值来源，值不变）**：`.btn-new` → `var(--btn-rail-bg)`（青色轨道渐变）；`.onb-next` → `var(--btn-pill-bg)`（青色胶囊渐变）。
+- **Feature 专属按钮（保留独立，配色令牌化）**：`.os-dock-btn`（Dock 38×38 圆角 10） / `.pt-exec`（通知执行） / `.os-hud .os-tools button`（HUD 32×32 圆角 9） / `.os-chat-fab`（右下 52×52 圆角 16，spring hover）。
+
+### 4.2 Panels（玻璃容器原语）
+
+```css
+.glass-panel, .onb-card {
+  background: linear-gradient(160deg, var(--surface-2), var(--bg-2));  /* 令牌驱动，浅色主题生效 */
+  border: 1px solid var(--border);
+  border-radius: 22px;                  /* --radius-lg = --r-lg */
+  backdrop-filter: blur(28px);          /* 实值：.glass-panel 字面 28px（premium.css:29）；.os-panel 经 var(--blur-glass)=26px，2px 偏差如实保留，不强制统一（改值=视觉变化，违红线） */
+}
+.os-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 22px; padding: 22px; display: flex; flex-direction: column;
+  backdrop-filter: blur(26px);
+}
+```
+
+- **官方语义基准**：`.zz-panel`（Application 层消费）；**视觉基准候选**：`.glass-panel`。二者均为合法面板，不强制合并。
+- `.settings-panel` / `.onb-card` 为 feature 专属容器，保留独立。
+
+### 4.3 Inputs（Phase 2 统一规范）
+
+> **单值来源策略**：遗留变量（`--cyan`/`--line`/`--void`/`--txt`/`--dim2`…）已在 `ui2.css:56-70` 别名到 NEW 令牌，逐字节等价。本节约束现有变体，收口裸 `rgba` 背景与裸 radius 到 `--input-*` 令牌；**不新建第二套组件类**（`.zz-input` 仅预留命名，不实现）。高风险的聊天核心 / Command Palette / 指令坞输入（见 `INPUT_IMPLEMENTATION_AUDIT.md` §5·B 组）只记录、不修改。
+
+#### 4.3.1 Input 令牌集（ui2.css `:root` 定义，值=既有实值，零视觉变化）
+
+| 令牌 | 值 | 用途 |
+|------|----|------|
+| `--input-bg` | `rgba(5,7,10,.6)` | 有底文本输入填充（`.settings-input` 系） |
+| `--input-bg-soft` | `rgba(255,255,255,.05)` | 浅填充（`.settings-textarea` / `.memq-search` / `.hs-chat`） |
+| `--input-bg-deep` | `rgba(0,0,0,.35)` | 深填充（`.mem-search`） |
+| `--input-border` | `var(--border)` | 输入框描边 |
+| `--input-radius` | `var(--r-sm)` = `10px` | 输入框圆角（有底变体） |
+| `--input-pad-y` / `--input-pad-x` | `9px` / `12px` | 输入框内距 |
+| `--input-font` | `13px` | 输入框字号（有底变体） |
+| `--input-focus-border` | `var(--accent)` | 聚焦描边色 |
+| `--input-focus-glow` | `var(--glow)` | 聚焦辉光（令牌化，随主题） |
+| `--input-placeholder` | `var(--muted)` | 占位文字色（统一） |
+| `--input-disabled-op` | `.5` | disabled 透明度（规范预留，当前未应用于文本输入） |
+| `--input-error-border` | `var(--danger)` | error 描边色（规范预留，当前全站缺失） |
+
+#### 4.3.2 变体矩阵
+
+**变体 A — 有底边框型文本输入（canonical = `.settings-input`）**
+```css
+.settings-input, .settings-select {
+  flex: 1; min-width: 120px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);   /* = --border */
+  border-radius: var(--input-radius);       /* = --r-sm = 10px */
+  padding: var(--input-pad-y) var(--input-pad-x);
+  color: var(--text); font-size: var(--input-font);
+  outline: none; transition: var(--motion-fast);
+}
+.settings-input:focus, .settings-select:focus { border-color: var(--input-focus-border); }
+```
+派生别名（低风险提示、零视觉）：`.sc-input` / `.wx-city-input` / `.onb-input` / `.mem-search` / `.memq-search` 经上述令牌路由；圆角 9/8px 与 bg 微差属刻意变体，记录不强制统一（改值=视觉变化，违红线）。
+
+**变体 B — 无边框透明型（聊天 / 指令通道）**
+```css
+/* 容器聚焦范式：输入框自身 border:0 + transparent，聚焦靠容器 :focus-within */
+.os-dock input, #input, .cp-input, .memq-input, .wc-cd-input {
+  flex: 1; background: transparent; border: 0; outline: 0;
+  color: var(--text); font-size: 14px;
+}
+.os-dock input::placeholder, #input::placeholder, .cp-input::placeholder, .memq-input::placeholder {
+  color: var(--input-placeholder);   /* = --muted / --dim2（等价） */
+}
+.os-dock-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+```
+> 高风险类（`#input` / `.hs-chat-input textarea` / `.cp-input` / `.wc-cd-input` / `.os-dock input`）**只记录不修改**（见 §5·B 组）。
+
+**变体 C — 文本域（Textarea）**
+```css
+.settings-textarea {
+  width: 100%; min-height: 92px; resize: vertical; box-sizing: border-box;
+  background: var(--input-bg-soft);
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  color: var(--text); font-size: var(--input-font);
+  padding: 9px 11px; font-family: inherit; line-height: 1.5;
+}
+```
+
+**变体 D — 搜索框（Search）**
+```css
+/* 有底型：.mem-search（bg --input-bg-deep）／浅填充型：.memq-search（bg --input-bg-soft，focus-within teal） */
+.mem-search { background: var(--input-bg-deep); border: 1px solid var(--input-border);
+              border-radius: 8px; padding: 6px 11px; color: var(--text); }
+.mem-search:focus { border-color: var(--border); box-shadow: var(--glow); }
+```
+
+#### 4.3.3 状态规范
+
+| 状态 | 规范 | 现状 |
+|------|------|------|
+| Placeholder | `color: var(--input-placeholder)`（= `--muted`） | 部分实现（统一令牌） |
+| Focus（鼠标） | 有底型 `border-color: var(--accent)`；无底型靠容器 `:focus-within` | ✅ 已有，辉光硬编码 cyan 记录为缺口（F2） |
+| Focus-visible（键盘） | 全局 `:focus-visible`（accent + glow）对 input 生效 | ⚠️ `premium.css:48` 以更高特异性覆盖（F1，记录不改） |
+| Disabled | `opacity: var(--input-disabled-op)`（`.settings-check input` 已用 `.5`） | ❌ 文本输入缺失 → 记录为缺口（F4） |
+| Error | `border-color: var(--input-error-border)` | ❌ 全站缺失 → 记录为缺口（F5） |
+
+#### 4.3.4 非文本控件（沿用既有）
+
+- Toggle：`.settings-switch` 已 Phase 1 视觉别名到 `.zz-toggle`（隐藏 checkbox）。
+- Checkbox：`.settings-check input { accent-color: var(--accent); }`；Range：`.settings-range input[type=range]`。
+- 文件：`<input type="file">` 隐藏（`hidden`），不纳入样式系统。
+
+### 4.4 Toggle（已统一范例 = `.zz-toggle`）
+
+Phase 1 完成：`.settings-switch` 视觉别名到 `.zz-toggle`（40×22 滑块，checked 时 `translateX(18px)` + accent 填充），零 HTML/JS 改动。
+
+### 4.5 Navigation（HUD）
+
+`.os-hud`：56px 高，flex 横排，背景 `--surface` + `blur(26px)` + 1px `--border`，圆角 `--radius-md`(14)。承载品牌、状态点、时钟、工具簇（32×32 按钮，hover 提亮 accent）。
+
+### 4.6 Badges / Tags
+
+```css
+.os-state { font-size: 12px; color: var(--text-dim); padding: 4px 12px; border-radius: 999px;
+            background: var(--surface-2); border: 1px solid var(--border); }
+.pt-kind  { font-size: 10px; padding: 2px 8px; border-radius: 999px;
+            background: var(--surface); border: 1px solid var(--border); color: var(--accent); }
+```
+
+### 4.7 Modals / Dialogs / Overlay
+
+> **现状（Overlay 审计 v1.0 结论）**：全站存在 ~20 个去中心化 Overlay 管理器、Modal/Panel ~15 套重复实现、Toast 3 套、16+ 去中心化 ESC 监听；焦点陷阱/inert 全站 0 处。下文为**目标态规范**，当前代码尚未收敛，迁移路线见 `OVERLAY_MIGRATION_PLAN.md`。
+
+- **目标 — 管理器单一**：中央 `overlay-runtime.js` 仅作数据层（已存在，纯数据无消费者）；未来由 `zz-overlay` / `zz-dialog` 原语承接表现层，容器统一 `.settings-overlay` / `.sysprompt-overlay` / `.cap-overlay` / `.onb-overlay` 经令牌路由。
+- **内容层**：`.modal-card`（Composite 层，未来 `zz-modal-card`）。遮罩用 `--bg` + `--op-*` 透明度 + `backdrop-filter`（`--blur-glass`）。
+- **待建原语（仅命名，不实现，遵守红线）**：`zz-overlay` / `zz-dialog` / `zz-modal-card` / `zz-dropdown` / `zz-menu` / `zz-tabs` / `zz-tooltip`（见 §9）。
+- 详见 `OVERLAY_COMPONENT_REPORT.md` / `OVERLAY_AUDIT_SUMMARY.md`（仅分析，未重构）。
+
+---
+
+## 5. Layout Principles（布局原则）
+
+| 系统 | 取值 | 说明 |
+|------|------|------|
+| 间距基数 | **8px** | `--space-1:8` `--space-2:14` `--space-3:22` `--space-4:34`（非标准 4 倍数，沿用项目节奏） |
+| Grid | `1fr 380px` / `56px 1fr 188px` | `.os-shell` 三区：HUD / 核心+侧栏 / 底部时间线+指令坞 |
+| Gap / Padding | `22px`（`--space-3`） | 区块间距统一 |
+| Container | `.os-shell` 绝对定位 `inset:0` | 内边距 `--space-3` |
+
+**留白哲学**：面板内 padding 22px、面板间距 22px，营造"悬浮卡片"呼吸感；核心区（`.os-core`）大面积留白突出意识核心；信息密度由面板内网格（能力矩阵 2 列）承载，不靠压缩留白。
+
+---
+
+## 6. Depth & Elevation（深度与层级）
+
+### 6.1 Shadow System（完整 box-shadow）
+
+```css
+--elev-1: 0 1px 0 rgba(255,255,255,.04) inset, 0 8px 24px rgba(0,0,0,.28);
+--elev-2: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 48px rgba(0,0,0,.40);
+--elev-3: 0 1px 0 rgba(255,255,255,.08) inset, 0 30px 80px rgba(0,0,0,.55);
+```
+
+> 所有阴影含顶部 1px 内高光（玻璃质感来源），外投影随层级加深。通知卡片用 `0 12px 30px rgba(0,0,0,.35)`。
+
+### 6.2 Surface Layers
+
+`background(--bg)` → `surface(--surface)` → `surface-2(--surface-2)` → `elevated(.os-panel/.glass-panel)` → `overlay(*overlay/.modal-card)` → `companion(--z-companion)`。
+
+### 6.3 Z-index Scale（单一令牌来源 = ui2.css :root，Overlay 迁移 Step[1] 已令牌化）
+
+> **已与 ui2.css 对齐**：原 §6.3 仅列 6 个值，与运行时倒挂（审计发现 `#solarCanvas` z0 / 遮罩 z9000 / 菜单 z200 等硬编码）。现全部 z-index 实值已由 ui2.css :root `--z-*` ladder 覆盖，数值 1:1 对应、零堆叠变更。
+
+```css
+--z-ground: 0;  --z-base: 1;  --z-stage: 2;  --z-stage-deco: 3;
+--z-orb: 4;  --z-rail: 5;  --z-raised: 7;  --z-content: 18;
+--z-hud: 20;  --z-popover: 30;  --z-scanlines: 40;  --z-float: 55;
+--z-overlay: 60;  --z-overlay-raised: 61;  --z-mask: 80;  --z-panel: 81;
+--z-dialog-mask: 82;  --z-dialog: 83;  --z-task-mask: 85;  --z-task: 86;
+--z-command: 90;  --z-drawer: 95;  --z-top: 100;  --z-menu: 200;
+--z-modal-mask: 9000;  --z-companion: 9999;  --z-onboarding: 9999;
+/* 兼容别名（映射到语义层） */
+--z-modal: var(--z-overlay);   /* 模态底层 = 60 */
+--z-toast:  var(--z-overlay);  /* toast 现状 = 60（Step[5] 再提层至 --z-top 以上） */
+```
+
+- **语义分层**（低→高）：ground(0) → base/app(1) → stage/orb(2-4) → rail(5) → content(18) → hud(20) → popover(30) → float(55) → overlay/mask(60-82) → dialog(82-83) → task(85-86) → command(90) → drawer(95) → top(100) → menu(200) → modal-mask/companion/onboarding(9000/9999)。
+- **已知未令牌化原值**（Overlay 迁移 Step[5] 归并，当前为硬编码，不在此文档范围）：`.os-chat-drawer` z25、`.os-chat-fab` z24、宇宙模式 `#solarCanvas` z29。
+- **纪律**：新增浮层一律引用 `--z-*` 令牌，禁止裸数字；层级提层须经 GUI 验收（Step[5]）。
+
+### 6.4 Backdrop Effects
+
+`--blur-glass: 26px`（.os-panel 等经此令牌）；`.glass-panel` 用字面 `blur(28px)`（premium.css:29）+ `saturate(180%)`，与令牌 2px 偏差如实保留，不强制统一（改值=视觉变化）。遮罩层半透明 `--bg` + blur。
+
+### 6.5 Opacity & Font-Scale Tokens（ui2.css :root，供动效/遮罩/尺寸引用）
+
+```css
+/* Opacity ladder（遮罩 / 禁用 / 悬浮态） */
+--op-0:.0; --op-10:.1; --op-20:.2; --op-35:.35; --op-45:.45;
+--op-55:.55; --op-7:.7; --op-85:.85; --op-90:.9; --op-100:1;
+/* Font-scale ladder（替代散落 px，统一字号基准） */
+--fs-10:10px; --fs-11:11px; --fs-115:11.5px; --fs-12:12px; --fs-125:12.5px;
+--fs-13:13px; --fs-14:14px; --fs-15:15px; --fs-16:16px; --fs-18:18px;
+```
+
+- 遮罩透明度优先用 `--op-*` 而非裸 `rgba(...)` alpha；字号统一走 `--fs-*`，新增文本勿写裸 px（与 §3.2 Type Scale 对齐）。
+
+---
+
+## 7. Do's and Don'ts（设计规范与禁忌）
+
+**Do's**
+1. 所有颜色用 `--accent` / `--surface` / `--border` 等令牌，禁硬编码 `rgba`（除非遗留别名已收口）。
+2. 新组件一律 `zz-` 前缀，落入 `ui2.css` 令牌天花板；Feature 专属样式留 `premium.css` / `companion.css` 等。
+3. 面板用玻璃拟态（surface + blur 26 + 1px border），保持悬浮感。
+4. 全局 `:focus-visible` 环（accent 描边 + glow）必须保留，保证键盘可达（WCAG AA）。
+5. 交互反馈用 `--motion-*` 时长 + `--ease-premium` 曲线，hover 微位移（`translateY(-1~3px)`）克制。
+6. 浅色主题用 `#0E7490` / `#0F766E`，深主题最低灰阶 `#5e6c96`，守住对比度。
+7. 数字用 `tabular-nums`，分区标题用大写 + 宽字距。
+
+**Don'ts**
+1. ⛔ 禁止在 `styles.css` 新增组件 class 定义（收敛至 `ui2.css`）。
+2. ⛔ 禁止为同一组件建第二套 class（如 `.zz-panel` 与 `.my-panel` 并存）。
+3. ⛔ 禁止用内联 `style=` 写组件视觉（动态计算极少数运行时值除外）。
+4. ⛔ 禁止改变既有视觉方向（合并仅经令牌别名，不改尺寸/配色/圆角设计）。
+5. ⛔ 禁止硬编码 `rgba` 渐变（CTA 变体须路由到 `--btn-rail-bg` / `--btn-pill-bg`）。
+6. ⛔ 禁止新增无 `zz-` 前缀的通用组件类。
+7. ⛔ 禁止突破 Sprint 红线：不新增功能/页面/架构/通信协议/Runtime/EventBus。
+
+---
+
+## 8. Responsive Behavior（响应式行为）
+
+| 断点 | 值 | 行为 |
+|------|----|------|
+| Desktop | `> 980px` | 三区 grid（`1fr 380px` / `56px 1fr 188px`） |
+| Tablet / Mobile | `≤ 980px` | 单列：`grid-template-columns: 1fr`；行序 hud → core → side → bottom；`.os-bottom` 单列；`.os-side` `max-height: 46vh` |
+
+- **Touch Targets**：HUD 工具 32×32；Dock 按钮 38×38；聊天 FAB 52×52；主题选择器 26×26（最小可达 32 建议）。
+- **折叠策略**：侧栏限高 46vh 内部滚动；底部时间线/指令坞堆叠为单列；聊天降级为右抽屉（420px / `max-width:92vw`）。
+- **Font Scaling**：字号用固定 `--fs-*` 令牌，未用 `clamp()`；小屏不缩放，靠布局重排适配。
+- **动效降级**：`@media (prefers-reduced-motion: reduce)` 与 `body.reduced-motion` 将动画/过渡时长归零。
+
+---
+
+## 9. Agent Prompt Guide（AI 代理提示指南）
+
+### 9.1 Quick Reference
+
+- 设计令牌唯一源：`ui2.css` `:root` + `[data-theme]`。改色/间距/阴影先改令牌，再让组件引用。
+- 组件前缀：`zz-`；按钮 `.btn`（`.primary`/`.ghost`/`.danger`）；面板 `.glass-panel`/`.os-panel`；图标 `.zz-icon`（`.stroke`/`.f`）；开关 `.zz-toggle`。
+- 主题切换：改 `body[data-theme]`，支持 midnight/dark/quantum/light + 5 个 accent 变体。
+- 焦点：永远保留 `:focus-visible` 全局环；新增交互元素勿覆盖 `outline:none` 而不补环。
+- 缺失组件（仅命名，勿实现）：`zz-dialog` `zz-dropdown` `zz-menu` `zz-tabs` `zz-tooltip` `zz-modal-card` `zz-overlay`。
+
+### 9.2 Component Prompts（可直接复制）
+
+1. "用 `.zz-panel` 玻璃面板写一个设置分区，标题用 H3 分区样式（12px 大写 .20em），内含 3 个 `.zz-toggle` 开关。"
+2. "生成一个 `.btn.primary` CTA，hover 用 `--ease-premium` 微位移，focus-visible 显示 accent 环。"
+3. "用 `.zz-icon.stroke` 内联 SVG 画一个'设置'图标（currentColor，20px），不要外链。"
+4. "把 `.modal-card` 内容层包进 `.settings-overlay` 遮罩，遮罩用 `--bg` 半透明 + blur(26px)。"
+5. "在 `.os-hud` 右侧加一个 32×32 工具按钮，hover 提亮为 accent 色，保留 `:focus-visible` 环。"
+6. "用 `--space-3`(22px) 间距、`--r-lg`(22px) 圆角实现两列 `.os-cap` 能力卡片网格，hover `translateY(-3px) scale(1.03)`。"
+
+### 9.3 Iteration Guide（AI 生成 UI 时的迭代建议）
+
+1. 先读 `ui2.css` 确认令牌值，勿凭记忆写 HEX。
+2. 新颜色一律 `var(--accent)` 系 + `color-mix()` 派生，禁用裸 `rgba()`。
+3. 圆角用 `--r-*`（`--r-md`=16 / `--r-lg`=22），注意 `--radius-md`(14)/`--radius-sm`(9) 为遗留双值，新代码用 `--r-*`。
+4. 阴影用 `--elev-1/2/3`，勿自定义 `box-shadow` 失去玻璃内高光。
+5. 动效时长 `--motion-fast`(.18s)/`--motion-base`(.28s)/`--motion-slow`(.45s)，曲线 `--ease-premium`。
+6. 主题兼容：凡用到颜色必须走令牌，确保 light 主题不失效（尤其面板 `linear-gradient` 须用 `--surface-2`/`--bg-2`）。
+7. 图标统一 `.zz-icon`（`fill:currentColor`），弃用 emoji / `.ic` / 外链 SVG。
+8. 新增组件先想命名（zz- 前缀），再想落点（ui2.css 增量层），禁止塞进 styles.css。
+9. 保持焦点可达：任何 `button`/`a`/`input` 不得无 `:focus-visible` 环。
+10. 不越界：本规范只管设计系统；业务逻辑/Runtime/通信留给后端，UI 仅表现层。
+
+---
+
+> **状态**：本文档为 Component System Sprint v1.0 的设计真相收口。Sprint 工程态 = **STOP 待 Review**；类名机械合并（`.btn-new`/`.onb-next` → `.zz-button`、Panel 唯一原语选型）与缺失组件实现均留 Review 门控，不在本文件范围内。本文档本身为零代码改动的设计规格，可直接被 AI 编程代理消费。
+>
+> **设计真相同步记录（2026-08-05）**：依据 Overlay 审计 v1.0 发现的 DESIGN.md 缺陷，已将该文档与运行时令牌源 `ui2.css` 对齐——§6.3 z-index 由 6 个陈旧值补全为 ui2.css :root 完整 `--z-*` ladder（Overlay 迁移 Step[1] 已在 CSS 落地）；新增 §6.5 `--op-*` / `--fs-*` 令牌文档；§4.7 由"断言单一管理器"更正为"目标态 + 当前去中心化现状"。全部为零代码改动的设计文档同步，未触碰任何 Overlay/Runtime/组件实现。

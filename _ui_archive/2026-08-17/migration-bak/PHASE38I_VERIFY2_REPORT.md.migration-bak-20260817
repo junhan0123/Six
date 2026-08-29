@@ -1,0 +1,95 @@
+# Phase 38I · VERIFY2 最终验收报告（#575）
+
+> 日期：2026-08-13 · 身份：Senior Developer + Release Engineer
+> 纪律：VERIFY → AUDIT → PLAN → IMPLEMENT → VERIFY → REPORT → STOP
+> 范围：Phase 38I 发布候选加固，已确认「全做 P0→P1→P2」「严格不突破 Electron 启动后端红线」
+
+## 〇、红线守查（贯穿全程，零违反）
+
+| 红线 | 结果 |
+| --- | --- |
+| 不修改 `server.py` / 后端业务 | ✅ 纯前端 + 构建配置改动 |
+| 不新增 API / 不改核心架构 | ✅ 仅复用既有 `/api/*` |
+| 不突破 Electron 启动后端（不自动拉起 `server.py`） | ✅ Bootstrap 后端未连只给「重新检测 / 查看诊断」，未加「启动庄周」 |
+| 密钥不明文回显 / 不进日志 | ✅ 控制面板密钥仅存入本机 .env，界面永不回显 |
+| 用户只看到庄周/对话/能力/记忆/语音/设置/状态，绝不暴露内部模块名 | ✅ 见 §三术语扫描 |
+
+---
+
+## 一、P0（前序已完成，本次复核）
+
+| # | 项 | 状态 | 证据 |
+| --- | --- | --- | --- |
+| 561–565 | 后端身份/状态/首启等基础项 | ✅ | 前序完成 + 本次实测 `/api/health` 含 `ai_name:"庄周"`+`features`；`boot.js`/`control-center.js` 身份校验生效 |
+| 566 | 统一状态枚举（#566） | ✅ | `capability-health.js` 单一真相源 16 态；`control-center.js`/`dependency-manager.js` 委托；node 测试 8/8 PASS |
+| 572 | 旧首页重定向清理 | ✅ | 前序完成 |
+
+---
+
+## 二、P1
+
+### #568 AI 真实连接状态（P1-2）✅
+- `aiStatusLine(cfg, ai)` 改为由真实 `/api/test-llm` 结果驱动，删除 `key_present` 造假分支。
+- 打开「AI / 模型」即自动探测（空 body 回退服务端已配置项），就地更新状态行三态：
+  - `READY` → 「已连接 {latency}ms」（绿）；`CONNECTION_FAILED` → 「连接失败：{真实 error}」（红）；`NOT_TESTED` → 「已配置·待验证」（黄）。
+- 实证：
+  - `node --check control-center.js` ✅
+  - node harness：badge('ready'/'connection_failed'/'not_tested') 渲染全部正确 ✅
+  - 实时 `/api/test-llm` 返回 `{"ok":true,"latency_ms":459,"model":"agnes-2.0-flash"}` → 探测将显示「已连接 459 ms」✅
+  - 服务中 `control-center.js` 含 `ccAiStatus` ×3（编辑已生效）✅
+- 「暂未支持」标签：仅当 provider 真实携带 `implemented===false` 才加；实测 `/api/config` 5 个 provider **均无该字段** → 安全 no-op，绝不伪造 ✅
+
+### #569 后端身份感知 + 可见层「工具」→「能力」（P1-3）✅
+- 后端身份感知：`boot.js` + `control-center.js` 已校验 `ai_name==='庄周' && features.tools` 才认作在线，非庄周进程占用端口时如实报「非庄周服务（端口被占用）」。
+- 术语收敛：活体 UI 中用户可见的「自定义工具」标签/状态全部改为「自定义能力」：
+  - `final/js/capability-registry.js`：`创建/列出/删除自定义工具` → `能力`（3 标签 + 描述 + 自动化域描述）
+  - `final/components/execution-feed.js`：实时状态 `正在创建/列出/删除自定义工具` → `能力`
+  - 服务中 `capability-registry.js` 含「创建自定义能力」✅；`node --check` ✅
+- 其余「工具」仅存于代码注释 / 搜索 `keywords` / 内部键 / 隐私窗口名（截图工具）/ 意图正则，**均非用户可见**。
+
+### #567 设置中心结构对齐（P1-4）✅
+- `control-center.js` SECTIONS 已对齐：概览 / AI·模型 / 云端API / 本地模型 / 语音 / 视觉·感知 / 记忆 / 知识 / 主动智能 / 外观 / 隐私 / 安全 / 依赖·就绪 / 模型注册表 / 数据 / 启动 / 开发者(诊断) / 关于。
+
+### #571 真实视觉验收（P1-5）⚠️结构性通过，截图受限
+- 结构性实证（HTTP + 静态）：
+  - `/final/index.html` HTTP 200；所有 `<script>/<link>` 仅指向活体资源（css/components/js/assets），**无任何 `_audit/_docs/_legacy/_verify/node_modules/.bak` 引用** ✅
+  - 加载顺序正确：`capability-health.js`(318) → `dependency-manager.js`(319) → `control-center.js`(320) → `first-launch.js`(321) → `bootstrap-wire.js`(322) ✅
+  - 用户可见面无 `server.py / EventBus / Planner / Executor / Phase / RC / Beta / debug / audit / 后端 / 源码 / 堆栈` 等内部词（仅 HTML 注释含 Phase，对用户不可见）✅
+  - `/api/test-llm`、`/api/config` 实时契约与代码一致 ✅
+- 限制：沙箱无 chromium/puppeteer，**无法执行真实浏览器截图**；建议发布前在桌面客户端做一次人工视觉走查（16 项逐条核 §二十五）。本回合以 HTTP/契约/引用/术语扫描替代，已是沙箱内可达的最大证据强度。
+
+---
+
+## 三、P2
+
+### #570 发布包分析（P2-1）✅
+- 见 `PHASE38I_PACKAGING_REPORT.md`：死目录 ≈34MB（活体 17 倍）原会被打包；已在 `electron/package.json` extraResources 过滤器排除 `final/_* ` 与 `*.bak`；`package.json` 校验有效。
+
+### #573 高级诊断默认隐藏（P2-4）✅
+- 「开发者 / 高级诊断」分区 `devOnly:true`，`isRelease = build_channel==='release'||'rc'` 时从导航过滤；实测 `build_channel:"rc"` → 该栏默认隐藏（受通道控制）。
+
+### #574 措辞软清理（P2-3）✅
+- `control-center.js` 两处已软清理（前序）；`final/` 全量扫描确认用户可见面无内部/审计/阶段词，无需额外改动。
+
+---
+
+## 四、VERIFY2 PASS / FAIL 清单
+
+| 维度 | 判定 |
+| --- | --- |
+| 红线（server.py / API / 后端启动 / 密钥回显 / 术语泄漏） | ✅ PASS |
+| P0：#561–565 / #566 / #572 | ✅ PASS |
+| #568 AI 真实状态（契约 + 渲染 + 服务生效） | ✅ PASS |
+| #569 身份感知 + 工具→能力收敛 | ✅ PASS |
+| #567 设置结构对齐 | ✅ PASS |
+| #570 发布包死目录排除 | ✅ PASS |
+| #573 高级诊断 rc 隐藏 | ✅ PASS |
+| #574 措辞软清理 | ✅ PASS |
+| #571 视觉（结构性） | ⚠️ PASS（截图受限，建议人工走查） |
+| 语法：`node --check` 全部编辑文件 | ✅ PASS |
+
+## 五、未纳入本期（超出已确认 P0→P2 范围，非阻断）
+审计计划 P3（Bootstrap 跳过/诊断按钮）、P4（语音无回复接线）、P5（config-state.js 抽取）、P6（开发信息扫荡，已由本次术语扫描覆盖）、P7（聊天记录入口）属更宽范围，按用户「全做 P0→P1→P2」确认未纳入；如需继续可另开任务。
+
+## 六、结论
+Phase 38I P0→P1→P2 全部完成并通过 VERIFY2（视觉截图除外，已说明并给出人工走查建议）。**STOP** —— 未自动进入下一阶段。

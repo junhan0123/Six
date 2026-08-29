@@ -6,7 +6,7 @@
   1. 本地 faster-whisper（small/medium，开源 SOTA 级，带标点，中文准；经 hf-mirror 下载，离线）
   2. 本地 Vosk（small-cn，轻量零依赖、低延迟兜底）
   3. 本地 FunASR（Paraformer，仅在装了 torch+funasr 时可用）
-  4. 云端 API（.env 配置 ZHUANGZHOU_ASR_PROVIDER=aliyun|xfyun|volcengine + 密钥）
+  4. 云端 API（.env 配置 XIAO6_ASR_PROVIDER=aliyun|xfyun|volcengine + 密钥）
   5. 均未就绪 → 返回明确「未启用」文案，绝不消耗积分/触发外部请求
 
 设计要点：
@@ -43,7 +43,7 @@ LOCAL_MODEL_ID = "iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404
 
 DISABLED_MSG = (
     "语音转写当前未启用（本地 FunASR 不可用且未配置云端密钥）。\n"
-    "本地模式需 torch+funasr；或配置 ZHUANGZHOU_ASR_PROVIDER=aliyun|xfyun|volcengine 及对应密钥。"
+    "本地模式需 torch+funasr；或配置 XIAO6_ASR_PROVIDER=aliyun|xfyun|volcengine 及对应密钥。"
 )
 
 _MODEL = None
@@ -200,7 +200,7 @@ _WHISPER_ERR = None
 _WHISPER_HALLU = ("字幕", "感谢观看", "订阅", "thank you", "subscribe", "by ")
 
 def _whisper_model_size():
-    return os.environ.get("ZHUANGZHOU_WHISPER_SIZE", "small")  # small / medium / large-v3
+    return os.environ.get("XIAO6_WHISPER_SIZE", "small")  # small / medium / large-v3
 
 def _whisper_cached():
     """不加载模型，仅判断是否已缓存（供 status 轻量探测）。"""
@@ -383,8 +383,8 @@ def status():
 # ── 启动预热：后端 import 时后台加载 whisper 模型，避免首句语音转写卡顿 ──
 # ⚠️ Beta 修复 (Phase 34)：在本机运行环境（ctranslate2/faster-whisper 原生层）加载
 # Whisper 模型会在后台线程触发原生段错误(segfault)，进而拖垮整个进程、后端无法启动。
-# 因此默认关闭 import 期预热，仅在显式设置 ZHUANGZHOU_ASR_WARMUP=true 时预热；
+# 因此默认关闭 import 期预热，仅在显式设置 XIAO6_ASR_WARMUP=true 时预热；
 # 首次实际语音转写仍走懒加载 _ensure_whisper_model（该路径在本机仍可能 segfault，
 # 属环境兼容性问题，不影响文本对话/桌宠/记忆/HUD 等核心链路）。
-if os.environ.get("ZHUANGZHOU_ASR_WARMUP", "false").lower() in ("1", "true", "yes") and _whisper_cached():
+if os.environ.get("XIAO6_ASR_WARMUP", "false").lower() in ("1", "true", "yes") and _whisper_cached():
     threading.Thread(target=_ensure_whisper_model, daemon=True).start()

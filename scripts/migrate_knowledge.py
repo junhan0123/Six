@@ -1,0 +1,485 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Stage B — Knowledge Migration (Knowledge Platform Sprint v1.0).
+
+Builds G:/xiao6/knowledge/ as the single unified knowledge layer:
+  7 domains (projects/people/concepts/decisions/rules/experiences/failures)
+  + daily/inbox/archive + root index.md MOC.
+
+Sources (only what exists on disk):
+  - rules/      <- personal Obsidian 00_System/*.md (identity/env/startup excluded)
+  - failures/   <- G:/xiao6/BUG_WALL.md (atomic B1-B7 + R1-R4)
+  - decisions/  <- G:/xiao6/docs/decisions/*.md (operational ADRs)
+  - concepts/people/projects/experiences/ <- curated seed knowledge
+  - daily/      <- initial migration entry
+  - index.md    <- root MOC
+
+Hard red lines (must hold):
+  - NO RAG / embedding / DB / vector store.
+  - .md files are the single source of truth.
+  - Local First: no network, no cloud sync.
+  - Files are written with canonical frontmatter (id/type/title/status/...).
+
+The script self-validates by loading KnowledgeRuntime and asserting zero
+validation errors.
+"""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path("G:/xiao6")
+RT_ROOT = ROOT / "xiao6-ui"
+sys.path.insert(0, str(RT_ROOT))
+
+import yaml  # py3.11 env has pyyaml 6.0.3
+
+KNOWLEDGE_ROOT = ROOT / "knowledge"
+OBSIDIAN_SYS = Path("C:/Users/Administrator/Documents/Obsidian Vault/00_System")
+DECISIONS_SRC = ROOT / "docs" / "decisions"
+BUG_WALL = ROOT / "BUG_WALL.md"
+
+TODAY = "2026-08-06"
+SOURCE = "bootstrap"
+
+# --------------------------------------------------------------------------- #
+# Helpers
+# --------------------------------------------------------------------------- #
+def strip_frontmatter(text: str) -> str:
+    m = re.match(r"^---\s*\n.*?\n---\s*\n?", text, re.DOTALL)
+    return text[m.end():] if m else text
+
+
+def strip_wikilinks(text: str) -> str:
+    """Turn [[Target|alias]] -> alias, [[Target]] -> Target (plain text)."""
+    def repl(mm):
+        inner = mm.group(1).strip()
+        return inner.split("|", 1)[1].strip() if "|" in inner else inner
+    return re.sub(r"\[\[([^\]]+)\]\]", repl, text)
+
+
+def dump_fm(fm: dict) -> str:
+    return yaml.safe_dump(fm, allow_unicode=True, sort_keys=False,
+                          default_flow_style=False)
+
+
+def write_doc(domain: str, doc_id: str, fm: dict, body: str) -> Path:
+    d = KNOWLEDGE_ROOT / domain
+    d.mkdir(parents=True, exist_ok=True)
+    fpath = d / ("%s.md" % doc_id)
+    content = "---\n%s---\n\n%s\n" % (dump_fm(fm), body.strip())
+    fpath.write_text(content, encoding="utf-8")
+    return fpath
+
+
+def base_fm(doc_id, title, doc_type, status, tags, related=None, provenance=""):
+    fm = {
+        "id": doc_id,
+        "type": doc_type,
+        "title": title,
+        "status": status,
+        "created": TODAY,
+        "updated": TODAY,
+        "source": SOURCE,
+        "tags": tags,
+    }
+    if provenance:
+        fm["provenance"] = provenance
+    if related:
+        fm["related_knowledge"] = related
+    return fm
+
+
+# --------------------------------------------------------------------------- #
+# 1) rules/  <- personal Obsidian 00_System (identity/env/startup excluded)
+# --------------------------------------------------------------------------- #
+RULE_SOURCES = {
+    "Capability_System.md": ("能力系统规则", "capability-system"),
+    "Completion_Protocol.md": ("完成协议", "completion-protocol"),
+    "Context_Loading_System.md": ("上下文加载系统", "context-loading-system"),
+    "Daily_Workflow.md": ("日常工作流", "daily-workflow"),
+    "Development_Workflow.md": ("开发工作流", "development-workflow"),
+    "Execution_Rules.md": ("执行规则", "execution-rules"),
+    "Knowledge_Rules.md": ("知识规则", "knowledge-rules"),
+    "Memory_Extraction.md": ("记忆抽取规则", "memory-extraction"),
+    "Memory_System.md": ("记忆系统规则", "memory-system"),
+    "Self_Review_System.md": ("自审系统", "self-review-system"),
+    "Task_Planning_System.md": ("任务规划系统", "task-planning-system"),
+    "Tool_Policy.md": ("工具策略", "tool-policy"),
+    "Tool_Registry.md": ("工具登记册", "tool-registry"),
+    "Verification_System.md": ("验证系统", "verification-system"),
+    "Workflow.md": ("工作流规则", "workflow"),
+}
+
+EXCLUDED_RULES = {
+    "Agent_Constitution.md", "Agent_Behavior.md",
+    "Environment_Profile.md", "Startup_Protocol.md", "Index.md",
+}
+
+
+def migrate_rules():
+    count = 0
+    for fname, (title, slug) in RULE_SOURCES.items():
+        src = OBSIDIAN_SYS / fname
+        if not src.exists():
+            print("  [skip] rules source missing: %s" % fname)
+            continue
+        raw = src.read_text(encoding="utf-8", errors="ignore")
+        body = strip_wikilinks(strip_frontmatter(raw))
+        doc_id = "rule-%s" % slug
+        fm = base_fm(doc_id, title, "rule", "consolidated",
+                     ["rule", slug.split("-")[0]],
+                     provenance="personal-obsidian-00-system")
+        write_doc("rules", doc_id, fm, body)
+        count += 1
+    return count
+
+
+# --------------------------------------------------------------------------- #
+# 2) failures/  <- BUG_WALL.md (atomic B1-B7 + R1-R4)
+# --------------------------------------------------------------------------- #
+FAILURES = [
+    ("failure-bug-b1", "B1 — 桌宠生命感动画不可见", "archived",
+     ["bug", "companion"],
+     "编号：B1\n优先级：P1（体验回归）\n证据：CODE 确认\n状态：已解决（Beta 1.1）\n\n"
+     "根因：avatar-renderer.js 默认 SVG 资产无内部动画；CSS 生命动画（av-blink/av-look/"
+     "av-focus/av-effort）命中降级脸（fallbackFace）空集，桌宠「脸」为静态 SVG，核心/环/"
+     "光环的包裹动画仍可见。\n\n影响范围：Companion 桌宠全部 8 态「脸」表现层（Phase 10.2 生命感）失效。\n\n"
+     "修复（Beta 1.1）：8 个 SVG 重写注入语义类（av-eye/av-mouth/av-face），companion.css 改为"
+     "transform-box: fill-box + transform 基契约；LIVE 待老板目测眨眼/观察/执行提示是否可见。"),
+    ("failure-bug-b2", "B2 — 透明置顶窗点击穿透", "archived",
+     ["bug", "companion"],
+     "编号：B2\n优先级：P1（若真机确认阻断点击则升 P0）\n证据：CODE+LIVE\n状态：已解决（Beta 1.1，LIVE 待确认）\n\n"
+     "根因：electron/main.js 创建 Companion 窗仅设 transparent+alwaysOnTop，全仓无 "
+     "ignoreMouseEvents / setIgnoreMouseEvents / clickThrough 逻辑；透明窗默认捕获矩形内所有"
+     "鼠标事件，下方应用收不到点击。\n\n修复（Beta 1.1）：createCompanionWindow 后 "
+     "setIgnoreMouseEvents(true,{forward:true}) + 120ms 轮询命中矩形恢复交互；新增 IPC "
+     "companion:set-clickthrough（true/false/auto）。LIVE 待老板确认覆盖区点击穿透。"),
+    ("failure-bug-b3", "B3 — 主动建议不可执行", "archived",
+     ["bug", "companion", "proactive"],
+     "编号：B3\n优先级：P2（体验）\n证据：CODE 确认\n状态：已解决（Beta 1.1）\n\n"
+     "根因：insight-panel.js 的「执行」走主窗 DOM（#input+#btnSend）；Companion "
+     "onProactiveMessage 仅 showNotification，无执行入口。默认常驻表面（桌宠）无法就地执行建议。\n\n"
+     "修复（Beta 1.1）：showNotification 支持 opts.executable/execContent；非告警类经 "
+     "bridge.action({type:'execute-suggestion'}) 复用既有聊天执行链路。无新 API。"),
+    ("failure-bug-b4", "B4 — 同一主动事件双提示", "archived",
+     ["bug", "companion", "proactive"],
+     "编号：B4\n优先级：P2（体验冗余）\n证据：CODE 确认\n状态：已解决（Beta 1.1）\n\n"
+     "根因：insight-panel.js 与 companion.js 各自订阅 ZZSSE.onMessage，独立呈现同一 proactive 事件，"
+     "两窗同显时重复打扰。\n\n修复（Beta 1.1）：主窗广播 companion:main-visible；Companion "
+     "onProactiveMessage 加 if(mainVisible) return 守卫，主窗可见时由主窗 Toast 呈现。"),
+    ("failure-bug-b5", "B5 — 自动隐藏时长不可配置", "reviewed",
+     ["bug", "companion"],
+     "编号：B5\n优先级：P3（可选）\n证据：CODE 确认\n状态：待处理\n\n"
+     "根因：companion.js 中 IDLE_HIDE_MS = 45000 硬编码，用户无法调整自动隐藏阈值。\n\n"
+     "建议：纳入 Companion 偏好（存 companion.json，无新 API），提供 15s/30s/45s/关闭 选项。"
+     "与 B7、R4 同源，待 Beta 1.2 统一迭代。"),
+    ("failure-bug-b6", "B6 — 边缘吸附仅单轴", "reviewed",
+     ["bug", "companion"],
+     "编号：B6\n优先级：P3（可选）\n证据：CODE 确认\n状态：待处理\n\n"
+     "根因：main.js companion:drag-end 取 minH/minV 后只修正一个轴向，角落场景另一轴不吸附。\n\n"
+     "建议：角落场景双轴吸附（纯窗口几何，无业务变更）。与 R4 同源。"),
+    ("failure-bug-b7", "B7 — 自动隐藏阈值主观适配", "reviewed",
+     ["bug", "companion"],
+     "编号：B7\n优先级：P3（需真实观察）\n证据：LIVE（待老板真实办公观察）\n状态：待处理\n\n"
+     "根因：体验主观项。长专注场景（如写作 1 小时）桌宠 45s 即隐，或短暂离开即隐、回来又弹，"
+     "节奏是否合适待观察。\n\n建议：待真机统计出现/隐藏频率后再定阈值（见 B5）。"),
+    ("failure-review-r1", "R1 — 缩放/多显示器点击穿透坐标一致性", "reviewed",
+     ["review", "companion"],
+     "编号：R1\n优先级：P1\n证据：CODE（分析）\n状态：LIVE 待验（Beta 1.1 Real World Review 新识别）\n\n"
+     "风险：B2 的代码修复依赖 getCursorScreenPoint 与 getPosition 坐标空间一致；150% 缩放 / 多显示器下"
+     "必须真机首验，否则点击穿透坐标错位。\n\n处置：不现场修复，纳入 NEXT_ITERATION_PLAN 等待 Beta 1.2。"),
+    ("failure-review-r2", "R2 — 交互抢占 OS 焦点", "reviewed",
+     ["review", "companion"],
+     "编号：R2\n优先级：P2\n证据：CODE+LIVE（分析）\n状态：LIVE 待验\n\n"
+     "风险：透明置顶窗在交互（菜单/命令气泡打开）时抢占 OS 焦点，无自动归还机制。\n\n"
+     "处置：不现场修复，待 Beta 1.2 统一迭代。"),
+    ("failure-review-r3", "R3 — Hover 120ms 轮询微延迟", "reviewed",
+     ["review", "companion"],
+     "编号：R3\n优先级：P3\n证据：CODE 确认\n状态：LIVE 待观察\n\n"
+     "风险：点击穿透依赖 120ms 轮询 screen.getCursorScreenPoint，Hover 存在微延迟。\n\n"
+     "处置：体验打磨项，待 Beta 1.2 评估是否降级为事件驱动。"),
+    ("failure-review-r4", "R4 — 阈值不可配 + 吸附单轴", "reviewed",
+     ["review", "companion"],
+     "编号：R4\n优先级：P3\n证据：CODE 确认\n状态：即 B5/B6 待处理\n\n"
+     "说明：与既有 B5（自动隐藏阈值不可配）、B6（吸附仅单轴）同源，统一纳入 Beta 1.2 迭代。"),
+]
+
+
+def migrate_failures():
+    for doc_id, title, status, tags, body in FAILURES:
+        fm = base_fm(doc_id, title, "failure", status, tags,
+                     provenance="BUG_WALL.md")
+        write_doc("failures", doc_id, fm, body)
+    return len(FAILURES)
+
+
+# --------------------------------------------------------------------------- #
+# 3) decisions/  <- docs/decisions/*.md (operational ADRs)
+# --------------------------------------------------------------------------- #
+DECISION_SOURCES = {
+    "DECISION_001_EVENTBUS.md": ("DECISION_001 — EventBus 单一来源", "decision-eventbus"),
+    "DECISION_002_NO_SECOND_RUNTIME.md": ("DECISION_002 — 禁止第二运行时", "decision-no-second-runtime"),
+    "DECISION_003_MEMORY_SINGLE_SOURCE.md": ("DECISION_003 — 记忆单一来源", "decision-memory-single-source"),
+    "DECISION_004_GALAXY_BOUNDARY.md": ("DECISION_004 — 星系边界", "decision-galaxy-boundary"),
+    "DECISION_005_PERMISSION_POLICY.md": ("DECISION_005 — 权限策略", "decision-permission-policy"),
+    "DECISION_006_LANGCHAIN_POSITION.md": ("DECISION_006 — LangChain 定位", "decision-langchain-position"),
+    "CR-20260804-001.md": ("CR-20260804-001 — 变更审查", "decision-cr-20260804-001"),
+}
+DECISION_RELATED = {
+    "decision-no-second-runtime": [
+        "decision-eventbus", "decision-memory-single-source",
+        "decision-permission-policy", "decision-galaxy-boundary",
+        "decision-langchain-position",
+    ],
+}
+
+
+def migrate_decisions():
+    count = 0
+    for fname, (title, slug) in DECISION_SOURCES.items():
+        src = DECISIONS_SRC / fname
+        if not src.exists():
+            print("  [skip] decision source missing: %s" % fname)
+            continue
+        raw = src.read_text(encoding="utf-8", errors="ignore")
+        body = strip_frontmatter(raw)
+        doc_id = slug
+        related = DECISION_RELATED.get(doc_id)
+        fm = base_fm(doc_id, title, "decision", "consolidated",
+                     ["decision", "governance"],
+                     related=related, provenance="docs/decisions")
+        write_doc("decisions", doc_id, fm, body)
+        count += 1
+    return count
+
+
+# --------------------------------------------------------------------------- #
+# 4) concepts/  (curated seed — real project knowledge)
+# --------------------------------------------------------------------------- #
+CONCEPTS = [
+    ("concept-local-first", "本地优先架构", "linked", ["concept", "local-first"],
+     ["concept-knowledge-as-files"],
+     "小6 AI OS 的核心约束：所有用户数据与知识以本地文件为唯一事实源，不依赖云计算、"
+     "不联网同步、不使用云端数据库。云仅用于模型推理计算。\n\nLocal First 保证隐私与可审计性，"
+     "所有变更可通过 git 追踪，符合小6 AI OS 2.0 的总体定位。"),
+    ("concept-single-runtime", "单一运行时内核", "linked", ["concept", "runtime"],
+     ["decision-no-second-runtime", "decision-eventbus"],
+     "系统只存在唯一运行时内核，所有状态变更经 EventBus → AppState.applyEvent 单一写入口。"
+     "禁止第二 Runtime / Memory / EventBus / Permission（见 [[DECISION_002 — 禁止第二运行时]] 与 "
+     "[[DECISION_001 — EventBus 单一来源]]）。这是 L0 冻结红线之一。"),
+    ("concept-knowledge-as-files", "知识即文件", "linked", ["concept", "knowledge"],
+     [],
+     "知识层以 .md 文件为唯一事实源，不使用 RAG / 嵌入 / 向量库 / 数据库。统一入口为 Knowledge "
+     "Runtime，所有 Agent / Workflow / Planner / Memory Builder 经 knowledge.* 调用，不得直接读取 markdown。"
+     "详见 [[知识即文件]] 实践与 [[DECISION_003 — 记忆单一来源]]。"),
+    ("concept-eventbus", "事件总线", "linked", ["concept", "eventbus"],
+     ["decision-eventbus", "concept-single-runtime"],
+     "领域事件（DOMAIN_EVENT_NAMES，当前 71）与系统/遥测事件（SYSTEM_EVENT_NAMES，当前 8）两个互斥"
+     "命名空间，经 publish_domain()/publish_system() 发出，未登记名称抛 ValueError。前端 zz-events.js "
+     "与后端 eventbus.py 逐字对齐。见 [[DECISION_001 — EventBus 单一来源]]。"),
+    ("concept-proactive-thin-layer", "主动智能薄层", "linked", ["concept", "proactive"],
+     [],
+     "ProactiveEngine 是薄决策层（IGNORE/SUGGEST/NOTIFY/CREATE_GOAL），只做判断不执行；所有执行经 "
+     "submit_goal（必带 goal_id）+ Policy Guard。克制主动，避免打扰，是小6区别于通用助手的定位之一。"),
+]
+
+
+def migrate_concepts():
+    for doc_id, title, status, tags, related, body in CONCEPTS:
+        fm = base_fm(doc_id, title, "concept", status, tags, related=related)
+        write_doc("concepts", doc_id, fm, body)
+    return len(CONCEPTS)
+
+
+# --------------------------------------------------------------------------- #
+# 5) people/  (curated seed personas)
+# --------------------------------------------------------------------------- #
+PEOPLE = [
+    ("person-owner", "老板（项目所有者）", "linked", ["person", "owner"],
+     [],
+     "小6 AI OS 的个人项目所有者。本地优先「贾维斯」式中文 AI 助手的目标设定者与最终决策者。"
+     "所有治理级变更（Golden State / Constitution）需经其审批。"),
+    ("person-xiao6", "小6（AI OS 交互入口）", "linked", ["person", "companion"],
+     [],
+     "小6 AI OS 的 Companion Interaction Entry（Phase 8 升格）。桌宠形态，始终为 Presentation Layer，"
+     "零 fetch、零业务状态；所有执行经既有 bridge.action → 主窗 handleCompanionAction → 既有系统。"
+     "8 态 SVG 自绘 Avatar Asset。"),
+]
+
+
+def migrate_people():
+    for doc_id, title, status, tags, related, body in PEOPLE:
+        fm = base_fm(doc_id, title, "person", status, tags, related=related)
+        write_doc("people", doc_id, fm, body)
+    return len(PEOPLE)
+
+
+# --------------------------------------------------------------------------- #
+# 6) projects/  (curated seed — the OS itself as a hub node)
+# --------------------------------------------------------------------------- #
+PROJECTS = [
+    ("project-xiao6-ai-os", "Xiao6 AI OS 2.0", "consolidated",
+     ["project", "ai-os"],
+     ["concept-local-first", "concept-single-runtime", "concept-knowledge-as-files",
+      "concept-eventbus", "concept-proactive-thin-layer",
+      "decision-eventbus", "decision-no-second-runtime", "decision-memory-single-source",
+      "decision-galaxy-boundary", "decision-permission-policy", "decision-langchain-position",
+      "person-xiao6", "person-owner"],
+     "小6：本地优先的个人 AI OS。后端 monolith（server.py）+ 前端原生 JS/Three.js + Electron 壳，"
+     "Agnes 为模型，FunASR + edge-tts 为语音，GDELT/USGS/OpenSky/Open-Meteo 为态势源。\n\n"
+     "设计原则：[[本地优先架构]]、[[单一运行时内核]]、[[知识即文件]]、[[事件总线]]、[[主动智能薄层]]。"
+     "治理入口 AI_BOOTSTRAP.md；L0 冻结红线（单 Runtime / 单状态写入口 / 单 EventBus / 单 Permission / "
+     "Local First / 无 God Module）。"),
+]
+
+
+def migrate_projects():
+    for doc_id, title, status, tags, related, body in PROJECTS:
+        fm = base_fm(doc_id, title, "project", status, tags, related=related)
+        write_doc("projects", doc_id, fm, body)
+    return len(PROJECTS)
+
+
+# --------------------------------------------------------------------------- #
+# 7) experiences/  (curated seed — lessons from the real journey)
+# --------------------------------------------------------------------------- #
+EXPERIENCES = [
+    ("experience-no-second-runtime", "为什么不做第二运行时", "reviewed",
+     ["experience", "architecture"],
+     ["decision-no-second-runtime", "concept-single-runtime"],
+     "早期模块曾各自维护私有状态，导致状态不一致、调试困难、事件命名漂移。收敛为单一运行时内核 + "
+     "EventBus 单一写入口后，状态可追溯、前后端对称。教训：任何「再开一个 Runtime/Memory/EventBus」"
+     "的冲动都应被 [[DECISION_002 — 禁止第二运行时]] 挡回。"),
+    ("experience-overlay-decentralization", "Overlay 系统去中心化之痛", "reviewed",
+     ["experience", "frontend"],
+     ["concept-single-runtime"],
+     "Overlay Preflight Audit 发现约 20 个去中心化管理器、Modal/Panel 约 15 套重复、Toast 3 套、"
+     "z-index 令牌失效、16+ 去中心化 ESC 监听、焦点陷阱/inert 全项目 0 处。教训：UI 层同样需要"
+     "[[单一运行时内核]] 式的单一真相与中央分发器，否则逐步腐化为不可维护的碎片。"),
+    ("experience-knowledge-as-files", "知识即文件而非向量库", "reviewed",
+     ["experience", "knowledge"],
+     ["concept-knowledge-as-files"],
+     "曾评估 RAG / 嵌入 / 向量库方案，但违背 Local First 与可审计原则。最终采用 [[知识即文件]]："
+     ".md 为唯一事实源，Knowledge Runtime 做关键词检索与链接图，零向量、零数据库。检索质量靠良好"
+     "的 frontmatter（id/type/tags/links）与 wikilink 网络保障。"),
+]
+
+
+def migrate_experiences():
+    for doc_id, title, status, tags, related, body in EXPERIENCES:
+        fm = base_fm(doc_id, title, "experience", status, tags, related=related)
+        write_doc("experiences", doc_id, fm, body)
+    return len(EXPERIENCES)
+
+
+# --------------------------------------------------------------------------- #
+# 8) daily/  (initial migration entry)
+# --------------------------------------------------------------------------- #
+def migrate_daily():
+    doc_id = "daily-2026-08-06"
+    fm = {
+        "id": doc_id,
+        "title": "2026-08-06 知识平台迁移",
+        "status": "reviewed",
+        "created": TODAY,
+        "updated": TODAY,
+        "source": SOURCE,
+        "tags": ["daily", "migration"],
+    }
+    body = (
+        "今日执行 Knowledge Platform Sprint v1.0 — Stage B 迁移，建立统一知识层 knowledge/。\n\n"
+        "- rules/：导入个人 Obsidian 00_System 15 份操作规则（剔除身份/环境/启动类 5 份）。\n"
+        "- failures/：原子化 BUG_WALL 的 B1-B7 + R1-R4 共 11 条（B1-B4 已 Beta 1.1 解决）。\n"
+        "- decisions/：导入 docs/decisions 7 份运营级 ADR。\n"
+        "- concepts/people/projects/experiences/：策划型种子知识，交叉链接形成知识图。\n\n"
+        "统一约束：无 RAG/嵌入/数据库，.md 为唯一事实源，Local First。校验目标：validation_ok=True。"
+    )
+    write_doc("daily", doc_id, fm, body)
+    return 1
+
+
+# --------------------------------------------------------------------------- #
+# 9) root index.md MOC
+# --------------------------------------------------------------------------- #
+def migrate_index():
+    body = (
+        "# 小6知识层 · MOC\n\n"
+        "> 统一知识层（Knowledge Platform Sprint v1.0）。单一事实源 = `knowledge/` 下的 .md 文件；"
+        "唯一知识入口 = Knowledge Runtime；唯一编辑器 = Obsidian；统一调用 = `knowledge.*`。\n"
+        "> 无 RAG / 嵌入 / 数据库 / 向量库。Local First。\n\n"
+        "## 七大知识域\n\n"
+        "- **projects/** — 项目与产品：[Xiao6 AI OS 2.0](projects/)\n"
+        "- **people/** — 人物与角色：[老板（项目所有者）](people/)、[小6（AI OS 交互入口）](people/)\n"
+        "- **concepts/** — 核心概念：[本地优先架构](concepts/)、[单一运行时内核](concepts/)、"
+        "[知识即文件](concepts/)、[事件总线](concepts/)、[主动智能薄层](concepts/)\n"
+        "- **decisions/** — 治理决策：[DECISION_002 — 禁止第二运行时](decisions/)、"
+        "[DECISION_001 — EventBus 单一来源](decisions/)\n"
+        "- **rules/** — 操作规则（外部参考，源自个人 Obsidian 00_System）\n"
+        "- **experiences/** — 经验与教训\n"
+        "- **failures/** — 缺陷与复盘（源自 BUG_WALL）\n\n"
+        "## 辅助目录\n\n"
+        "- **daily/** — 日常笔记与归档\n"
+        "- **inbox/** — 待处理捕获\n"
+        "- **archive/** — 已归档/弃用\n\n"
+        "## 关键链接\n\n"
+        "- [[Xiao6 AI OS 2.0]]\n"
+        "- [[DECISION_002 — 禁止第二运行时]]\n"
+        "- [[本地优先架构]]\n"
+        "- [[知识即文件]]\n"
+        "- [[事件总线]]\n"
+        "- [[单一运行时内核]]\n"
+        "- [[主动智能薄层]]\n"
+    )
+    fpath = KNOWLEDGE_ROOT / "index.md"
+    fpath.write_text(body, encoding="utf-8")
+    return 1
+
+
+# --------------------------------------------------------------------------- #
+# Main
+# --------------------------------------------------------------------------- #
+def main():
+    print("== Stage B: Knowledge Migration ==")
+    print("target: %s" % KNOWLEDGE_ROOT)
+    n_rules = migrate_rules()
+    n_fail = migrate_failures()
+    n_dec = migrate_decisions()
+    n_con = migrate_concepts()
+    n_ppl = migrate_people()
+    n_prj = migrate_projects()
+    n_exp = migrate_experiences()
+    n_daily = migrate_daily()
+    n_idx = migrate_index()
+    total = n_rules + n_fail + n_dec + n_con + n_ppl + n_prj + n_exp + n_daily
+    print("written: rules=%d failures=%d decisions=%d concepts=%d "
+          "people=%d projects=%d experiences=%d daily=%d (+index)"
+          % (n_rules, n_fail, n_dec, n_con, n_ppl, n_prj, n_exp, n_daily))
+
+    # Self-validation
+    from knowledge_runtime import KnowledgeRuntime
+    rt = KnowledgeRuntime(str(KNOWLEDGE_ROOT))
+    stats = rt.load(watch=False)
+    report = rt.validate()
+    print("\n== Validation ==")
+    print("docs(nodes): %d" % stats["nodes"])
+    print("relations:   %d" % stats["relations"])
+    print("by_domain:   %s" % stats["by_domain"])
+    print("by_type:     %s" % stats["by_type"])
+    print("errors:      %d" % len(report.errors))
+    print("warnings:    %d" % len(report.warnings))
+    print("infos:       %d" % (stats["nodes"] and report.summary.get("infos", 0)))
+    print("validation_ok: %s" % report.ok)
+    for i in report.errors:
+        print("  ERROR [%s] %s : %s" % (i.code, i.path, i.message))
+    for i in report.warnings:
+        print("  WARN  [%s] %s : %s" % (i.code, i.path, i.message))
+    if report.errors:
+        print("\nFAILED: %d validation error(s)." % len(report.errors))
+        sys.exit(1)
+    print("\nOK: zero validation errors. Manifest written.")
+
+
+if __name__ == "__main__":
+    main()

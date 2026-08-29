@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Six AI · 对话</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --bg-2:#eef1f5; --panel:#ffffff;
+    --line:#e8eaed; --line-2:#dfe1e7;
+    --txt:#111827; --txt-2:#4b5563; --txt-3:#9ca3af;
+    --accent:#2563eb; --accent-2:#7c3aed; --accent-soft:rgba(37,99,235,.08);
+    --cyan:#0ea5e9; --cyan-glow:rgba(14,165,233,.20);
+    --user:#eff6ff; --user-2:#dbeafe;
+    --warn:#f59e0b; --err:#ef4444; --ok:#10b981;
+    --radius:18px; --radius-sm:12px;
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+    display:flex; overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(156,163,175,.35);border-radius:8px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(156,163,175,.55)}
+
+  /* ── 侧栏 ── */
+  .sidebar{
+    width:260px; min-width:260px; height:100%; background:var(--panel);
+    border-right:1px solid var(--line); display:flex; flex-direction:column; padding:16px 14px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 4px 14px}
+  .brand .logo{
+    width:34px;height:34px;border-radius:10px; flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:16px;
+  }
+  .brand .brand-text{flex:1;font-weight:700;font-size:15.5px;letter-spacing:.3px}
+  .brand .brand-edit{width:28px;height:28px;border-radius:8px;color:var(--txt-3);display:flex;align-items:center;justify-content:center}
+  .brand .brand-edit:hover{background:var(--bg-2);color:var(--txt-2)}
+  .newchat{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px;border-radius:12px;font-weight:600;font-size:13.5px;
+    background:var(--txt);color:#fff; transition:transform .12s,filter .12s;
+  }
+  .newchat:hover{filter:brightness(1.15)}
+  .newchat:active{transform:translateY(1px)}
+
+  .nav{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+  .nav-item{
+    display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;
+    color:var(--txt-2);font-size:13.5px;transition:background .12s,color .12s;text-align:left;
+  }
+  .nav-item:hover{background:var(--bg-2);color:var(--txt)}
+  .nav-item .ic{width:20px;text-align:center;font-size:15px}
+  .nav-item kbd{margin-left:auto;font-size:11px;color:var(--txt-3);background:var(--bg-2);padding:2px 6px;border-radius:6px}
+
+  .recent{margin-top:10px;flex:1;display:flex;flex-direction:column;min-height:0}
+  .recent-hd{
+    display:flex;align-items:center;justify-content:space-between;padding:8px 10px;
+    font-size:12px;color:var(--txt-3);cursor:pointer;border-radius:8px;user-select:none;
+  }
+  .recent-hd:hover{background:var(--bg-2)}
+  .recent-hd .arrow{transition:transform .2s;font-size:10px}
+  .recent.collapsed .recent-hd .arrow{transform:rotate(-90deg)}
+  .recent-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;transition:max-height .2s}
+  .recent.collapsed .recent-list{max-height:0;overflow:hidden}
+  .sess{
+    display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;
+    color:var(--txt-2);font-size:13px;transition:background .12s,color .12s;position:relative;
+  }
+  .sess:hover{background:var(--bg-2);color:var(--txt)}
+  .sess.active{background:var(--accent-soft);color:var(--accent)}
+  .sess .ic{flex:0 0 auto;font-size:13px;opacity:.7}
+  .sess.active .ic{opacity:1}
+  .sess .ttl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sess .del{opacity:0;color:var(--txt-3);font-size:15px;padding:0 4px;border-radius:6px}
+  .sess:hover .del{opacity:1}
+  .sess .del:hover{color:var(--err);background:rgba(239,68,68,.10)}
+
+  .user{
+    margin-top:auto;border-top:1px solid var(--line);padding-top:12px;display:flex;align-items:center;gap:10px;
+  }
+  .user .avatar{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;
+  }
+  .user .info{flex:1;min-width:0}
+  .user .name{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px}
+  .user .pro{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 6px;border-radius:10px}
+  .user .sub{font-size:11.5px;color:var(--txt-3)}
+  .user .settings{width:30px;height:30px;border-radius:9px;color:var(--txt-3);display:flex;align-items:center;justify-content:center}
+  .user .settings:hover{background:var(--bg-2);color:var(--txt)}
+
+  /* ── 主区 ── */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100%;position:relative}
+  .topbar{
+    height:56px;min-height:56px;display:flex;align-items:center;justify-content:center;padding:0 24px;
+    background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
+  }
+  .ai-select{
+    display:flex;align-items:center;gap:6px;font-weight:700;font-size:15.5px;color:var(--txt);
+    padding:6px 12px;border-radius:10px;cursor:pointer;transition:background .12s;
+  }
+  .ai-select:hover{background:var(--bg-2)}
+  .ai-select .arrow{font-size:11px;color:var(--txt-3)}
+
+  .stream{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+  .welcome{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    text-align:center;padding:40px;
+  }
+  .welcome .avatar-big{
+    width:78px;height:78px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#60a5fa 0%,#7c3aed 70%);
+    box-shadow:0 10px 40px rgba(124,58,237,.22);
+    animation:pulse 3.2s ease-in-out infinite;
+  }
+  .welcome h1{margin:0;font-size:28px;font-weight:700;color:var(--txt)}
+  .welcome p{margin:0;color:var(--txt-2);font-size:15px}
+  @keyframes pulse{50%{transform:scale(1.06);box-shadow:0 14px 50px rgba(124,58,237,.30)}}
+
+  .wrap{flex:1;display:none;flex-direction:column;gap:18px;padding:26px 0 10px}
+  .wrap-inner{max-width:820px;margin:0 auto;padding:0 24px;width:100%;display:flex;flex-direction:column;gap:18px}
+  .msg{display:flex;gap:14px;align-items:flex-start}
+  .msg .ava{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;
+  }
+  .msg.user{flex-direction:row-reverse}
+  .msg.user .ava{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff}
+  .msg.assistant .ava{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+  .bubble{
+    max-width:min(680px,78%);padding:13px 16px;border-radius:16px;font-size:14.5px;line-height:1.7;
+    white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--line);
+  }
+  .msg.user .bubble{background:var(--user);border-color:var(--user-2);border-top-right-radius:6px}
+  .msg.assistant .bubble{border-top-left-radius:6px}
+  .bubble .cursor{display:inline-block;width:7px;height:16px;background:var(--accent);margin-left:2px;animation:blink 1s steps(2) infinite;vertical-align:text-bottom}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ── 工具卡片 ── */
+  .toolcard{
+    margin:2px 0 2px 48px;max-width:680px;border:1px solid var(--line-2);border-radius:14px;
+    background:#fff;overflow:hidden;
+  }
+  .toolcard .hd{display:flex;align-items:center;gap:10px;padding:10px 13px;font-size:13px}
+  .toolcard .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:0 0 auto}
+  .toolcard.done .spin{display:none}
+  .toolcard .chk{display:none;width:16px;height:16px;border-radius:50%;background:var(--ok);color:#fff;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto}
+  .toolcard.done .chk{display:flex}
+  .toolcard .tname{font-weight:600;color:var(--txt)}
+  .toolcard .tstate{margin-left:auto;font-size:11px;color:var(--txt-3)}
+  .toolcard .body{padding:0 13px 11px 37px;font-size:12.5px;color:var(--txt-2);line-height:1.6;display:none}
+  .toolcard.done .body{display:block;max-height:240px;overflow:auto}
+  .toolcard .res{white-space:pre-wrap;word-break:break-word}
+  .toolcard .args{color:var(--txt-3);font-size:11.5px;margin-bottom:6px;white-space:pre-wrap;word-break:break-word}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .typing{color:var(--txt-3);font-size:13px;padding:4px 2px;display:flex;gap:5px;align-items:center}
+  .typing .b{width:6px;height:6px;border-radius:50%;background:var(--txt-3);animation:tb 1.2s infinite}
+  .typing .b:nth-child(2){animation-delay:.2s}.typing .b:nth-child(3){animation-delay:.4s}
+  @keyframes tb{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+  /* ── 快捷操作 ── */
+  .quick{
+    display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:0 24px 14px;max-width:820px;margin:0 auto;width:100%;
+  }
+  .quick button{
+    display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;
+    border:1px solid var(--line);background:#fff;color:var(--txt-2);font-size:13px;transition:all .12s;
+  }
+  .quick button:hover{border-color:var(--line-2);background:var(--bg-2);color:var(--txt)}
+  .quick button .ic{font-size:14px}
+
+  /* ── 输入栏 ── */
+  .composer{padding:0 24px 18px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .composer .box{
+    width:100%;max-width:820px;display:flex;align-items:flex-end;gap:8px;
+    background:var(--panel);border:1px solid var(--line-2);border-radius:24px;
+    padding:10px 12px;box-shadow:0 4px 20px rgba(0,0,0,.04);
+  }
+  .composer .tools{display:flex;align-items:center;gap:2px}
+  .composer .tools button{width:34px;height:34px;border-radius:10px;color:var(--txt-3);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .composer .tools button:hover{background:var(--bg-2);color:var(--txt-2)}
+  .composer textarea{
+    flex:1;resize:none;border:none;outline:none;background:none;color:var(--txt);
+    font-size:15px;line-height:1.6;max-height:180px;min-height:26px;font-family:inherit;
+  }
+  .composer textarea::placeholder{color:var(--txt-3)}
+  .composer .mic, .composer .send{
+    width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .composer .mic{color:var(--txt-3);font-size:17px}
+  .composer .mic:hover{background:var(--bg-2);color:var(--txt)}
+  .composer .mic.rec{background:var(--err);color:#fff;animation:blink 1s steps(2) infinite}
+  .composer .send{background:var(--txt);color:#fff;font-size:18px}
+  .composer .send:hover{filter:brightness(1.15)}
+  .composer .send:disabled{opacity:.35;cursor:not-allowed;filter:none}
+  .disclaimer{font-size:12px;color:var(--txt-3);text-align:center}
+
+  /* ── Toast / Modal ── */
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+    background:rgba(30,41,59,.95);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:70vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:40}
+  .modal.show{display:flex}
+  .modal .card{width:440px;max-width:92vw;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+  .modal h3{margin:0 0 14px;font-size:16px}
+  .modal .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .modal .row:last-of-type{border-bottom:none}
+  .modal .row .k{color:var(--txt-2)}
+  .modal .row .v{color:var(--txt);font-weight:600}
+  .modal .close{margin-top:16px;width:100%;padding:11px;border-radius:12px;background:var(--bg-2);font-weight:600}
+  .modal .close:hover{background:var(--line-2)}
+  .tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-soft);color:var(--accent)}
+
+  @media (max-width:720px){
+    .sidebar{display:none}
+    .main{width:100%}
+    .composer{padding:0 14px 14px}
+  }
+</style>
+</head>
+<body>
+  <!-- 侧栏 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">6</div>
+      <div class="brand-text" id="brandName">Six AI</div>
+      <button class="brand-edit" title="编辑">✎</button>
+    </div>
+    <button class="newchat" id="newChat">＋ 新建对话</button>
+
+    <nav class="nav">
+      <button class="nav-item" id="searchSess"><span class="ic">🔍</span> 搜索对话 <kbd>Ctrl F</kbd></button>
+      <button class="nav-item"><span class="ic">👤</span> 智能体中心</button>
+      <button class="nav-item"><span class="ic">🧠</span> 记忆库</button>
+      <button class="nav-item"><span class="ic">🧰</span> 工具箱</button>
+    </nav>
+
+    <div class="recent" id="recent">
+      <div class="recent-hd" id="recentToggle"><span>最近对话</span><span class="arrow">▾</span></div>
+      <div class="recent-list" id="sessions"></div>
+    </div>
+
+    <div class="user">
+      <div class="avatar">6</div>
+      <div class="info">
+        <div class="name">小6 <span class="pro">Pro</span></div>
+        <div class="sub">在线</div>
+      </div>
+      <button class="settings" id="openSettings" title="设置">⚙</button>
+    </div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+    <header class="topbar">
+      <div class="ai-select" id="aiSelect">Six AI 4.0 <span class="arrow">▾</span></div>
+    </header>
+
+    <div class="stream" id="stream">
+      <div class="welcome" id="empty">
+        <div class="avatar-big"></div>
+        <h1>你好，我是小6</h1>
+        <p>有问题，尽管问我</p>
+      </div>
+      <div class="wrap" id="wrap" style="display:none">
+        <div class="wrap-inner" id="wrapInner"></div>
+      </div>
+    </div>
+
+    <div class="quick" id="quick">
+      <button data-prompt="帮我写一段 Python 代码，实现："><span class="ic">💻</span> 帮我写代码</button>
+      <button data-prompt="请帮我总结这份长文档的核心要点："><span class="ic">📄</span> 总结长文档</button>
+      <button data-prompt="请为下面主题生成思维导图大纲："><span class="ic">🌿</span> 生成思维导图</button>
+      <button data-prompt="请把以下内容翻译成中文："><span class="ic">🌐</span> 翻译成中文</button>
+      <button data-prompt=""><span class="ic">⋯</span> 更多</button>
+    </div>
+
+    <div class="composer">
+      <div class="box">
+        <div class="tools">
+          <button title="附件">📎</button>
+          <button title="联网">🌐</button>
+          <button title="插件">⊞</button>
+        </div>
+        <textarea id="input" rows="1" placeholder="发消息给小6…"></textarea>
+        <button class="mic" id="micBtn" title="语音输入">🎤</button>
+        <button class="send" id="sendBtn" title="发送" disabled>↑</button>
+      </div>
+      <div class="disclaimer">Six AI 可能会出错，请核对重要信息。</div>
+    </div>
+  </main>
+
+  <!-- 设置 -->
+  <div class="modal" id="settings">
+    <div class="card">
+      <h3>设置</h3>
+      <div class="row"><span class="k">显示名称</span><span class="v" id="setName">小6</span></div>
+      <div class="row"><span class="k">语音合成</span><span class="v">Qwen3 <span class="tag">本地 vLLM</span></span></div>
+      <div class="row"><span class="k">语音球</span><span class="v">桌面右下角 · 独立窗口</span></div>
+      <div class="row"><span class="k">主题</span><span class="v" id="setTheme">light-blue</span></div>
+      <button class="close" id="closeSettings">关闭</button>
+      <button class="close" id="clearAll" style="background:rgba(239,68,68,.10);color:#dc2626;margin-top:8px">清空所有对话</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+  var BASE = location.origin;
+  var LS_SESS = 'six_gui_sessions_v1';
+  var LS_CUR = 'six_gui_current_v1';
+
+  var el = function(id){ return document.getElementById(id); };
+  var sessions = [];
+  var currentId = null;
+  var busy = false;
+
+  function uid(){ return 's-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function load(){
+    try{ sessions = JSON.parse(localStorage.getItem(LS_SESS) || '[]'); }catch(e){ sessions = []; }
+    currentId = localStorage.getItem(LS_CUR) || null;
+    if(!sessions.length){ newSession(true); }
+    else if(!currentId || !sessions.some(function(s){return s.id===currentId;})){ currentId = sessions[0].id; }
+    save();
+  }
+  function save(){
+    localStorage.setItem(LS_SESS, JSON.stringify(sessions));
+    localStorage.setItem(LS_CUR, currentId);
+  }
+  function newSession(silent){
+    var s = { id: uid(), title:'新对话', messages:[] };
+    sessions.unshift(s); currentId = s.id; save(); renderSidebar();
+    if(!silent) openCurrent();
+    return s;
+  }
+  function current(){ return sessions.filter(function(s){return s.id===currentId;})[0]; }
+
+  function toast(msg){
+    var t = el('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  /* ── 侧栏 ── */
+  el('recentToggle').addEventListener('click', function(){
+    el('recent').classList.toggle('collapsed');
+  });
+  el('searchSess').addEventListener('click', function(){
+    toast('搜索对话：请在对话列表中直接浏览（后续可接入全文搜索）');
+  });
+  el('aiSelect').addEventListener('click', function(){
+    toast('当前模型：Six AI 4.0');
+  });
+
+  /* ── 快捷操作 ── */
+  el('quick').querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var p = this.getAttribute('data-prompt') || '';
+      var input = el('input');
+      if(p){ input.value = p + ' '; input.focus(); autoGrow(); }
+      else toast('更多能力可在「工具箱」中查看');
+    });
+  });
+
+  /* ── 渲染 ── */
+  function renderSidebar(){
+    var box = el('sessions'); box.innerHTML = '';
+    sessions.forEach(function(s){
+      var d = document.createElement('div');
+      d.className = 'sess' + (s.id===currentId?' active':'');
+      d.innerHTML = '<span class="ic">💬</span><span class="ttl"></span><span class="del" title="删除">×</span>';
+      d.querySelector('.ttl').textContent = s.title || '新对话';
+      d.addEventListener('click', function(e){
+        if(e.target.classList.contains('del')){
+          if(s.messages.length && !confirm('删除该对话？')) return;
+          sessions = sessions.filter(function(x){return x.id!==s.id;});
+          if(!sessions.length) newSession(true);
+          if(s.id===currentId) currentId = sessions[0].id;
+          save(); renderSidebar(); openCurrent(); return;
+        }
+        currentId = s.id; save(); renderSidebar(); openCurrent();
+      });
+      box.appendChild(d);
+    });
+  }
+
+  function openCurrent(){
+    renderSidebar();
+    var s = current();
+    var wrap = el('wrap'), inner = el('wrapInner'), empty = el('empty'), quick = el('quick');
+    if(!s || !s.messages.length){
+      wrap.style.display='none'; inner.innerHTML=''; empty.style.display='flex'; quick.style.display='flex'; return;
+    }
+    empty.style.display='none'; quick.style.display='none'; wrap.style.display='flex'; inner.innerHTML='';
+    s.messages.forEach(function(m){ if(m.role!=='tool') appendMsg(m.role, m.content, false); });
+    scrollBottom();
+  }
+
+  function scrollBottom(){ var st=el('stream'); st.scrollTop = st.scrollHeight; }
+
+  function appendMsg(role, content, streaming){
+    var inner = el('wrapInner'); el('empty').style.display='none'; el('wrap').style.display='flex'; el('quick').style.display='none';
+    var m = document.createElement('div'); m.className = 'msg ' + role;
+    var ava = document.createElement('div'); ava.className='ava'; ava.textContent = role==='user'?'你':'6';
+    var b = document.createElement('div'); b.className='bubble'; b.textContent = content || '';
+    if(streaming){ var c=document.createElement('span'); c.className='cursor'; b.appendChild(c); }
+    m.appendChild(ava); m.appendChild(b); inner.appendChild(m); scrollBottom();
+    return b;
+  }
+
+  /* ── 工具卡片 ── */
+  function makeToolCard(tool){
+    var inner = el('wrapInner'); el('empty').style.display='none'; el('wrap').style.display='flex'; el('quick').style.display='none';
+    var c = document.createElement('div'); c.className='toolcard';
+    c.innerHTML =
+      '<div class="hd"><span class="spin"></span><span class="chk">✓</span>'+
+      '<span class="tname"></span><span class="tstate">执行中…</span></div>'+
+      '<div class="body"><div class="args"></div><div class="res"></div></div>';
+    c.querySelector('.tname').textContent = tool || '工具';
+    inner.appendChild(c); scrollBottom();
+    return c;
+  }
+  function toolArgs(card, args){
+    var a = card.querySelector('.args');
+    var txt = (typeof args==='string') ? args : JSON.stringify(args);
+    if(txt && txt!=='{}') a.textContent = '参数：' + txt;
+  }
+  function toolDone(card, result){
+    card.classList.add('done');
+    card.querySelector('.tstate').textContent = '完成';
+    var r = card.querySelector('.res');
+    var txt = (typeof result==='string') ? result : (result?JSON.stringify(result):'');
+    r.textContent = txt && txt!=='null' ? txt.slice(0,1200) : '（无返回）';
+    scrollBottom();
+  }
+
+  /* ── 发送 ── */
+  async function send(text){
+    text = (text||'').trim(); if(!text || busy) return;
+    var s = current();
+    s.messages.push({role:'user', content:text});
+    if(s.title==='新对话'){ s.title = text.slice(0,18); }
+    save(); renderSidebar();
+    appendMsg('user', text, false);
+    var bubble = appendMsg('assistant', '', true);
+    var full = '';
+    busy = true; setBusy(true);
+
+    var curTool = null, curCard = null;
+    try{
+      var history = s.messages.filter(function(m){return m.role!=='tool';}).slice(-16)
+        .map(function(m){return {role:m.role, content:m.content};});
+      var ctrl = new AbortController();
+      var to = setTimeout(function(){ try{ctrl.abort();}catch(e){} }, 180000);
+      var res = await fetch(BASE + '/api/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ messages: history, session_id: s.id, temperature:0.7, reasoning:false }),
+        signal: ctrl.signal
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      clearTimeout(to);
+      var reader = res.body.getReader(), dec = new TextDecoder(), buf='', done=false;
+      while(!done){
+        var rr = await reader.read();
+        if(rr.done){ done=true; break; }
+        buf += dec.decode(rr.value, {stream:true});
+        var lines = buf.split('\n'); buf = lines.pop();
+        for(var i=0;i<lines.length;i++){
+          var line = lines[i].trim();
+          if(!line.startsWith('data:')) continue;
+          var payload = line.slice(5).trim();
+          if(payload==='[DONE]'){ done=true; break; }
+          var obj; try{ obj = JSON.parse(payload); }catch(e){ continue; }
+          if(obj.choices && obj.choices[0] && obj.choices[0].delta && obj.choices[0].delta.content){
+            full += obj.choices[0].delta.content;
+            var cur = bubble.querySelector('.cursor');
+            bubble.textContent = full;
+            if(cur) bubble.appendChild(cur);
+            scrollBottom();
+          } else if(obj.zhuangzhou_event){
+            var ev = obj.zhuangzhou_event;
+            if(ev==='tool_start'){
+              curTool = obj.tool; curCard = makeToolCard(obj.tool); if(obj.args!=null) toolArgs(curCard, obj.args);
+            } else if(ev==='tool_end'){
+              if(!curCard) curCard = makeToolCard(obj.tool);
+              toolDone(curCard, obj.result);
+            } else {
+              if(!curCard || curTool!==obj.tool){ curCard = makeToolCard(obj.tool||ev); }
+            }
+          }
+        }
+      }
+      if(full) s.messages.push({role:'assistant', content:full});
+      save();
+    }catch(e){
+      if(full) s.messages.push({role:'assistant', content:full});
+      if(!full){ bubble.textContent='（连接出错：'+(e&&e.message||e)+'）'; s.messages.push({role:'assistant',content:'（连接出错）'}); }
+      save();
+    }finally{
+      var c2 = bubble.querySelector('.cursor'); if(c2) c2.remove();
+      busy=false; setBusy(false); scrollBottom();
+    }
+  }
+
+  function setBusy(b){
+    el('sendBtn').disabled = b || !el('input').value.trim();
+    el('input').disabled = false;
+  }
+
+  /* ── 语音输入 ── */
+  var mediaRec=null, recChunks=[], recStream=null;
+  async function toggleMic(){
+    if(mediaRec && mediaRec.state==='recording'){ mediaRec.stop(); return; }
+    try{
+      recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRec = new MediaRecorder(recStream); recChunks=[];
+      mediaRec.ondataavailable = function(e){ if(e.data.size) recChunks.push(e.data); };
+      mediaRec.onstop = async function(){
+        el('micBtn').classList.remove('rec');
+        try{
+          var blob = new Blob(recChunks, {type:'audio/webm'});
+          var buf = await blob.arrayBuffer();
+          toast('识别中…');
+          var r = await fetch(BASE+'/api/asr?ext=.webm', {method:'POST', body:buf});
+          var d = await r.json();
+          var txt = (d&&d.ok&&d.text)?d.text.trim():'';
+          if(txt){ el('input').value=txt; autoGrow(); setBusy(false); send(txt); }
+          else toast('未识别到内容');
+        }catch(e){ toast('语音识别不可用（需后端 ASR）'); }
+        if(recStream) recStream.getTracks().forEach(function(t){t.stop();});
+      };
+      mediaRec.start(); el('micBtn').classList.add('rec'); toast('正在聆听…点击停止');
+    }catch(e){ toast('麦克风不可用'); }
+  }
+
+  /* ── TTS（Qwen3）── */
+  function speak(text){
+    var clean = (text||'').replace(/\s+/g,' ').trim(); if(!clean) return;
+    fetch(BASE+'/api/speak', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text:clean, rate:'+0%'})})
+      .then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function(ab){ try{
+        var a=new Audio(URL.createObjectURL(new Blob([ab],{type:'audio/mpeg'})));
+        a.play().catch(function(){});
+      }catch(e){} })
+      .catch(function(){});
+  }
+
+  /* ── 输入框 ── */
+  function autoGrow(){ var t=el('input'); t.style.height='auto'; t.style.height=Math.min(180,t.scrollHeight)+'px'; }
+  el('input').addEventListener('input', function(){ autoGrow(); el('sendBtn').disabled = busy || !this.value.trim(); });
+  el('input').addEventListener('keydown', function(e){
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(this.value); this.value=''; autoGrow(); el('sendBtn').disabled=true; }
+  });
+  el('sendBtn').addEventListener('click', function(){ var v=el('input').value; el('input').value=''; autoGrow(); send(v); });
+  el('newChat').addEventListener('click', function(){ newSession(false); el('input').focus(); });
+  el('micBtn').addEventListener('click', toggleMic);
+
+  /* ── 设置 ── */
+  el('openSettings').addEventListener('click', function(){ el('settings').classList.add('show'); });
+  el('closeSettings').addEventListener('click', function(){ el('settings').classList.remove('show'); });
+  el('clearAll').addEventListener('click', function(){
+    if(!confirm('清空所有对话记录？')) return;
+    sessions=[]; newSession(true); openCurrent(); el('settings').classList.remove('show'); toast('已清空');
+  });
+
+  /* ── 后端状态 ── */
+  function probe(){
+    fetch(BASE+'/api/health').then(function(r){return r.json();}).then(function(d){
+      if(d.ai_name){
+        el('brandName').textContent = d.ai_name + ' AI';
+        el('setName').textContent = d.ai_name;
+      }
+      if(d.theme) el('setTheme').textContent = d.theme;
+    }).catch(function(){});
+  }
+
+  /* ── 启动 ── */
+  load(); openCurrent(); probe();
+  setInterval(probe, 15000);
+  el('input').focus();
+})();
+</script>
+</body>
+</html>

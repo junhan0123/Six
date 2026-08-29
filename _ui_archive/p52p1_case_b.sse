@@ -1,0 +1,8 @@
+data: {"xiao6_event": "tool_start", "tool": "get_time", "args": {}}
+
+data: {"xiao6_event": "tool_end", "tool": "get_time", "result": "本地 时间：2026年08月19日 04:48:21 星期三"}
+
+data: {"choices": [{"delta": {"content": "老板，现在凌晨四点四十八，周三。"}}]}
+
+data: "[DONE]"
+

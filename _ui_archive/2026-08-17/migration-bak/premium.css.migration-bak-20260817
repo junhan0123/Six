@@ -1,0 +1,245 @@
+/* ============================================================
+   ZhuangZhou · P4-A Premium Design System (additive layer)
+   ------------------------------------------------------------
+   本文件是 Phase 4 前端精装层，纯增量、不改动 styles.css 任何规则。
+   移除 index.html 中对应的 <link> 即可一键回退到旧样式（FEATURE_PREMIUM_UI）。
+   设计语言沿用现有 token：青/青绿/琥珀 + 玻璃拟态 + 网格扫描线。
+   ============================================================ */
+
+/* Design Tokens 已合并至 ui2.css（唯一权威来源）：--ease-premium/--ease-out-soft/--motion-*/--elev-*/--r-* 现均定义于 ui2.css :root。本文件仅保留可复用组件类。 */
+
+/* ── 可复用组件类（opt-in，按需挂到元素上） ── */
+
+/* 玻璃卡片：统一毛玻璃 + 精致描边 + 顶部高光 */
+.glass-card{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  backdrop-filter: var(--glass-2);
+  -webkit-backdrop-filter: var(--glass-2);
+  box-shadow: var(--elev-1);
+}
+.glass-card:hover{ box-shadow: var(--elev-2); border-color: var(--line-strong); }
+
+/* ── LEGACY（Formal UI System v1.0 · Phase A / D-03）──
+ * .glass-panel 的 background 已由 ui2.css（最后加载，L1080）令牌化覆盖为
+ * linear-gradient(160deg, var(--surface-2), var(--bg-2))，成为唯一权威；
+ * 本处仅保留 border / border-radius / backdrop-filter / box-shadow 等有效属性，
+ * 不删除（DR-03：Legacy 标记而非清除），避免容器级玻璃丢失边框与模糊。 */
+.glass-panel{
+  /* Phase B · F-B02：原硬编码 background 已被 ui2.css:1080 令牌化版本完全覆盖，
+   * 属死声明（且与本块上方注释「仅保留 border/radius/blur/shadow」互相矛盾）。
+   * 移除后由 ui2 单一权威提供背景，零视觉变化。 */
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  backdrop-filter: var(--glass-3);
+  -webkit-backdrop-filter: var(--glass-3);
+  box-shadow: var(--elev-2);
+}
+
+/* 悬浮抬升：统一磁吸式微交互手感 */
+.lift{ transition: transform var(--motion-base) var(--ease-premium), box-shadow var(--motion-base) var(--ease-premium); }
+.lift:hover{ transform: translateY(-2px); box-shadow: var(--elev-2); }
+
+/* 渐变标题文字 */
+.text-grad{
+  background: linear-gradient(90deg, var(--cyan), var(--teal));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* 聚焦可见环（WCAG 2.1 AA：键盘可达性）
+ * ── Phase B · F-B01：本块已整体收口至 ui2.css（Primitive 状态唯一权威，D-03）──
+ * 原实现：`.premium-focus:focus-visible, button/a/input/select/textarea/[tabindex]
+ *          :focus-visible { outline:2px solid var(--cyan); box-shadow:0 0 0 4px
+ *          rgba(34,211,238,.18); }`
+ * 缺陷：元素型选择器特异性 (0,1,1) 高于 ui2.css 的 `:focus-visible` (0,1,0)，
+ *       使加载顺序失效、本文件反向接管全站焦点环；其光晕为硬编码青色，导致 9 个
+ *       主题中 8 个出现「描边跟随主题、光晕恒为青色」的可见分裂。
+ * 判定：FOCUS 属 Primitive 状态契约，依 D-03 约束② premium.css 不得定义；且本块
+ *       消费的 --accent / --glow 本身就定义在 ui2.css，故「premium 作降级兜底」
+ *       在工程上不成立（ui2 缺失时令牌一并缺失）。
+ * 处置：规则整体移除，唯一权威见 ui2.css「F. 焦点系统」段（该段已同步补齐等特异性
+ *       元素选择器组）。Legacy 类 `.premium-focus` 未删除，其样式由 ui2.css:1024
+ *       继续提供，DOM 侧零消费、零影响。 */
+
+/* 渐变分隔线 */
+.divider-grad{
+  height:1px; border:0; margin:14px 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+/* ── 真实表面精装（增量覆盖，仅追加高光/阴影，不破坏布局/配色） ── */
+
+/* 设置面板：左侧渐变辉光描边 + 标题呼吸光 */
+.settings-panel{ box-shadow: -20px 0 70px rgba(0,0,0,.55), -1px 0 0 rgba(34,211,238,.25) inset; }
+.settings-head-title{
+  background: linear-gradient(90deg, var(--cyan), var(--teal));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow: none;
+}
+
+/* 模态卡：在既有扫描线 ::before 之外，叠加霓虹渐变描边（::after） */
+.modal-card::after{
+  content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background: linear-gradient(160deg, rgba(34,211,238,.55), rgba(45,212,191,.15) 40%, transparent 80%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events:none;
+}
+
+/* 按钮/芯片统一悬浮抬升（在原 hover 基础上追加位移手感） */
+.btn-new{ transition: transform var(--motion-fast) var(--ease-premium), box-shadow var(--motion-fast) var(--ease-premium), color var(--motion-fast), border-color var(--motion-fast); }
+/* Phase B · F-B05：原 `.btn-new:hover{transform:translateY(-1px)}` 与 styles.css:110
+ * 的同名声明**值完全相同**，属冗余重复；移除后 hover 位移仍由 styles.css:110 提供，
+ * 本文件继续负责其 transition（动效增强），零视觉变化。 */
+.chip{ transition: transform var(--motion-fast) var(--ease-premium), color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast); }
+.chip:hover{ transform: translateY(-1px); }
+
+/* ── 入场动效：面板/导航项错峰淡入（叠加在既有 slide 之上，纯增益） ── */
+@keyframes premiumFadeUp{ from{ opacity:0; transform: translateY(12px); } to{ opacity:1; transform:none; } }
+@keyframes premiumPop{ from{ opacity:0; transform: scale(.96); } to{ opacity:1; transform:none; } }
+
+.settings-nav-item{ animation: premiumFadeUp var(--motion-base) var(--ease-premium) both; }
+.settings-nav-item:nth-child(1){ animation-delay:.02s }
+.settings-nav-item:nth-child(2){ animation-delay:.05s }
+.settings-nav-item:nth-child(3){ animation-delay:.08s }
+.settings-nav-item:nth-child(4){ animation-delay:.11s }
+.settings-nav-item:nth-child(5){ animation-delay:.14s }
+.settings-nav-item:nth-child(6){ animation-delay:.17s }
+.settings-nav-item:nth-child(7){ animation-delay:.20s }
+.settings-nav-item:nth-child(8){ animation-delay:.23s }
+
+.settings-head, .settings-body{ animation: premiumFadeUp var(--motion-slow) var(--ease-premium) both; }
+.settings-body{ animation-delay:.06s }
+
+/* 天气/场景类模态头部入场 */
+.modal-card > .wx-modal-head,
+.modal-card > header{ animation: premiumPop var(--motion-base) var(--ease-premium) both; }
+
+/* ── 统一动效预算：尊重 reduced-motion（系统级 + 设置级，二者任一即关闭） ── */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+  .premium-bg{ display:none !important; }
+}
+body.reduced-motion *,
+body.reduced-motion *::before,
+body.reduced-motion *::after{
+  animation-duration:.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.001ms !important;
+}
+body.reduced-motion .premium-bg{ display:none !important; }
+
+/* ── 设置面板：危险操作按钮（重置本地缓存）── */
+.settings-save-btn.danger{
+  border-color: color-mix(in srgb, var(--red) 60%, transparent);
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+.settings-save-btn.danger:hover{
+  background: color-mix(in srgb, var(--red) 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 50%, transparent);
+}
+.settings-save-btn.danger:active{ transform: translateY(1px); }
+
+
+/* ── 首次启动引导（P7-3）────────────────────────── */
+.onb-overlay{
+  position: fixed; inset: 0; z-index: var(--z-onboarding);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  /* Phase B · F-B04：background 与 backdrop-filter（含 -webkit- 前缀）已整体收口到
+   * ui2.css:1643（Phase 9 把遮罩从 .72 降到 .42，本处 .72 早已是死声明）。
+   * 移除后玻璃遮罩由 ui2 单一权威提供，零视觉变化。 */
+  opacity: 0; transition: opacity var(--motion-base) var(--ease-premium);
+}
+.onb-overlay.show{ opacity: 1; }
+.onb-overlay[hidden]{ display: none; }
+
+.onb-card{
+  /* Phase B · F-B03：width / padding / background 三条已被 ui2.css:1647 完全覆盖
+   * （Phase 9 引导卡克制化：460px→420px、硬编码 34px/32px/30px→--sp-26/--sp-24、
+   * 硬编码深色渐变→--surface-2 令牌）。此三条为死声明，移除后零视觉变化。
+   * 本块继续提供 premium 独有的圆角 / 高程 / 定位 / 入场动效。 */
+  border-radius: var(--r-xl);
+  box-shadow: var(--elev-3);
+  position: relative;
+  animation: onb-pop var(--motion-slow) var(--ease-premium) both;
+}
+.onb-card.re-pop{ animation: onb-pop var(--motion-base) var(--ease-premium) both; }
+@keyframes onb-pop{ from{ opacity:0; transform: translateY(14px) scale(.97); } to{ opacity:1; transform:none; } }
+
+.onb-progress{ display:flex; gap:8px; justify-content:center; margin-bottom:22px; }
+.onb-dot{
+  width:8px; height:8px; border-radius:50%; background: var(--line-strong);
+  transition: width var(--motion-base) var(--ease-premium), background var(--motion-base) var(--ease-premium), box-shadow var(--motion-base) var(--ease-premium);
+}
+.onb-dot.active{ background: var(--teal); box-shadow: 0 0 10px rgba(45,212,191,.7); width:22px; border-radius:var(--radius-xs); }
+.onb-dot.done{ background: var(--cyan); }
+
+.onb-step{ display:none; flex-direction:column; align-items:center; text-align:center; gap:14px; animation: onb-fade var(--motion-base) var(--ease-premium) both; }
+.onb-step.active{ display:flex; }
+@keyframes onb-fade{ from{ opacity:0; transform: translateX(8px); } to{ opacity:1; transform:none; } }
+
+.onb-logo{ font-size:44px; filter: drop-shadow(0 6px 18px rgba(34,211,238,.35)); animation: onb-float 3.2s ease-in-out infinite; }
+@keyframes onb-float{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-7px); } }
+.onb-title{ font-size:26px; margin:0; font-weight:700; }
+.onb-h2{ font-size:22px; margin:0 0 4px; font-weight:700; }
+.onb-sub{ margin:0; color: var(--teal); font-family:'Share Tech Mono', monospace; letter-spacing:1px; font-size:13px; }
+.onb-desc{ margin:0; color: var(--dim); font-size:14px; line-height:1.7; }
+
+/* @deprecated → 未来 .zz-button--pill（青色胶囊 CTA 变体）。值来源已收口到 ui2.css --btn-pill-bg（零视觉变化）。 */
+.onb-next{
+  margin-top:6px; padding:12px 26px; border-radius:var(--radius-pill); cursor:pointer;
+  border:1px solid rgba(34,211,238,.35);
+  background: var(--btn-pill-bg);
+  color:#eafdff; font-size:14px; font-weight:600;
+  box-shadow: 0 8px 24px rgba(34,211,238,.18);
+  transition: transform var(--motion-fast) var(--ease-premium), box-shadow var(--motion-fast) var(--ease-premium);
+}
+.onb-next:hover{ transform: translateY(-1px); box-shadow: 0 12px 30px rgba(34,211,238,.3); }
+.onb-skip{ background:none; border:none; color:var(--dim); font-size:13px; cursor:pointer; text-decoration:underline; opacity:.7; }
+.onb-skip:hover{ opacity:1; color: var(--cyan); }
+
+.onb-field{ width:100%; display:flex; flex-direction:column; gap:8px; text-align:left; }
+.onb-field.onb-row{ flex-direction:row; align-items:center; justify-content:space-between; }
+.onb-label{ font-size:14px; color:#dbeafe; font-weight:600; }
+.onb-hint{ font-size:12px; color: var(--dim); }
+
+.onb-input{
+  width:100%; padding:10px 14px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,.04); border:1px solid var(--input-border);
+  color:#eafdff; font-size:14px; outline:none;
+  transition: border-color var(--motion-fast) var(--ease-premium), box-shadow var(--motion-fast) var(--ease-premium);
+}
+.onb-input:focus{ border-color: var(--input-focus-border); box-shadow: 0 0 0 4px rgba(34,211,238,.18); }
+
+/* Formal UI System v1.0 · 主题色板控件（与 HUD #osThemePicker 同一视觉语言）
+ * 收口前：34px 圆形 + 内联 --sw 单色 + 白色激活边框，与 HUD 的 26px 方形 + 渐变 +
+ * var(--text) 激活边框完全是两套控件。现统一为同一形态，仅尺寸放大（引导场景点击区），
+ * 属同一组件的尺寸变体而非第二套语言。背景由 ui2.css 的 .onb-themes .t-* 提供。
+ * 9 个 swatch 需容错换行，故 flex-wrap。 */
+.onb-themes{ display:flex; flex-wrap:wrap; gap:8px; }
+.onb-theme{
+  width:32px; height:32px; border-radius:var(--radius-sm); cursor:pointer;
+  border:2px solid transparent; box-shadow: var(--elev-1);
+  transition: transform var(--motion-fast) var(--ease-premium), border-color var(--motion-fast);
+}
+.onb-theme:hover{ transform: scale(1.12); }
+.onb-theme.active{ border-color: var(--text); }
+
+.onb-nav{ width:100%; display:flex; justify-content:space-between; margin-top:8px; }
+.onb-back{ background:none; border:none; color:var(--dim); cursor:pointer; font-size:13px; padding:8px 4px; }
+.onb-back:hover{ color: var(--cyan); }
+
+.onb-step kbd{
+  font-family:'Share Tech Mono', monospace; font-size:11px;
+  background: rgba(255,255,255,.08); border:1px solid var(--line-strong);
+  border-radius:var(--radius-xs); padding:1px 8px; color:#dbeafe;
+}
+

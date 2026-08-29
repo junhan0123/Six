@@ -63,7 +63,7 @@ def _wmo(code):
 
 
 def _http_get_json(url, timeout=12):
-    req = urllib.request.Request(url, headers={"User-Agent": "ZhuangZhou/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Xiao6/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 

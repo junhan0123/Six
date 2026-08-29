@@ -1,0 +1,11 @@
+{
+  "newLinkFormat": "shortest",
+  "alwaysUpdateLinks": true,
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "assets",
+  "showViewHeader": true,
+  "legacyEditor": false,
+  "livePreview": true,
+  "strictLineBreaks": false,
+  "defaultViewMode": "preview"
+}

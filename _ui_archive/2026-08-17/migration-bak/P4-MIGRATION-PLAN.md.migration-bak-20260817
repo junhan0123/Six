@@ -1,0 +1,237 @@
+# P4 · P4-MIGRATION-PLAN
+
+> 阶段：P4 Phase 1 DESIGN ONLY（本文件为 P4.2–P4.6 可执行计划，本身不改代码）
+> 项目：ZhuangZhou Core v1.4.0 · 关联：全部 P4 DESIGN 文档
+> 红线贯穿：不丢历史数据 / 不隐写测试 / 不绕过 Policy→Permission→Approval→Executor / 不碰 UI / DESIGN 阶段零代码变更。
+
+---
+
+## 0. 核心原则（指令铁律）
+
+```
+VERIFY BEFORE DESIGN
+DESIGN BEFORE IMPLEMENT
+CONTRACT BEFORE MIGRATION
+MIGRATE BEFORE DEPRECATE
+DEPRECATE BEFORE DELETE
+```
+
+任何旧模块**不得直接删除**；必须先建 Contract → 迁移调用方 → 双跑验证 → 弃用 → 最后才允许移除（且仅当验证通过）。
+
+---
+
+## 1. 三阶段兼容迁移框架
+
+```mermaid
+graph LR
+    A[Phase A 契约引入] --> B[Phase B 双跑验证]
+    B --> C[Phase C 切换]
+    C --> D[Deprecated 冻结]
+    D -->|验证通过| E[未来移除]
+
+    subgraph A[Phase A — Contract Introduction]
+      A1[建立 Canonical Memory API]
+      A2[DefaultEvolutionPolicy 提升权威]
+      A3[EvolvedMemorySource 接管(monolith 仍并跑)]
+    end
+    subgraph B[Phase B — Dual Verification]
+      B1[旧调用方经 Adapter 接入]
+      B2[新旧结果一致性比对]
+      B3[flag 双跑]
+    end
+    subgraph C[Phase C — Cutover]
+      C1[统一入口为唯一生产路径]
+      C2[旧实现 DEPRECATED]
+    end
+```
+
+| 阶段 | 目标 | 旧系统状态 |
+|---|---|---|
+| Phase A | 建统一 Contract，新权威就位 | 继续运行 |
+| Phase B | 旧调用方经 Adapter 接入，新旧一致性验证 | 双跑 |
+| Phase C | 统一入口成唯一生产路径 | DEPRECATED |
+
+---
+
+## 2. 阶段→P4.x 映射与执行顺序
+
+```mermaid
+gantt
+    title P4.2 - P4.6 时序（主链串行 + 支线并行）
+    dateFormat  X
+    axisFormat  P%L
+    section 主链
+    P4.2 Memory 契约      :p42, 0, 1
+    P4.3 统一检索         :p43, 1, 1
+    P4.4 重构 Context      :p44, 2, 1.5
+    P4.5 知识+事件+孤儿    :p45, 3.5, 1.5
+    P4.6 配置+弃用收口     :p46, 5, 1
+    section 并行支线
+    P4.2 迁移脚本          :p42m, 0, 1
+    P4.5 事件发布点        :p45e, 3.5, 1.5
+```
+
+---
+
+## 3. P4.2 · CANONICAL MEMORY CONTRACT（Phase A）
+
+| 项 | 内容 |
+|---|---|
+| 目标 | 固化 `memories` 为唯一 Canonical Store；建 Canonical Memory API；修正 distiller 写入 |
+| 修改文件 | `memory.py`（Canonical API：create/get/update/upsert/archive/restore/delete/verify/link/merge/consolidate）、`memory_distiller.py`（真实列）、`memory_evolution/lifecycle.py`（修 stale 注释） |
+| 迁移步骤 | M1 校验 content_hash UNIQUE 已存在；M2 distiller 改真实列；M3 lifecycle 注释修正；M5 mem_vectors(knowledge scope) 清理 |
+| 测试 | Memory CRUD / UPSERT 幂等(content_hash) / MERGE 保高置信 / LINK / VERIFY / 无物理 DELETE(grep) / 数据保全 |
+| 回归门 | 既有记忆读写全绿；distiller 产出真实列；无物理 DELETE |
+| 风险 | tags JSON 兼容 → 双写过渡后停读 tags |
+| 回滚 | flag/双写回退；不删新 API |
+| 完成标准 | 所有 memories 写入者经 Canonical API；content_hash 幂等生效 |
+
+---
+
+## 4. P4.3 · UNIFIED RETRIEVAL（Phase A→B）
+
+| 项 | 内容 |
+|---|---|
+| 目标 | `DefaultEvolutionPolicy` 提升唯一 Retrieval 权威；`memory_intelligence.recall`/`cognitive.episodic.recall_episodes` 降为内部 |
+| 修改文件 | `memory_evolution/retrieval_policy.py`（权威）、`memory_intelligence.py`（内部）、`cognitive/episodic.py`（内部） |
+| 迁移步骤 | 散落召回调用点统一改走 `retrieval` facade；`memory_query.query_memory` 保留为对话显式搜索 API |
+| 测试 | 检索幂等 / 排名一致(ContextRanker) / 去重 / 冲突降权×0.4 / 边界(排除 archived/decayed/pending) / Legacy Bypass |
+| 回归门 | 排名无漂移；召回质量≥旧；Legacy Bypass 通过 |
+| 风险 | 召回质量波动 → top-k 重叠度回归 |
+| 回滚 | 调用点回退旧 recall 直调（双跑期保留） |
+| 完成标准 | 全仓除 DefaultEvolutionPolicy 外无第二检索入口 |
+
+---
+
+## 5. P4.4 · CONTEXT ENGINE REFACTOR（Phase B→C 关键）
+
+| 项 | 内容 |
+|---|---|
+| 目标 | 消除 MemorySource 单体；EvolvedMemorySource 接管（补 DEDUP_SCOPE_KEY）；新增 RuntimeStateSource；UserModel 停拼提示词；FEATURE_MEMORY_EVOLUTION 正式定义 |
+| 修改文件 | `context/sources.py`（弃用单体）、新增 `RuntimeStateSource`、`memory_evolution/context_source.py`（补键+注册）、`cognitive/user_model.py`（移除 render）、`context/builder.py`（注册）、`config.py`（定义 flag） |
+| 迁移步骤 | EvolvedMemorySource + RuntimeStateSource 与 MemorySource 双跑（flag 切换）；确认无三重注入/双读后停用 MemorySource；MemoryRecallSource 并入 EvolvedMemorySource |
+| 测试 | 颗粒度 / 去重(无三重注入) / 预算隔离 / 运行时状态独立 / 双读消除 / 边界(UserModel 不产提示词) / Legacy Bypass / 提示词逐字节一致(COND) |
+| 回归门 | 无三重注入 + 逐字节一致 + Legacy Bypass |
+| 风险 | 提示词结构变化 → COND 比对 + 人工抽检 |
+| 回滚 | `FEATURE_MEMORY_EVOLUTION=false` 回退 MemorySource + RuntimeStateSource 退出 |
+| 完成标准 | MemorySource 停用；EvolvedMemorySource+RuntimeStateSource 注册；UserModel 返回 ContextItem |
+
+---
+
+## 6. P4.5 · KNOWLEDGE BOUNDARY + EVENT CONTRACT + ORPHAN（Phase A/C）
+
+| 项 | 内容 |
+|---|---|
+| 目标 | 固化 knowledge_runtime 边界；扩展 EventBus；count 校验后 DROP 孤儿表 |
+| 修改文件 | `knowledge_runtime`（边界契约）、`eventbus.py`（扩展 DOMAIN_EVENT_NAMES）、`db.py`（孤儿表 count→DROP 迁移块）、写入点补 publish_domain |
+| 迁移步骤 | M4 孤儿表 `SELECT COUNT(*)` 校验（>0 中止 fail closed）→ DROP；发布 MEMORY_RETRIEVED/CONSOLIDATED/DECAYED、CONTEXT_BUILT、KNOWLEDGE_UPDATED |
+| 测试 | 边界(无路径写 knowledge 入 memories/mem_vectors) / 文件召回 / 孤儿 count / 事件名唯一 / 无绕过 Executor |
+| 回归门 | 孤儿零数据确认后 DROP；事件名唯一；边界通过 |
+| 风险 | 误删带数据表 → count 校验 fail closed |
+| 回滚 | 孤儿 DROP 不可回滚（零数据无损失；>0 已中止） |
+| 完成标准 | 知识不入 Memory；5 新事件发布；孤儿表移除 |
+
+---
+
+## 7. P4.6 · CONFIG SINGLE-SOURCE + DEPRECATION CLOSEOUT（Phase C）
+
+| 项 | 内容 |
+|---|---|
+| 目标 | 配置默认值收敛单一权威；memory_v2 flag 迁入 config.py；ghost flag 登记；全弃用收口；全量回归 |
+| 修改文件 | `config.py`（DEFAULT_FEATURE_FLAGS 单一字典 + 登记 FEATURE_MEMORY_EVOLUTION + 去噪模块级默认）、`memory_v2/flags.py`（deprecate，迁入 config） |
+| 迁移步骤 | C1 抽取单一字典；C2 模块级注解去矛盾；C3 登记 ghost flag；C4 flag 迁入；C5 全局 grep 消除 ghost 引用；全仓 Legacy Bypass Test |
+| 测试 | 单一权威 / ghost 消除 / 无矛盾默认 / 回退一致 / 安全边界 / 全量回归 |
+| 回归门 | 全量 pytest + Legacy Bypass + 配置单一权威 |
+| 风险 | flag 合并行为变化 → env 默认 true 行为对比 |
+| 回滚 | 还原 config.py / memory_v2/flags.py |
+| 完成标准 | 单一配置权威；memory_v2 默认 OFF 且无写入；Legacy Bypass 全绿 |
+
+---
+
+## 8. Schema Migration 设计（§10）
+
+```mermaid
+graph TD
+    A[幂等迁移] --> B[老库]
+    A --> C[新库]
+    A --> D[已迁移库]
+    A --> E[半迁移库]
+    B --> F[安全启动]
+    C --> F
+    D --> F
+    E --> F
+```
+
+- **幂等**：每步 ALTER/INDEX 可重跑（IF NOT EXISTS / 存在性先查）。
+- **保数据**：任何带数据表不物理 DROP。
+- **孤儿处置**：仅零数据孤儿表可 DROP（前置 count 校验）。
+- **版本/回滚**：迁移脚本带 version；失败整体回滚（fail closed）。
+- **hash 兼容**：`memories` 用 `memory_content_hash`（sha1 归一化，db.py:244）已为 UNIQUE；`learnings` 用不同 hash → **不强行统一**，设计兼容策略（共存，migrate 时不改旧行 hash，新写统一走 content_hash；collision 仅影响新 UPSERT 幂等，不影响旧数据读取）。
+
+---
+
+## 9. Rollback Strategy（§14）
+
+| 开关 | 作用 |
+|---|---|
+| `FEATURE_CONTEXT_ENGINE=false` | 回退 `memory.build_system_prompt` 单体 |
+| `FEATURE_MEMORY_EVOLUTION=false` | 回退 MemorySource + 退出 RuntimeStateSource |
+| `FEATURE_KNOWLEDGE_PLATFORM=false` | 不注入知识块 |
+| `MEMORY_V2_ENABLE=false` | memory_v2 不注册（默认即关） |
+| distiller/retrieval 双写过渡 | 调用点保留旧直调，验证后移除 |
+
+> 所有 rollback 为**配置/flag 级**，非代码回滚，符合「先双跑后切」。
+
+---
+
+## 10. Testing Strategy（§15）
+
+| 类 | 覆盖 |
+|---|---|
+| Unit | Memory CRUD / Dedup / Retrieval / Ranking / Lifecycle / Consolidation |
+| Contract | API 签名 / ContextItem 字段 / 边界 |
+| Integration | Context Assembly / Budget / Knowledge Search / EventBus |
+| Migration | 幂等 / 数据保全 / 孤儿 count / 老中半新库启动 |
+| Regression | 全量 pytest（含 test_p3_idempotency/recovery/soak） |
+| E2E | 真实对话运行时（test_p2_real_chat_runtime） |
+| Soak | test_p3_soak |
+| 安全 | Memory/Context 不直连 Executor（grep 守卫） |
+
+**Legacy Bypass Test**（各阶段硬门禁）：grep 确认除 Canonical API / DefaultEvolutionPolicy / context.facade / eventbus 外无第二入口。
+
+---
+
+## 11. Phase 顺序与门禁
+
+| 门禁 | 必过项 |
+|---|---|
+| P4.2 | 无物理 DELETE + content_hash 幂等 + distiller 真实列 |
+| P4.3 | 排名无漂移 + Legacy Bypass(检索) |
+| P4.4 | 无三重注入 + 逐字节一致 + Legacy Bypass(装配) |
+| P4.5 | 孤儿零数据 + 事件唯一 + 边界 |
+| P4.6 | 配置单一权威 + 全量回归 + Legacy Bypass 全绿 |
+
+```mermaid
+flowchart TB
+    G42[P4.2 门] --> G43[P4.3 门]
+    G43 --> G44[P4.4 门]
+    G44 --> G45[P4.5 门]
+    G45 --> G46[P4.6 全量门]
+    G46 --> DONE[P4 完成]
+    G42 -.失败.-> RB[回退本阶段 flag]
+    G43 -.失败.-> RB
+    G44 -.失败.-> RB
+    G45 -.失败.-> RB
+    G46 -.失败.-> RB
+```
+
+---
+
+## 12. P4.2 执行入口
+
+- **起点**：`memory.py`（Canonical Memory API）+ `memory_distiller.py`（修正）。
+- **第一动作**：实现 `upsert`(content_hash 幂等) + `archive`/`restore`/`delete`(逻辑)/`verify`/`link`/`merge`/`consolidate`。
+- **第二动作**：`memory_distiller._persist` 改走 Canonical API 真实 `confidence`/`source` 列。
+- **第三动作**：修 `memory_evolution/lifecycle.py` stale 注释。
+- **门禁**：P4.2 回归门 → 进入 P4.3。
+- 详见 `P4-MEMORY-CONTRACT.md` / `P4-IMPLEMENTATION-ROADMAP.md`。

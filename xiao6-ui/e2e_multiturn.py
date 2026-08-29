@@ -12,7 +12,7 @@ def post_chat(messages):
     req = urllib.request.Request(BASE + "/api/chat", data=body, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=90) as r:
         data = r.read().decode("utf-8", "replace")
-    # 解析 SSE：累加 content，忽略 zhuangzhou_event
+    # 解析 SSE：累加 content，忽略 xiao6_event
     full = ""
     for line in data.split("\n"):
         s = line.strip()
@@ -25,7 +25,7 @@ def post_chat(messages):
             obj = json.loads(payload)
         except Exception:
             continue
-        if obj.get("zhuangzhou_event"):
+        if obj.get("xiao6_event"):
             continue
         delta = obj.get("choices", [{}])[0].get("delta", {}).get("content", "")
         if delta:
@@ -57,9 +57,9 @@ for i, t in enumerate(turns, 1):
         print(f"  [轮 {i}] 异常: {e!r}")
         ok = False
         break
-    msgs.append({"role": "zhuangzhou", "content": reply})
+    msgs.append({"role": "xiao6", "content": reply})
     dt = time.time() - t0
-    print(f"  [轮 {i}] {dt:5.1f}s  用户: {t[:18]!r}  ->  ZhuangZhou: {reply[:40]!r}")
+    print(f"  [轮 {i}] {dt:5.1f}s  用户: {t[:18]!r}  ->  Xiao6: {reply[:40]!r}")
     if not reply.strip():
         ok = False
 print("  连续对话:", "PASS ✅" if ok else "FAIL ❌")
@@ -69,7 +69,7 @@ print("\n===== 2) 记忆自动压缩 =====")
 import os
 import sqlite3
 
-db = os.path.join(os.path.dirname(__file__), "zhuangzhou.db")
+db = os.path.join(os.path.dirname(__file__), "xiao6.db")
 con = sqlite3.connect(db)
 con.execute("DELETE FROM chat_log")
 from datetime import datetime
@@ -78,8 +78,8 @@ rows = [
     (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         SID,
-        "user" if k % 2 == 0 else "zhuangzhou",
-        f"历史对话第{k}轮：用户提出需求{k}，ZhuangZhou 给出了方案{k}。",
+        "user" if k % 2 == 0 else "xiao6",
+        f"历史对话第{k}轮：用户提出需求{k}，Xiao6 给出了方案{k}。",
     )
     for k in range(50)
 ]

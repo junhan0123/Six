@@ -141,7 +141,7 @@ _SERVER_PROC = None
 def _start_server():
     global _SERVER_PROC
     env = dict(os.environ)
-    env["ZhuangZhou_PORT"] = str(PORT)
+    env["Xiao6_PORT"] = str(PORT)
     env["BIND_HOST"] = "127.0.0.1"
     _SERVER_PROC = subprocess.Popen(
         [PY, "server.py"], cwd=_PROJECT, env=env,

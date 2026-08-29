@@ -1,0 +1,155 @@
+# P4.1 · P4-MEMORY-LIFECYCLE-DESIGN
+
+> 阶段：P4.1 DESIGN ONLY · 项目：ZhuangZhou Core v1.4.0
+> 关联：`P4-MEMORY-CANONICAL-CONTRACT.md` / `P4-EVENT-CONTRACT-DESIGN.md`
+
+---
+
+## 1. 生命周期权威
+
+**唯一生命周期权威 = `memory_evolution.lifecycle`**（状态机 + `ensure_columns` 幂等建列）。绝不物理删除记忆。
+
+```mermaid
+stateDiagram-v2
+    [*] --> active
+    active --> decayed: 低频访问/超阈值
+    decayed --> archived: 持续衰减
+    archived --> active: RESTORE
+    decayed --> active: 被重新访问
+    active --> deprecated: Truth 治理标记
+    deprecated --> archived: 合规/冲突
+    archived --> [*]: 仅 tombstone(合规擦除)
+    note right of archived
+        永不物理 DELETE
+        仅 archived=1 / tombstone
+    end note
+```
+
+---
+
+## 2. 状态语义
+
+| 状态 | 含义 | 检索可见 | 写入允许 |
+|---|---|---|---|
+| active | 正常可用 | ✓ | ✓ |
+| decayed | 衰减中（降权但不隐藏） | ✓（降权） | ✓ |
+| archived | 软归档 | ✗（除非显式恢复） | ✗ |
+| deprecated | Truth 治理弃用 | ✗ | ✗ |
+| tombstone | 合规擦除残留（GDPR） | ✗ | ✗ |
+
+---
+
+## 3. 已确认的 Lifecycle 实现（真实源码）
+
+`memory_evolution/lifecycle.py`：
+- `ensure_columns()`(21–63)：幂等 ALTER（episodes/lifecycle_state/links + memories/access_count/content_hash）。**安全、可复用。**
+- `run_lifecycle()`(71–146)：active→decayed→archived 状态机，**软操作、永不 DELETE**。**安全、可复用。**
+
+**已发现偏差（需修正）：**
+- `lifecycle.py:44–57` 注释称"db.py CREATE TABLE 缺少 content_hash" —— **错误（stale）**。真实 db.py:80 已含 `content_hash TEXT UNIQUE`。P4.2 修正该注释，避免误导后续维护者。
+
+```mermaid
+graph TD
+    A[run_lifecycle] --> B{access_count/时间}
+    B -->|高频| C[active]
+    B -->|低频| D[decayed]
+    B -->|长期沉默| E[archived]
+    C -->|Truth 标记| F[deprecated]
+    D -->|Truth 标记| F
+    E -->|RESTORE| C
+```
+
+---
+
+## 4. 访问计数与衰减
+
+```mermaid
+flowchart LR
+    R[Retrieval 命中] --> AC[access_count++]
+    AC --> T[更新 last_access]
+    T --> L[run_lifecycle 评估]
+    L -->|超阈值| DEC[decayed/archived]
+```
+
+- 每次 Retrieval 命中 → `access_count` + 时间戳更新（由 DefaultEvolutionPolicy 触发，经 lifecycle 记录）。
+- 衰减阈值由 lifecycle 配置，不在本设计范围细化（沿用现有）。
+
+---
+
+## 5. 合并与整合（Merge / Consolidate）
+
+```mermaid
+sequenceDiagram
+    participant MI as Memory Intelligence
+    participant LC as lifecycle
+    participant ME as memory_evolution
+    MI->>LC: 检测重复(content_hash/relations)
+    LC->>ME: MERGE(保高置信)
+    ME->>ME: 合并 metadata/relations
+    ME->>ME: 旧记忆→archived/tombstone
+    ME->>EB[(EventBus)]
+    EB-->>EB: MEMORY_CONSOLIDATED
+```
+
+- MERGE 保留高置信版本，低置信并入。
+- 合并后旧记忆转 archived 或 tombstone（不物理删）。
+- 发 `MEMORY_CONSOLIDATED` 事件（Event Contract）。
+
+---
+
+## 6. 合规擦除（GDPR 右被遗忘）
+
+```mermaid
+graph TD
+    A[用户请求擦除] --> B[DELETE 逻辑]
+    B --> C[archived=1 + tombstone 标记]
+    C --> D[content 置空/脱敏]
+    D --> E[保留 id+hash 供审计]
+    E --> F[永不物理 DROP]
+```
+
+- DELETE 操作 = 逻辑擦除（content 脱敏 + tombstone），保留 id/content_hash 供合规审计。
+- 与 Canonical Contract §4 DELETE 操作一致。
+
+---
+
+## 7. 与检索/上下文的联动
+
+```mermaid
+graph LR
+    LC[lifecycle] -->|status 过滤| RP[DefaultEvolutionPolicy]
+    RP -->|排除 decayed/archived/deprecated| CE[Context Engine]
+```
+
+- Retrieval 层直接消费 lifecycle 状态：排除 archived/decayed(可选)/deprecated/pending_review。
+- 状态变更 → 经 EventBus 通知（见 Event Contract）。
+
+---
+
+## 8. 配置
+
+| 项 | 当前 | P4.1 |
+|---|---|---|
+| lifecycle 自动运行 | `memory_evolution.run_lifecycle`（已有） | 保留为唯一生命周期入口 |
+| 衰减策略 | 现有阈值 | 不新增，沿用 |
+
+---
+
+## 9. 测试策略（DESIGN，P4.2/P4.5 执行）
+
+| 测试 | 验证 |
+|---|---|
+| 状态机 | active→decayed→archived 转换正确 |
+| 软删除 | 任何操作不产生物理 DELETE（grep 验证） |
+| 合并 | MERGE 保高置信 |
+| 合规擦除 | DELETE 后 content 脱敏、id 留存 |
+| 注释修正 | lifecycle.py stale 注释已更正 |
+
+---
+
+## 10. P4.2/P4.5 执行入口（摘要）
+
+- **修改**：`memory_evolution/lifecycle.py`（修正 stale 注释）、`memory_evolution/__init__.py`（run_lifecycle 为唯一入口）、写入点补充 tombstone 逻辑。
+- **复用**：现有 `ensure_columns` / `run_lifecycle`，**不重写**。
+- **回归门**：无物理 DELETE + 状态机正确 + 事件发出。
+- 详见 `P4-IMPLEMENTATION-ROADMAP.md` P4.2/P4.5。

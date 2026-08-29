@@ -1,0 +1,125 @@
+# P4.3 · BYPASS BASELINE（只读 VERIFY 产物）
+
+> 生成时间：2026-08-16 · P4.3 STEP1（仅 VERIFY / BASELINE，**未修改任何 .py**）
+> 项目：`G:\ZhuangZhou\zhuangzhou-ui` · Core v1.4.0
+> 方法：按指令 §3 重新读取真实源码（不信任 Prompt 行号），全仓 grep `INSERT/UPDATE/DELETE FROM memories`，逐条分类。
+
+---
+
+## 0. 与 Prompt 描述的不一致（discrepancy，以真实源码为准）
+
+| # | Prompt 声称 | 真实源码 | 处理 |
+|---|-------------|----------|------|
+| 1 | `consolidation.py:115` 直接 INSERT 合并产物 | ✅ 真实 :115 确为 `INSERT INTO memories(...)` | P4.3-A |
+| 2 | （隐含单一 content_hash） | `consolidation.py:103` 用 `chash = hashlib.sha1(summary...)` —— **第二套 hash**，非 `db.memory_content_hash` | P4.3-A 须改走 canonical 算法（§12 禁止第二种 hash） |
+| 3 | 仅点名 consolidation / memory_intelligence / memory_evolution 治理 | `memory_intelligence.py` 还有 **3 个** writer（`:175`/`:201`/`:246`）Prompt 未点名 | P4.3-B |
+| 4 | （未提 db.archive_memory） | P4.2 本会话已将 `db.archive_memory` 的 `UPDATE memories SET archived` 改走 `memory.archive_memory`/`restore_memory`；本次 grep **已无** `db.py:409` | 已 RESOLVED |
+| 5 | 未提 `conflict_resolver._mark` | `conflict_resolver.py:199` `UPDATE memories SET status='pending_review'` | P4.3-B |
+
+---
+
+## 1. 当前 Canonical Memory API 签名（memory.py，已确认）
+
+| 函数 | 签名要点 | 语义 |
+|------|----------|------|
+| `create_memory(content, event_type, *, title, detail, mem_id, entities, concepts, tags, links, salience, source_ref, visibility, confidence, source, status, verified_at, timestamp)` | `content_hash = db.memory_content_hash(content)`；`ON CONFLICT(content_hash) DO NOTHING`；返回新 id 或冲突时 `None`；插入后发 `MEMORY_CREATED` | 创建（幂等） |
+| `get_memory(*, id, mem_id, content_hash)` | 返回含治理列全字典 | 读取 |
+| `update_memory(*, id, mem_id, content_hash, **fields)` | allowed 字段含 `event_type/title/detail/entities/concepts/tags/links/salience/source_ref/visibility/confidence/source/status/verified_at/archived/content`；None 跳过；content 变更重算 hash 且冲突则放弃；发 `MEMORY_UPDATED` | 更新 |
+| `archive_memory(*, id, mem_id, content_hash)` / `restore_memory(...)` | 软归档/恢复；发 `MEMORY_ARCHIVED` | 生命周期 |
+| `delete_memory(*, id, mem_id, content_hash, tombstone=True)` | tombstone → `status='deprecated'+archived=1`；发 `MEMORY_ARCHIVED` | 逻辑删除 |
+| `upsert_memory(mem)` | 按 mem_id PATCH/INSERT | upsert |
+| `search_memories(query, limit, since, until)` | adapter → `memory_query.query_memory` | 搜索 |
+| `retrieve_memories(query, top_k)` | adapter → `memory_evolution.default.retrieve` | 检索 |
+| `consolidate_memories(rows, authorized)` | adapter → `memory_evolution.default.consolidate` | 合并 |
+
+---
+
+## 2. 全仓 `memories` writer 清单（生产路径）
+
+分类：A=Canonical API 内部｜B=Migration｜C=Test fixture｜**E=Production bypass（须消除）**
+
+| Caller | 文件:行 | 当前语句 | 分类 | 目标 Canonical API | 风险 | 测试覆盖(现状) |
+|--------|---------|----------|------|--------------------|------|----------------|
+| `db.import_memories` | db.py:262 | `DELETE FROM memories WHERE source_ref LIKE ?` | **E** | `memory.delete_by_source_ref(...)`（P4.3-C 新增） | 低（同源预清，不改业务语义） | 无（待补） |
+| `_migrate_memories` | db.py:654,664 | `DELETE ... WHERE content_hash`（去重）/ `UPDATE content_hash` | B | 保留（迁移） | — | 迁移幂等测试已有 |
+| `_m_set_archived` | memory.py:463 | `UPDATE memories SET archived=?` | A | 保留（canonical 内部） | — | — |
+| `create_memory` | memory.py:514 | `INSERT INTO memories(...)` | A | 保留（canonical 内部） | — | 契约测 20/20 |
+| `update_memory` | memory.py:657 | `UPDATE memories SET ...` | A | 保留（canonical 内部） | — | — |
+| `delete_memory` | memory.py:711,715 | `UPDATE ... status='deprecated',archived=1` / `archived=1` | A | 保留（canonical 内部） | — | — |
+| `memory_intelligence.backfill_salience` | memory_intelligence.py:175 | `UPDATE memories SET salience=?` | **E** | `update_memory(id, salience=...)` | 低 | 无（待补） |
+| `memory_intelligence.set_memory_truth` | memory_intelligence.py:201 | `UPDATE memories SET confidence,source,status,verified_at` | **E** | `update_memory(id, confidence, source, status, verified_at)` | 低 | 无（待补） |
+| `memory_intelligence.verify_and_tag` | memory_intelligence.py:246 | `UPDATE memories SET confidence,source,status,verified_at` | **E** | `update_memory(id, confidence, source, status, verified_at)` | 低 | 无（待补） |
+| `conflict_resolver._mark` | conflict_resolver.py:199 | `UPDATE memories SET status='pending_review',verified_at=...` | **E** | `update_memory(id, status='pending_review', verified_at=...)` | 低 | 无（待补） |
+| `consolidation.consolidate_theme`（新记忆） | consolidation.py:115 | `INSERT INTO memories(...)` | **E** | `create_memory(...)`（content_hash 改走 canonical） | 中（须保留全部治理列+links+去重语义） | 无（待补） |
+| `consolidation.consolidate_theme`（源记忆） | consolidation.py:137 | `UPDATE memories SET status='consolidated', links=?` | **E** | `update_memory(id, status='consolidated', links=...)` | 低 | 无（待补） |
+| `lifecycle.run_lifecycle`（decay） | lifecycle.py:108 | `UPDATE memories SET status='decayed',verified_at=?` | **E** | `update_memory(id, status='decayed', verified_at=...)` | 低 | 无（待补） |
+| `lifecycle.run_lifecycle`（archive） | lifecycle.py:112 | `UPDATE memories SET archived=1` | **E** | `archive_memory(id)` | 低 | 无（待补） |
+
+**剩余 Production bypass（E）数量 = 7 处**（db:1, memory_intelligence:3, conflict_resolver:1, consolidation:2, lifecycle:2 → 去重计数：db.import_memories×1, memory_intelligence×3, conflict_resolver×1, consolidation×2, lifecycle×2 = **9 语句 / 7 调用点**）。P4.3 目标：最终 **E = 0**。
+
+---
+
+## 3. Retrieval 调用图（P4.3-D）
+
+```
+memory.retrieve_memories(query, top_k)
+   └─ memory_evolution.default.retrieve
+        └─ DefaultEvolutionPolicy().retrieve        [memory_evolution/retrieval_policy.py]
+             ├─ memory_intelligence.recall(query)   → SELECT memories (archived=0) → 语义+重要性打分（只读）
+             └─ cognitive.episodic.recall_episodes   → mem_vectors(scope='episode') 向量召回（只读）
+             过滤 decayed/archived/pending_review/consolidated → 排序 → top_k
+```
+
+- **权威 Retrieval = `DefaultEvolutionPolicy`**（与 P4 DESIGN 一致），已通过 `memory.retrieve_memories` 暴露。只读、无 `memories` 写。
+- `memory_v2`（retrieval/semantic）：**FLAG-GATED 实验性第二实现**（`MEMORY_V2_ENABLE`，默认 off；`context/builder.py:100-102` 条件启用 `MemoryV2Source`）。`memory_v2.semantic` 只读 `mem_vectors`，不写表。判定：**legacy/experimental，禁止删除，保持休眠**。
+- `embed.py`：写 `mem_vectors`（向量表，**独立于 `memories`**），非 Memory bypass；保持。
+- 结论：Retrieval 已收敛到权威路径；P4.3-D 只需 (a) 在 `retrieve_memories` 成功返回后发 `MEMORY_RETRIEVED`（一次/调用，best-effort）；(b) 文档固化 `DefaultEvolutionPolicy` 为权威、memory_v2 为休眠备选。
+
+---
+
+## 4. EventBus 现状（P4.3-F）
+
+`DOMAIN_EVENT_NAMES` 现有：`MEMORY_CREATED / MEMORY_UPDATED / MEMORY_STORED / MEMORY_LINKED / MEMORY_ARCHIVED`。
+**缺失（须注册）**：`MEMORY_RETRIEVED`、`MEMORY_CONSOLIDATED`、`MEMORY_DECAYED`。
+纪律：`publish_domain` 对未注册名抛 `ValueError` → 必须先注册再发。
+
+---
+
+## 5. Schema 现状（P4.3 §12）
+
+`memories` 列（已确认）：
+`id, event_type, content, title, detail, mem_id, entities, concepts, tags, links, salience, source_ref, timestamp, visibility, content_hash(TEXT UNIQUE), archived, confidence, source, status, verified_at, access_count`（access_count 由 `lifecycle.ensure_columns` 幂等补建）。
+
+- 迁移：`_migrate_memories` / `_migrate_memory_truth` / `lifecycle.ensure_columns` 均幂等，无 `DROP`/`TRUNCATE`。
+- `content_hash` 统一算法 = `db.memory_content_hash`（空白归一 sha1）。**禁止第二种 hash**（consolidation 的 `hashlib.sha1(summary)` 须在 P4.3-A 改掉）。
+
+---
+
+## 6. 测试基线
+
+- P4.2 契约测试 `tests/test_p4_memory_contract.py` = **20 passed**（含 legacy bypass 静态+运行时测试）。
+- 全量回归（本会话 P4.2 末，pre-P4.3）= **439 passed / 4 failed**（4 失败均为未触碰模块环境/历史遗留：phasec 子进程 GATE-GUARD、test_external ffmpeg×2、agent_runtime KeyError；非 P4.3 改动）。
+- P4.3 目标：A=0, B=0, Collection Errors=0；4 历史遗留不恶化；新增 `tests/test_p4_memory_governance.py`。
+
+---
+
+## 7. IMPLEMENT 范围（基线确认后进入，未执行）
+
+- **P4.3-A** consolidation → `memory.create_memory`（content_hash 改 canonical；源记忆 → `update_memory`）。
+- **P4.3-B** governance 列 → `update_memory`（memory_intelligence×3 / conflict_resolver / consolidation 源 / lifecycle decay）；archive → `archive_memory`。
+- **P4.3-C** `db.import_memories` 预清 → 新增 `memory.delete_by_source_ref(...)`（tombstone/archived 语义待定；幂等 + 事件）。
+- **P4.3-D** Retrieval 收敛（已收敛）+ `MEMORY_RETRIEVED`。
+- **P4.3-E** Context 边界：grep 确认 `context/*` 无 `memories` 写；仅修复检索收敛引发的必要适配，不提前大改。
+- **P4.3-F** 注册 `MEMORY_RETRIEVED/CONSOLIDATED/DECAYED` + 统一同义事件。
+- Lifecycle / Importance / Conflict：importance.py 纯计算（不改）；lifecycle/conflict 仅路由写入。
+- 测试 + 回归 + 5 份报告 + FINAL STOP。
+
+---
+
+## 8. 风险登记（VERIFY 阶段）
+
+| 风险 | 说明 | 缓解 |
+|------|------|------|
+| consolidation 自定义 hash 与 canonical 不一致 | 旧 consolidated 行用 raw sha1，新行用 canonical hash → 可能重复 | P4.3-A 统一用 `db.memory_content_hash`；`create_memory` 的 `ON CONFLICT` 天然去重，不影响既有行正确性 |
+| `update_memory` 不处理 `access_count` | lifecycle 用 access_count，但非 canonical 列 | access_count 由 lifecycle 自身维护（保留直接写或后续补 API）；本阶段不纳入 canonical 写入契约以避免扩大范围 |
+| `delete_by_source_ref` 语义 | 须确定 tombstone vs archived vs 物理删除 | 依据现有 import 语义：保留业务数据，采用 archived+tombstone（与 `delete_memory` 一致），幂等重导入 |

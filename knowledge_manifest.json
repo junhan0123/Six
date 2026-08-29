@@ -1,0 +1,33 @@
+{
+  "manifest_version": 1,
+  "generated_at": "2026-08-28T12:31:24",
+  "root": "G:\\xiao6\\knowledge",
+  "nodes": 329,
+  "relations": 127,
+  "by_domain": {
+    "(none)": 1,
+    "concepts": 192,
+    "daily": 22,
+    "decisions": 7,
+    "experiences": 32,
+    "failures": 13,
+    "people": 3,
+    "projects": 8,
+    "rules": 51
+  },
+  "by_type": {
+    "(none)": 23,
+    "concept": 192,
+    "decision": 7,
+    "experience": 32,
+    "failure": 13,
+    "person": 3,
+    "project": 8,
+    "rule": 51
+  },
+  "bad_links": 20,
+  "validation_ok": true,
+  "error_count": 0,
+  "warning_count": 20,
+  "indexed_at": "2026-08-28"
+}

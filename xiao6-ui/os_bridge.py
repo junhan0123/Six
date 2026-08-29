@@ -430,7 +430,7 @@ def _safe_db(query, args=(), fetch="all"):
 def _probe_git(repo_dir=None, timeout=1.5):
     """只读 Git 探针。返回 {ok, repo_name, branch, changed, recent_hot}。
 
-    - repo_name：顶层目录名（如 zhuangzhou-ui）
+    - repo_name：顶层目录名（如 xiao6-ui）
     - changed：工作区未提交变更数（git status --porcelain 行数）
     - recent_hot：近 24h 内 mtime 热点文件 top5（真实活动信号）
     - 子进程超时 1.5s；无 git / 超时 / 异常 → ok:False，不影响其他维度
@@ -566,7 +566,7 @@ def _derive_project(git, summary_text, profile_project):
 
     # S3 · memory_summary 项目关键词（权重 0.20）
     s3_hit = None
-    for k in ("AI OS", "AIOS", "ZhuangZhou", "zhuangzhou", "庄周"):
+    for k in ("AI OS", "AIOS", "Xiao6", "xiao6", "庄周"):
         if k in (summary_text or ""):
             s3_hit = k
             break
@@ -582,7 +582,7 @@ def _derive_project(git, summary_text, profile_project):
         hits += 1
         signals.append("hot:%s" % hot[0])
 
-    # 项目名合成：仓库名 + 摘要中的产品限定词 → 「ZhuangZhou AI OS」
+    # 项目名合成：仓库名 + 摘要中的产品限定词 → 「Xiao6 AI OS」
     project = repo_name
     if repo_name and s3_hit in ("AI OS", "AIOS") and "OS" not in repo_name.upper():
         project = "%s AI OS" % repo_name
@@ -611,10 +611,10 @@ def _derive_project(git, summary_text, profile_project):
         # 证据不足时如实声明，绝不编造项目名
         return {"project": "（不确定当前项目）", "area": None,
                 "confidence": 0.1, "stale": stale, "signal": signals[:4]}
-    # 显示名统一：仓库/推导名为 ZhuangZhou / zhuangzhou / zhuangzhou-ui → 对外展示 Six
+    # 显示名统一：仓库/推导名为 Xiao6 / xiao6 / xiao6-ui → 对外展示 Six
     if project:
         pl = project.strip().lower()
-        if pl in ("zhuangzhou", "zhuangzhou ai os", "zhuangzhou-ui") or pl.startswith("zhuangzhou"):
+        if pl in ("xiao6", "xiao6 ai os", "xiao6-ui") or pl.startswith("xiao6"):
             project = "Six"
     return {"project": project, "area": "AI OS 研发",
             "confidence": round(confidence, 2), "stale": stale,

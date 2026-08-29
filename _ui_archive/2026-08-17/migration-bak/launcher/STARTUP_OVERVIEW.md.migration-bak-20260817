@@ -1,0 +1,34 @@
+# 庄周「后台常驻 + 开机自启 + 桌面一键启动」交付概览
+
+> 时间：2026-08-14 ｜ 范围：仅新增部署/启动层文件，未触碰任何产品代码（server.py / Electron）
+
+## 用户三项需求 → 落地结果
+
+| 需求 | 落地方式 | 状态 |
+|------|----------|------|
+| ① 立刻运行后台 | 已用 venv python 后台拉起 `server.py`（端口 8000），`/api/health` 返回 200，端口监听中 | ✅ 完成 |
+| ② 保持开机启动 | 创建 `schtasks` 计划任务 `ZhuangZhou_AutoStart`（触发 `ONLOGON`），登录即静默拉起后端+桌宠 | ✅ 完成 |
+| ③ F:\桌面 点击启动 | `F:\桌面\庄周一键启动.bat` → 调用 `launcher/zz_launch.bat`，一键拉起后端+桌宠+Web | ✅ 完成 |
+
+## 新增文件
+
+- `launcher/zz_launch.bat` — **主启动器（纯批处理，幂等）**
+  - `zz_launch.bat` = 完整（后端+桌宠+Web）；`zz_launch.bat noweb` = 静默（后端+桌宠，不开浏览器）
+  - 幂等：8000 已占则跳过后端；electron 已跑则跳过桌宠；依赖缺失由 server.py 内部降级
+- `launcher/zz_launch.ps1` — 同功能 PowerShell 版（读取 `launcher_config.json`）
+- `F:\桌面\庄周一键启动.bat` — 桌面快捷入口（双击即用）
+- 系统计划任务 `ZhuangZhou_AutoStart` — 开机自启（At-logon，静默 `noweb`）
+
+## 验证证据
+
+- `HEALTH|200`、`PORT8000` 监听中、`ELECTRON|running (3)`、`桌面.bat 存在`、`计划任务 AUTOSTART_OK`
+
+## 已知降级（非阻断）
+
+- 后端日志 `wakeword.py` 报 vosk 模型目录缺失 → 离线唤醒词线程降级，核心后端与 Web 端不受影响。
+
+## 使用
+
+- 立即使用：双击 `F:\桌面\庄周一键启动.bat` → 打开 `http://localhost:8000` 聊天界面 + 桌宠。
+- 开机自启：登录后自动后台拉起后端与桌宠（不弹浏览器，需用界面时双击桌面图标）。
+- 停止：结束 `python server.py` 与 `electron.exe` 进程即可。

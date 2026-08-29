@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-08-09T09:03:14.553Z",
+  "viewport": {
+    "w": 1920,
+    "h": 1080
+  },
+  "rectOn": {
+    "x": 120,
+    "y": 100,
+    "w": 1778,
+    "h": 736
+  },
+  "rectOff": {
+    "x": 120,
+    "y": 100,
+    "w": 1778,
+    "h": 697
+  },
+  "centralRegion": {
+    "on": {
+      "x0": 831,
+      "y0": 394,
+      "w": 356,
+      "h": 147
+    },
+    "off": {
+      "x0": 831,
+      "y0": 379,
+      "w": 356,
+      "h": 139
+    }
+  },
+  "metricA_worldWindow": {
+    "on_stdDev": 37.102,
+    "off_stdDev": 35.19,
+    "on_mean": 43.943,
+    "off_mean": 42.046,
+    "conclusion": "PASS · Galaxy 透出更清晰（stdDev ON > OFF）"
+  },
+  "metricB_noHardEdge": {
+    "on_avgBorderStep": 0.322,
+    "off_avgBorderStep": 21.527,
+    "cols": 60,
+    "conclusion": "PASS · 顶边无连续硬矩形边（avgStep ON < OFF）",
+    "note": "avgStep = 沿顶边 60 列垂直穿越均值差；边框连续→被保留，星点稀疏→被稀释。"
+  },
+  "raw": {
+    "onStats": {
+      "n": 52332,
+      "mean": 43.943,
+      "sd": 37.102,
+      "min": 10.7,
+      "max": 166.5
+    },
+    "offStats": {
+      "n": 49484,
+      "mean": 42.046,
+      "sd": 35.19,
+      "min": 14,
+      "max": 166.5
+    }
+  }
+}

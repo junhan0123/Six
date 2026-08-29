@@ -1,6 +1,6 @@
 """庄周 · 文档面板（本地文档浏览与阅读，纯标准库实现）。
 
-用途：浏览 ZHUANGZHOU_DOC_DIR 指向的本地文档目录，并提供单文档正文读取。
+用途：浏览 XIAO6_DOC_DIR 指向的本地文档目录，并提供单文档正文读取。
 零外部依赖；对 PDF 采用优雅降级——未安装 PyPDF2 时只返回元信息，绝不抛异常。
 路径经过严格校验，杜绝目录穿越（".." / 绝对路径）攻击。
 """
@@ -8,9 +8,9 @@
 import os
 from datetime import datetime
 
-# 文档根目录：默认与脚本同级的 docs/，可用环境变量 ZHUANGZHOU_DOC_DIR 覆盖。
+# 文档根目录：默认与脚本同级的 docs/，可用环境变量 XIAO6_DOC_DIR 覆盖。
 BASE = os.path.dirname(os.path.abspath(__file__))
-DOC_DIR_PATH = os.path.join(BASE, os.environ.get("ZHUANGZHOU_DOC_DIR", "docs"))
+DOC_DIR_PATH = os.path.join(BASE, os.environ.get("XIAO6_DOC_DIR", "docs"))
 os.makedirs(DOC_DIR_PATH, exist_ok=True)
 
 # 允许阅读的扩展名。

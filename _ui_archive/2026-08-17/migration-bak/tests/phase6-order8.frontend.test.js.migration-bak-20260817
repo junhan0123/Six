@@ -1,0 +1,102 @@
+/*
+ * phase6-order8.frontend.test.js — 庄周 Phase 6 Order 8 · Design System Runtime Consolidation 回归
+ * ----------------------------------------------------------------------------
+ * 目标：锁住 Order 8 收口成果（纯静态 + 一致性校验，不依赖浏览器/Three.js/网络）。
+ *   A. 生产前端 JS 无任何硬编码事件名（一律经 ZZ.EVENTS / publish_domain 校验）
+ *   B. 事件契约 ZZ.EVENTS 与后端 DOMAIN_EVENT_NAMES 逐字对齐（Order6 冻结 38 + Phase7 Order1 +19 = 57，无漂移）
+ *   C. galaxy-state 投影态 → galaxy-runtime 收敛，永远落在 8 词表内（状态词表一致）
+ *   D. CSS 设计令牌无重复定义（styles.css 基础层 + premium.css 增量层 单一来源）
+ * 运行：node tests/phase6-order8.frontend.test.js
+ */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+
+const UI = path.resolve(__dirname, '..');
+let pass = 0, fail = 0;
+function check(name, fn) {
+  try { fn(); pass++; console.log('  ✓ ' + name); }
+  catch (e) { fail++; console.log('  ✗ ' + name + ' — ' + e.message); }
+}
+function fileList(ext) {
+  return fs.readdirSync(UI).filter(f => f.endsWith(ext) && f !== 'three.module.js');
+}
+
+console.log('Phase 6 Order 8 · Design System Runtime Consolidation 回归\n');
+
+// —— A. 静态扫描：生产前端 JS 无硬编码 applyEvent('EVENT') 字面量（含 || 'EVENT' 兜底形式）——
+check('A. 生产前端 JS 无硬编码事件字符串（一律经 ZZ.EVENTS 常量，含 || 兜底）', () => {
+  // 直接字面量：applyEvent('GOAL_X', ...) / applyEvent("GOAL_X", ...)
+  const reDirect = /applyEvent\(\s*['"][A-Z][A-Z_]+['"]\s*[,)]/;
+  // 兜底字面量：applyEvent((... ...) || 'GOAL_X', ...) / ... || "GOAL_X"
+  const reFallback = /applyEvent\([\s\S]*?\|\|\s*['"][A-Z][A-Z_]+['"]/;
+  const offenders = [];
+  for (const f of fileList('.js')) {
+    if (f.startsWith('phase6-')) continue;           // 测试文件允许回放字面量
+    const txt = fs.readFileSync(path.join(UI, f), 'utf8');
+    const m = txt.match(reDirect) || txt.match(reFallback);
+    if (m) offenders.push(f + ' → ' + m[0].replace(/\s+/g, ' '));
+  }
+  assert.strictEqual(offenders.length, 0,
+    '发现硬编码事件（应改 ZZ.EVENTS.X）: ' + offenders.join('; '));
+});
+
+// —— B. 事件契约稳定性：zz-events.js EVENTS 仍为 38 个 ——
+check('B. 事件契约 ZZ.EVENTS 仍为 71 个（与 eventbus.DOMAIN_EVENT_NAMES 逐字对齐，无漂移）', () => {
+  const txt = fs.readFileSync(path.join(UI, 'zz-events.js'), 'utf8');
+  const entries = txt.match(/^\s{4}[A-Z][A-Z_]+:\s*'[A-Z][A-Z_]+',?/gm) || [];
+  assert.strictEqual(entries.length, 71, '契约事件数 = ' + entries.length + '（应为 71：Order6 38 + Intent 6 + Phase7 Order1 19 + Phase7 Order2 7 + Phase7 Order3 2 + Phase8 Order1 2）');
+  assert.ok(txt.includes("FOCUS_CHANGED:       'FOCUS_CHANGED'"), 'FOCUS_CHANGED 仍为合约事件');
+});
+
+// —— C. galaxy-state 投影态 → galaxy-runtime 收敛一致性 ——
+check('C. galaxy 状态投影 → 收敛层永远落在 8 词表内（状态词表统一）', () => {
+  // 注入最小 AppState 桩，使 galaxy-state.js 可在 Node 加载（它订阅 AppState）
+  globalThis.AppState = {
+    getGalaxyNodes: function () { return {}; },
+    subscribe: function () { return function () {}; }
+  };
+  delete require.cache[path.join(UI, 'galaxy-state.js')];
+  delete require.cache[path.join(UI, 'galaxy-runtime.js')];
+  const GalaxyState = require(path.join(UI, 'galaxy-state.js'));
+  const GalaxyRuntime = require(path.join(UI, 'galaxy-runtime.js'));
+
+  const domainStates = ['Created', 'Started', 'Dormant', 'Running', 'Thinking', 'Working',
+    'Waiting', 'Paused', 'Completed', 'Failed', 'Error', 'Stored', 'Linked', 'Archived',
+    'Sleeping', 'updated', 'idle', 'Received', 'Analyzing', 'Classified', 'Accepted',
+    'Rejected', 'Converted'];
+  const vocab = new Set(Object.values(GalaxyRuntime.RUNTIME_STATES));
+  const breaches = [];
+  for (const s of domainStates) {
+    const projected = GalaxyState.deriveRuntime(s);   // galaxy-state 投影态
+    const out = GalaxyRuntime.mapState(projected);    // galaxy-runtime 收敛态
+    if (!vocab.has(out)) breaches.push(s + '→' + projected + '→' + out);
+  }
+  assert.strictEqual(breaches.length, 0, '状态越界: ' + breaches.join('; '));
+});
+
+// —— D. CSS 设计令牌无重复定义（仅审计 :root 单一来源块；主题/逐元素覆盖重定义属合法） ——
+check('D. CSS 设计令牌 :root 单一来源无重复（styles.css 基础层 + premium.css 增量层）', () => {
+  const files = ['styles.css', 'premium.css']
+    .filter(f => fs.existsSync(path.join(UI, f)));
+  const seen = {};
+  const dups = [];
+  for (const f of files) {
+    const txt = fs.readFileSync(path.join(UI, f), 'utf8');
+    // 仅提取 :root { ... } 顶层块（无嵌套括号），不审计主题/逐元素重定义
+    const rootBlocks = txt.match(/:root\s*\{([^}]*)\}/g) || [];
+    for (const block of rootBlocks) {
+      const defs = block.match(/--[a-z0-9-]+\s*:/g) || [];
+      for (const d of defs) {
+        const name = d.replace(/\s*:$/, '');
+        if (seen[name]) dups.push(name + ' (' + seen[name] + ' & ' + f + ')');
+        else seen[name] = f;
+      }
+    }
+  }
+  assert.strictEqual(dups.length, 0, '重复令牌定义: ' + dups.join('; '));
+});
+
+console.log('\nOrder 8 前端收敛回归: ' + pass + ' 通过 / ' + fail + ' 失败');
+process.exit(fail === 0 ? 0 : 1);

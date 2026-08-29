@@ -1,0 +1,1006 @@
+{
+  "badResponses": [
+    {
+      "status": 500,
+      "url": "http://localhost:8010/api/speak"
+    }
+  ],
+  "consoleErr": [
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+  ],
+  "agentState": [
+    {
+      "ts": 1,
+      "state": "IDLE"
+    },
+    {
+      "ts": 413,
+      "state": "IDLE"
+    },
+    {
+      "ts": 820,
+      "state": "IDLE"
+    },
+    {
+      "ts": 1236,
+      "state": "IDLE"
+    },
+    {
+      "ts": 1639,
+      "state": "IDLE"
+    },
+    {
+      "ts": 2042,
+      "state": "IDLE"
+    },
+    {
+      "ts": 2446,
+      "state": "IDLE"
+    },
+    {
+      "ts": 2849,
+      "state": "IDLE"
+    },
+    {
+      "ts": 3252,
+      "state": "IDLE"
+    },
+    {
+      "ts": 3658,
+      "state": "IDLE"
+    },
+    {
+      "ts": 4063,
+      "state": "IDLE"
+    },
+    {
+      "ts": 4468,
+      "state": "IDLE"
+    },
+    {
+      "ts": 4469,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 4886,
+      "state": "IDLE"
+    },
+    {
+      "ts": 4886,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 5301,
+      "state": "IDLE"
+    },
+    {
+      "ts": 5301,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 5704,
+      "state": "IDLE"
+    },
+    {
+      "ts": 5704,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 6111,
+      "state": "IDLE"
+    },
+    {
+      "ts": 6111,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 6514,
+      "state": "IDLE"
+    },
+    {
+      "ts": 6514,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 6514,
+      "state": "IDLE"
+    },
+    {
+      "ts": 6916,
+      "state": "IDLE"
+    },
+    {
+      "ts": 6916,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 6916,
+      "state": "IDLE"
+    },
+    {
+      "ts": 7325,
+      "state": "IDLE"
+    },
+    {
+      "ts": 7325,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 7325,
+      "state": "IDLE"
+    },
+    {
+      "ts": 7729,
+      "state": "IDLE"
+    },
+    {
+      "ts": 7729,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 7729,
+      "state": "IDLE"
+    },
+    {
+      "ts": 8146,
+      "state": "IDLE"
+    },
+    {
+      "ts": 8146,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 8146,
+      "state": "IDLE"
+    },
+    {
+      "ts": 8551,
+      "state": "IDLE"
+    },
+    {
+      "ts": 8551,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 8551,
+      "state": "IDLE"
+    },
+    {
+      "ts": 8965,
+      "state": "IDLE"
+    },
+    {
+      "ts": 8965,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 8965,
+      "state": "IDLE"
+    },
+    {
+      "ts": 9367,
+      "state": "IDLE"
+    },
+    {
+      "ts": 9367,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 9367,
+      "state": "IDLE"
+    },
+    {
+      "ts": 9771,
+      "state": "IDLE"
+    },
+    {
+      "ts": 9771,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 9771,
+      "state": "IDLE"
+    },
+    {
+      "ts": 10176,
+      "state": "IDLE"
+    },
+    {
+      "ts": 10176,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 10176,
+      "state": "IDLE"
+    },
+    {
+      "ts": 10580,
+      "state": "IDLE"
+    },
+    {
+      "ts": 10580,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 10580,
+      "state": "IDLE"
+    },
+    {
+      "ts": 10984,
+      "state": "IDLE"
+    },
+    {
+      "ts": 10984,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 10984,
+      "state": "IDLE"
+    },
+    {
+      "ts": 11389,
+      "state": "IDLE"
+    },
+    {
+      "ts": 11389,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 11389,
+      "state": "IDLE"
+    },
+    {
+      "ts": 11792,
+      "state": "IDLE"
+    },
+    {
+      "ts": 11792,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 11792,
+      "state": "IDLE"
+    },
+    {
+      "ts": 12200,
+      "state": "IDLE"
+    },
+    {
+      "ts": 12200,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 12200,
+      "state": "IDLE"
+    },
+    {
+      "ts": 12605,
+      "state": "IDLE"
+    },
+    {
+      "ts": 12605,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 12605,
+      "state": "IDLE"
+    },
+    {
+      "ts": 13009,
+      "state": "IDLE"
+    },
+    {
+      "ts": 13009,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 13009,
+      "state": "IDLE"
+    },
+    {
+      "ts": 13414,
+      "state": "IDLE"
+    },
+    {
+      "ts": 13414,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 13414,
+      "state": "IDLE"
+    },
+    {
+      "ts": 13818,
+      "state": "IDLE"
+    },
+    {
+      "ts": 13818,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 13818,
+      "state": "IDLE"
+    },
+    {
+      "ts": 14223,
+      "state": "IDLE"
+    },
+    {
+      "ts": 14223,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 14223,
+      "state": "IDLE"
+    },
+    {
+      "ts": 14625,
+      "state": "IDLE"
+    },
+    {
+      "ts": 14625,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 14625,
+      "state": "IDLE"
+    },
+    {
+      "ts": 15029,
+      "state": "IDLE"
+    },
+    {
+      "ts": 15029,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 15029,
+      "state": "IDLE"
+    },
+    {
+      "ts": 15431,
+      "state": "IDLE"
+    },
+    {
+      "ts": 15431,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 15431,
+      "state": "IDLE"
+    },
+    {
+      "ts": 15837,
+      "state": "IDLE"
+    },
+    {
+      "ts": 15837,
+      "state": "PLANNING"
+    },
+    {
+      "ts": 15837,
+      "state": "IDLE"
+    }
+  ],
+  "hudState": [
+    {
+      "ts": 1,
+      "state": "idle"
+    },
+    {
+      "ts": 413,
+      "state": "idle"
+    },
+    {
+      "ts": 820,
+      "state": "idle"
+    },
+    {
+      "ts": 1236,
+      "state": "idle"
+    },
+    {
+      "ts": 1639,
+      "state": "idle"
+    },
+    {
+      "ts": 2042,
+      "state": "idle"
+    },
+    {
+      "ts": 2446,
+      "state": "idle"
+    },
+    {
+      "ts": 2849,
+      "state": "idle"
+    },
+    {
+      "ts": 3252,
+      "state": "idle"
+    },
+    {
+      "ts": 3658,
+      "state": "idle"
+    },
+    {
+      "ts": 4063,
+      "state": "idle"
+    },
+    {
+      "ts": 4468,
+      "state": "idle"
+    },
+    {
+      "ts": 4469,
+      "state": "thinking"
+    },
+    {
+      "ts": 4886,
+      "state": "idle"
+    },
+    {
+      "ts": 4886,
+      "state": "thinking"
+    },
+    {
+      "ts": 5301,
+      "state": "idle"
+    },
+    {
+      "ts": 5301,
+      "state": "thinking"
+    },
+    {
+      "ts": 5704,
+      "state": "idle"
+    },
+    {
+      "ts": 5704,
+      "state": "thinking"
+    },
+    {
+      "ts": 6111,
+      "state": "idle"
+    },
+    {
+      "ts": 6111,
+      "state": "thinking"
+    },
+    {
+      "ts": 6514,
+      "state": "idle"
+    },
+    {
+      "ts": 6514,
+      "state": "thinking"
+    },
+    {
+      "ts": 6514,
+      "state": "idle"
+    },
+    {
+      "ts": 6916,
+      "state": "idle"
+    },
+    {
+      "ts": 6916,
+      "state": "thinking"
+    },
+    {
+      "ts": 6916,
+      "state": "idle"
+    },
+    {
+      "ts": 7325,
+      "state": "idle"
+    },
+    {
+      "ts": 7325,
+      "state": "thinking"
+    },
+    {
+      "ts": 7325,
+      "state": "idle"
+    },
+    {
+      "ts": 7729,
+      "state": "idle"
+    },
+    {
+      "ts": 7729,
+      "state": "thinking"
+    },
+    {
+      "ts": 7729,
+      "state": "idle"
+    },
+    {
+      "ts": 8146,
+      "state": "idle"
+    },
+    {
+      "ts": 8146,
+      "state": "thinking"
+    },
+    {
+      "ts": 8146,
+      "state": "idle"
+    },
+    {
+      "ts": 8551,
+      "state": "idle"
+    },
+    {
+      "ts": 8551,
+      "state": "thinking"
+    },
+    {
+      "ts": 8551,
+      "state": "idle"
+    },
+    {
+      "ts": 8965,
+      "state": "idle"
+    },
+    {
+      "ts": 8965,
+      "state": "thinking"
+    },
+    {
+      "ts": 8965,
+      "state": "idle"
+    },
+    {
+      "ts": 9367,
+      "state": "idle"
+    },
+    {
+      "ts": 9367,
+      "state": "thinking"
+    },
+    {
+      "ts": 9367,
+      "state": "idle"
+    },
+    {
+      "ts": 9771,
+      "state": "idle"
+    },
+    {
+      "ts": 9771,
+      "state": "thinking"
+    },
+    {
+      "ts": 9771,
+      "state": "idle"
+    },
+    {
+      "ts": 10176,
+      "state": "idle"
+    },
+    {
+      "ts": 10176,
+      "state": "thinking"
+    },
+    {
+      "ts": 10176,
+      "state": "idle"
+    },
+    {
+      "ts": 10580,
+      "state": "idle"
+    },
+    {
+      "ts": 10580,
+      "state": "thinking"
+    },
+    {
+      "ts": 10580,
+      "state": "idle"
+    },
+    {
+      "ts": 10984,
+      "state": "idle"
+    },
+    {
+      "ts": 10984,
+      "state": "thinking"
+    },
+    {
+      "ts": 10984,
+      "state": "idle"
+    },
+    {
+      "ts": 11389,
+      "state": "idle"
+    },
+    {
+      "ts": 11389,
+      "state": "thinking"
+    },
+    {
+      "ts": 11389,
+      "state": "idle"
+    },
+    {
+      "ts": 11792,
+      "state": "idle"
+    },
+    {
+      "ts": 11792,
+      "state": "thinking"
+    },
+    {
+      "ts": 11792,
+      "state": "idle"
+    },
+    {
+      "ts": 12200,
+      "state": "idle"
+    },
+    {
+      "ts": 12200,
+      "state": "thinking"
+    },
+    {
+      "ts": 12200,
+      "state": "idle"
+    },
+    {
+      "ts": 12605,
+      "state": "idle"
+    },
+    {
+      "ts": 12605,
+      "state": "thinking"
+    },
+    {
+      "ts": 12605,
+      "state": "idle"
+    },
+    {
+      "ts": 13009,
+      "state": "idle"
+    },
+    {
+      "ts": 13009,
+      "state": "thinking"
+    },
+    {
+      "ts": 13009,
+      "state": "idle"
+    },
+    {
+      "ts": 13414,
+      "state": "idle"
+    },
+    {
+      "ts": 13414,
+      "state": "thinking"
+    },
+    {
+      "ts": 13414,
+      "state": "idle"
+    },
+    {
+      "ts": 13818,
+      "state": "idle"
+    },
+    {
+      "ts": 13818,
+      "state": "thinking"
+    },
+    {
+      "ts": 13818,
+      "state": "idle"
+    },
+    {
+      "ts": 14223,
+      "state": "idle"
+    },
+    {
+      "ts": 14223,
+      "state": "thinking"
+    },
+    {
+      "ts": 14223,
+      "state": "idle"
+    },
+    {
+      "ts": 14625,
+      "state": "idle"
+    },
+    {
+      "ts": 14625,
+      "state": "thinking"
+    },
+    {
+      "ts": 14625,
+      "state": "idle"
+    },
+    {
+      "ts": 15029,
+      "state": "idle"
+    },
+    {
+      "ts": 15029,
+      "state": "thinking"
+    },
+    {
+      "ts": 15029,
+      "state": "idle"
+    },
+    {
+      "ts": 15431,
+      "state": "idle"
+    },
+    {
+      "ts": 15431,
+      "state": "thinking"
+    },
+    {
+      "ts": 15431,
+      "state": "idle"
+    },
+    {
+      "ts": 15837,
+      "state": "idle"
+    },
+    {
+      "ts": 15837,
+      "state": "thinking"
+    },
+    {
+      "ts": 15837,
+      "state": "idle"
+    }
+  ],
+  "rtChanges": [
+    {
+      "ts": 4469,
+      "from": "在线待命",
+      "to": "思考中"
+    },
+    {
+      "ts": 6514,
+      "from": "思考中",
+      "to": "在线待命"
+    }
+  ],
+  "dialogsWhenOverlayOpen": {
+    "count": 2,
+    "ids": [
+      "zz-palette-sheet",
+      "zz-overlay-sheet"
+    ],
+    "overlayCount": 1
+  },
+  "F": {
+    "blockSamples": [
+      {
+        "t": 5,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 1007,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 2024,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 3031,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 4041,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 5045,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 6052,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 7060,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 8066,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 9080,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 10089,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 11100,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 12116,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 13124,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 14130,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 15136,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 16140,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 17144,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 18154,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 19163,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 20171,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 21178,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 22181,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 23190,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 24200,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 25211,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 26219,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 27225,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 28232,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      },
+      {
+        "t": 29244,
+        "dot": "connected",
+        "esCreations": 1,
+        "esCloses": 0
+      }
+    ],
+    "blockCreations": 0,
+    "backoffIntervals": [],
+    "maxConcurrentDuringBlock": 1,
+    "recovered": true,
+    "dotBeforeOffline": "connected",
+    "dotEndOffline": "connected"
+  },
+  "goalSubmit": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "goal_id": 64
+    }
+  },
+  "bFirstAgentArrivalMs": 1,
+  "bGuiUpdateMs": 4469,
+  "bGuiWithin1s": false
+}

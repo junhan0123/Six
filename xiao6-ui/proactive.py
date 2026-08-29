@@ -274,7 +274,7 @@ def push_proactive(kind, content, importance=None):
         conn.close()
     except Exception:
         pass
-    _dispatch_sse({"zhuangzhou_event": "proactive", "kind": kind, "content": content, "ts": ts, "importance": imp})
+    _dispatch_sse({"xiao6_event": "proactive", "kind": kind, "content": content, "ts": ts, "importance": imp})
 
 
 def flush_pending(ts_queue):
@@ -283,7 +283,7 @@ def flush_pending(ts_queue):
         conn = db_conn()
         rows = conn.execute("SELECT id,kind,content,ts FROM pending_proactive WHERE shown=0 ORDER BY id ASC").fetchall()
         for rid, kind, content, ts in rows:
-            ts_queue.put({"zhuangzhou_event": "proactive", "kind": kind, "content": content, "ts": ts})
+            ts_queue.put({"xiao6_event": "proactive", "kind": kind, "content": content, "ts": ts})
             conn.execute("UPDATE pending_proactive SET shown=1 WHERE id=?", (rid,))
         conn.commit()
         conn.close()
@@ -501,7 +501,7 @@ def _scan_weather(now, force=False):
     _save_ts("tick_last_weather", now.timestamp())
     try:
         import geo_weather as _gw
-        city = os.environ.get("ZHUANGZHOU_DEFAULT_CITY") or None
+        city = os.environ.get("XIAO6_DEFAULT_CITY") or None
         w = _gw.get_weather(city=city, mode="compact", force=True)
     except Exception:
         return
@@ -915,10 +915,10 @@ def _check_long_running(now):
 def _on_goal_event(event):
     """消费 zz.goal 事件（领域事件信封）：完成时主动提示复盘。
 
-    信封结构：{"zhuangzhou_event": "GOAL_COMPLETED", "payload": {...}}（见 eventbus.publish_domain）。
+    信封结构：{"xiao6_event": "GOAL_COMPLETED", "payload": {...}}（见 eventbus.publish_domain）。
     """
     try:
-        if event.payload.get("zhuangzhou_event") == "GOAL_COMPLETED":
+        if event.payload.get("xiao6_event") == "GOAL_COMPLETED":
             payload = event.payload.get("payload", {})
             title = payload.get("title", "目标")
             # 完成即清除看门狗计时
@@ -939,7 +939,7 @@ def _on_domain_event_for_proactive(event):
     严格单一来源：仅经 eventbus.publish_domain / push_proactive，绝不裸 bus.publish。
     """
     try:
-        name = event.payload.get("zhuangzhou_event")
+        name = event.payload.get("xiao6_event")
         payload = event.payload.get("payload", {}) or {}
         gid = payload.get("goal_id")
         if name in ("GOAL_RUNNING",):

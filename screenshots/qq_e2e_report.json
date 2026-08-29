@@ -1,0 +1,163 @@
+{
+  "total": 13,
+  "passed": 11,
+  "failed": 2,
+  "steps": [
+    {
+      "step": "activate_qq",
+      "action": "activate_qq_window",
+      "success": false,
+      "timestamp": 1787359273.4449174,
+      "details": {
+        "hwnd": 67534,
+        "foreground": "Program Manager"
+      },
+      "error": null
+    },
+    {
+      "step": "observe",
+      "action": "observe_qq_interface",
+      "success": true,
+      "timestamp": 1787359280.5158072,
+      "details": {
+        "active_window": "Program Manager",
+        "ocr_preview": [
+          "8",
+          "CDR",
+          "LrC",
+          "Ai",
+          "Ps",
+          "QQ",
+          "此电脑",
+          "开始扫描",
+          "Watt Toolkit",
+          "小6启动bat"
+        ]
+      },
+      "error": null
+    },
+    {
+      "step": "locate",
+      "action": "locate_search_box",
+      "success": true,
+      "timestamp": 1787359286.1907964,
+      "details": {
+        "x": 131,
+        "y": 626,
+        "confidence": 0.998
+      },
+      "error": null
+    },
+    {
+      "step": "click",
+      "action": "click_search_box",
+      "success": true,
+      "timestamp": 1787359287.2572453,
+      "details": {
+        "x": 250,
+        "y": 150
+      },
+      "error": null
+    },
+    {
+      "step": "input",
+      "action": "input_search_text",
+      "success": true,
+      "timestamp": 1787359287.7530038,
+      "details": {
+        "text": "小9"
+      },
+      "error": null
+    },
+    {
+      "step": "find",
+      "action": "find_contact",
+      "success": false,
+      "timestamp": 1787359292.818191,
+      "details": {},
+      "error": "未找到联系人: 小9"
+    },
+    {
+      "step": "click",
+      "action": "click_contact",
+      "success": true,
+      "timestamp": 1787359294.074075,
+      "details": {
+        "x": 300,
+        "y": 300
+      },
+      "error": null
+    },
+    {
+      "step": "locate",
+      "action": "locate_input_box",
+      "success": true,
+      "timestamp": 1787359295.1115773,
+      "details": {
+        "x": 400,
+        "y": 1100
+      },
+      "error": null
+    },
+    {
+      "step": "click",
+      "action": "click_input_box",
+      "success": true,
+      "timestamp": 1787359295.6907477,
+      "details": {
+        "x": 400,
+        "y": 1100
+      },
+      "error": null
+    },
+    {
+      "step": "input",
+      "action": "input_message",
+      "success": true,
+      "timestamp": 1787359296.6874807,
+      "details": {
+        "message": "小6 Computer Use 测试消息 2026"
+      },
+      "error": null
+    },
+    {
+      "step": "send",
+      "action": "send_message",
+      "success": true,
+      "timestamp": 1787359297.1483128,
+      "details": {},
+      "error": null
+    },
+    {
+      "step": "verify",
+      "action": "verify_message_sent",
+      "success": true,
+      "timestamp": 1787359302.0630262,
+      "details": {
+        "active_window": "Program Manager"
+      },
+      "error": null
+    },
+    {
+      "step": "close",
+      "action": "close_qq",
+      "success": true,
+      "timestamp": 1787359302.072551,
+      "details": {},
+      "error": null
+    }
+  ],
+  "evidence": {
+    "screenshot_step01_qq_interface": "G:/xiao6/screenshots/step01_qq_interface.png",
+    "screenshot_step02_before_click": "G:/xiao6/screenshots/step02_before_click.png",
+    "screenshot_step03_before_click": "G:/xiao6/screenshots/step03_before_click.png",
+    "screenshot_step04_before_input": "G:/xiao6/screenshots/step04_before_input.png",
+    "screenshot_step05_search_results": "G:/xiao6/screenshots/step05_search_results.png",
+    "screenshot_step06_before_click_contact": "G:/xiao6/screenshots/step06_before_click_contact.png",
+    "screenshot_step07_before_input_box": "G:/xiao6/screenshots/step07_before_input_box.png",
+    "screenshot_step08_before_click_input": "G:/xiao6/screenshots/step08_before_click_input.png",
+    "screenshot_step09_before_send": "G:/xiao6/screenshots/step09_before_send.png",
+    "screenshot_step10_before_enter": "G:/xiao6/screenshots/step10_before_enter.png",
+    "screenshot_step11_after_send": "G:/xiao6/screenshots/step11_after_send.png"
+  }
+}

@@ -1,0 +1,147 @@
+/* ═════════════════════════════════════════════════════════════════
+   Xiao6 UI-R1 · components.css — 全局浮层组件（Phase 1）
+   迁移自 xiao6-workspace.css：
+   VOICE ORB / COMMAND PALETTE / OVERLAY / TOAST-BANNER /
+   MODEL SELECTOR / PERMISSION TOGGLE / JUMPBAR
+   保持原 class 名，仅迁移样式不迁移逻辑
+   ═════════════════════════════════════════════════════════════════ */
+
+/* ═══════════ VOICE ORB PRESENCE ═══════════ */
+.xiao6-orb-presence {
+  position: fixed; right: 26px; bottom: 26px; z-index: 40; width: 56px; height: 56px;
+  display: grid; place-items: center; cursor: pointer; transition: transform .2s;
+}
+.xiao6-orb-presence:hover { transform: scale(1.06); }
+.xiao6-orb-core {
+  position: absolute; width: 40px; height: 40px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--xiao6-accent), var(--xiao6-accent-deep) 72%);
+  box-shadow: 0 0 22px -4px rgba(34,211,238,0.55);
+}
+.xiao6-orb-ring { position: absolute; width: 56px; height: 56px; border-radius: 50%; border: 1px solid rgba(34,211,238,0.3); }
+.xiao6-orb-presence[data-state="thinking"] .xiao6-orb-core,
+.xiao6-orb-presence[data-state="listening"] .xiao6-orb-core { animation: xiao6Pulse 1.1s ease-in-out infinite; }
+.xiao6-orb-presence[data-state="speaking"] .xiao6-orb-core { background: radial-gradient(circle at 35% 30%, var(--xiao6-accent-2), var(--xiao6-accent-2-deep) 72%); box-shadow: 0 0 22px -4px rgba(167,139,250,0.55); }
+.xiao6-orb-presence[data-state="speaking"] .xiao6-orb-ring { border-color: rgba(167,139,250,0.35); animation: xiao6Spin 6s linear infinite; }
+.xiao6-orb-presence[data-state="error"] .xiao6-orb-core { background: var(--xiao6-danger); }
+@keyframes xiao6Spin { to { transform: rotate(360deg); } }
+
+/* ═══════════ COMMAND PALETTE ═══════════ */
+.xiao6-palette, .xiao6-overlay { position: fixed; inset: 0; z-index: 60; display: none; }
+.xiao6-palette[aria-hidden="false"], .xiao6-overlay[aria-hidden="false"] { display: block; }
+.xiao6-palette-scrim, .xiao6-overlay-scrim { position: absolute; inset: 0; background: rgba(3,5,8,0.6); backdrop-filter: blur(3px); }
+.xiao6-palette-sheet {
+  position: relative; margin: 14vh auto 0; width: min(640px, 92vw);
+  background: var(--xiao6-glass-strong); border: 1px solid var(--xiao6-border-strong); border-radius: var(--xiao6-radius-lg);
+  box-shadow: var(--xiao6-shadow); overflow: hidden; backdrop-filter: blur(20px);
+}
+.xiao6-palette-input-row { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--xiao6-border); }
+.xiao6-palette-ic { color: var(--xiao6-accent); font-size: 15px; }
+.xiao6-palette-input { flex: 1; border: none; background: transparent; color: var(--xiao6-text); font-size: 15px; outline: none; }
+.xiao6-palette-list { max-height: 50vh; overflow-y: auto; padding: 8px; }
+.xiao6-palette-group { font-size: 11px; color: var(--xiao6-text-faint); text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px 4px; }
+.xiao6-palette-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+.xiao6-palette-item .pi-ic { width: 24px; text-align: center; color: var(--xiao6-accent); }
+.xiao6-palette-item .pi-body { flex: 1; min-width: 0; }
+.xiao6-palette-item .pi-name { font-weight: 550; }
+.xiao6-palette-item .pi-desc { font-size: 12px; color: var(--xiao6-text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xiao6-palette-item.is-active { background: var(--xiao6-accent-soft); }
+.xiao6-palette-item .pi-kbd { font-size: 11px; color: var(--xiao6-text-faint); padding: 2px 7px; border: 1px solid var(--xiao6-border); border-radius: 6px; }
+
+/* ═══════════ OVERLAY ═══════════ */
+.xiao6-overlay-sheet {
+  position: relative; margin: 8vh auto 0; width: min(760px, 94vw); max-height: 84vh;
+  display: flex; flex-direction: column;
+  background: var(--xiao6-glass-strong); border: 1px solid var(--xiao6-border-strong); border-radius: var(--xiao6-radius-lg);
+  box-shadow: var(--xiao6-shadow); backdrop-filter: blur(20px); overflow: hidden;
+}
+.xiao6-overlay-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--xiao6-border); }
+.xiao6-overlay-title { font-size: 16px; font-weight: 600; }
+.xiao6-overlay-hint { color: var(--xiao6-text-faint); font-size: 12.5px; flex: 1; }
+.xiao6-overlay-close { background: none; border: none; color: var(--xiao6-text-faint); font-size: 22px; line-height: 1; }
+.xiao6-overlay-body { padding: 20px; overflow-y: auto; }
+
+/* ═══════════ TOAST / BANNER ═══════════ */
+.xiao6-toast-layer { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.xiao6-toast {
+  background: var(--xiao6-glass-strong); border: 1px solid var(--xiao6-border-strong); border-radius: 10px;
+  padding: 10px 16px; font-size: 13px; box-shadow: var(--xiao6-shadow-soft); backdrop-filter: blur(14px);
+  animation: xiao6Fade .2s ease;
+}
+.xiao6-toast.err { border-color: rgba(248,113,113,0.4); color: var(--xiao6-danger); }
+@keyframes xiao6Fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.xiao6-banner {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 70;
+  background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.4); color: var(--xiao6-warning);
+  padding: 9px 18px; border-radius: 10px; font-size: 13px;
+}
+
+.xiao6-loading { color: var(--xiao6-text-muted); font-size: 13px; }
+
+/* ═══════════ MODEL SELECTOR ═══════════ */
+.xiao6-model-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.xiao6-model-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--xiao6-accent); box-shadow: 0 0 8px var(--xiao6-accent); }
+.xiao6-caret { font-size: 10px; opacity: .6; }
+.xiao6-model-pop {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 240px; z-index: 60;
+  background: var(--xiao6-glass-strong); border: 1px solid var(--xiao6-border-strong); border-radius: 12px;
+  box-shadow: var(--xiao6-shadow-soft); backdrop-filter: blur(16px); padding: 8px; text-align: left;
+}
+.xiao6-model-pop[hidden] { display: none; }
+.xiao6-model-pop h4 { margin: 4px 8px 8px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--xiao6-text-faint); font-weight: 600; }
+.xiao6-model-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 10px; border-radius: 9px; cursor: pointer; font-size: 13px; color: var(--xiao6-text);
+}
+.xiao6-model-item:hover { background: var(--xiao6-glass); }
+.xiao6-model-item.is-sel { background: var(--xiao6-glass); color: var(--xiao6-accent); }
+.xiao6-model-item .mi-name { font-weight: 500; }
+.xiao6-model-item .mi-meta { font-size: 11px; color: var(--xiao6-text-faint); }
+.xiao6-model-item .mi-check { color: var(--xiao6-accent); font-size: 13px; }
+.xiao6-model-custom {
+  margin-top: 6px; padding: 9px 10px; border-top: 1px solid var(--xiao6-border); cursor: pointer;
+  font-size: 12.5px; color: var(--xiao6-text-muted); display: flex; align-items: center; gap: 8px;
+}
+.xiao6-model-custom:hover { color: var(--xiao6-accent); }
+
+/* ═══════════ PERMISSION TOGGLE ═══════════ */
+.xiao6-perm-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.xiao6-perm-btn .xiao6-perm-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--xiao6-warning); }
+.xiao6-perm-btn.is-auto .xiao6-perm-dot { background: var(--xiao6-success); }
+.xiao6-perm-pop {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 220px; z-index: 60;
+  background: var(--xiao6-glass-strong); border: 1px solid var(--xiao6-border-strong); border-radius: 12px;
+  box-shadow: var(--xiao6-shadow-soft); backdrop-filter: blur(16px); padding: 14px; text-align: left;
+}
+.xiao6-perm-pop[hidden] { display: none; }
+.xiao6-perm-pop p { margin: 0 0 10px; font-size: 12.5px; color: var(--xiao6-text-muted); line-height: 1.5; }
+.xiao6-seg { display: flex; gap: 6px; }
+.xiao6-seg button {
+  flex: 1; padding: 8px 0; border-radius: 8px; border: 1px solid var(--xiao6-border); background: var(--xiao6-glass);
+  color: var(--xiao6-text-muted); font-size: 12.5px; cursor: pointer;
+}
+.xiao6-seg button.is-sel { border-color: var(--xiao6-accent); color: var(--xiao6-accent); background: var(--xiao6-glass-strong); }
+
+/* ═══════════ JUMPBAR (right-side minimap) ═══════════ */
+.xiao6-jumpbar {
+  position: absolute; top: 64px; bottom: 120px; right: 10px; width: 16px; z-index: 30;
+  display: flex; justify-content: center; opacity: 0; transition: opacity .18s ease; pointer-events: none;
+}
+.xiao6-conv:hover .xiao6-jumpbar { opacity: 1; pointer-events: auto; }
+.xiao6-jumpbar[hidden] { display: none; }
+.xiao6-jump-track { position: relative; width: 3px; height: 100%; background: var(--xiao6-border); border-radius: 2px; }
+.xiao6-jump-thumb {
+  position: absolute; left: -1px; width: 5px; border-radius: 3px; background: var(--xiao6-accent);
+  box-shadow: 0 0 8px var(--xiao6-accent); transition: top .12s ease, height .12s ease; opacity: .85;
+}
+.xiao6-jump-mark {
+  position: absolute; left: -3px; width: 9px; height: 2px; border-radius: 1px;
+  background: var(--xiao6-text-faint); cursor: pointer; transition: background .12s, transform .12s; opacity: .55;
+}
+.xiao6-jump-mark:hover, .xiao6-jump-mark.is-active { background: var(--xiao6-accent); transform: scaleX(1.3); opacity: 1; }
+.xiao6-jump-tip {
+  position: absolute; right: 22px; max-width: 240px; padding: 8px 11px; border-radius: 9px;
+  background: var(--xiao6-glass-strong); border: 1px solid var(--xiao6-border-strong); color: var(--xiao6-text);
+  font-size: 12px; line-height: 1.5; box-shadow: var(--xiao6-shadow-soft); backdrop-filter: blur(12px);
+  white-space: normal; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 40;
+}
+.xiao6-jump-tip.show { opacity: 1; }

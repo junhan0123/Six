@@ -27,7 +27,7 @@ except OSError:
 PROTECTED_NAMES = {
     ".env",
     ".env.example",
-    "zhuangzhou.db",
+    "xiao6.db",
     ".gitignore",
     "package.json",
     "readme.txt",

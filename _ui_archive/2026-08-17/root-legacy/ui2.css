@@ -1,0 +1,1794 @@
+/* ============================================================================
+ * ui2.css — Xiao6 OS UI 2.0 (Phase 10.1)
+ * 职责：AI OS 首页重组 + 意识核心 + 能力矩阵 + 执行时间线 + 指令坞 + 洞察
+ * 纪律：仅表现层；所有数据由 AppState/ExecutionChannel/AvatarState/ZZSSE 派生。
+ *       不新建状态/事件总线/运行时；仅 CSS 变量与动画。
+ * ========================================================================== */
+
+/* ───────────────── P10 Motion System（统一动效规范 · 系统唯一来源）─────────────────
+ * 纪律：本文件是 Design Token 的【唯一权威来源】。styles.css 与 ui2.css 同文档加载，
+ * 且 ui2.css 最后加载（index.html 顺序），故本文件 :root / [data-theme] 中的变量定义
+ * 对全文档（含旧 .app / settings 组件）生效，消除「旧 UI 与新 UI 混用」的令牌冲突。
+ * 每个主题块同时声明 NEW 命名空间（--bg/--surface/--accent/--text…）与 LEGACY 别名
+ * （--void/--cyan/--txt/--dim…），两套 UI 组件均获得合法值，不再互相覆盖/回落错误。 */
+:root {
+  /* —— Motion（全局统一） —— */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft:    cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* legacy 缓动别名：原 ui2.css 仅在 [data-theme] 块内定义 --ease-out-soft，
+     为让 styles.css 的 var(--ease-out-soft) 引用在无 data-theme 时仍稳定，提升为 :root 定义。
+     值 (.22,.61,.36,1) 与既有定义逐字节一致，零视觉变化。 */
+  --ease-out-soft: cubic-bezier(.22, .61, .36, 1);
+  /* legacy 缓动别名：styles.css 中 hs-glitch-in / zzTaskSlideIn 动画使用的入场缓动；
+     提为令牌以便全局统一检索。值 (0.2,0.9,0.2,1) 与原生逐字节一致，零视觉变化。 */
+  --ease-glitch: cubic-bezier(0.2, 0.9, 0.2, 1);
+
+  /* —— Motion 时长：canonical = --motion-*；--dur-* 为遗留别名（值与 --motion-* 对齐，清理重复令牌） —— */
+  --dur-fast: var(--motion-fast);   /* 原 140ms → 180ms（统一） */
+  --dur-base: var(--motion-base);   /* 原 260ms → 280ms */
+  --dur-slow: var(--motion-slow);   /* 原 480ms → 450ms */
+  --dur-focus: 700ms;
+  /* legacy 时长别名：styles.css 遗留的装饰性过渡/动画时长，提为令牌以统一检索。
+     值与原生逐字节一致（120ms / 80ms / 800ms），零视觉变化。 */
+  --dur-micro: 120ms;   /* 原 0.12s 微交互过渡 */
+  --dur-tick: 80ms;     /* 原 .08s 微交互过渡 */
+  --dur-meter: 800ms;   /* 原 .8s 资源条填充动画 */
+
+  --motion-scale-hover: 1.03;
+  --motion-lift: -3px;
+
+  /* —— Radius：Formal UI System v1.0 正式圆角阶梯（全系统仅此 5 级）——
+   * 纪律：sm/md/lg 为既有冻结值，逐字不动；xs/pill 为补齐级，不是第二套体系。
+   * 全部 CSS 的 border-radius 已收口为 var()，不再出现 2/3/5/6/7/8/10/11/12/13/16/20/24 等散值。 */
+  --radius-xs: 4px;      /* 徽章 / 标签 / 微控件 */
+  --radius-sm: 9px;      /* 按钮 / 输入 / 小控件 */
+  --radius-md: 14px;     /* 卡片 / 内层面板 */
+  --radius-lg: 22px;     /* 面板 / 抽屉 / 模态 */
+  --radius-xl: 28px;     /* 大型浮层（引导卡片等） */
+  --radius-pill: 999px;  /* 胶囊：状态丸、开关、芯片 */
+
+  /* —— Design Token v2 统一刻度（定义层，仅提供规范，零组件改动 → 零回归） —— */
+  --icon-size: 20px;
+  /* —— Z-index Token Ladder（Overlay Sprint · Step[1] 令牌化 · 零堆叠变更）——
+   * 单一来源：覆盖主窗口 styles.css + premium.css 全部 z-index 实值，数值 1:1 对应，
+   * 仅建立命名来源、不改堆叠顺序（零行为变更）。companion.css 为独立窗口内部栈，留 Step[6]。
+   * 后续 Step[5] 按语义归并层级（如 toast 提层）须经 GUI 验收。 */
+  --z-ground: 0;            --z-base: 1;          --z-stage: 2;         --z-stage-deco: 3;
+  --z-orb: 4;               --z-rail: 5;          --z-raised: 7;        --z-content: 18;
+  --z-hud: 20;              --z-popover: 30;      --z-scanlines: 40;    --z-float: 55;
+  --z-overlay: 60;          --z-overlay-raised: 61; --z-mask: 80;       --z-panel: 81;
+  --z-dialog-mask: 82;      --z-dialog: 83;       --z-task-mask: 85;    --z-task: 86;
+  --z-command: 90;          --z-drawer: 95;       --z-top: 100;         --z-menu: 200;
+  --z-modal-mask: 9000;     --z-companion: 9999;  --z-onboarding: 9999;
+  --z-modal: var(--z-overlay);    /* 兼容别名：模态底层 = 60 */
+  --z-toast: var(--z-overlay);    /* 兼容别名：toast 现状亦为 60（Step[5] 再提层） */
+  --op-0: 0;  --op-10: .1;  --op-20: .2;  --op-35: .35;  --op-45: .45;
+  --op-55: .55;  --op-7: .7;  --op-85: .85;  --op-90: .9;  --op-100: 1;
+  /* —— Formal UI System v1.0 正式字号阶梯（全系统仅此 18 级，无半像素）——
+   * 收口前全项目存在 33 种离散字号（含 9.5/10.5/11.5/12.5/13.5/14.5/15.5px 半像素）。
+   * 已移除死令牌 --fs-115 / --fs-125（全项目零消费者，且与正式 Scale 的 12/13px 冲突）。 */
+  --fs-9: 9px;    --fs-10: 10px;  --fs-11: 11px;  --fs-12: 12px;  --fs-13: 13px;
+  --fs-14: 14px;  --fs-15: 15px;  --fs-16: 16px;  --fs-18: 18px;  --fs-20: 20px;
+  --fs-22: 22px;  --fs-24: 24px;  --fs-26: 26px;  --fs-28: 28px;  --fs-34: 34px;
+  --fs-44: 44px;  --fs-56: 56px;  --fs-64: 64px;
+
+  --blur-glass: 26px;
+  /* —— Formal UI System v1.0 正式 Glass 阶梯（全系统仅此 3 级）——
+   * 收口前全项目存在 20+ 种 backdrop-filter 配方，是「每个弹层都不像一家人」的主因。
+   * 1=轻（内联小面/状态丸） 2=中（面板/抽屉/卡片） 3=重（模态/遮罩/全屏浮层）。 */
+  --glass-1: blur(8px) saturate(140%);
+  --glass-2: blur(14px) saturate(160%);
+  --glass-3: blur(26px) saturate(180%);
+  /* —— Formal UI System v1.0 正式间距阶梯（2px 网格 · 全系统唯一间距来源）——
+   * 收口前全项目 946 处间距声明散布在 34 种数值（含 3/5/7/9/11/13/15px 非网格值）。
+   * 已将 157 处奇数值吸附到 2px 网格（最大位移 1px，视觉不可察），实值种类 34 → 27。
+   * 例外：1px 保留为 hairline 补偿（13 处），不属于间距体系。
+   * --space-1..4 为既有语义别名（46 处消费者），值不变，逐字冻结，不是第二套体系。 */
+  --sp-2: 2px;    --sp-4: 4px;    --sp-6: 6px;    --sp-8: 8px;
+  --sp-10: 10px;  --sp-12: 12px;  --sp-14: 14px;  --sp-16: 16px;
+  --sp-18: 18px;  --sp-20: 20px;  --sp-22: 22px;  --sp-24: 24px;
+  --sp-26: 26px;  --sp-28: 28px;  --sp-32: 32px;  --sp-34: 34px;
+  --sp-40: 40px;  --sp-48: 48px;
+  --space-1: 8px;  --space-2: 14px; --space-3: 22px; --space-4: 34px;
+
+  /* —— Formal UI System v1.0 · 9 主题色板（swatch）单一来源 ——
+   * 收口前同一组色板在 3 处重复硬编码（ui2 基础层 / ui2 HUD 高特异性覆盖层 /
+   * index.html Onboarding 的内联 --sw），且 Onboarding 只给了 6 个主题 → 第五处主题分叉。
+   * 现色值仅此一处定义，HUD 与 Onboarding 共同消费；新增主题只需在此追加一行。
+   * 值与收口前逐字一致（含 #22D3EE 的大小写），零视觉变化。 */
+  --sw-dark:     linear-gradient(135deg,#0a0c10,#1a1f2b);
+  --sw-quantum:  linear-gradient(135deg,#22d3ee,#a78bfa);
+  --sw-midnight: linear-gradient(135deg,#04060f,#4f7bff);
+  --sw-cyan:     linear-gradient(135deg,#22D3EE,#0E7490);
+  --sw-green:    linear-gradient(135deg,#34d399,#0e7a52);
+  --sw-purple:   linear-gradient(135deg,#c084fc,#6d28d9);
+  --sw-amber:    linear-gradient(135deg,#fbbf24,#b45309);
+  --sw-rose:     linear-gradient(135deg,#fb7185,#be123c);
+  --sw-light:    linear-gradient(135deg,#f1f5f9,#cbd5e1);
+
+  /* —— 语义色补全（Formal UI System v1.0）——
+   * 收口前 styles.css 有 2 个令牌「只被 var() 引用、从未被定义」，靠内联回退值苟活：
+   *   var(--violet,#a78bfa) ×9（记忆/反思语义色）、var(--mono,monospace) ×1（等宽字体）。
+   * 回退值是体系外硬编码，主题切换时不跟随、检索时不可见。现正式定义 --violet 并将
+   * --mono 归并到既有的 --font-mono（不新建第二个字体令牌）。色值与原回退逐字一致。 */
+  --violet: #a78bfa;
+
+  /* —— Workspace 六层视觉令牌（Phase 2 · Visual Layer 单一来源）——
+   * 对应 Unified Workspace 六层：Background / Context / Assistant / Secondary / Primary / Overlay。
+   * 仅定义每层的「表面 / 模糊 / 高度 / 不透明」意图，供所有容器消费，不产生第二套视觉语言。
+   * 零架构/生命周期/导航变更；纯令牌层。 */
+  --ws-bg-base: var(--bg);
+  --ws-bg-blur: 0px;
+  --ws-context-surface: var(--surface);
+  --ws-context-blur: var(--blur-glass);
+  --ws-primary-surface: var(--surface);
+  --ws-primary-surface-2: var(--surface-2);
+  --ws-primary-blur: var(--blur-glass);
+  --ws-primary-elev: var(--elev-1);
+  --ws-secondary-surface: var(--surface-2);
+  --ws-secondary-base: var(--bg-2);
+  --ws-secondary-blur: var(--blur-glass);
+  --ws-secondary-elev: var(--elev-3);
+  --ws-assistant-surface: var(--surface-2);
+  --ws-assistant-blur: var(--blur-glass);
+  --ws-overlay-scrim: color-mix(in srgb, var(--bg) 72%, transparent);
+  --ws-overlay-blur: var(--blur-glass);
+  --ws-overlay-elev: var(--elev-3);
+
+  /* —— Panel 统一视觉规范（Phase 2 · 所有面板共用，含既有 .zz-panel-card / .settings-panel / .cap-panel / .os-panel）——
+   * 定义 Header / Toolbar / Content / Footer 四区的统一尺度。既有面板按各自选择器已消费其中多数令牌；
+   * 新增面板应直接消费下列 --panel-*，不再自行定义 padding / radius / divider。 */
+  --panel-radius: var(--radius-md);          /* 16px，全面板卡片圆角统一 */
+  --panel-border: var(--border);
+  --panel-header-pad-y: 14px;
+  --panel-header-pad-x: 18px;
+  --panel-header-divider: 1px solid var(--border);
+  --panel-title-font: 'Orbitron', sans-serif;
+  --panel-title-size: 18px;
+  --panel-title-color: var(--accent);
+  --panel-content-pad-y: 16px;
+  --panel-content-pad-x: 18px;
+  --panel-footer-pad-y: 12px;
+  --panel-footer-pad-x: 18px;
+  --panel-toolbar-gap: var(--sp-10);
+  --panel-scrollbar: var(--border);
+
+  /* —— NEW 命名空间（默认 = midnight） —— */
+  --bg: #04060f;            --bg-2: #070b18;
+  --surface: rgba(90,120,200,0.05);
+  --surface-2: rgba(90,120,200,0.09);
+  --border: rgba(110,140,220,0.14);
+  --text: #e6ecff;          --text-dim: #9fb0d8;   --muted: #5e6c96;
+  --accent: #4f7bff;        --accent-2: #7c5cff;
+  --glow: rgba(80,120,255,0.40);
+  --ok: #4fd6a0; --warn: #e0a94f; --danger: #ff6b8a;
+  --grid-line: rgba(90,120,200,0.06);
+
+  /* —— LEGACY 别名（供旧 .app / settings 组件使用，映射到 NEW 值） —— */
+  --void: var(--bg);
+  --void2: var(--bg-2);
+  --panel: var(--surface);
+  --panel-solid: var(--bg-2);
+  --glass: var(--surface);
+  --line: var(--border);
+  /* 激活「强边框」语言：此前 --line-strong 被别名到 --border（hover/激活边框不可见）。
+     现改为 accent 染色的更强边框，随主题自适应；移除各主题同名别名以本定义为准。 */
+  --line-strong: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+  --cyan: var(--accent);
+  --teal: var(--accent-2);
+  --amber: var(--warn);
+  --red: var(--danger);
+  --txt: var(--text);
+  --dim: var(--text-dim);
+  --dim2: var(--muted);
+
+  /* —— 来自 premium.css 的令牌（合并为单一来源，原值保留，避免行为变更） —— */
+  --ease-out-soft: cubic-bezier(.22, .61, .36, 1);
+  --motion-fast: .18s;
+  --motion-base: .28s;
+  --motion-slow: .45s;
+  --elev-1: 0 1px 0 rgba(255,255,255,.04) inset, 0 8px 24px rgba(0,0,0,.28);
+  --elev-2: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 48px rgba(0,0,0,.40);
+  --elev-3: 0 1px 0 rgba(255,255,255,.08) inset, 0 30px 80px rgba(0,0,0,.55);
+  /* —— Formal UI System v1.0 · Phase A / D-01：--glow 类型统一为 Color Token ——
+   * 收口前 --glow 存在双语义：ui2.css 全部 11 处定义为颜色 rgba(...)，而 styles.css
+   * 的 5 个 dark-* 主题块把它定义为 box-shadow 简写 "0 0 24px <color>"。因 styles.css
+   * body[data-theme] 特异性 (0,1,1) > ui2.css [data-theme] (0,1,0)，造成双向破坏：
+   *   · dark-* 主题下 → ui2.css 13 处颜色用法（含 :focus-visible 焦点环）全部失效；
+   *   · dark/quantum/midnight/light 下 → styles.css 12 处 box-shadow:var(--glow) 全部失效。
+   * 正式规则：--glow 恒为 Color Token，禁止 box-shadow:var(--glow) 裸用。
+   * 外发光阴影统一由下列 composition token 表达；0 0 24px 逐字承接 styles.css 原简写，
+   * 保证 dark-* 主题视觉连续（var 延迟求值，主题切换自动跟随 --glow）。 */
+  --shadow-glow: 0 0 24px var(--glow);
+  /* —— Formal UI System v1.0：解除「第二套圆角阶梯」——
+   * 收口前 --r-sm/md/lg/xl(10/16/22/28) 与 --radius-xs/sm/md/lg/pill(4/9/14/22/999) 两套并存，
+   * 同类控件因引用不同阶梯而出现 9px 与 10px、14px 与 16px 混排（违反「无第二套 Design System」）。
+   * 现 --r-* 降级为正式阶梯的 legacy 别名（仅 8 处消费者），最大位移 2px，视觉不可察。 */
+  --r-sm: var(--radius-sm);   /* 10px → 9px  */
+  --r-md: var(--radius-md);   /* 16px → 14px */
+  --r-lg: var(--radius-lg);   /* 22px 不变   */
+  --r-xl: var(--radius-xl);   /* 28px 不变   */
+
+  /* —— Input Primitive Tokens（Phase 2 · 值=既有实值，零视觉变化 · 单值来源）——
+   * 路由低风险提示的裸 rgba 背景 / 裸 radius 数字到令牌；遗留变量（--cyan/--line/--void/--txt/--dim2）
+   * 已在 :56-70 别名到 NEW，此处仅补未令牌化的填充层与维度。 */
+  --input-bg: rgba(5,7,10,.6);            /* 有底文本输入填充（.settings-input 系） */
+  --input-bg-soft: rgba(255,255,255,.05); /* 浅填充（.settings-textarea / .memq-search） */
+  --input-bg-deep: rgba(0,0,0,.35);       /* 深填充（.mem-search） */
+  --input-border: var(--border);
+  --input-radius: var(--radius-sm);       /* 正式阶梯 9px（原 --r-sm 10px，脱离阶梯） */
+  --input-pad-y: 10px; --input-pad-x: 12px; /* 原 9px 非 2px 网格值，吸附到 10px */
+  --input-font: var(--fs-13);
+  --input-focus-border: var(--accent);
+  --input-focus-glow: var(--glow);
+  --input-placeholder: var(--muted);
+  --input-disabled-op: .5;                /* 规范预留：文本输入 disabled 暂未应用 */
+  --input-error-border: var(--danger);    /* 规范预留：输入 error 态全站缺失 */
+}
+
+/* 主题块生成宏（人工展开）：每个块声明 NEW + LEGACY 两套变量 */
+[data-theme="dark"] {
+  --bg: #0a0c10;            --bg-2: #0e1117;
+  --surface: rgba(255,255,255,0.045);
+  --surface-2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.10);
+  --text: #eef2f7;          --text-dim: #aeb8c7;   --muted: #6b7689;
+  --accent: #5fb3c8;        --accent-2: #8b9bff;
+  --glow: rgba(95,179,200,0.35);
+  --ok: #56d364; --warn: #f0b35e; --danger: #ff6b6b;
+  --grid-line: rgba(255,255,255,0.05);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+[data-theme="quantum"] {
+  --bg: #060814;            --bg-2: #0a0c20;
+  --surface: rgba(120,140,255,0.06);
+  --surface-2: rgba(120,140,255,0.10);
+  --border: rgba(150,170,255,0.16);
+  --text: #eaf0ff;          --text-dim: #b3c0e8;   --muted: #6f7bb0;
+  --accent: #22d3ee;        --accent-2: #a78bfa;
+  --glow: rgba(120,160,255,0.45);
+  --ok: #56d3a0; --warn: #f0b35e; --danger: #ff6b9d;
+  --grid-line: rgba(120,150,255,0.07);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+[data-theme="midnight"] {
+  --bg: #04060f;            --bg-2: #070b18;
+  --surface: rgba(90,120,200,0.05);
+  --surface-2: rgba(90,120,200,0.09);
+  --border: rgba(110,140,220,0.14);
+  --text: #e6ecff;          --text-dim: #9fb0d8;   --muted: #5e6c96;
+  --accent: #4f7bff;        --accent-2: #7c5cff;
+  --glow: rgba(80,120,255,0.40);
+  --ok: #4fd6a0; --warn: #e0a94f; --danger: #ff6b8a;
+  --grid-line: rgba(90,120,200,0.06);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+/* 浅色主题（旧 UI 有 light；新 UI 此前缺失 → 补齐，保证两套 UI 一致） */
+[data-theme="light"] {
+  --bg: #eef2f7;            --bg-2: #e2e8f0;
+  --surface: rgba(255,255,255,0.72);
+  --surface-2: rgba(255,255,255,0.86);
+  --border: rgba(15,116,144,0.18);
+  --text: #0f172a;          --text-dim: #475569;   --muted: #64748b;
+  --accent: #0E7490;        --accent-2: #0F766E;
+  --glow: rgba(14,116,144,0.30);
+  --ok: #15803d; --warn: #b45309; --danger: #b91c1c;
+  --grid-line: rgba(15,116,144,0.10);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+
+/* ── LEGACY 强调色主题（旧 Settings 选择器 dark-cyan/...；补齐 NEW 命名空间，使新 UI 也跟随） ── */
+[data-theme="dark-cyan"] {
+  --bg: #060a0f;            --bg-2: #0a0f16;
+  --surface: rgba(34,211,238,0.05); --surface-2: rgba(34,211,238,0.09);
+  --border: rgba(34,211,238,0.16);
+  --text: #e8f6fa;          --text-dim: #9fc6d2;   --muted: #6b8a95;
+  --accent: #22d3ee;        --accent-2: #2dd4bf;
+  --glow: rgba(34,211,238,0.40);
+  --ok: #56d364; --warn: #f0b35e; --danger: #ff6b6b;
+  --grid-line: rgba(34,211,238,0.07);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+[data-theme="dark-green"] {
+  --bg: #060f0b;            --bg-2: #0a1410;
+  --surface: rgba(52,211,153,0.05); --surface-2: rgba(52,211,153,0.09);
+  --border: rgba(52,211,153,0.16);
+  --text: #e6faf0;          --text-dim: #9fd2b8;   --muted: #6b957e;
+  --accent: #34d399;        --accent-2: #10b981;
+  --glow: rgba(52,211,153,0.40);
+  --ok: #34d399; --warn: #f0b35e; --danger: #ff6b6b;
+  --grid-line: rgba(52,211,153,0.07);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+[data-theme="dark-purple"] {
+  --bg: #0a0610;            --bg-2: #0f0a16;
+  --surface: rgba(192,132,252,0.05); --surface-2: rgba(192,132,252,0.09);
+  --border: rgba(192,132,252,0.16);
+  --text: #f3eafb;          --text-dim: #c6b2e0;   --muted: #8a7b9e;
+  --accent: #c084fc;        --accent-2: #a855f7;
+  --glow: rgba(192,132,252,0.40);
+  --ok: #56d3a0; --warn: #f0b35e; --danger: #ff6b9d;
+  --grid-line: rgba(192,132,252,0.07);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+[data-theme="dark-amber"] {
+  --bg: #100c06;            --bg-2: #16110a;
+  --surface: rgba(251,191,36,0.05); --surface-2: rgba(251,191,36,0.09);
+  --border: rgba(251,191,36,0.16);
+  --text: #fbf3e0;          --text-dim: #d8c69f;   --muted: #9e8c6b;
+  --accent: #fbbf24;        --accent-2: #f59e0b;
+  --glow: rgba(251,191,36,0.40);
+  --ok: #56d3a0; --warn: #fbbf24; --danger: #ff6b6b;
+  --grid-line: rgba(251,191,36,0.07);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+[data-theme="dark-rose"] {
+  --bg: #100609;            --bg-2: #160a0f;
+  --surface: rgba(251,113,133,0.05); --surface-2: rgba(251,113,133,0.09);
+  --border: rgba(251,113,133,0.16);
+  --text: #fbeaf0;          --text-dim: #d8a6b2;   --muted: #9e6b78;
+  --accent: #fb7185;        --accent-2: #f43f5e;
+  --glow: rgba(251,113,133,0.40);
+  --ok: #56d3a0; --warn: #f0b35e; --danger: #ff6b8a;
+  --grid-line: rgba(251,113,133,0.07);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+
+/* 默认（无 data-theme 或未知）→ 回落 midnight，保证首屏有主题 */
+body:not([data-theme]), body[data-theme=""] {
+  --bg: #04060f; --bg-2: #070b18;
+  --surface: rgba(90,120,200,0.05); --surface-2: rgba(90,120,200,0.09);
+  --border: rgba(110,140,220,0.14);
+  --text: #e6ecff; --text-dim: #9fb0d8; --muted: #5e6c96;
+  --accent: #4f7bff; --accent-2: #7c5cff;
+  --glow: rgba(80,120,255,0.40);
+  --ok: #4fd6a0; --warn: #e0a94f; --danger: #ff6b8a;
+  --grid-line: rgba(90,120,200,0.06);
+  --void:var(--bg); --void2:var(--bg-2); --panel:var(--surface); --panel-solid:var(--bg-2); --glass:var(--surface);
+  --line:var(--border); --cyan:var(--accent); --teal:var(--accent-2); --amber:var(--warn); --red:var(--danger);
+  --txt:var(--text); --dim:var(--text-dim); --dim2:var(--muted);
+}
+
+/* ───────────────── OS Shell 布局 ───────────────── */
+.os-shell {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-columns: 76px 1fr 380px;
+  grid-template-rows: 56px 1fr 188px;
+  grid-template-areas:
+    "nav    hud    hud"
+    "nav    core   side"
+    "nav    bottom bottom";
+  gap: var(--space-3);
+  padding: var(--space-3);
+  z-index: 2;
+  color: var(--text);
+  /* F-01：裁切横向溢出。.os-shell 是离屏 Context 抽屉 .os-side（transform 停靠视口右外，
+   * 有意设计）的包含块；其默认 overflow:visible 让抽屉撑大页面横向滚动区。
+   * 在真正包含块上 clip，抽屉滑入动画不受影响（可见内容均在视口内），纵向保持可见。 */
+  overflow-x: clip;
+  transition: background var(--dur-slow) var(--ease-soft);
+}
+.os-shell[hidden] { display: none; }
+
+/* ═══ [B] 统一 AI OS 导航脊柱 ═══ */
+.os-nav {
+  grid-area: nav;
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-10);
+  padding: var(--sp-14) var(--sp-8);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--glass-3);
+  z-index: 35;
+}
+.os-nav-brand {
+  width: 44px; height: 44px; border-radius: var(--radius-md); cursor: pointer;
+  display: grid; place-items: center; margin-bottom: var(--sp-6);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; border: 0; box-shadow: 0 6px 18px -6px var(--glow);
+  transition: transform var(--dur-fast) var(--ease-premium), filter var(--dur-fast);
+}
+.os-nav-brand svg { width: 22px; height: 22px; }
+.os-nav-brand:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.os-nav-brand.active { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px -6px var(--glow); }
+.os-nav-items { display: flex; flex-direction: column; gap: var(--sp-8); width: 100%; align-items: center; }
+.os-nav-btn {
+  position: relative; width: 46px; height: 46px; border-radius: var(--radius-md); cursor: pointer;
+  display: grid; place-items: center;
+  background: transparent; border: 1px solid transparent; color: var(--text-dim);
+  transition: transform var(--dur-fast) var(--ease-premium), background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+.os-nav-btn svg { width: 22px; height: 22px; }
+.os-nav-btn:hover { transform: translateY(-2px); color: var(--text); background: var(--surface-2); }
+.os-nav-btn.active {
+  color: var(--accent); background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 0 16px -6px var(--glow);
+}
+.os-nav-btn.active::before {
+  content: ""; position: absolute; left: 4px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 22px; border-radius: var(--radius-xs); background: var(--accent); box-shadow: 0 0 10px var(--glow);
+}
+
+/* [D] Command Center — AI OS 统一操作入口（单一 Design Language 真相；Phase 5 收口 styles.css/premium.css 遗留分叉） */
+/* AI Presence 状态色板：与 Companion Phase 4 同源，全 OS 统一"存在语言"（跨主题恒定） */
+:root {
+  --presence-idle: #5fb3c8;
+  --presence-waiting: #f0b35e;
+  --presence-thinking: #8b9bff;
+  --presence-planning: #c08bff;
+  --presence-executing: #56d364;
+  --presence-completed: #56d3a0;
+  --presence-error: #ff6b6b;
+  --presence-offline: #8a93a6;
+  --presence-remind: #e0a94f;   /* Phase 8：补齐通知层「提醒」色，与 companion.css 同源（非第九主态） */
+  --presence-color: var(--presence-idle);
+  /* 能力暴露档位色（T0–T4 + 成熟度）：替代 command-palette 硬编码 #6ee7b7 等 */
+  --tier-T0: #6ee7b7;
+  --tier-T1: #7dd3fc;
+  --tier-T2: #c4b5fd;
+  --tier-T3: #94a3b8;
+  --tier-T4: #fca5a5;
+}
+
+/* ═══ Phase 8 · AI Presence Adapter —— 全局存在信号（唯一表现通道）═══
+ * 数据流（单向，无第二状态权威）：
+ *   AvatarState.deriveFromGlobals()  ← 唯一状态权威（8 态纯函数派生，不持有状态）
+ *     → index.html refreshHud() 写 body[data-presence="<STATE>"]  ← 唯一写入点，仅写状态名
+ *       → 此处映射为 --presence-color                              ← 唯一颜色权威（上方 :root 色板）
+ *         → Presence 表面消费（OS HUD 状态点 / 意识核心状态点）
+ * 纪律：JS 不写任何颜色值；不新增状态机；不改变任何业务状态语义；纯表现层投影。
+ * 注：REMIND 非主态，属 Companion 通知子类型（--presence-remind），不参与本映射。
+ */
+body[data-presence="IDLE"]      { --presence-color: var(--presence-idle); }
+body[data-presence="WAITING"]   { --presence-color: var(--presence-waiting); }
+body[data-presence="THINKING"]  { --presence-color: var(--presence-thinking); }
+body[data-presence="PLANNING"]  { --presence-color: var(--presence-planning); }
+body[data-presence="EXECUTING"] { --presence-color: var(--presence-executing); }
+body[data-presence="COMPLETED"] { --presence-color: var(--presence-completed); }
+body[data-presence="ERROR"]     { --presence-color: var(--presence-error); }
+body[data-presence="OFFLINE"]   { --presence-color: var(--presence-offline); }
+
+.cp-overlay {
+  position: fixed; inset: 0; z-index: var(--z-command);
+  display: none; align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  backdrop-filter: blur(calc(var(--blur-glass) * 0.2));
+  -webkit-backdrop-filter: blur(calc(var(--blur-glass) * 0.2));
+  animation: cp-fade var(--motion-fast) ease-out;
+}
+@keyframes cp-fade { from { opacity: 0; } to { opacity: 1; } }
+body.cp-mode .cp-overlay { display: flex; }
+
+.cp-box {
+  width: min(580px, 92vw);
+  background: var(--surface);
+  backdrop-filter: var(--glass-3);
+  -webkit-backdrop-filter: var(--glass-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--elev-3);
+  animation: cp-pop var(--motion-base) var(--ease-premium);
+}
+@keyframes cp-pop { from { transform: translateY(-12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.cp-inputrow {
+  display: flex; align-items: center; gap: var(--sp-10);
+  padding: var(--sp-14) var(--sp-16); border-bottom: 1px solid var(--border);
+}
+.cp-caret { color: var(--accent); font-family: var(--font-mono); display: flex; }
+.cp-input {
+  flex: 1; background: transparent; border: 0; outline: none;
+  color: var(--text); font-size: 16px; font-family: var(--font-ui);
+}
+.cp-input::placeholder { color: var(--text-dim); }
+.cp-kbd {
+  font-size: 10px; color: var(--text-dim); font-family: var(--font-mono);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-4) var(--sp-6);
+}
+
+.cp-modes {
+  display: flex; gap: var(--sp-6); padding: 10px 12px 0;
+  border-top: 1px solid var(--border); margin-top: var(--sp-10);
+}
+.cp-mode-chip {
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  padding: var(--sp-6) var(--sp-14); border-radius: var(--radius-pill); color: var(--text-dim);
+  background: var(--surface-2); border: 1px solid var(--border);
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+.cp-mode-chip:hover { color: var(--text); border-color: var(--text-dim); }
+.cp-mode-chip.active {
+  color: #04101a; background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 14px -6px var(--glow);
+}
+
+.cp-list { max-height: 46vh; overflow-y: auto; padding: var(--sp-6); }
+.cp-cat {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dim); padding: var(--sp-12) var(--sp-14) var(--sp-6); font-family: var(--font-mono);
+}
+.cp-item {
+  display: flex; align-items: center; gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-14); border-radius: var(--radius-sm); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-premium), transform var(--motion-fast) var(--ease-premium);
+}
+.cp-item:hover, .cp-item.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  transform: translateX(2px);
+}
+.cp-item.active { box-shadow: inset 2px 0 0 var(--accent); }
+.cp-item--intent {
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent-2);
+}
+.cp-hint { font-size: 16px; width: 22px; text-align: center; color: var(--text-dim); }
+.cp-label { flex: 1; display: flex; align-items: center; gap: var(--sp-8); font-size: 14px; color: var(--text); font-family: var(--font-ui); }
+.cp-state { margin-left: auto; font-size: 11px; color: var(--accent-2); font-family: var(--font-mono); opacity: .85; }
+.cp-empty { padding: var(--sp-18) var(--sp-14); color: var(--text-dim); font-size: 13px; text-align: center; }
+
+.cp-badge {
+  margin-left: auto; font-size: 10px; line-height: 1; font-family: var(--font-mono);
+  padding: var(--sp-4) var(--sp-6); border-radius: var(--radius-xs); border: 1px solid var(--border); color: var(--text-dim);
+  white-space: nowrap; letter-spacing: .02em;
+}
+.cp-badge--T0 { color: var(--tier-T0); border-color: color-mix(in srgb, var(--tier-T0) 40%, transparent); }
+.cp-badge--T1 { color: var(--tier-T1); border-color: color-mix(in srgb, var(--tier-T1) 40%, transparent); }
+.cp-badge--T2 { color: var(--tier-T2); border-color: color-mix(in srgb, var(--tier-T2) 40%, transparent); }
+.cp-badge--T3 { color: var(--tier-T3); border-color: color-mix(in srgb, var(--tier-T3) 40%, transparent); }
+.cp-badge--T4 { color: var(--tier-T4); border-color: color-mix(in srgb, var(--tier-T4) 40%, transparent); }
+.cp-badge--beta { background: rgba(251, 191, 36, .12); }
+.cp-badge--exp  { background: rgba(244, 114, 182, .12); }
+
+/* [E] Execution Feedback — AI Presence 调度反馈（仅表现层，复用 --presence-*；不改 Backend/EventBus/Capability） */
+.cp-status {
+  display: none; align-items: center; gap: var(--sp-8);
+  padding: var(--sp-10) var(--sp-16); border-top: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);
+}
+.cp-box.cp--dispatching .cp-status { display: flex; }
+.cp-status::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 8px currentColor;
+  animation: cp-pulse 1s ease-in-out infinite;
+}
+.cp-status--thinking  { color: var(--presence-thinking); }
+.cp-status--executing { color: var(--presence-executing); }
+.cp-status--completed { color: var(--presence-completed); }
+.cp-status--cancelled { color: var(--text-dim); }
+.cp-status--error     { color: var(--presence-error); }
+@keyframes cp-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+
+.os-hud {
+  grid-area: hud;
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--glass-3);
+}
+.os-hud .os-brand { font-weight: 700; letter-spacing: .14em; font-size: 13px; color: var(--text-dim); }
+.os-hud .os-brand b { color: var(--accent); }
+.os-hud .os-state {
+  display: inline-flex; align-items: center; gap: var(--sp-8);
+  font-size: 12px; color: var(--text-dim);
+  padding: var(--sp-4) var(--sp-12); border-radius: var(--radius-pill); background: var(--surface-2); border: 1px solid var(--border);
+}
+/* Phase 8 · Presence 表面①：顶部 HUD 状态点 —— 跟随 AvatarState 真实态（原硬编码 --accent，与状态无关） */
+.os-hud .os-state .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--presence-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--presence-color) 62%, transparent);
+  transition: background var(--dur-base) var(--ease-soft), box-shadow var(--dur-base) var(--ease-soft);
+}
+.os-hud .os-spacer { flex: 1; }
+.os-hud .os-clock { font-variant-numeric: tabular-nums; color: var(--text-dim); font-size: 13px; }
+
+/* 顶部主题/设置簇 */
+.os-hud .os-tools { display: flex; gap: var(--sp-8); }
+.os-hud .os-tools button {
+  width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  transition: transform var(--dur-fast) var(--ease-premium), background var(--dur-fast);
+}
+.os-hud .os-tools button:hover { transform: translateY(-2px); background: var(--accent); color: #04101a; }
+
+/* 意识核心区 */
+.os-core {
+  grid-area: core;
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 120% at 50% 40%, var(--surface-2), transparent 70%),
+    var(--surface);
+  backdrop-filter: var(--glass-3);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.os-core canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.os-core .os-core-label {
+  position: absolute; bottom: 18px; left: 0; right: 0; text-align: center;
+  font-size: 12px; letter-spacing: .22em; color: var(--text-dim); text-transform: uppercase;
+  pointer-events: none;
+}
+.os-core .os-core-state {
+  position: absolute; top: 16px; left: 18px;
+  font-size: 13px; color: var(--text); display: flex; align-items: center; gap: var(--sp-8);
+}
+/* Phase 8 · Presence 表面②：意识核心状态点 —— 同源跟随（与 ConsciousnessCore canvas 状态色一致） */
+.os-core .os-core-state .dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--presence-color);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--presence-color) 62%, transparent);
+  transition: background var(--dur-base) var(--ease-soft), box-shadow var(--dur-base) var(--ease-soft);
+}
+
+/* Phase 8 · Anti-Noise：仅「AI 正在工作」三态呼吸，复用既有 vitPulse（禁造第二套动效）。
+ * IDLE/WAITING/COMPLETED/OFFLINE 静止（安静在场）；ERROR 静止（错误不应制造焦虑脉动）。
+ * reduced-motion 由 ui2.css 全局双层兜底覆盖（@media + body.reduced-motion），无需重复声明。 */
+body[data-presence="THINKING"]  .os-hud .os-state .dot,
+body[data-presence="PLANNING"]  .os-hud .os-state .dot,
+body[data-presence="EXECUTING"] .os-hud .os-state .dot,
+body[data-presence="THINKING"]  .os-core .os-core-state .dot,
+body[data-presence="PLANNING"]  .os-core .os-core-state .dot,
+body[data-presence="EXECUTING"] .os-core .os-core-state .dot {
+  animation: vitPulse 1.6s var(--ease-soft) infinite;
+}
+
+/* [A+E] 首屏身份英雄区 —— 3 秒传达「我是小6 / 本地 AI / 我能做什么」 */
+.os-hero {
+  position: relative; z-index: 2; max-width: 580px; margin: 0 auto; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-14); padding: 0 24px;
+}
+.os-hero-eyebrow {
+  display: inline-flex; align-items: center; gap: var(--sp-8);
+  font-size: 12px; letter-spacing: .14em; color: var(--accent);
+  padding: var(--sp-6) var(--sp-14); border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+}
+.os-hero-eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.os-hero-title {
+  margin: 0; font-size: 64px; line-height: 1; font-weight: 800; letter-spacing: .04em;
+  background: linear-gradient(135deg, #ffffff, var(--accent-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.os-hero-sub { margin: 0; font-size: 18px; font-weight: 600; color: var(--text); }
+.os-hero-desc { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 460px; }
+.os-hero-actions { display: flex; gap: var(--sp-10); margin-top: var(--sp-6); flex-wrap: wrap; justify-content: center; }
+.os-hero-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-8); cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+  padding: var(--sp-10) var(--sp-16); border-radius: var(--radius-pill);
+  background: var(--surface-2); border: 1px solid var(--border);
+  transition: transform var(--dur-fast) var(--ease-premium), background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+.os-hero-chip svg { width: 17px; height: 17px; }
+.os-hero-chip:hover { transform: translateY(-2px); color: #04101a; background: var(--accent); border-color: var(--accent); }
+.os-hero-chip.active { color: #04101a; background: var(--accent); border-color: var(--accent); }
+
+/* 右侧栏（能力矩阵 + 洞察） */
+.os-side {
+  grid-area: side;
+  display: flex; flex-direction: column; gap: var(--space-3);
+  min-height: 0;
+}
+.os-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: var(--glass-3);
+  padding: var(--space-3);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.os-panel > h3 {
+  margin: 0 0 var(--space-2); font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--text-dim); font-weight: 600;
+}
+.os-panel.grow { flex: 1; }
+
+/* ───────────────── P5 Capability Matrix ───────────────── */
+.os-matrix-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-12);
+}
+.os-cap {
+  position: relative;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: var(--sp-14) var(--sp-12) var(--sp-12);
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-premium), border-color var(--dur-base);
+}
+.os-cap:hover { transform: translateY(var(--motion-lift)) scale(var(--motion-scale-hover)); border-color: var(--accent); }
+.os-cap .os-cap-ico { font-size: 18px; line-height: 1; }
+.os-cap .os-cap-name { font-size: 13px; margin-top: var(--sp-8); color: var(--text); font-weight: 600; }
+.os-cap .os-cap-meta { font-size: 11px; color: var(--muted); margin-top: var(--sp-2); font-variant-numeric: tabular-nums; }
+.os-cap .os-cap-vit {
+  position: absolute; top: 12px; right: 12px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--muted); transition: background var(--dur-base), box-shadow var(--dur-base);
+}
+.os-cap.vit-on  .os-cap-vit { background: var(--ok);  box-shadow: 0 0 10px var(--ok); animation: vitPulse 2.4s var(--ease-soft) infinite; }
+.os-cap.vit-busy .os-cap-vit { background: var(--accent); box-shadow: 0 0 12px var(--glow); animation: vitPulse 1.1s var(--ease-soft) infinite; }
+.os-cap.vit-warn .os-cap-vit { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.os-cap .os-cap-bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--accent); transition: width var(--dur-slow) var(--ease-soft); }
+@keyframes vitPulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* ───────────────── P8 Insight → 主动通知（Phase 10.2 任务四） ─────────────────
+ * 主动建议升级为「真正可点击执行的 Notification」，不再是静默增长日志。 */
+.proactive-toast-host {
+  display: flex; flex-direction: column; gap: var(--sp-10);
+  max-height: 100%; overflow-y: auto; padding-right: var(--sp-2);
+}
+.proactive-toast-host:empty::after { content: "暂无主动建议"; color: var(--muted); font-size: 12px; }
+
+.proactive-toast {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: var(--sp-12) var(--sp-12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  display: flex; flex-direction: column; gap: var(--sp-8);
+  animation: ptIn var(--dur-base) var(--ease-premium);
+}
+.proactive-toast.imp-critical { border-color: var(--danger); }
+.proactive-toast.imp-high { border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
+.proactive-toast .pt-head { display: flex; align-items: center; gap: var(--sp-8); font-size: 12px; color: var(--muted); }
+.proactive-toast .pt-kind {
+  font-size: 10px; padding: var(--sp-2) var(--sp-8); border-radius: var(--radius-pill);
+  background: var(--surface); border: 1px solid var(--border); color: var(--accent);
+}
+.proactive-toast.imp-critical .pt-kind,
+.proactive-toast.imp-high .pt-kind { color: var(--danger); }
+.proactive-toast .pt-imp { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; color: var(--muted); }
+.proactive-toast .pt-close {
+  margin-left: var(--sp-4); background: transparent; border: none; color: var(--muted);
+  cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px;
+}
+.proactive-toast .pt-close:hover { color: var(--text); }
+.proactive-toast .pt-body { font-size: 13px; color: var(--text); line-height: 1.45; word-break: break-word; }
+.proactive-toast .pt-actions { display: flex; gap: var(--sp-8); justify-content: flex-end; }
+.proactive-toast .pt-exec {
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  padding: var(--sp-6) var(--sp-14); border-radius: var(--radius-sm); color: #fff;
+  background: var(--accent); border: 1px solid var(--accent);
+  transition: filter var(--dur-base), transform var(--dur-base);
+}
+.proactive-toast .pt-exec:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.proactive-toast .pt-dismiss {
+  font: inherit; font-size: 12px; cursor: pointer; padding: var(--sp-6) var(--sp-10); border-radius: var(--radius-sm);
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+}
+.proactive-toast .pt-dismiss:hover { color: var(--text); border-color: var(--text-dim); }
+.proactive-toast.pt-leaving { animation: ptOut var(--dur-base) var(--ease-premium) forwards; }
+
+@keyframes ptIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes ptOut { to { opacity: 0; transform: translateX(24px); } }
+
+/* ───────────────── P4 Execution Timeline ───────────────── */
+.os-bottom {
+  grid-area: bottom;
+  display: grid; grid-template-columns: 1fr 1.15fr; gap: var(--space-3);
+  min-height: 0;
+}
+.os-timeline { display: flex; flex-direction: column; }
+.os-tl-track { display: flex; align-items: stretch; gap: 0; margin-top: var(--sp-6); position: relative; flex: 1; }
+.os-tl-phase {
+  flex: 1; position: relative; padding: var(--sp-12) var(--sp-10) var(--sp-10);
+  border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-2);
+  display: flex; flex-direction: column; gap: var(--sp-6);
+  transition: border-color var(--dur-base), background var(--dur-base), transform var(--dur-base) var(--ease-premium);
+}
+.os-tl-phase + .os-tl-phase { margin-left: var(--sp-10); }
+.os-tl-phase::before {
+  content: ""; position: absolute; left: -10px; top: 50%; width: 10px; height: 2px; background: var(--border);
+}
+.os-tl-phase:first-child::before { display: none; }
+.os-tl-phase .os-tl-step { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.os-tl-phase .os-tl-name { font-size: 13px; color: var(--text); font-weight: 600; }
+.os-tl-phase .os-tl-desc { font-size: 11px; color: var(--text-dim); line-height: 1.35; }
+.os-tl-phase.active {
+  border-color: var(--accent); background: var(--surface);
+  transform: translateY(-3px); box-shadow: 0 8px 30px -12px var(--glow);
+}
+.os-tl-phase.active::after {
+  content: ""; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: var(--radius-xs); animation: tlFill var(--dur-slow) var(--ease-soft) infinite alternate;
+}
+.os-tl-phase.done { opacity: .72; }
+.os-tl-phase.done .os-tl-name::before { content: "✓ "; color: var(--ok); }
+@keyframes tlFill { from { width: 0; } to { width: calc(100% - 28px); } }
+
+/* ───────────────── P7 Command Dock ───────────────── */
+.os-dock { display: flex; flex-direction: column; }
+.os-dock-bar {
+  display: flex; align-items: center; gap: var(--sp-8);
+  border-radius: var(--radius-md); border: 1px solid var(--border);
+  background: var(--surface-2); padding: var(--sp-10) var(--sp-12);
+  transition: border-color var(--dur-base), box-shadow var(--dur-base);
+}
+.os-dock-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+.os-dock input {
+  flex: 1; background: transparent; border: 0; outline: 0; color: var(--text);
+  font-family: var(--font-ui);
+  transition: color var(--motion-fast) var(--ease-soft);
+}
+.os-dock input::placeholder { color: var(--input-placeholder); }
+.os-dock input:disabled { opacity: var(--input-disabled-op); cursor: not-allowed; }
+.os-dock .os-dock-btn {
+  width: 38px; height: 38px; flex: none; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 16px; display: grid; place-items: center;
+  transition: transform var(--dur-fast) var(--ease-premium), background var(--dur-fast), color var(--dur-fast);
+}
+.os-dock .os-dock-btn:hover { transform: translateY(-2px) scale(1.05); background: var(--accent); color: #04101a; }
+.os-dock .os-dock-btn.listening { background: var(--danger); color: #fff; animation: vitPulse 1s infinite; }
+.os-dock .os-dock-btn.send { background: var(--accent); color: #04101a; }
+.os-dock .os-dock-hint { font-size: 11px; color: var(--muted); margin-top: var(--sp-8); }
+.os-dock.dragover .os-dock-bar { border-color: var(--ok); box-shadow: 0 0 0 3px rgba(86,211,100,.3); }
+
+/* ───────────────── Universe Focus 浮层（Ctrl/Cmd+U · A1 去页面化）─────────────────
+ * 纪律：保留 DOM / 保留 JS（openUniverse 仍 toggle .open）/ 不修改 Galaxy 数据。
+ * 半透明 Focus 浮层：World Layer（solarCanvas）透出成为焦点，替代 opaque 整页切换。 */
+#universeView {
+  position: fixed; inset: 0; z-index: 30;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease-soft), visibility var(--dur-slow) var(--ease-soft);
+}
+#universeView.open { opacity: 1; visibility: visible; pointer-events: auto; }
+#universeView .uv-close {
+  position: absolute; top: 18px; right: 18px; z-index: 31;
+  width: 38px; height: 38px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 18px;
+}
+#universeView .uv-tip { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: var(--text-dim); font-size: 12px; }
+
+/* 聊天降级为抽屉 */
+.os-chat-drawer {
+  position: fixed; top: 0; right: 0; height: 100%; width: 420px; max-width: 92vw; z-index: 25;
+  transform: translateX(100%); transition: transform var(--dur-slow) var(--ease-premium);
+  background: var(--bg-2); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+}
+.os-chat-drawer.open { transform: none; }
+.os-chat-drawer .os-chat-head {
+  display: flex; align-items: center; gap: var(--sp-10); padding: var(--sp-12) var(--sp-16); border-bottom: 1px solid var(--border);
+}
+.os-chat-drawer .os-chat-head .os-chat-toggle { cursor: pointer; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim); border-radius: var(--radius-sm); padding: var(--sp-4) var(--sp-10); font-size: 12px; }
+.os-chat-fab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 24;
+  width: 52px; height: 52px; border-radius: var(--radius-md); cursor: pointer;
+  background: var(--accent); color: #04101a; border: 0; font-size: 22px;
+  box-shadow: 0 10px 30px -8px var(--glow);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.os-chat-fab:hover { transform: scale(1.08) rotate(-6deg); }
+
+/* ───────────────── 主题选择器（P9）───────────────── */
+.os-theme-picker { display: flex; gap: var(--sp-8); padding: var(--sp-4); }
+.os-theme-picker button {
+  width: 26px; height: 26px; border-radius: var(--radius-sm); cursor: pointer; border: 2px solid transparent;
+  transition: transform var(--dur-fast) var(--ease-premium);
+}
+.os-theme-picker button:hover { transform: scale(1.12); }
+.os-theme-picker button.active { border-color: var(--text); }
+/* 色板本体：HUD 与 Onboarding 共用同一组选择器与同一份令牌，杜绝主题分叉 */
+.os-theme-picker .t-dark,     .onb-themes .t-dark     { background: var(--sw-dark); }
+.os-theme-picker .t-quantum,  .onb-themes .t-quantum  { background: var(--sw-quantum); }
+.os-theme-picker .t-midnight, .onb-themes .t-midnight { background: var(--sw-midnight); }
+.os-theme-picker .t-cyan,     .onb-themes .t-cyan     { background: var(--sw-cyan); }
+.os-theme-picker .t-green,    .onb-themes .t-green    { background: var(--sw-green); }
+.os-theme-picker .t-purple,   .onb-themes .t-purple   { background: var(--sw-purple); }
+.os-theme-picker .t-amber,    .onb-themes .t-amber    { background: var(--sw-amber); }
+.os-theme-picker .t-rose,     .onb-themes .t-rose     { background: var(--sw-rose); }
+.os-theme-picker .t-light,    .onb-themes .t-light    { background: var(--sw-light); }
+
+/* ───────────────── 响应式 · Narrow（≤980）：导航形态 ─────────────────
+ * Formal UI System v1.0 清理：本块原含 5 条被文末 Consolidation 段（.os-shell 网格 /
+ * .os-bottom / .os-side / .os-hero-title / .os-hero-sub）完全覆盖的历史遗留声明，
+ * 属死代码（同文件后置块层叠必胜），已移除。此处仅保留唯一生效的「导航横排」职责。 */
+@media (max-width: 980px) {
+  .os-nav { flex-direction: row; justify-content: space-around; padding: var(--sp-8) var(--sp-10); }
+  .os-nav-brand { margin-bottom: 0; }
+  .os-nav-items { flex-direction: row; width: auto; gap: var(--sp-6); }
+  .os-nav-btn { width: 42px; height: 42px; }
+  .os-nav-btn.active::before { left: 50%; top: auto; bottom: -3px; transform: translateX(-50%); width: 22px; height: 3px; }
+}
+
+/* ───────────────── 降级：减少动效 ───────────────── */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+body.reduced-motion * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+
+/* ───────────────── 视图模式切换（Capability Focus · 连续空间）─────────────────
+ * 纪律：不破坏既有 .app（聊天）逻辑；不修改 JS / 不新增事件 / 不删旧代码 / 不新增状态。
+ * 去页面化：聊天与宇宙视图均作为「连续空间中的聚焦层」，OS 操作层降权虚化（dim/blur +
+ * opacity 连续过渡）而非整页 display:none；#universeView 改为半透明 Focus 浮层，
+ * World Layer（solarCanvas）透出成为视觉焦点。宇宙模式把太阳系提到前台。 */
+.os-shell { z-index: 5; transition: opacity var(--dur-slow) var(--ease-soft), filter var(--dur-slow) var(--ease-soft); }
+body:not(.chat-mode) #app { visibility: hidden; pointer-events: none; transition: opacity var(--dur-slow) var(--ease-soft), visibility var(--dur-slow) var(--ease-soft); }
+/* UI-5C-1 · Conversation Core Integration：聊天不是独立页面，而是 OS 连续空间中的
+ * Operation Layer 内容。OS Home（含 Galaxy/Command Dock）保持完整可见可交互；
+ * Legacy Chat 仅展示对话历史，其余冗余壳层（rail/tele/hud/legacy dock）隐藏。 */
+body.chat-mode #osShell { opacity: 1; filter: none; pointer-events: auto; }
+body.chat-mode #app { visibility: visible; pointer-events: none; z-index: 50; transition: opacity var(--dur-slow) var(--ease-soft), visibility var(--dur-slow) var(--ease-soft); }
+/* A1 · Galaxy 去页面化：宇宙视图从独立页面变为 World Layer Focus 浮层，OS 降权虚化而非隐藏 */
+body.universe-mode #osShell,
+body.universe-mode #app { opacity: .3; filter: blur(7px) saturate(.8); pointer-events: none; transition: opacity var(--dur-slow) var(--ease-soft), filter var(--dur-slow) var(--ease-soft); }
+body.universe-mode #solarCanvas { z-index: 29; opacity: 1; }
+/* A4 · Galaxy 注意力平衡：对话(Task)聚焦态 Galaxy 降权为 World Layer（与 UI-4C-2 H2 默认态一致），
+ * 注意力层级 AI Identity > Intent Console > Task > Galaxy；universe-mode 仍由上行提亮（唯一例外）。 */
+body.chat-mode #solarCanvas { filter: brightness(0.46) saturate(0.6) contrast(0.95); transition: filter var(--dur-slow) var(--ease-soft); }
+body.chat-mode .galaxy-veil { opacity: 0.5; }
+
+/* UI-5C-1 · Conversation as Operation Layer content：隐藏 Legacy Chat 的冗余壳层，
+ * 仅保留 .chat-history 作为浮动对话面板；让 Command Dock 成为唯一可见 Intent Entry。
+ * 纪律：零 JS / 零结构 / 零事件 / 零 AppState 改动；仅表现层收口。 */
+body.chat-mode #app .rail,
+body.chat-mode #app .tele,
+body.chat-mode #app .hud-bar,
+body.chat-mode #app .dock { display: none !important; }
+body.chat-mode #app .main { grid-column: 1 / -1; width: 100%; height: 100%; background: transparent; }
+body.chat-mode #app .chat-area {
+  justify-content: flex-end; height: 100%; padding: 18px 24px 210px;
+  box-sizing: border-box; pointer-events: none;
+}
+body.chat-mode #app .chat-history {
+  max-height: min(58vh, 680px); opacity: 1; overflow: auto; pointer-events: auto;
+  transform: none; border-color: var(--line-strong); box-shadow: var(--shadow-glow);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+body.chat-mode #app .chat-history:has(.messages:empty) { opacity: 0; pointer-events: none; max-height: 0; }
+body.chat-mode #app .chat-history .messages { pointer-events: auto; }
+
+#universeView { z-index: 30; }
+
+/* ═══ Galaxy Experience Layer (GEL) — Phase 3 · 纯表现 + 受控交互包装层 ═══
+ * 纪律：不修改 solar-system.js 本体（L0 红线-5 / DECISION_004）；不持有可写状态；
+ *       仅消费 ui2.css 令牌；颜色/字体/标签/面板/提示与 Workspace/Panel 统一。 */
+.galaxy-veil {
+  position: fixed; inset: 0; z-index: calc(var(--z-ground) + 1); pointer-events: none;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent), transparent 20%),
+    linear-gradient(0deg, color-mix(in srgb, var(--bg) 80%, transparent), transparent 24%);
+  opacity: 1; transition: opacity var(--dur-slow) var(--ease-soft);
+}
+body.universe-mode .galaxy-veil { opacity: 0; }
+
+/* B. Universe 视图内 Galaxy 包装（仅 universe-mode 显现） */
+#universeView .gx-status {
+  position: absolute; top: 18px; left: 18px; z-index: 32;
+  display: inline-flex; align-items: center; gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-14); border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border: 1px solid var(--border); color: var(--text-dim);
+  font-family: var(--font-ui); font-size: 13px; letter-spacing: .3px;
+  backdrop-filter: var(--glass-3); box-shadow: var(--elev-2);
+}
+#universeView .gx-status .gx-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+
+#universeView .gx-card {
+  position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%) translateY(12px);
+  z-index: 32; min-width: 280px; max-width: min(440px, 90vw);
+  display: flex; flex-direction: column; gap: var(--sp-10);
+  padding: var(--sp-16) var(--sp-18); border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--border); box-shadow: var(--elev-3);
+  backdrop-filter: var(--glass-3);
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease-soft), transform var(--dur-base) var(--ease-soft);
+  color: var(--text); font-family: var(--font-ui);
+}
+#universeView.gx-active .gx-card { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+#universeView .gx-card-kind { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-2); }
+#universeView .gx-card-title { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+#universeView .gx-card-state { display: inline-flex; align-items: center; gap: var(--sp-8); font-size: 13px; color: var(--text-dim); }
+#universeView .gx-card-state .sx { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
+#universeView .gx-card-state .gx-state-label { color: var(--text); }
+#universeView .gx-card-desc { font-size: 13px; line-height: 1.5; color: var(--text-dim); }
+#universeView .gx-card-actions { display: flex; gap: var(--sp-8); margin-top: var(--sp-4); }
+#universeView .gx-btn {
+  cursor: pointer; padding: var(--sp-8) var(--sp-14); border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font-ui);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  transition: transform var(--dur-fast) var(--ease-spring), border-color var(--dur-fast) var(--ease-soft), background var(--dur-fast) var(--ease-soft);
+}
+#universeView .gx-btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+#universeView .gx-btn.primary { background: var(--accent); color: var(--bg); border-color: transparent; box-shadow: 0 8px 24px -8px var(--glow); }
+#universeView .gx-btn.primary:hover { filter: brightness(1.06); }
+
+#universeView .gx-hint {
+  position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%);
+  z-index: 32; display: flex; align-items: center; gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-14); border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--border); color: var(--text-dim);
+  font-family: var(--font-ui); font-size: 12px; letter-spacing: .3px;
+  backdrop-filter: blur(calc(var(--blur-glass) / 2));
+}
+#universeView .gx-hint .gx-key { color: var(--accent); font-weight: 600; }
+#universeView.gx-active .gx-hint { opacity: 0; transition: opacity var(--dur-fast) var(--ease-soft); }
+@media (max-width: 980px) {
+  body:not(.chat-mode) #app { visibility: hidden; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * UI Foundation Unification (Phase 1 · P0 收敛层)
+ * 纪律：本段全部为【增量别名 / 令牌】，不改动任何既有选择器规则。ui2.css 最后加载，
+ * 故覆盖 styles.css / premium.css 的遗留表现，实现「单一来源」统一。仅表现层；
+ * 不新建状态 / 事件总线 / 运行时 / 按钮体系 / 图标体系。
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* —— B. 字体系统（离线优先 · 禁 CDN）——
+ * 字体栈：优先本地 webfont 名（若已自托管 / 系统安装），无网络时回退系统字体。
+ * 后续自托管只需新增 @font-face 指向 fonts/*.woff2，无需改动各处 font-family。 */
+:root {
+  --font-display: 'Orbitron', 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-ui:      'Rajdhani', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono:    'Share Tech Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+/* —— F. 焦点系统（WCAG 2.1 AA：键盘可达性全局可见）——
+ * 统一 :focus-visible 环（accent 描边 + glow 光晕），覆盖所有声明 outline:none 的交互元素。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--glow);
+}
+.zz-focus:focus-visible,
+.premium-focus:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--glow);
+}
+/* —— Phase B · F-B01：焦点权威收口（特异性倒挂修复）——————————————————
+ * 缺陷（真实实测）：premium.css:47 的 `button:focus-visible` 等元素型选择器特异性
+ * 为 (0,1,1)，高于本文件上方 `:focus-visible` 的 (0,1,0)。加载顺序（premium 早于
+ * ui2）在特异性不等时**完全失效**，故全站 button/a/input/select/textarea/[tabindex]
+ * 的焦点环实际由 premium 提供，其光晕为硬编码 rgba(34,211,238,.18)。
+ * 后果：--cyan==--accent 使描边跟随主题，但光晕恒为青色 → 9 主题中 8 个出现
+ * 「描边一色、光晕另一色」的可见分裂（dark-purple 紫描边+青光晕最明显）。
+ * 修复：此处补齐**同等特异性 (0,1,1)** 的元素选择器组，令 ui2 凭加载顺序取胜，
+ * 使 FOCUS 状态回归 UI_SYSTEM_v1.0 §5 契约（--accent 描边 + --glow 光晕）。
+ * 零新增令牌 / 零新增类 / 零 JS·HTML 改动。 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--glow);
+}
+
+/* —— W1 Formal Input Primitive（F1 · 全站 Input 视觉语言单一来源 · 状态契约）——
+ * 覆盖 text / search / password / textarea 的共同视觉基础；select 结构不同，仅共享焦点语言。
+ * 不机械替换旧 class：Workspace(#input) / Command Dock(.os-dock input) / Settings(.settings-input)
+ * 分别在其上下文中引用本 Primitive 的令牌语言（背景/边框/圆角/文字/占位/焦点/禁用/错误）。
+ * 状态契约：Default / Hover / Focus-visible / Disabled / Error（Active/Selected/Loading 不适用于纯输入，N/A）。 */
+.zz-input {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: var(--input-font);
+  color: var(--text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  padding: var(--input-pad-y) var(--input-pad-x);
+  outline: none;
+  transition: border-color var(--motion-fast) var(--ease-soft), box-shadow var(--motion-fast) var(--ease-soft);
+}
+.zz-input::placeholder { color: var(--input-placeholder); }
+.zz-input:hover { border-color: var(--line-strong); }
+.zz-input:focus { border-color: var(--input-focus-border); box-shadow: 0 0 0 3px var(--input-focus-glow); }
+.zz-input:disabled, .zz-input[readonly] { opacity: var(--input-disabled-op); cursor: not-allowed; }
+.zz-input.zz-input--error, .zz-input[data-error="true"] { border-color: var(--input-error-border); }
+
+/* —— D. Toggle 统一（.settings-switch 视觉别名到 .zz-toggle · 零 HTML/JS 改动）——
+ * 仅沙箱标签使用 .settings-switch；使其与全站 .zz-toggle 像素一致。 */
+.settings-switch { display: flex; align-items: center; gap: var(--sp-10); cursor: pointer; }
+.settings-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.settings-switch-slider {
+  width: 40px; height: 22px; border-radius: var(--radius-pill); background: rgba(255,255,255,.1);
+  border: 1px solid var(--border); position: relative; transition: var(--motion-fast) var(--ease-soft);
+}
+.settings-switch-slider:before {
+  content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--text); transition: var(--motion-fast) var(--ease-soft); box-shadow: 0 0 6px rgba(0,0,0,.3);
+}
+.settings-switch input:checked + .settings-switch-slider { background: rgba(34,211,238,.25); border-color: rgba(34,211,238,.5); }
+.settings-switch input:checked + .settings-switch-slider:before { transform: translateX(18px); background: var(--accent); }
+.settings-switch input:focus-visible + .settings-switch-slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+.settings-switch input:disabled + .settings-switch-slider { opacity: var(--input-disabled-op); cursor: not-allowed; }
+
+/* —— D. Button 统一（单一来源令牌 + 基准类）——
+ * 旧按钮类（.settings-save-btn / .btn-new / .onb-next / .os-dock-btn / .pt-exec）保留可用，
+ * 后续逐步收敛到下列 --btn-* 令牌与 .btn 体系（机械替换，需视觉评审）。 */
+:root {
+  --btn-radius: var(--radius-md);
+  --btn-pad-y: 8px;  --btn-pad-x: 18px;
+  --btn-bg: color-mix(in srgb, var(--accent) 16%, transparent);
+  --btn-bg-hover: color-mix(in srgb, var(--accent) 26%, transparent);
+  --btn-border: color-mix(in srgb, var(--accent) 45%, transparent);
+  --btn-danger-bg: color-mix(in srgb, var(--danger) 12%, transparent);
+  --btn-danger-border: color-mix(in srgb, var(--danger) 55%, transparent);
+  /* —— Component Sprint v1.0：遗留按钮变体的单一值来源（值与现状完全一致，零视觉变化）——
+   * .btn-new（青色轨道 CTA）与 .onb-next（青色胶囊 CTA）的背景渐变收口到下列令牌，
+   * 消除硬编码 rgba 重复，建立「一个值、一个来源」。视觉不变（梯度数值原样保留）。 */
+  --btn-rail-bg: linear-gradient(135deg, rgba(34,211,238,.16), rgba(45,212,191,.10));
+  --btn-pill-bg: linear-gradient(135deg, rgba(34,211,238,.22), rgba(45,212,191,.12));
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-8);
+  padding: var(--btn-pad-y) var(--btn-pad-x); border-radius: var(--btn-radius);
+  font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+  background: var(--btn-bg); border: 1px solid var(--btn-border);
+  transition: transform var(--motion-fast) var(--ease-premium), box-shadow var(--motion-fast) var(--ease-premium), background var(--motion-fast);
+}
+.btn:hover { background: var(--btn-bg-hover); transform: translateY(-1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #04101a; }
+.btn.ghost { background: transparent; border-color: var(--border); }
+.btn.danger { background: var(--btn-danger-bg); border-color: var(--btn-danger-border); color: var(--danger); }
+/* disabled 态统一（Phase 1 · Button 统一项；additive，仅作用于带 disabled 属性的 .btn，不影响现有渲染）。
+   与 .send-btn:disabled（styles.css:498）视觉一致：降透明 + 禁点击光标 + 取消位移。 */
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* —— C. Panel 原语统一（硬编码深色渐变 → 令牌，保证浅色主题与单一来源一致）——
+ * .glass-panel / .onb-card 原用固定深色渐变，浅色主题下失效；改为令牌驱动。 */
+.glass-panel { background: linear-gradient(160deg, var(--surface-2), var(--bg-2)); }
+.onb-card { background: linear-gradient(165deg, var(--surface-2), var(--bg-2)); }
+
+/* —— E. Icon 统一（单一图标语言：内联 SVG + currentColor）——
+ * 政策：所有图标使用内联 <svg class="zz-icon">，fill/stroke 取 currentColor，跟随主题。
+ * 旧 emoji / .ic / 外链 SVG 逐步迁移（机械替换，需设计评审）。 */
+.zz-icon { width: var(--icon-size); height: var(--icon-size); fill: currentColor; stroke: none; display: inline-block; vertical-align: -0.15em; }
+
+/* —— Icon System Migration（Phase 1 · P0 收口）——
+ * 唯一规范：.zz-icon（填充）/ .zz-icon.stroke（描边）。.ic 降级为 .zz-icon.stroke 别名，零 HTML/JS 改动接管既有 36 处。 */
+.zz-icon.stroke { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.zz-icon.f { fill: currentColor; stroke: none; }
+/* 遗留别名：.ic 指向 .zz-icon.stroke（不新增第二套 Icon 基础类） */
+.ic { width: var(--icon-size); height: var(--icon-size); display: inline-block; vertical-align: -0.15em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ic.f { fill: currentColor; stroke: none; }
+/* 状态：hover 提亮 / active 按压 / disabled 降透明（均继承 currentColor，主题兼容） */
+.zz-icon:hover, .ic:hover { filter: brightness(1.2); }
+.zz-icon:active, .ic:active { transform: translateY(1px); }
+.zz-icon[disabled], .zz-icon.is-disabled, .ic[disabled], .ic.is-disabled { opacity: .4; }
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Component System Sprint v1.0 — 单一来源与弃用别名映射（仅标注，零渲染改动）
+ * 纪律：本段不新增组件/不改动既有选择器规则/不改变任何视觉。仅作为「单一来源」权威声明。
+ * ────────────────────────────────────────────────────────────────────────
+ * Button 单一来源 = 本文件 .btn（令牌驱动）。遗留变体为刻意设计差异，机械合并会改视觉方向，
+ * 故仅路由其值来源到 --btn-* 令牌（见上方 :root），并标记弃用，待 Review 门控合并：
+ *   .btn-new        → 未来 .zz-button（青色轨道 CTA 变体，当前经 --btn-rail-bg 单值来源）
+ *   .onb-next       → 未来 .zz-button--pill（青色胶囊 CTA，经 --btn-pill-bg）
+ *   .settings-save-btn → 未来 .zz-button（含 danger 变体）
+ *   .os-dock-btn    → 保留（Dock 专属，结构特殊）
+ *   .pt-exec        → 保留（主动通知专属）
+ * Panel 单一来源 = .zz-panel（官方面板组件）/ .glass-panel（令牌化容器）。其余为不同类型容器，
+ * 不强制合并：.os-panel（OS 布局面板）/ .settings-panel（设置专属）/ .onb-card（引导卡片）。
+ * 缺失组件：zz-overlay / zz-dialog 已于 Overlay Implementation Sprint · Step[2] 官方实现（见下文）；
+ * 其余（zz-dropdown/zz-menu/zz-tabs/zz-tooltip）仍仅预留命名，不实现。
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Overlay Implementation Sprint · Step [2] — Overlay Primitive Foundation
+ * 官方实现：.zz-overlay + .zz-dialog（DESIGN.md §9 命名首次落地）
+ * 纪律：全部视觉参数取自既有令牌（--bg / --surface-2 / --bg-2 / --border / --text /
+ *       --text-dim / --r-lg / --elev-3 / --blur-glass / --z-dialog-mask / --space-* /
+ *       --radius-* / --motion-* / --ease-*），不新增第二套颜色 / 阴影 / 圆角 / z-index。
+ *       零既有选择器改动；纯表现层。DOM 装配 / 栈 / ESC / 焦点 由 overlay-manager.js 负责。
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* —— .zz-overlay：固定定位层（hosts 一个 .zz-dialog + 一个 .zz-overlay__scrim）——
+ * 职责：fixed layer / backdrop 容器 / visibility state / transition / pointer handling。
+ * 默认 z-index 取自 --z-dialog-mask；overlay-manager.js 在多实例堆叠时按深度内联覆盖（单一来源）。 */
+.zz-overlay {
+  position: fixed; inset: 0;
+  z-index: var(--z-dialog-mask);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-3);
+  /* 关闭态：不可见、不吃事件 */
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity var(--motion-base) var(--ease-soft),
+              visibility 0s linear var(--motion-base);
+}
+.zz-overlay.is-open {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity var(--motion-base) var(--ease-soft),
+              visibility 0s linear 0s;
+}
+
+/* —— .zz-overlay__scrim：遮罩（dimming backdrop）——
+ * DESIGN canonical：--bg 半透明 + backdrop-filter blur（color-mix 主题感知，修复浅色主题硬编码 bug）。 */
+.zz-overlay__scrim {
+  position: absolute; inset: 0; z-index: 0;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: var(--glass-3);
+  -webkit-backdrop-filter: var(--glass-3);
+}
+
+/* —— .zz-dialog：浮层对话框容器 ——
+ * 职责：container / header / body / footer / close button。 */
+.zz-dialog {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 560px;
+  max-height: calc(100vh - var(--space-3) * 2);
+  background: linear-gradient(160deg, var(--surface-2), var(--bg-2));
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--elev-3);
+  backdrop-filter: var(--glass-3);
+  -webkit-backdrop-filter: var(--glass-3);
+  color: var(--text);
+  overflow: hidden;
+  /* 入场位移（叠加在 overlay 透明度之上，体现层级感） */
+  transform: translateY(8px) scale(0.985);
+  transition: transform var(--motion-base) var(--ease-premium);
+}
+.zz-overlay.is-open .zz-dialog { transform: none; }
+
+.zz-dialog__header {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+.zz-dialog__title {
+  margin: 0; font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: .02em;
+}
+.zz-dialog__header .zz-dialog__close { margin-left: auto; }
+
+.zz-dialog__body {
+  padding: var(--space-3);
+  overflow-y: auto;
+  font-size: 13px; line-height: 1.6; color: var(--text-dim);
+}
+.zz-dialog__body > :first-child { margin-top: 0; }
+.zz-dialog__body > :last-child { margin-bottom: 0; }
+
+.zz-dialog__footer {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+}
+
+/* —— 关闭按钮（复用 .zz-icon 图标语言，currentColor 跟随主题）——
+ * 尺寸与 HUD 工具按钮一致；默认透明，hover 显形。 */
+.zz-dialog__close {
+  width: 32px; height: 32px; flex: none;
+  display: grid; place-items: center; cursor: pointer;
+  border-radius: var(--radius-sm); border: 1px solid transparent;
+  background: transparent; color: var(--text-dim);
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+.zz-dialog__close:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.zz-dialog__close:active { transform: translateY(1px); }
+.zz-dialog__close svg { width: 18px; height: 18px; }
+
+/* —— 尺寸变体（令牌驱动，不新增第二套半径/间距）——
+ * --sm 轻量确认；--lg 宽内容（设置 / 能力详情等）。 */
+.zz-dialog--sm { max-width: 400px; }
+.zz-dialog--lg { max-width: 760px; }
+
+/* —— body 内部滚动条令牌化（与全站一致） —— */
+.zz-dialog__body::-webkit-scrollbar { width: 8px; }
+.zz-dialog__body::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); }
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Overlay Implementation Sprint · Step [3] — Toast System Unification
+ * 官方实现：.zz-toast 统一 Toast Primitive（DESIGN.md §9 命名落地）
+ * 纪律：全部视觉参数取自既有令牌（--surface-2 / --bg-2 / --border / --text /
+ *       --text-dim / --muted / --ok / --warn / --danger / --accent / --radius-md /
+ *       --elev-2 / --blur-glass / --space-* / --fs-13 / --motion-* / --ease-* /
+ *       --z-toast），不新增第二套颜色 / 阴影 / 圆角 / z-index。
+ *       零既有 .toast 选择器改动；纯表现层。DOM 装配 / 栈 / 生命周期由
+ *       overlay-manager.js 的 Toast 子系统负责（legacy 调用经 Adapter 路由）。
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* —— #zzToastRoot：底部居中堆叠容器（fixed，锚定视口底部，不影响页面流）——
+ * pointer-events:none 让穿透点击落回页面；子项 .zz-toast 自行开启 pointer-events:auto。 */
+#zzToastRoot {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-3);
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: max-content;
+  max-width: min(420px, 92vw);
+  pointer-events: none;
+}
+
+/* —— .zz-toast：单条通知 ——
+ * 职责：container / icon / body(title+message) / progress / action / close。
+ * 入出场过渡由 .is-in 切换（base 隐藏态 + transition）。 */
+.zz-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 240px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px var(--space-2);
+  background: linear-gradient(160deg, var(--surface-2), var(--bg-2));
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-2);
+  backdrop-filter: var(--glass-3);
+  -webkit-backdrop-filter: var(--glass-3);
+  color: var(--text);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  pointer-events: auto;
+  overflow: hidden;
+  /* 隐藏初始态 + 统一过渡（.is-in 控制进出场） */
+  opacity: 0;
+  transform: translateY(10px) scale(.98);
+  transition: opacity var(--motion-base) var(--ease-premium),
+              transform var(--motion-base) var(--ease-premium);
+}
+
+/* —— 变体左缘强调色（按语义 token 着色，仅左缘 3px，其余边沿用 --border）——
+ * success→--ok / warning→--warn / error→--danger / info|loading|progress→--accent */
+.zz-toast--success { border-left-color: var(--ok); }
+.zz-toast--warning { border-left-color: var(--warn); }
+.zz-toast--error   { border-left-color: var(--danger); }
+.zz-toast--info,
+.zz-toast--loading,
+.zz-toast--progress { border-left-color: var(--accent); }
+
+.zz-toast.is-in { opacity: 1; transform: none; }
+
+/* —— 图标（currentColor 跟随变体左缘色，由 .zz-toast__icon 继承父级 color）——
+ * info/loading/progress 继承 accent；success/warning/error 各自语义色。 */
+.zz-toast__icon {
+  flex: none;
+  width: 18px; height: 18px;
+  margin-top: 1px;
+  display: grid; place-items: center;
+  color: var(--accent);
+}
+.zz-toast--success .zz-toast__icon { color: var(--ok); }
+.zz-toast--warning .zz-toast__icon { color: var(--warn); }
+.zz-toast--error   .zz-toast__icon { color: var(--danger); }
+.zz-toast__icon svg { width: 18px; height: 18px; display: block; }
+
+/* loading 旋转动画 */
+.zz-toast__spin { transform-origin: 50% 50%; animation: zz-spin .9s linear infinite; }
+@keyframes zz-spin { to { transform: rotate(360deg); } }
+
+/* —— 文本区 —— */
+.zz-toast__body { flex: 1 1 auto; min-width: 0; }
+.zz-toast__title { font-weight: 600; color: var(--text); margin-bottom: var(--sp-2); }
+.zz-toast__message { color: var(--text-dim); word-break: break-word; }
+
+/* —— 进度条（progress 变体专用） —— */
+.zz-toast__progress {
+  margin-top: var(--space-1);
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
+}
+.zz-toast__progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transition: width var(--motion-base) var(--ease-soft);
+}
+
+/* —— 动作按钮（ghost） —— */
+.zz-toast__action {
+  flex: none;
+  align-self: center;
+  margin-left: var(--space-1);
+  padding: var(--sp-4) var(--sp-10);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-soft), color var(--motion-fast) var(--ease-soft);
+}
+.zz-toast__action:hover { background: var(--surface-2); color: var(--text); }
+.zz-toast__action:active { transform: translateY(1px); }
+
+/* —— 关闭按钮（24px，复用 .zz-dialog__close 图标语言） —— */
+.zz-toast__close {
+  flex: none;
+  align-self: flex-start;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  margin: -2px -4px 0 2px;
+  border: none; background: transparent;
+  color: var(--muted);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-soft), color var(--motion-fast) var(--ease-soft);
+}
+.zz-toast__close:hover { background: var(--surface-2); color: var(--text); }
+.zz-toast__close svg { width: 14px; height: 14px; display: block; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * UI CONSOLIDATION SPRINT v1.0 · 信息层级最终收口（Presentation-only · 末位权威）
+ * ════════════════════════════════════════════════════════════════════════════
+ * 目标：把「功能都做了但界面越来越乱」收口成一套统一可长期使用的 AI OS UI。
+ *
+ * 视觉优先级（唯一裁决尺）：
+ *   核心存在 > 操作入口 > 当前任务 > 状态 > 上下文 > 辅助信息
+ *
+ * 三层结构：
+ *   Layer 1 Permanent Shell   —— .os-nav（极简导航脊柱）+ .os-hud（身份/存在/全局控制）
+ *   Layer 2 Primary Stage     —— .os-core（Galaxy / Avatar 绝对主舞台）+ .os-dock（主入口）
+ *   Layer 3 Context Surface   —— .os-side / .os-timeline / #runtime-viz（按需出现，默认不抢视觉）
+ *
+ * 纪律（红线）：
+ *   · 不新增令牌体系、不新增状态机、不新增业务能力、不制造假数据
+ *   · 不触碰 AI Presence 三唯一（AvatarState → index.html 单点写 body[data-presence] → 此处映射色）
+ *   · 100% 复用既有令牌（--space-* / --radius-* / --dur-* / --ease-* / --presence-*）
+ *   · 仅重排既有组件的「空间权重」与「出现条件」，不新建 class 体系
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 修复 L1：HUD 工具簇选择器过宽，吞掉了 9 个主题色板 ──────────────────────
+ * `.os-hud .os-tools button`(0,2,1) 特异性高于 `.os-theme-picker .t-*`(0,2,0)，
+ * 导致 9 个主题swatch 的渐变被 --surface-2 覆盖 → 全部呈现为同一块灰色方块（视觉噪声）。
+ * 收口：限定为直接子按钮，不再穿透进主题选择器。零 HTML 改动。 */
+.os-hud .os-tools > button {
+  width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  display: grid; place-items: center;
+  transition: transform var(--dur-fast) var(--ease-premium), background var(--dur-fast), color var(--dur-fast);
+}
+.os-hud .os-tools > button:hover { transform: translateY(-2px); background: var(--accent); color: #04101a; }
+/* 还原主题色板本体尺寸与渐变（被上方旧规则压过，此处恢复其设计意图） */
+.os-hud .os-tools .os-theme-picker button {
+  width: 26px; height: 26px; border-radius: var(--radius-sm); border: 2px solid transparent;
+  background: none; color: inherit;
+}
+.os-hud .os-tools .os-theme-picker button:hover { transform: scale(1.12); background: none; }
+.os-hud .os-tools .os-theme-picker .t-dark    { background: var(--sw-dark); }
+.os-hud .os-tools .os-theme-picker .t-quantum { background: var(--sw-quantum); }
+.os-hud .os-tools .os-theme-picker .t-midnight{ background: var(--sw-midnight); }
+.os-hud .os-tools .os-theme-picker .t-cyan    { background: var(--sw-cyan); }
+.os-hud .os-tools .os-theme-picker .t-green   { background: var(--sw-green); }
+.os-hud .os-tools .os-theme-picker .t-purple  { background: var(--sw-purple); }
+.os-hud .os-tools .os-theme-picker .t-amber   { background: var(--sw-amber); }
+.os-hud .os-tools .os-theme-picker .t-rose    { background: var(--sw-rose); }
+.os-hud .os-tools .os-theme-picker .t-light   { background: var(--sw-light); }
+.os-hud .os-tools .os-theme-picker button.active { border-color: var(--text); }
+
+/* ── Layer 1 · HUD：身份与存在优先，工具后退 ───────────────────────────── */
+.os-hud .os-brand { font-size: 13px; }
+.os-hud .os-state {
+  /* 存在信号升级为 HUD 主元素：跟随 --presence-color 描边 */
+  border-color: color-mix(in srgb, var(--presence-color) 40%, var(--border));
+  background: color-mix(in srgb, var(--presence-color) 9%, var(--surface-2));
+  color: var(--text);
+  transition: border-color var(--dur-base) var(--ease-soft), background var(--dur-base) var(--ease-soft);
+}
+/* 上下文抽屉开关（Layer 3 唯一入口，复用 .os-tools 直接子按钮语言） */
+#osContextToggle[aria-pressed="true"] {
+  background: var(--accent); color: #04101a; border-color: var(--accent);
+}
+#osContextToggle svg { width: 17px; height: 17px; }
+
+/* ══ Layer 2 · Primary Stage —— Shell 重排：舞台优先 ══════════════════════
+ * 变更：三列(76/1fr/380) → 两列(76/1fr)；右侧 380px 常驻栏改为按需抽屉。
+ * 底部由固定 188px 双栏改为 auto 单栏（Command 优先，Timeline 有任务才长高）。
+ * 结果：.os-core 可用面积在 1920×1080 下由 ~52% 提升到 ~78%。 */
+.os-shell {
+  grid-template-columns: 76px 1fr;
+  grid-template-rows: 56px 1fr auto;
+  grid-template-areas:
+    "nav hud"
+    "nav core"
+    "nav bottom";
+}
+
+/* 主舞台：核心存在区拿走最大视觉权重 */
+.os-core { min-height: 0; }
+.os-core .os-core-state {
+  /* 状态从「角落小字」升级为「存在徽章」——3 秒可读 */
+  top: 18px; left: 20px;
+  padding: var(--sp-6) var(--sp-14); border-radius: var(--radius-pill);
+  font-size: 13px; font-weight: 600; letter-spacing: .04em;
+  background: color-mix(in srgb, var(--presence-color) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--presence-color) 38%, transparent);
+  backdrop-filter: var(--glass-3);
+}
+/* 舞台随存在态变化：AI 工作中时收起营销文案，让位给状态与任务
+ * （消费既有 body[data-presence]，不新增状态机） */
+body[data-presence="THINKING"]  .os-hero-desc,
+body[data-presence="PLANNING"]  .os-hero-desc,
+body[data-presence="EXECUTING"] .os-hero-desc {
+  opacity: 0; max-height: 0; margin: 0; overflow: hidden;
+  transition: opacity var(--dur-base) var(--ease-soft), max-height var(--dur-slow) var(--ease-soft);
+}
+.os-hero-desc {
+  max-height: 120px; opacity: 1;
+  transition: opacity var(--dur-base) var(--ease-soft), max-height var(--dur-slow) var(--ease-soft);
+}
+/* 核心存在光晕跟随 presence（复用既有色权威，不新增动效体系） */
+.os-core {
+  box-shadow: inset 0 0 140px -60px color-mix(in srgb, var(--presence-color) 55%, transparent);
+  transition: box-shadow var(--dur-slow) var(--ease-soft);
+}
+/* 降低舞台背景自带渐变亮度，避免掩盖 Galaxy/Avatar 渲染层（只改容器，不改 Galaxy 本体） */
+.os-core {
+  background: radial-gradient(120% 120% at 50% 40%, color-mix(in srgb, var(--surface-2) 55%, transparent), transparent 72%), var(--surface);
+}
+
+/* 首屏身份英雄区降级为「顶部水印徽章」，不再抢占 Galaxy 主舞台。
+ * Galaxy/Avatar 成为绝对视觉焦点；Dock 成为唯一操作锚点；
+ * 英雄区只保留身份标识，去除背景、动作芯片等视觉噪声。 */
+.os-core { align-items: flex-start; justify-content: flex-start; }   /* 英雄区置顶靠左，中央 Galaxy 完全暴露 */
+.os-hero {
+  align-self: flex-start;
+  position: relative;
+  z-index: 2;
+  max-width: 220px;
+  gap: var(--sp-6);
+  padding: 0;
+  margin-top: 58px;          /* 让出左上角 presence 状态徽章 */
+  margin-left: var(--sp-22);         /* 靠左，避开 Galaxy 中心高亮区 */
+  transform: none;
+  text-align: left;
+}
+.os-hero-eyebrow {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  opacity: .9;
+  font-size: 11px;
+}
+.os-hero-title {
+  font-size: 28px;
+  letter-spacing: .06em;
+  opacity: .95;
+}
+.os-hero-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: .85;
+}
+.os-hero-desc { display: none; }   /* 首屏营销文案降级；功能入口由 Dock/导航承担 */
+.os-hero-actions { display: none; } /* 动作芯片与左侧导航 / Command Dock 职责重复，移除 */
+
+/* ══ Layer 2 · Command 提升为绝对主入口 ══════════════════════════════════
+ * 「用户 3 秒内知道在哪里输入」——Dock 居中、加宽、加光、置于舞台正下方。 */
+.os-bottom {
+  grid-area: bottom;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-2);
+  grid-template-columns: none;   /* 覆盖旧的 1fr 1.15fr 双栏 */
+  min-height: 0;
+}
+.os-bottom > .os-panel { width: 100%; max-width: 1040px; }
+
+.os-dock {
+  order: 1;                      /* 命令入口永远在任务上方（紧贴舞台） */
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  box-shadow: 0 20px 56px -30px var(--glow);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+.os-dock > h3 {
+  display: flex; align-items: center; gap: var(--sp-8);
+  color: var(--text); letter-spacing: .18em; margin-bottom: var(--sp-10);
+}
+.os-dock > h3::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--presence-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--presence-color) 66%, transparent);
+}
+.os-dock .os-dock-bar {
+  padding: var(--sp-14) var(--sp-16);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+  box-shadow: 0 0 28px -10px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.os-dock input { font-size: 16px; letter-spacing: .01em; }
+.os-dock input::placeholder { color: var(--input-placeholder); opacity: .85; }
+.os-dock .os-dock-hint {
+  text-align: center; font-size: 11px; color: var(--text-dim); margin-top: var(--sp-10);
+  letter-spacing: .04em;
+}
+
+/* ══ Layer 3 · Context Surface ①：Execution Timeline —— 无任务即折叠 ══════
+ * IDLE 时不再以 5 个大方块霸占 188px；只留一行轻量提示。
+ * 判定来源：execution-timeline.js render() 依据 activeIdx<0 打 .is-idle（纯投影）。 */
+.os-timeline { order: 2; }
+#osTimeline .os-tl-track { min-height: 88px; }
+#osTimeline.is-idle .os-tl-track { display: none; }
+#osTimeline.is-idle::after {
+  content: "暂无执行任务 · 在上方输入指令即可开始";
+  display: block; font-size: 12px; color: var(--muted); padding: 2px 0 2px;
+}
+/* 空闲时连标题一起降噪（渐进增强；不支持 :has() 的浏览器仅少一层弱化，无副作用） */
+.os-panel.os-timeline:has(#osTimeline.is-idle) {
+  padding-top: var(--space-2); padding-bottom: var(--space-2);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+}
+.os-panel.os-timeline:has(#osTimeline.is-idle) > h3 { opacity: .55; margin-bottom: var(--sp-4); }
+
+/* ══ Layer 3 · Context Surface ②：右侧栏降级为按需抽屉 ═══════════════════
+ * Capability Matrix / Insight 属「系统状态」而非「用户主任务」，
+ * 不再长期霸占 380px。入口：HUD #osContextToggle。 */
+.os-side {
+  grid-area: auto;
+  position: absolute;
+  top: calc(var(--space-3) + 56px + var(--space-3));
+  right: var(--space-3);
+  bottom: var(--space-3);
+  width: min(360px, 34vw);
+  z-index: 22;
+  transform: translateX(calc(100% + var(--space-3) * 2));
+  opacity: 0; pointer-events: none;
+  transition: transform var(--dur-slow) var(--ease-premium),
+              opacity var(--dur-base) var(--ease-soft);
+}
+body.os-context-open .os-side { transform: none; opacity: 1; pointer-events: auto; }
+body.os-context-open .os-side .os-panel { box-shadow: 0 24px 64px -32px rgba(0,0,0,.55); }
+/* 抽屉内空面板不制造噪声：Insight 无建议时收缩为一行 */
+.os-side .os-panel.grow:has(.proactive-toast-host:empty) { flex: 0 0 auto; }
+
+/* ══ Layer 3 · Context Surface ③：浮动运行时监视器去重 ═══════════════════
+ * #runtime-viz（开发者视角：原始 stage/status + Memory + World Model）
+ * 与底部 Execution Timeline（用户视角：5 段自然语言）视觉职责重复。
+ * #execution-monitor（ExecutionChannel 动态挂载）同样与 Timeline 重复。
+ * 收口：OS 首页只保留底部用户视角 Timeline；开发者/执行监视仅在工作台(chat-mode)出现。
+ * 入口未丢失——切到工作台即可展开。 */
+body:not(.chat-mode) #runtime-viz { display: none; }
+body:not(.chat-mode) #execution-monitor { display: none; }
+#runtime-viz .rv-empty { color: var(--muted); font-size: 11px; }
+
+/* ══ 窗口形态：Full / Compact 同属一套系统（非等比缩小）═══════════════════
+ * Full Desktop  ≥1200px：完整信息（舞台 + 命令 + 任务 + 可召唤上下文）
+ * Compact       760–1199px：只保留 存在 + 命令 + 当前任务；上下文抽屉转全宽浮层
+ * Narrow        <760px：同 Compact，进一步压缩留白
+ * Companion     独立窗口：只保留 存在 / 提醒 / 快速入口（见 companion.css）
+ */
+@media (max-width: 1199px) {
+  .os-shell { gap: var(--space-2); padding: var(--space-2); }
+  .os-side { width: min(340px, 60vw); top: calc(var(--space-2) + 56px + var(--space-2)); right: var(--space-2); bottom: var(--space-2); }
+  .os-hero { margin-top: 54px; margin-left: var(--sp-18); }
+  .os-hero-title { font-size: 24px; }
+  .os-hero-sub { font-size: 11px; }
+  .os-hero-desc { display: none; }          /* Compact：营销文案让位给任务 */
+  .os-bottom > .os-panel { max-width: 100%; }
+}
+
+@media (max-width: 980px) {
+  /* 覆盖旧响应式：side 已非网格项，不再参与区域声明 */
+  .os-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px 60px 1fr auto;
+    grid-template-areas: "hud" "nav" "core" "bottom";
+  }
+  .os-side {
+    top: calc(var(--space-2) + 56px + 60px + var(--space-2) * 2);
+    left: var(--space-2); right: var(--space-2); width: auto; max-height: none;
+  }
+  .os-bottom { grid-template-columns: none; }
+  .os-hero { margin-top: 50px; margin-left: var(--sp-14); }
+  .os-hero-title { font-size: 22px; }
+  .os-hero-sub { font-size: 11px; }
+  .os-hud .os-tools .os-theme-picker { display: none; }  /* 窄屏收起 9 色板，主题走设置 */
+}
+
+@media (max-width: 980px) {
+  .os-hero { margin-top: var(--sp-48); margin-left: var(--sp-12); }
+  .os-hero-title { font-size: 20px; }
+  .os-hero-sub { font-size: 10px; }
+  .os-dock .os-dock-bar { padding: var(--sp-12) var(--sp-12); }
+  .os-core .os-core-state { top: 12px; left: 12px; font-size: 12px; padding: var(--sp-6) var(--sp-12); }
+}
+
+/* ══ 首次启动引导：克制化，不再遮蔽整个 AI OS 舞台 ═══════════════════════
+ * 新用户仍能看到 Galaxy / Command Dock 的存在层级，而不是进入另一张「网页」。 */
+.onb-overlay {
+  background: rgba(4, 9, 14, .42);
+  backdrop-filter: var(--glass-1);
+  /* Phase B · F-B04：前缀对从 premium.css 一并收口至此，保持单一权威完整 */
+  -webkit-backdrop-filter: var(--glass-1);
+}
+.onb-card {
+  width: min(420px, 92%);
+  padding: var(--sp-26) var(--sp-26) var(--sp-24);
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * Xiao6 AI OS — Formal UI System v1.0
+ * ────────────────────────────────────────────────────────────────────────────
+ * 本章节是「正式 UI」的收口层，不是第 N 套设计体系：全部规则要么消费本文件
+ * :root 已定义的正式令牌，要么修复真实存在的体系分裂。零新增状态/事件/运行时。
+ *
+ * 正式四模式：Desktop(≥1200) / Compact(≤1199) / Narrow(≤980) / Companion(独立文档)
+ * 正式阶梯：字号 18 级 --fs-* · 圆角 6 级 --radius-* · 间距 2px 网格 --sp-*
+ *           玻璃 3 级 --glass-* · 主题色板 9 色 --sw-*
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── F-01 视口约束：消除全局横向滚动 ────────────────────────────────────────
+ * 实测缺陷：页面可被横向拖走 —— canScrollX 在 1920/1440/1000/720 四档分别为
+ * 382 / 382 / 370 / 722 px（窄屏更严重），露出黑边。
+ * 根因：Context 抽屉 .os-side 收起态用 transform 停靠在视口右外侧（这是有意设计）。
+ * 它是绝对定位元素，包含块是最近的已定位祖先 —— 即 .os-shell（position:absolute），
+ * 而不是初始包含块。因此 body/html 上的 overflow 约束都管不到它，
+ * .os-shell 默认 overflow:visible 让抽屉直接撑大了页面横向滚动区。
+ * 修复：在真正的包含块 .os-shell 上 clip（见本文件「OS Shell 布局」段）。
+ *
+ * 对照实验（CDP 真实渲染，四档宽度 × 四场景，docs/ui-system/_f01_minimal.mjs）：
+ *   A html:clip + shell:clip   → canScrollX 0/0/0/0      ✅
+ *   B 仅 shell:clip            → canScrollX 0/0/0/0      ✅ 单独充分
+ *   C 仅 html:clip             → canScrollX 382/382/370/722 ❌ 与基线完全相同
+ *   D 两者都退回（缺陷基线）    → canScrollX 382/382/370/722
+ * 结论：C ≡ D，根元素上的 overflow-x 对本缺陷零贡献（溢出源不在其管辖范围）。
+ * 故此处只保留原有的 hidden（不引入无实效的 clip，避免误导后续排障）。 */
+html { overflow-x: hidden; }
+
+/* ── F-02 控件排版基线：把表单控件纳入 Typography System ──────────────────
+ * 实测缺陷（1600×900 真实渲染）：面板/标题文字为 Rajdhani(--font-ui)，而全部
+ * <button> 渲染为 Arial 13.3333px —— 因为表单控件默认不继承父级 font，全站
+ * 又没有任何一条全局重置。结果是「文字有两套字体、按钮字号不在 Scale 上」。
+ * 这是「所有字体属于同一个 Typography System」验收项的唯一硬性缺口。
+ * 修复：统一继承 --font-ui（含中文回退）与 --fs-13 基线；已显式声明字号/字体的
+ * 组件不受影响（它们特异性更高）。Rajdhani 为窄体，替换后文字只会更紧凑，不会溢出。 */
+button, input, select, textarea, optgroup {
+  font-family: var(--font-ui);
+  font-size: var(--fs-13);
+  line-height: 1.35;
+}
+/* 等宽语义控件保留 mono（数值/代码/终端输入不参与窄体化） */
+input.mono, textarea.mono, .term-input, .settings-textarea--code {
+  font-family: var(--font-mono);
+}
+
+/* ── F-03 交互反馈基线：统一禁用态与焦点可达性 ──────────────────────────────
+ * 收口前 disabled 仅在 .btn 与 .send-btn 两处各自定义，其余控件禁用后毫无视觉反馈。
+ * 此处补齐全站基线，值与既有 .btn:disabled 一致（opacity .5），不覆盖已有定义。 */
+button:disabled, input:disabled, select:disabled, textarea:disabled {
+  opacity: var(--input-disabled-op);
+  cursor: not-allowed;
+}

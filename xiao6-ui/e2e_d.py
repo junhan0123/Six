@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ZhuangZhou D 期（主动智能）端到端测试：SSE 推送 + 到期提醒 + 每日简报 + ACI 预判注入。"""
+"""Xiao6 D 期（主动智能）端到端测试：SSE 推送 + 到期提醒 + 每日简报 + ACI 预判注入。"""
 
 import json
 import sys
@@ -7,7 +7,7 @@ import threading
 import time
 import urllib.request as U
 
-sys.path.insert(0, "G:/ZhuangZhou/zhuangzhou-ui")
+sys.path.insert(0, "G:/Xiao6/xiao6-ui")
 import memory  # build_context_prefix 已迁移至 memory 模块
 import server as S
 

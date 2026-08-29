@@ -23,7 +23,7 @@ EXPORT_TABLES = [
 # 纳入备份的本地 JSON 文件
 EXPORT_FILES = ["devices.json", "habits.json"]
 
-BACKUP_SENTINEL = "__zhuangzhou_data_backup__"
+BACKUP_SENTINEL = "__xiao6_data_backup__"
 
 
 def _base_dir():

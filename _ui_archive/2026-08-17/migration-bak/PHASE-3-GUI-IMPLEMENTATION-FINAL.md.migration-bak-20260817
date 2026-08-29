@@ -1,0 +1,172 @@
+# PHASE 3 — GUI IMPLEMENTATION · FINAL REPORT
+
+> ZhuangZhou Advanced Workspace Reconstruction
+> 单一 canonical Electron 壳 + 原生 Advanced Workspace + 演示层/GUI 适配层
+> 遵循 Phase 1（产品架构冻结）· Phase 2（Voice Orb 冻结）· Phase 3 STAGE 0（只读设计审计）
+
+---
+
+## 1. 文档目的与概述
+本报告记录 Phase 3 GUI 实现阶段的全部交付、验证结果与边界。Phase 3 的目标不是修补旧 UI、不是复活 Galaxy/`/final`、不是把 47 个旧入口变成 47 个按钮、不是重新内嵌 DSH Web UI，而是**从零构建统一的「高级 AI 操作系统风格」ZhuangZhou Advanced Workspace**，作为 GUI 演示/适配层，覆盖在单一智能 Runtime（ZhuangZhou Core）之上；Voice Orb 为首要交互层；DSH 仅作底层 Workspace/Agent/Tool 底座。
+
+## 2. 授权范围与纪律（§0 / §1）
+- **VERIFY-BEFORE-CHANGE**：所有改动前均重读真实源码（`electron/main.js`、`avatar-window.js`、`zz-space.js`、`server.py` 路由、`xiao6-hub/*`），并以 `PHASE3_IMPLEMENTATION_BASELINE.md` 固化基线，优先真实源码而非审计假设。
+- **不得形成第二个 Runtime**：GUI = 演示/适配层；Core Runtime / Context / Memory / Decision / Policy / Approval 契约、Voice Orb Phase 2 冻结行为（5 态）、DSH 源码均未改动。
+- **DB schema 未变更**（无运行时必需的新表/字段授权）。
+
+## 3. 架构裁决落地
+- GUI 仅做**演示/适配层**；ZhuangZhou Core 为唯一智能 Runtime；DSH 为底层底座。
+- 单一 canonical Electron 壳承载 **Voice Orb 桌宠窗口 + Advanced Workspace 工作区窗口**，二者共享同一后端（`localhost:8010`）。
+- 不引入第二个 Agent/Runtime 进程；Xiao6Hub 的 DSH 嵌入被替换为 Advanced Workspace（§20）。
+
+## 4. 实现顺序与阶段（§31）
+按 §31 规定的 3A→3G 连续执行，阶段间无停断（除非 Core 契约不清 / 破坏性删除 / 数据迁移 / 安全冲突 / 运行时矛盾——本阶段均未触发）：
+- **3A 架构（单一 Electron 壳）**：✅ 见 §5
+- **3B 视觉系统（设计令牌）**：✅ 见 §7
+- **3C 外壳（信息架构）**：✅ 见 §6
+- **3D 工作区**：✅ 见 §6/§8/§9/§13/§19
+- **3E DSH 集成 + 品牌清理**：✅ 见 §11/§12
+- **3F Voice/GUI 交接**：🔶 部分完成（见 §16/§23）
+- **3G 验证 + zz-space F1 修复**：✅ 见 §15/§22
+
+## 5. §2 单一 Electron 壳
+- 新增 `electron/workspace-window.js`：标准（带边框/标题栏）工作区窗口工厂，加载 `zz-space/index.html`；安全策略与 `avatar-window.js` 对齐（`contextIsolation:true` / `nodeIntegration:false` / `sandbox:true` / `will-navigate` 仅放行 localhost / 禁止渲染进程开新窗）。
+- 重写 `electron/main.js`：单一 `app.whenReady().then(bootstrap)` 同时创建 **orb 窗口** 与 **workspace 窗口**；合并原孤儿 `gui/main.js` 中「真正需要」的逻辑（托盘 tray、受路径守卫的 SoVITS 语音合成自启）；保留端口身份校验（`backend-launcher.js` 仅探测，不自动拉起后端——后端由 `zz_launch.bat` 拉起）。
+- 新增 `avatar:focus` IPC + `preload.focusOrb()` 桥（W13 GUI→Voice）。
+- **归档 `gui/` → `_archive/gui-20260817/`**（依赖已验证：无任何 launcher / 代码引用 `gui/`；仅历史文档提及）。
+
+## 6. §4 信息架构（IA）
+`zz-space/index.html` 三栏 + 浮层布局（`grid-template-columns: 76px 1fr 320px`）：
+- **顶栏**：品牌 + Cmd/Ctrl+K 按钮 + 运行时状态 + 迷你 orb。
+- **左导航**：Home / Sessions / Projects / Tasks / Memory / Knowledge / Capabilities / Settings（8 项）。
+- **中区**：Home（功能卡）+ Conversation（对话 / 工作区 / 结果 / Agent 活动 四标签页）+ 列表视图（任务/项目/记忆/知识/能力/会话/设置）。
+- **右上下文栈**：`#zzContext` 动态切换（运行时/任务/记忆/能力/结果/待确认）。
+- **常驻 Voice Orb 存在感**：`#orbPresence`（点击 → `startVoice()`，W12/W13）。
+- **命令面板 + 遮罩 + Toast/Banner 层**。
+
+## 7. §5 设计令牌
+`zz-space/css/zz-workspace.css` 建立完整令牌体系：深黑/石墨底色（`--zz-bg:#07090d`、`--zz-surface:#0e1219`）、克制青/紫强调色（`--zz-accent:#22d3ee`、`--zz-accent-2:#a78bfa`）、柔化玻璃、克制动效（仅 `zzPulse/zzSpin/zzBlink`）、无 HUD/赛博朋克。所有组件样式（顶栏/导航/卡片/对话气泡/工具-审批-结果块/输入行/设置/右上下文/StateDot/orb 存在感/命令面板/遮罩/toast）均覆盖；含 1100px / 720px 响应式断点。
+
+## 8. §9 流式 Markdown（增量，无 O(n²)）
+`StreamingMarkdown` 类（块级）：
+- `_splitBlocks` 将文本切成「代码块 / 表格 / 段落」。
+- 已完成的**前导块只渲染一次并缓存**（`renderedBlocks` 递增）；**仅最后一块（未完成尾部）重渲染**于 `tailEl`。
+- 避免每次增量对全量文本重新解析（杜绝 O(n²)）。
+- 支持代码围栏、表格、内联渲染；`finalize()` 复位。
+- 已移除初版误引入的 `vendor/marked.min.js`（违反 §9 全量重解析禁令），改为自包含增量渲染。
+
+## 9. §13 命令面板 + §14 触发器
+- `openPalette` / `renderPalette`（模糊匹配）→ `paletteKey`（方向键/Enter/Esc）。
+- `COMMANDS`（9 条基础）+ 由 `FEATURE_REGISTRY` 派生（advanced/conditional）→ 统一注册表。
+- `handleTrigger(val)`：处理 `/command` 与 `@mention`。
+- 全局 `Ctrl/Cmd+K` 唤起。
+
+## 10. §19 特性注册表（47 项 A–F + 可见性）
+`FEATURE_REGISTRY`：由 `xiao6-hub/features.json` 的 47 项派生，每项 `{id,name,cat(A–F),vis(default/advanced/hidden/conditional)}`。
+- `featureVisible(f)` 解析 conditional（calendar / focus-app / clipboard 受 enabled 闸门）。
+- GUI 暴露的单一事实来源；默认可见集与条件能力闸门分离。
+
+## 11. §20 DSH `<webview>` 替换（Xiao6Hub）
+- `xiao6-hub/renderer/index.html`：`<webview id="dsh-webview" partition="persist:dsh">` → `<webview id="zz-webview" partition="persist:zz">`，目标改为 ZhuangZhou Advanced Workspace（`http://localhost:8010/zz-space/index.html`）。
+- `xiao6-hub/renderer/renderer.js`：`renderServerStatus` 将 webview `src` 指向 `WORKSPACE_URL` 常量；webview 事件文案更新。
+- DSH 不再作为可见产品面（仅作底层底座）。
+
+## 12. §21 品牌清理（DeepSeek Harness / DSH / DPH）
+- `xiao6-hub/renderer/index.html`：清除 `DeepSeek Harness`、`CODEX · DSH · 小6`、`dsh web`、各 `DSH` 产品面文案 → `ZhuangZhou` / `Advanced Workspace` / `工作区`。
+- `xiao6-hub/renderer/renderer.js`：清除可见 `dsh` 品牌字符串。
+- `xiao6-hub/main.js`：窗口标题 `Xiao6Hub — DSH Desktop` → `ZhuangZhou Hub`。
+- 保留 `Xiao6Hub`/「小6」作为适配器/子产品名（不在禁用清单内）；`xiao6-hub/main.js` 中 DSH 作为被管理底座的端口/进程逻辑属功能性代码，**未改动**（避免破坏 Xiao6Hub 启动）。
+
+## 13. §22 旧 UI 处置
+- **KEEP**：`desktop-avatar/dyna-orb.*`（Phase 2 冻结 Voice Orb）。
+- **REBUILD**：`zz-space/`（从粒子旧 UI 重建为 Advanced Workspace）。
+- **ARCHIVE**：`gui/` → `_archive/gui-20260817/`（§2，依赖已验证）。
+- **REMOVE LATER**：`orb-ui` 等——**本阶段未执行**（属延迟项，需独立依赖验证，见 §23）。
+- **ARCHIVE robot/gem-orb/etc（依赖验证后）**：**本阶段未执行**（需逐一确认无引用；列为后续，见 §23 残留风险）。
+
+## 14. §23 D1–D8 去重（单一事实来源）
+- `zz-workspace.js` 成为聊天 / 记忆 / 任务 / 能力 / 命令面板 的**单一 GUI 事实来源**，消除旧 `zz-space.js` / `app.js` 的重复接线（D1–D8 部分收敛）。
+- 旧 `zz-space.js` / `app.js` / 根遗留 UI 仍保留于磁盘（待 §22 依赖验证后归档），但 `index.html` 不再加载 `zz-space.js`，旧崩溃路径已休眠。
+
+## 15. §24 zz-space F1 最小空值守卫
+`zz-space/js/zz-space.js:284` 原为 `$('petOrb').addEventListener(...)`（IIFE 顶层、无空值守卫；新 `index.html` 无 `#petOrb` → FATAL）。已加最小守卫：
+```js
+var petOrbEl = $('petOrb');
+if (petOrbEl) { petOrbEl.addEventListener('click', ...); }
+```
+属兼容/过渡修复，非延续旧 UI 开发。
+
+## 16. §25 Electron 运行时安全
+- 所有窗口：`contextIsolation:true`、`nodeIntegration:false`、`sandbox:true`。
+- 导航守卫（`security.isSafeNavigation`）：仅放行 `http(s)://localhost|127.0.0.1`，阻断 `file:/javascript:/data:/about:/chrome:/devtools:` 与外部域。
+- 渲染进程 `setWindowOpenHandler` 返回 `deny`。
+
+## 17. §26 安全（渲染进程无任意 Node / 桥白名单 / Core Policy+Approval）
+- 渲染进程经 `preload.js` 仅暴露受限桥：`close/hide/openChat/setIgnoreMouse/moveWindow/focusOrb`，无任何文件系统 / 执行能力。
+- IPC 仅 `avatar:*` 最小窗口控制语义（无执行语义）。
+- 工具/审批仍走 Core Policy + Approval（`/api/agent/approval` 经 `postApproval`）。
+
+## 18. §27 端口纪律
+- 未硬编码任何新端口。`electron/main.js` 复用 `process.env.ZHUANGZHOU_PORT`（默认 8010），经 `backend-launcher.js` 偏移回退解析；SoVITS 沿用既有 `9880`（受路径守卫）。
+
+## 19. 文件清单 — 新增（Added）
+- `zz-space/index.html`（Advanced Workspace 主结构，覆盖旧粒子 UI）
+- `zz-space/css/zz-workspace.css`（设计令牌 + 全组件样式）
+- `zz-space/js/zz-workspace.js`（演示/适配层主逻辑：快照/流式/SSE/命令面板/特性注册表/视图路由/右上下文）
+- `electron/workspace-window.js`（工作区窗口工厂）
+- `PHASE3_IMPLEMENTATION_BASELINE.md`（VERIFY-BEFORE-CHANGE 基线）
+- `_archive/gui-20260817/`（归档原 `gui/`）
+
+## 20. 文件清单 — 修改（Modified）
+- `electron/main.js`（单一壳：orb + workspace + tray + focusOrb IPC + SoVITS 守卫自启）
+- `electron/preload.js`（新增 `focusOrb` 桥）
+- `zz-space/js/zz-space.js`（§24 F1 空值守卫）
+- `xiao6-hub/renderer/index.html`（§20/§21：webview→Workspace + 品牌清理）
+- `xiao6-hub/renderer/renderer.js`（§20/§21：WORKSPACE_URL + 品牌清理）
+- `xiao6-hub/main.js`（§21：窗口标题品牌清理）
+
+## 21. 文件清单 — 归档 / 延迟（Archived / Deferred）
+- **已归档**：`gui/` → `_archive/gui-20260817/`（§2）
+- **延迟（未执行，需依赖验证）**：`orb-ui`、`robot`、`gem-orb` 等旧 UI 的归档/移除（§22 REMOVE LATER / ARCHIVE after dep-verify）
+
+## 22. 验证结果（Verification）
+全部在本环境可执行范围内完成：
+- **JS 语法**：`zz-workspace.js`、`zz-space.js`、`electron/main.js`、`workspace-window.js`、`preload.js`、`avatar-window.js`、`security.js`、`backend-launcher.js`、`xiao6-hub/renderer/renderer.js` 均 `node --check` 通过。
+- **实时 API 契约**（后端 `localhost:8010` 在线）：`/api/agent/state`、`/api/goals`、`/api/memories`、`/api/knowledge`、`/api/capabilities`、`/api/tasks`、`/api/health`、`/api/briefing`、`/api/calendar/events`、`/api/notes` 均 HTTP 200，响应结构与渲染代码匹配（`agent.state`、`capabilities.items[]`、`tasks[]`、`memories[]`、`goals[]`）。
+- **SSE 格式实测**：`/api/chat` 返回 OpenAI 风格 `data: {"choices":[{"delta":{"content":...}}]}` 并以 `data: "[DONE]"` 结束——与 `sendChat` 解析一致；已修复 `[DONE]` 引号匹配（`m==='[DONE]' || raw==='[DONE]'`）。
+- **DOM id 交叉校验**：`zz-workspace.js` 引用的 `#id` 选择器与 `index.html` 比对，仅 `ctxStateDot`/`ctxStateText` 为运行时动态生成且已守卫（误报）；修复了 `init()` 中 `$('speak')` 为 null 导致的**初始化中断致命 bug**（改为 `qs('.zz-tool[data-tool="speak"]')` 守卫）。
+- **资产服务实测**：后端实际返回新 `zz-space/index.html`（200，含 `orbPresence`/`zz-cmdk`/`zz-workspace` 标记）、`zz-workspace.css`、`zz-workspace.js`（均 200）。
+- **§24 F1**：已加空值守卫。
+
+## 23. 残留风险与限制（Residual Risks / Honest Limits）
+- **W1–W13 运行时未在本环境执行**：本环境为无头（headless），无法实际启动 Electron、截图、点击交互或验证 Voice Orb 音频/ASR。以上为**静态 + 实时 API/服务验证**，非视觉/交互回归。W12（Voice→GUI 实时绑定到 dyna-orb 事件）仅完成 orb 存在感镜像 + 点击→`startVoice`，未接 dyna-orb 真实事件流（需运行时）。
+- **工具/审批事件**：实测 `/api/chat` 仅发 `choices/delta`，`zhuangzhou_event`（tool_start/tool_end/approval）分支为前向兼容、未观测到真实事件，UI 路径未经实时验证。
+- **SoVITS**：`electron/main.js` 自启受 `D:\GPT-SoVITS` 路径守卫，缺失即跳过，不阻断主流程；语音合成可用性取决于该环境组件。
+- **延迟归档**：`orb-ui`/`robot`/`gem-orb` 等旧 UI 尚未归档（§22 REMOVE LATER / ARCHIVE after dep-verify），需独立依赖验证，不在本阶段范围内。
+- **Xiao6Hub 双后端现象**：其 `main.js` 仍管理 DSH（3080/3210），而 webview 现指向 8010 的 Advanced Workspace；若 8010 未随 Xiao6Hub 启动，则嵌入页显示错误（与旧 DSH 未起同理，属预期可降级）。
+
+## 24. 完成定义核对（§34 Definition of Done）
+- [x] 单一 canonical Electron 壳（orb + workspace），`gui/` 归档。
+- [x] Advanced Workspace 三栏 + 命令面板 + 常驻 Voice Orb 存在感。
+- [x] 设计令牌体系落地（§5）。
+- [x] 流式 Markdown 增量（§9，无 O(n²)）。
+- [x] 命令面板 + `/`、`@` 触发器（§13/§14）。
+- [x] 特性注册表 47 项分类 A–F（§19）。
+- [x] DSH webview 替换为 Advanced Workspace（§20）。
+- [x] 品牌清理 DeepSeek Harness/DSH/DPH（§21）。
+- [x] zz-space F1 空值守卫（§24）。
+- [x] 安全：contextIsolation/sandbox/IPC 白名单（§25/§26）。
+- [x] 无新硬编码端口（§27）。
+- [x] JS 语法 + 实时 API/服务 + DOM 交叉校验通过（§22 验证）。
+- [~] §22 旧 UI 延迟归档（orb-ui/robot/gem-orb）— 延迟，需依赖验证。
+- [~] W1–W13 运行时交互/视觉回归 — 无头环境无法执行。
+
+## 25. STOP 与后续（§35）
+- **STOP**：Phase 3 GUI 实现按 §35 停止。不进入 Phase 4，不新增功能，不修改 Core/VoiceOrb 冻结契约与 DSH 源码。
+- **各域修改标记**：
+  - Core Runtime / Context / Memory / Decision / Policy / Approval：**未修改**（仅 GUI 适配层）。
+  - Voice Orb（dyna-orb）：**未修改**（Phase 2 冻结）。
+  - DSH 源码：**未修改**（仅 Xiao6Hub 嵌入指针变更）。
+  - Xiao6Hub：**已修改**（renderer 嵌入+品牌、main 标题）。
+  - ZhuangZhou GUI / Electron：**已修改**（zz-space 新建、electron 单一壳、preload 桥）。
+- **后续（如授权）**：① 旧 UI 延迟归档的依赖验证与执行（§22）；② 无头环境外的 Electron 启动 + 视觉/交互回归（W1–W13）；③ 工具/审批事件的实时联调。

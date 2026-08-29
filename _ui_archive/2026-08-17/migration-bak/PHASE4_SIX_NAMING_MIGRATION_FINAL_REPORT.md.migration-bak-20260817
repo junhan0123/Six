@@ -1,0 +1,205 @@
+# PHASE 4 — SIX NAMING MIGRATION FINAL REPORT
+## 产品品牌统一 / 命名收口 / Zero Functional Change
+
+> **VERDICT**
+> - FUNCTIONAL CHANGE = **0**
+> - CORE = **0** ｜ VOICE ORB = **0** ｜ DSH = **0** ｜ DB = **0** ｜ API BREAK = **0** ｜ PORT CHANGE = **0**
+> - 命名迁移：完成。用户可见旧品牌（庄周 / ZhuangZhou / ZHUANGZHOU / Xiao6Hub）已从产品界面清除。
+
+---
+
+## 1. 阶段目标与硬约束
+
+将产品品牌统一为：**中文 小6 / 英文 Six / Xiao6Hub → Six Hub**。
+硬约束（红線）：**零功能变更** —— 不重构 UI、不动 Core / Voice Orb / DSH、不改 DB schema、不破坏 API、不改端口、不加新功能、不做附带重构、不改写 git 历史、不删除旧 UI。
+
+## 2. 新旧品牌映射
+
+| 旧 | 新 |
+|----|----|
+| 庄周（中文） | **小6** |
+| ZhuangZhou（英文） | **Six** |
+| Xiao6Hub（用户可见） | **Six Hub** |
+| 庄周 OS / ZhuangZhou OS | **Six OS**（英文 OS 形态，如 `小6 · Six OS`） |
+
+## 3. 三仓库扫描结论
+
+| 仓库 | 角色 | 品牌迁移 | 备注 |
+|------|------|----------|------|
+| `G:\ZhuangZhou\zhuangzhou-ui` | 主 UI + 规范 Electron shell | 完成 | 含 zz-space Advanced Workspace、旧 dashboard、companion、mobile、selfcheck、pet 等 |
+| `G:\xiao6-hub` | CODEX 风格 GUI 外壳 | 完成 | productName/标题/文案 → Six Hub；DSH 作为内部基础设施保留 |
+| `G:\deepseek-harness` | DSH 底层基座 | N/A | 扫描 `庄周|ZhuangZhou` = **0 文件**，确认 DSH 未冠产品品牌（符合要求） |
+
+## 4. 分类与冻结范围（A–E）
+
+- **A 用户可见品牌 / B 产品元数据**：迁移。
+- **C 内部标识符 / D API·协议标识符 / E 文件系统·目录**：默认保留。
+- 排除：端口、`ZHUANGZHOU_*` 全部环境变量、IPC、EventBus、DB 字段、`appId`、物理路径、仓库 URL、DSH 内部、语音唤醒词。
+
+## 5. 保留标识符安全清单（未改动）
+
+`ZHUANGZHOU_PORT` 及全部 `ZHUANGZHOU_*`（ASR/TTS/KWS/WAKE_PHRASE/PROXY/WEB_SEARCH/SANDBOX/…）；
+`window.zhuangzhou` / `window.xiao6`（preload 桥）；`localStorage.zhuangzhou_sid`；`zhuangzhou_event`；
+IPC `companion:*`/`xiao6:*`/`avatar:*`；`appId com.zhuangzhou.*`/`com.zhuangzhou.xiao6hub`；
+路径 `G:\ZhuangZhou`/`G:\zhuangzhou`/`G:\xiao6-hub`/`%APPDATA%\Xiao6Hub`；
+仓库 URL `github.com/junhan0123/ZhuangZhou` 与 `github.com/AGI-ZhuangZhou/ZhuangZhou`；任务名 `ZhuangZhou_AutoStart`。
+
+## 6. 已执行变更 — Layer1/Layer2（白名单脚本）
+
+- **HTML（10）**：zz-space/index.html、index.html、companion.html、desktop-avatar/orb-ui.html、mobile-app.html、selfcheck.html、weather-modal-preview.html、xiao6-hub/renderer/index.html、electron/firstlaunch.html、pet/pet.html —— `庄周→小6`、`ZhuangZhou→Six`、`ZHUANGZHOU→SIX`、`Xiao6Hub→Six Hub`。
+- **JS（19/20，execution-timeline.js 无变化）**：zz-space/js ×3、xiao6-hub/renderer/renderer.js、pet/pet.js、根 controller ×13（companion/app/app-state/command-palette/command-dock/capabilities-view/aboutme-panel/execution-panel/computer-state/computer-action/event-bridge/first-launch）—— 同 token map（不含 `Xiao6→Six`）。
+
+## 7. Electron 双壳与包元数据变更
+
+- **规范 shell** `zhuangzhou-ui/electron/main.js` + `workspace-window.js`：`'ZhuangZhou · Advanced Workspace'` → `'Six · Advanced Workspace'`（标题/工具提示）。
+- **桌面伴侣 shell** `G:\ZhuangZhou\electron\main.js`：标题/工具提示/菜单/通知中的 `庄周` → `小6`（9 处）。
+- **`G:\ZhuangZhou\electron\package.json`**：`productName`/`description`/`author`/`copyright`/`artifactName` 中 `庄周` → `小6`（`name`/`appId` 保留）。
+- **`G:\xiao6-hub\package.json`**：`productName` `Xiao6Hub` → `Six Hub`；`description` 中 "DeepSeek Harness" 保留为内部基座表述（"底层智能体基座"）。
+- **`G:\xiao6-hub\main.js`**：`title: 'ZhuangZhou Hub'` → `'Six Hub'`。
+- **`G:\ZhuangZhou\zhuangzhou-desktop\pet\package.json`**：`description` `庄周` → `小6`。
+
+## 8. ★ 关键安全事件：env-var 标识符损坏与修复
+
+**发现**：第二次全仓扫描（`SIX_[A-Z]`）暴露迁移脚本的 `ZHUANGZHOU→SIX` token map 误伤了两份白名单 JS 中的**内部环境变量标识符**：
+
+| 文件 | 损坏形态 | 原始（应保留） |
+|------|----------|----------------|
+| `zhuangzhou-ui/command-palette.js:116` | `SIX_THEME` | `ZHUANGZHOU_THEME` |
+| `zhuangzhou-ui/first-launch.js:166,167,305,306,323,324` | `SIX_ASR_PROVIDER` / `SIX_TTS_BACKEND` / `SIX_ASR_MODEL` / `SIX_TTS_VOICE` | `ZHUANGZHOU_ASR_PROVIDER` / `ZHUANGZHOU_TTS_BACKEND` / `ZHUANGZHOU_ASR_MODEL` / `ZHUANGZHOU_TTS_VOICE` |
+
+**影响**：这些键由前端经 `POST /api/config` 发送给后端；后端按 `ZHUANGZHOU_*` 读取。损坏会导致主题/ASR/TTS 配置**静默失效**（API 合约破坏，违反红線）。
+
+**修复**：对两文件执行 `SIX_` → `ZHUANGZHOU_` 精确逆变换（即还原被 `ZHUANGZHOU→SIX` 破坏的键）。修复后 `SIX_[A-Z]` 反向核查在两文件中 **0 命中**。
+
+**防护验证**：
+- `ZHUANGZHOU_PORT` 哨兵保护生效 → 全仓 `SIX_PORT` **0 命中**，端口环境变量完好。
+- `.py` 文件（config.py/server.py…）从未被脚本处理 → 全部 `ZHUANGZHOU_*` 环境变量完好。
+- 其余 17 份白名单 JS 的 `SIX_[A-Z]` 核查 **0 命中** → 损坏仅限上述 2 文件。
+
+## 9. 残留用户可见品牌判定与例外
+
+| 位置 | 处置 | 理由 |
+|------|------|------|
+| `xiao6-hub/features.json:141` 唤醒词 `(庄周 / 小周 / 小6)` | **保留** | 语音唤醒词属 Voice 配置（红線"no Voice Orb change"），归 Phase 5；非产品品牌标签 |
+| `launcher/STARTUP_OVERVIEW.md` | **保留** | 历史/运维交付文档，含真实文件系统路径（`F:\桌面\庄周一键启动.bat`）与 `ZhuangZhou_AutoStart` 任务名（E 类），§14 允许历史文档保留原名 |
+| 代码注释中的 `庄周`/`ZhuangZhou`（electron/main.js、preload.js、backend-launcher.js 注释） | **保留** | 非用户可见界面（§14 内部允许） |
+| CSS 注释 `ZHUANGZHOU · Advanced Workspace` / `ZHUANGZHOU AETHER PRO` | **保留** | 注释非渲染内容；"AETHER" 为独立内部代号 |
+| 桌面 `庄周.lnk`（如存在） | **未自动重命名** | 个人桌面文件（E 类物理路径），生成器已改为产出 `小6.lnk`；旧快捷方式建议手动删除/重命名 |
+
+> 上述例外均**不出现在运行时产品界面**，符合 STEP 10"用户可见产品界面不得出现旧品牌"。
+
+## 10. 第二次全仓库扫描结果（STEP 9–11）
+
+- **STEP 9（第二轮扫描）**：`庄周`/`ZhuangZhou`/`ZHUANGZHOU`/`zhuangzhou` 命中主要为历史文档（§14 允许）、`dist/` 构建产物、Python 标准库文档、内部路径/标识符（C/D/E 类）。
+- **STEP 10（用户可见界面清零）**：
+  - 实时 UI `*.html`：`ZhuangZhou` 品牌 **0 命中**。
+  - 实时 UI `*.js` 的 `ZhuangZhou` 命中全为 路径/仓库URL/内部config键/局部变量/注释（C/D/E 类，**未改动且内部一致**）。
+  - `SIX_[A-Z]` 损坏命中：仅 2 文件，已修复（见 §8）。
+  - `junhan0123/Six` / `AGI-ZhuangZhou/.../Six` 仓库 URL损坏：**0 命中**。
+  - `onSixLog`/`SixLog` 等 `Xiao6→Six` 误伤：**0 命中**。
+- **STEP 11（新品牌存在性）**：`小6`/`Six`/`Six Hub` 在全部主要入口存在 —— `zz-space/index.html` `<title>小6 · Advanced Workspace</title>`、`index.html` `<title>小6 · 本地个人 AI 副驾</title>`、`xiao6-hub/renderer/index.html` `<title>Six Hub</title>`、`features.json` `"小6 · Six OS"`。
+
+## 11. 语法与静态检查（STEP 12–13）
+
+- `node --check` 对 **21 份** 已编辑 JS（规范/伴侣 Electron shell、xiao6-hub main+renderer、zz-space/js ×3、根 controller ×13、pet.js）全部 **OK（fail=0）**。
+- 启动器脚本（`.bat`/`.ps1`）仅做字符串替换，无语法风险。
+
+## 12. API / 端口合约不变性（STEP 15）
+
+- 端口：无变化（8010/8000/9880/3080/3210 全部保留）。
+- `POST /api/config`：请求键 `ZHUANGZHOU_*` 已修复还原 → 合约未破坏。
+- IPC / EventBus / DB schema：未触碰。
+
+## 13. 功能影响评估：FUNCTIONAL CHANGE = 0
+
+本阶段仅替换**品牌字符串**与**产品元数据**，未修改任何控制流、数据模型、API 行为、端口、进程结构。修复的 env-var 损坏已还原，功能等价性恢复。
+
+## 14. 红線符合性矩阵
+
+| 红線 | 状态 | 说明 |
+|------|------|------|
+| 不改 Core | ✅ | Core 代码未触碰 |
+| 不改 Voice Orb | ✅ | 仅品牌字符串；唤醒词保留 |
+| 不改 DSH | ✅ | DSH 扫描 0 品牌泄漏；内部基础设施保留 |
+| 不改 DB schema | ✅ | DB 未触碰 |
+| 不破坏 API | ✅ | env-var 损坏已修复；合约完好 |
+| 不改端口 | ✅ | 端口全保留 |
+| 不加新功能 | ✅ | 纯命名迁移 |
+| 不做附带重构 | ✅ | 仅目标文件品牌替换 |
+| 不改写 git 历史 | ✅ | 未执行历史重写 |
+| 不删除旧 UI | ✅ | 旧 UI 文件保留于磁盘 |
+
+## 15. 各仓库结论
+
+- **ZhuangZhou**：用户可见品牌清零；内部标识符（env/IPC/appId/路径）完好；env-var 损坏已修复。
+- **xiao6-hub**：`Six Hub` 品牌贯通标题/产品名/文案；DSH 内部表述保留；产品代码 `SIX_` 损坏 **0 命中**。
+- **deepseek-harness**：DSH 未冠产品品牌，符合"DSH 不作为用户可见产品品牌"要求。
+
+## 16. 已知残留与后续建议
+
+1. **桌面 `庄周.lnk`**：若桌面存在旧快捷方式，建议手动删除或重命名（生成器现已产出 `小6.lnk`）。
+2. **唤醒词 `庄周`**：纳入 Phase 5 Voice 范围统一评估（是否从唤醒词列表移除/替换）。
+3. **`STARTUP_OVERVIEW.md` 与历史文档**：保留原名（§14）；如需完全无旧品牌，可后续单独归档处理。
+4. **代码注释中的旧品牌**：非用户可见，可后续随常规维护清理，不在本阶段范围。
+
+## 17. 验收标准对照
+
+| 验收项 | 结果 |
+|--------|------|
+| 用户可见旧品牌清零 | ✅（运行时界面 0 命中；例外见 §9，均非运行时界面） |
+| 新品牌贯通主要入口 | ✅（§10/§11） |
+| 内部标识符保留 | ✅（§5/§8/§12） |
+| 无功能/API/端口破坏 | ✅（§12/§13/§14） |
+| 双 Electron 壳一致 | ✅（§7） |
+
+## 18. 风险与缓解
+
+| 风险 | 状态 |
+|------|------|
+| env-var 标识符损坏（R1） | **已发现并修复**（§8） |
+| 仓库 URL 损坏（R2） | 扫描 0 命中，无发生 |
+| 路径误伤（R3） | 扫描 0 命中，无发生 |
+| 唤醒词遗留 | 按设计保留（Voice 范围） |
+
+## 19. 结论与 STOP 声明
+
+Phase 4 命名迁移**已完成且功能零变更**。用户可见产品品牌已统一为 **小6 / Six / Six Hub**，所有内部标识符（端口、`ZHUANGZHOU_*`、IPC、`appId`、路径、仓库 URL）完好保留，期间发现并修复了一处 env-var 标识符损坏（已验证还原且无扩散）。
+
+**按 §22 要求，完成后不自动进入 Phase 5。必须 STOP。**
+
+---
+
+## 附录 A：本次变更文件详细清单
+
+**HTML（10）**
+zz-space/index.html · index.html · companion.html · desktop-avatar/orb-ui.html · mobile-app.html · selfcheck.html · weather-modal-preview.html · xiao6-hub/renderer/index.html · electron/firstlaunch.html · pet/pet.html
+
+**JS（19，execution-timeline.js 无变化）**
+zz-space/js/{zz-workspace,zz-space,voice-orb}.js · xiao6-hub/renderer/renderer.js · pet/pet.js · companion.js · app.js · app-state.js · command-palette.js* · command-dock.js · capabilities-view.js · aboutme-panel.js · execution-panel.js · computer-state.js · computer-action.js · event-bridge.js · first-launch.js*
+（* = 含 env-var 损坏修复）
+
+**Electron / 包元数据**
+zhuangzhou-ui/electron/main.js · zhuangzhou-ui/electron/workspace-window.js · G:\ZhuangZhou\electron\main.js · G:\ZhuangZhou\electron\package.json · G:\xiao6-hub\package.json · G:\xiao6-hub\main.js · G:\ZhuangZhou\zhuangzhou-desktop\pet\package.json
+
+**产品文档 / 文案**
+xiao6-hub/features.json · xiao6-hub/README.md · xiao6-hub/VERIFY.md · xiao6-hub/start.bat
+
+**启动器（庄周→小6）**
+launcher/start_zhuangzhou.bat · zz_launch.bat · stop_zhuangzhou.bat · start.ps1 · stop.ps1 · zz_launch.ps1 · launcher_config.json
+
+**快捷方式生成器**
+G:\ZhuangZhou\electron\scripts\make-shortcut.py（`庄周.lnk`→`小6.lnk`，描述→`Six AI Copilot`）
+
+## 附录 B：保留标识符速查
+
+```
+端口:            8010 / 8000 / 9880 / 3080 / 3210
+env:             ZHUANGZHOU_PORT + 全部 ZHUANGZHOU_*
+桥:              window.zhuangzhou / window.xiao6
+存储:            localStorage.zhuangzhou_sid / zhuangzhou_event
+IPC:             companion:* / xiao6:* / avatar:*
+appId:           com.zhuangzhou.desktop / com.zhuangzhou.xiao6hub
+路径:            G:\ZhuangZhou / G:\zhuangzhou / G:\xiao6-hub / %APPDATA%\Xiao6Hub
+仓库:            github.com/junhan0123/ZhuangZhou / github.com/AGI-ZhuangZhou/ZhuangZhou
+任务:            ZhuangZhou_AutoStart
+```

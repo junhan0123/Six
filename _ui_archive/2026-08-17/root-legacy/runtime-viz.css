@@ -1,0 +1,161 @@
+/* runtime-viz.css — 运行时可视化面板（Execution Timeline + Memory Context）
+ * 风格与既有 glass / premium 体系一致：深色玻璃、青色高亮、Orbitron/Rajdhani。
+ * 仅作用于 #runtime-viz，不污染其它组件。 */
+
+#runtime-viz {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 340px;
+  max-height: 72vh;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  background: rgba(10, 16, 24, 0.72);
+  border: 1px solid rgba(90, 200, 230, 0.22);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  color: #d8e6ef;
+  font-family: 'Rajdhani', 'Share Tech Mono', system-ui, sans-serif;
+  backdrop-filter: var(--glass-2);
+  -webkit-backdrop-filter: var(--glass-2);
+  overflow: hidden;
+}
+
+#runtime-viz .rv-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(90, 200, 230, 0.18);
+  background: linear-gradient(90deg, rgba(40, 120, 150, 0.25), rgba(20, 40, 60, 0.1));
+}
+
+#runtime-viz .rv-title {
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  color: #9fe8ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#runtime-viz .rv-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #34d8ff;
+  box-shadow: 0 0 10px #34d8ff;
+}
+
+#runtime-viz .rv-toggle {
+  background: transparent;
+  border: 1px solid rgba(120, 200, 230, 0.3);
+  color: #9fe8ff;
+  border-radius: var(--radius-xs);
+  width: 26px; height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+}
+#runtime-viz .rv-toggle:hover { background: rgba(52, 216, 255, 0.12); }
+
+#runtime-viz.rv-collapsed .rv-body { display: none; }
+
+#runtime-viz .rv-body {
+  padding: 10px 14px 14px;
+  overflow-y: auto;
+}
+
+#runtime-viz .rv-section { margin-bottom: 12px; }
+#runtime-viz .rv-section:last-child { margin-bottom: 0; }
+
+#runtime-viz .rv-h {
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7fb8cc;
+  margin: 0 0 8px;
+}
+
+/* Execution Timeline */
+#runtime-viz .rv-timeline {
+  list-style: none;
+  margin: 0; padding: 0;
+  border-left: 2px solid rgba(90, 200, 230, 0.2);
+}
+#runtime-viz .rv-step {
+  position: relative;
+  padding: 6px 0 6px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "stage st" "detail detail";
+  gap: 2px 8px;
+  font-size: 13px;
+}
+#runtime-viz .rv-step::before {
+  content: '';
+  position: absolute;
+  left: -7px; top: 9px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #2a3a48;
+  border: 2px solid #3a5266;
+}
+#runtime-viz .rv-step.rv-active::before { background: #34d8ff; border-color: #34d8ff; box-shadow: 0 0 8px #34d8ff; }
+#runtime-viz .rv-step.rv-done::before { background: #3ad29a; border-color: #3ad29a; }
+#runtime-viz .rv-step.rv-error::before { background: #ff6b6b; border-color: #ff6b6b; box-shadow: 0 0 8px #ff6b6b; }
+
+#runtime-viz .rv-stage { grid-area: stage; color: #d8e6ef; }
+#runtime-viz .rv-st {
+  grid-area: st;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7fb8cc;
+  align-self: center;
+}
+#runtime-viz .rv-step.rv-active .rv-st { color: #34d8ff; }
+#runtime-viz .rv-step.rv-done .rv-st { color: #3ad29a; }
+#runtime-viz .rv-step.rv-error .rv-st { color: #ff8a8a; }
+#runtime-viz .rv-detail {
+  grid-area: detail;
+  font-size: 11px;
+  color: #8aa6b4;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* Memory Context */
+#runtime-viz .rv-count { font-size: 12px; margin-bottom: 6px; color: #cfe3ec; }
+#runtime-viz .rv-count b { color: #34d8ff; }
+#runtime-viz .rv-mem-item {
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: var(--radius-xs);
+  background: rgba(90, 200, 230, 0.06);
+  margin-bottom: 4px;
+  color: #d8e6ef;
+}
+#runtime-viz .rv-mem-item i { color: #7fb8cc; font-style: normal; font-size: 10px; margin-left: 6px; }
+#runtime-viz .rv-empty { font-size: 11px; color: #6f8794; font-style: italic; }
+
+#runtime-viz .rv-wm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+#runtime-viz .rv-wm-item {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  background: rgba(120, 90, 200, 0.1);
+  border: 1px solid rgba(140, 110, 220, 0.22);
+  color: #c9b8f0;
+}
+#runtime-viz .rv-wm-item b { color: #e0d4ff; }
+
+@media (max-width: 980px) {
+  #runtime-viz { width: calc(100vw - 24px); right: 12px; bottom: 12px; }
+}

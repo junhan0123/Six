@@ -1,0 +1,165 @@
+# P0.5 产品缺陷清零 · 运行时就绪门禁报告
+
+- **项目**：ZhuangZhou（庄周）本地健康 AI 助手
+- **范围**：F1 Memory → F7 Permission/Approval → F4 KWS → F5 Agent Runtime → F2 Context → F3 Provider/Settings → F6 Environment → FULL REGRESSION → RUNTIME READINESS GATE
+- **UI 状态**：全程冻结（DeepSeek 独立重建 UI，本阶段零 UI/CSS/布局/动效改动）
+- **测试运行器**：受管 venv `/c/Users/Administrator/.workbuddy/binaries/python/envs/default/Scripts/python.exe`（pytest 9.1.1 / py3.13）
+
+---
+
+## 1. 结论（VERDICT）
+
+**READY（条件就绪）→ 可进入 P1（Default Chat Runtime → Unified Capability Execution）。**
+
+依据：F1 / F4 / F5 / F7 全部 PASS（无 A-class 真实缺陷）；F2 / F3 / F6 已清零 A/B 类；全集 Collection Errors = 0；安全相关断言全绿。剩余 4 个红全部为 **C/D 类（设计内允许红）**，按指令分类规则不阻断 P1。
+
+> ⚠️ 两个 C-class 为**真实能力缺口**（非活动缺陷），须在 P1 后排入 backlog：
+> - 连续失败计数+阈值清队列安全特性（Phase46 FSM 未实现）；
+> - 自动化门禁脚本 `final/_audit/GATE-GUARD.py` 缺失（本次门禁改为人工执行）。
+
+---
+
+## 2. 执行顺序符合性
+
+| 次序 | 阶段 | 结果 | 备注 |
+|---|---|---|---|
+| 1 | F1 Memory | PASS | 入场即 PASS |
+| 2 | F7 Permission/Approval | PASS | 见 §3-F7 |
+| 3 | F4 KWS | PASS | 入场即 PASS |
+| 4 | F5 Agent Runtime | PASS | 修 A/B，留 1 C |
+| 5 | F2 Context | PASS | 修 B，未回退为 stub |
+| 6 | F3 Provider/Settings | PASS | 修 B（测试指向错文件） |
+| 7 | F6 Environment | PASS | 修 A/B，留 2 D |
+| 8 | FULL REGRESSION | 374 passed / 4 failed | Collection Errors = 0 |
+| 9 | RUNTIME READINESS GATE | PASS | 见 §8 |
+
+---
+
+## 3. 各阶段明细
+
+### F1 Memory — PASS
+入场基线已 PASS，本阶段未引入回归。
+
+### F7 Permission/Approval — PASS（关键！）
+- 维护版套件 `phase7-order3.backend.test.py` **全绿**（21 项），覆盖 Capability Registry / 事件合约对称(72) / Policy Engine 复用 / Permission Guard 完整链路 / Verification / HIGH·CRITICAL 拒绝。
+- `policy_engine.request_approval` 在「无 goal + default_deny=True」下实测返回 `"reject"`（default-deny 铁律成立）。
+- **修复的测试污染（B-class，非产品缺陷）**：`phase7-order4.backend.test.py` 在模块级把 `policy_engine.request_approval = fake_approve` 且从不还原，污染全集后续所有测试（致 order2/order3 `test_medium_denied` 在全集下误报 status=done）。已保存原函数并在 Order4 执行链路结束后还原，全集污染消除。
+- `phase7-order2.backend.test.py` 7 项陈旧失败已修：① 订阅在模块级被 `bus.unsubscribe` 撤销（pytest 执行期收不到事件）→ 移入 `__main__`；② 事件数 71→72（Phase8 新增 PERCEPTION_FOCUS_CHANGED，前后端已对齐）。
+
+### F4 KWS — PASS
+入场基线已 PASS。
+
+### F5 Agent Runtime — PASS（留 1 C-class）
+- **A-class 真缺陷已修**：`_classify_error` 优先级错乱（timeout 先于 network、not_found 先于 file）→ 已加异常类型快路径 + network 先于 timeout 重排；`FileNotFoundError` 现正确重试。
+- **B-class 陈旧测试已修**：`test_no_direct_tool_execution`（stub 缺 `intent_id` 形参）、`test_notify_goal_done_emits_event`→`test_goal_completed_single_source`（单一来源纪律：GOAL_COMPLETED 仅由 `_emit_goal_domain` 发出）。
+- **C-class 留红**：`test_consecutive_failure_clear_queue` —— Phase46 FSM 未实现"连续失败计数+阈值清队列"安全特性，属未实现能力，设计内留红，未伪造。
+
+### F2 Context — PASS
+- 修复 B-class 陈旧断言（`byte_identical`/`legacy_exactly` 改为真实管线契约）：`test_flag_on_routes_to_builder`、`test_default_unlimited_runs_real_pipeline`、`test_builder_includes_memory_source`。Context Engine 保持**真实推导**，未回退为 passthrough stub。
+
+### F3 Provider/Settings — PASS
+- 修复 B-class（测试读错文件：`server.py` 为薄入口，handlers 已迁至 `server_handlers_system.py`）：`test_J_post_allowlist_has_local_keys`、`test_K_get_config_exposes_resolved_fields`、`test_server_config_exposes_new_features`、`test_server_whitelist_allows_persona_distill`。契约均确认存在（POST 白名单 6 本地键+ACTIVE_LLM；GET providers 暴露 resolved_base_url/model/configured/privacy_class/capabilities，无密钥字段）。
+
+### F6 Environment — PASS（留 2 D-class）
+- **A-class 真缺陷已修**：`tools.tool_run_shell` 无 cwd 时 sandbox 根未创建 → WinError 267。已改为始终 `resolve_in_sandbox(".")` + `makedirs`，确保工作目录存在。
+- **B-class 已修**：`test_web_search_no_key` 改为断言免密钥实时检索兜底（`"实时搜索"`），产品有意支持 `_keyless_search`。
+- **D-class 留红（环境依赖，产品正确）**：`test_status_default_all_disabled` / `test_asr_transcribe_disabled_without_key` —— 本机已安装 ffmpeg → `asr.status()["enabled"]=True`（本地引擎可用时本就应为 True）；测试基线假设"无 ffmpeg 干净环境"。**未伪造禁用 asr**。
+
+---
+
+## 4. 全量回归统计
+
+| 指标 | 值 |
+|---|---|
+| Collected | 378 |
+| Passed | 374 |
+| Failed | 4 |
+| Skipped | 0 |
+| Errors（收集/执行） | 0（Collection Errors = 0） |
+| 入场基线对照 | 47 failed → 4 failed |
+| 运行耗时 | ~105s |
+
+失败清单（全部 C/D）：
+1. `tests/phasec_native_runtime.test.py::TestPriorRegression::test_gate_guard_passes` — C
+2. `tests/test_external.py::test_status_default_all_disabled` — D
+3. `tests/test_external.py::test_asr_transcribe_disabled_without_key` — D
+4. `tests/test_goal_decision_engine.py::test_consecutive_failure_clear_queue` — C
+
+---
+
+## 5. 失败分类（A/B/C/D）
+
+| 类 | 含义 | 当前数量 | 阻断 P1？ |
+|---|---|---|---|
+| A | 真实产品缺陷 | **0** | 是（已清零） |
+| B | 陈旧测试（错基线/错文件/脚手架 bug） | **0** | 是（已清零） |
+| C | 缺失产物/未实现特性/环境（设计内留红） | 2 | 否（允许） |
+| D | 预期不可用/环境依赖 | 2 | 否（允许） |
+
+- **C-1 `test_gate_guard_passes`**：`final/_audit/GATE-GUARD.py` 不存在 → `python` 跑不存在文件退出码 2。自动化门禁脚本缺失，本次门禁人工执行。
+- **C-2 `test_consecutive_failure_clear_queue`**：连续失败安全特性未实现（Phase46 FSM 缺口）。
+- **D-1/D-2 asr 两项**：本机 ffmpeg 使 `asr.enabled=True`，产品行为正确，仅测试环境假设不符。
+
+---
+
+## 6. 红线合规检查
+
+| 红线 | 状态 |
+|---|---|
+| UI 全程冻结（无 HTML/CSS/UI-JS/布局/动效/资源/Home/Galaxy/Chat UI 改动） | ✅ 本阶段零 UI 改动；仅记录 UI Integration Contract |
+| 不删除/不削弱测试 | ✅ 仅修正 B-class 错基线/错文件/脚手架 bug；C/D 留红未伪造 |
+| 无 fake 模块 | ✅ |
+| 无 mock 执行链 | ✅ 修复的是真实 `request_approval` 污染泄漏，非引入 mock 链 |
+| `default_deny=True` 保留 | ✅ 实测 `request_approval` 无 goal 返回 reject |
+| Policy→Permission→Approval→Execution 不被绕过 | ✅ Permission Guard 单一入口；HIGH/CRITICAL 在 Guard 层即拒；executor 仅经 `Guard.run` 调用 |
+
+---
+
+## 7. 安全测试状态
+
+- `policy_engine` default-deny 裁决：PASS
+- Permission Guard 单一入口纪律（`plan/decide` 不触 executor，仅 `run` 经 Guard）：PASS
+- HIGH/CRITICAL 能力（kill_process/delete）在 Guard 层 DENIED、不触 executor：PASS
+- `tool_permission` 只读/低危 auto、写操作 confirm、永久禁止 NEVER：PASS
+- 危险命令拦截（`is_dangerous_command`）：PASS
+- 事件合约单一来源（DOMAIN_EVENT_NAMES 72，前后端严格对齐）：PASS
+
+> 注：未检索到独立的 `security` 标记测试模块；安全纪律由上述 phase7 / policy_engine 断言覆盖，全部绿。
+
+---
+
+## 8. 就绪门禁评估
+
+| 门禁项 | 要求 | 实际 | 通过 |
+|---|---|---|---|
+| F1 Memory | PASS | PASS | ✅ |
+| F4 KWS | PASS | PASS | ✅ |
+| F5 Agent Runtime | PASS | PASS（1 C 留红，非缺陷） | ✅ |
+| F7 Permission/Approval | PASS | PASS（污染已修，全绿） | ✅ |
+| Collection Errors | = 0 | 0 | ✅ |
+| Security Tests | PASS | PASS | ✅ |
+
+**门禁结论：PASS** → 满足进入 P1 的条件。
+
+---
+
+## 9. 允许失败（C/D）与理由
+
+- **C-1 门禁脚本缺失**：`test_gate_guard_passes` 引用的 `final/_audit/GATE-GUARD.py` 从未创建。建议 P1 后补建该脚本（跑全部 phase 测试并汇总 EXIT），使门禁可自动化。本次以本报告替代人工门禁。
+- **C-2 连续失败安全特性**：Phase46 FSM 缺"连续失败计数 + 阈值清队列"保护。建议 P1 后补实现（属稳健性增强，非当前活动缺陷）。
+- **D-1/D-2 asr 环境依赖**：本机 ffmpeg 使 ASR 本地引擎可用（`enabled=True`），产品行为正确。测试基线假设无 ffmpeg 干净环境，属环境差异。建议将断言改为环境感知（skip if ffmpeg present，或 `enabled == (ffmpeg_available)`），但**不得伪造禁用 asr**。
+
+---
+
+## 10. 下一步建议
+
+1. **进入 P1**：Default Chat Runtime → Unified Capability Execution（门禁已 PASS）。
+2. **P1 后 backlog（不阻断）**：
+   - 补建 `final/_audit/GATE-GUARD.py` 自动化门禁；
+   - 实现连续失败计数+阈值清队列安全特性；
+   - 将 asr 两项测试改为环境感知断言。
+3. **持续纪律**：UI 仍冻结至 P1 完成；任何新增能力须经 Policy→Permission→Approval→Execution 单一链路，禁止绕过 Guard。
+
+---
+
+*生成于 P0.5 全量回归通过后。测试运行器：受管 venv pytest 9.1.1 / Python 3.13。*

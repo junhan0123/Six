@@ -152,12 +152,43 @@ class ChatMixin:
             return self._send(400, json.dumps({"error": "messages required"}))
         if messages[0].get("role") != "system":
             messages = [
-                {"role": "system", "content": config.SYSTEM_PROMPT.format(name=config.AI_DISPLAY_NAME or "庄周")}
+                {"role": "system", "content": config.SYSTEM_PROMPT.format(name=config.AI_DISPLAY_NAME or "小6")}
             ] + messages
         user_text = ""
         for m in reversed(messages):
             if m.get("role") == "user":
                 user_text = m.get("content", "")
+                break
+        # Phase 6 · Intent Routing：剥离能力标签（【深度思考】【联网搜索】【代码执行】→ metadata）
+        # 标签仅作为 metadata 影响模型参数/工具权限，不改变 intent 分类
+        from intent_gateway import parse_cap_tags, classify_intent
+        user_text, cap_flags = parse_cap_tags(user_text)
+        _intent = classify_intent(user_text)
+        # Phase 7 · Agent Trust Layer：执行意图报告 + 状态透明化事件（AGENT_INTENT_ANALYZED）
+        _intent_tools, _intent_risk, _intent_confirm = [], "SAFE", False
+        if _intent in ("execution_task", "knowledge_query"):
+            try:
+                from tool_risk import max_risk, need_confirmation
+                _intent_tools = [n for n, _ in detect_intents(user_text)]
+                _intent_risk = max_risk(_intent_tools) if _intent_tools else "SAFE"
+                _intent_confirm = need_confirmation(_intent_tools)
+            except Exception:
+                _intent_tools, _intent_risk, _intent_confirm = [], "SAFE", False
+        try:
+            from eventbus import publish_domain
+            publish_domain("AGENT_INTENT_ANALYZED", {
+                "intent": _intent,
+                "confidence": 1.0 if _intent_tools else 0.6,
+                "goal": user_text[:40],
+                "tools": _intent_tools,
+                "risk": _intent_risk,
+                "need_confirmation": _intent_confirm,
+            }, source="intent_gateway")
+        except Exception:
+            pass
+        for m in reversed(messages):
+            if m.get("role") == "user" and isinstance(m.get("content"), str):
+                m["content"] = user_text
                 break
         messages[0]["content"] = build_context_prompt(user_text)
 
@@ -197,6 +228,16 @@ class ChatMixin:
         self.end_headers()
 
         def emit(obj):
+            # RC-4 Output Guard: 强制身份锁定（在写入前拦截）
+            if isinstance(obj, dict) and "choices" in obj:
+                for choice in obj.get("choices", []):
+                    delta = choice.get("delta", {})
+                    content = delta.get("content", "")
+                    if content and ("Agnes" in content or "Sapiens AI" in content):
+                        print(f"[RC-4 GUARD] 拦截到非法身份: {content}")
+                        content = content.replace("Agnes", "小6").replace("Sapiens AI", "小6的开发商")
+                        obj = {"choices": [{"delta": {"content": content}}]}
+                        print(f"[RC-4 GUARD] 替换后: {content}")
             line = "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
             self.wfile.write(line.encode("utf-8"))
             self.wfile.flush()
@@ -218,7 +259,9 @@ class ChatMixin:
             # 所有 Intent/Goal 生命周期事件经 publish_domain() 单一来源发出（前端 AppState 合约入口）。
             # 默认关闭（FEATURE_GOAL_DECISION=false）；开启且 Runtime 已启动才介入；异常降级为普通聊天。
             pending_proposal = None
-            if getattr(config, "FEATURE_GOAL_DECISION", False):
+            # Phase 6 · 禁自动 Goal：GoalSystem 只能由 long_term_goal 意图进入；
+            # casual_chat / knowledge_query / execution_task 一律不触发 Goal 决策链
+            if getattr(config, "FEATURE_GOAL_DECISION", False) and _intent == "long_term_goal":
                 try:
                     import agent_runtime
                     if getattr(agent_runtime.runtime, "_running", False):
@@ -228,7 +271,7 @@ class ChatMixin:
                             _content = f"已为你创建目标 #{_res['goalId']}：「{_res['title']}」，我会规划并自动执行。"
                             emit({"choices": [{"delta": {"content": _content}}]})
                             emit("[DONE]")
-                            save_turn(session_id, "zhuangzhou", _content)
+                            save_turn(session_id, "xiao6", _content)
                             return
                         elif _res.get("action") in ("propose", "resume"):
                             pending_proposal = (
@@ -297,28 +340,36 @@ class ChatMixin:
             peer = (self.client_address or ("",))[0]
             is_remote = not _is_local_peer(peer)
             remote_allowed = _remote_allowed_tools() if is_remote else None
-            content, called = run_fc_loop(
-                messages, emit, tools=_cap_select(user_text, allowed=remote_allowed),
-                temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
-            )
+            if _intent == "casual_chat":
+                # Phase 6 · casual_chat 快速路径：不下发工具、跳过兜底意图，LLM 直接回复
+                content, called = run_fc_loop(
+                    messages, emit, tools=[],
+                    temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
+                )
+                missed = []
+            else:
+                content, called = run_fc_loop(
+                    messages, emit, tools=_cap_select(user_text, allowed=remote_allowed),
+                    temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
+                )
 
-            # —— 兜底强化：用户意图明显该走某工具，但 LLM 本轮没调用它（支持复合意图）
-            intents = detect_intents(user_text)
-            missed = [(name, args) for name, args in intents if name not in called]
+                # —— 兜底强化：用户意图明显该走某工具，但 LLM 本轮没调用它（支持复合意图）
+                intents = detect_intents(user_text)
+                missed = [(name, args) for name, args in intents if name not in called]
             if missed:
                 tool_results = []
                 for name, args in missed:
                     # 远程会话同样受白名单约束
                     if remote_allowed is not None and name not in remote_allowed:
-                        emit({"zhuangzhou_event": "tool_end", "tool": name,
+                        emit({"xiao6_event": "tool_end", "tool": name,
                               "result": f"工具 {name} 在远程会话中不可用（受白名单限制）"})
                         continue
-                    emit({"zhuangzhou_event": "tool_start", "tool": name, "args": args})
+                    emit({"xiao6_event": "tool_start", "tool": name, "args": args})
                     # P1：统一经 capability_runtime（默认 Chat 能力收敛点）→
                     # capability_os.invoke_capability / execute_tool → ai_core.execution.run（policy 门）
                     _cap_result = _cap_execute(name, args, allowed=remote_allowed)
                     result = _cap_result.to_tool_message()
-                    emit({"zhuangzhou_event": "tool_end", "tool": name, "result": result})
+                    emit({"xiao6_event": "tool_end", "tool": name, "result": result})
                     tool_results.append((name, result))
 
                 # 热点结果本身已是格式化摘要，直接返回更稳更快，避免 LLM 超时导致连接断开
@@ -351,7 +402,7 @@ class ChatMixin:
 
                 wd = _wmod.last_weather()
                 if wd and wd.get("ok"):
-                    emit({"zhuangzhou_event": "modal", "kind": "weather", "data": wd})
+                    emit({"xiao6_event": "modal", "kind": "weather", "data": wd})
             except Exception:
                 pass
 
@@ -360,7 +411,7 @@ class ChatMixin:
                 did_hotspots = ("get_hotspots" in called) or any(n == "get_hotspots" for n, _ in missed)
                 if did_hotspots:
                     hs = get_hotspots()
-                    emit({"zhuangzhou_event": "modal", "kind": "hotspots", "data": _hotspot_modal_payload(hs)})
+                    emit({"xiao6_event": "modal", "kind": "hotspots", "data": _hotspot_modal_payload(hs)})
             except Exception:
                 pass
 
@@ -368,7 +419,7 @@ class ChatMixin:
             try:
                 did_open_panel = ("open_hotspot_panel" in called) or any(n == "open_hotspot_panel" for n, _ in missed)
                 if did_open_panel:
-                    emit({"zhuangzhou_event": "panel", "panel": "hotspot"})
+                    emit({"xiao6_event": "panel", "panel": "hotspot"})
             except Exception:
                 pass
 
@@ -378,7 +429,7 @@ class ChatMixin:
                 if did_video:
                     pending_vid = get_pending_video()
                     if pending_vid and pending_vid.get("url"):
-                        emit({"zhuangzhou_event": "panel", "panel": "video",
+                        emit({"xiao6_event": "panel", "panel": "video",
                               "url": pending_vid["url"], "title": pending_vid.get("title", "")})
                     clear_pending_video()
             except Exception:
@@ -388,7 +439,7 @@ class ChatMixin:
             try:
                 from scene import drain_scene_events
                 for card in drain_scene_events():
-                    emit({"zhuangzhou_event": "scene", "card": card})
+                    emit({"xiao6_event": "scene", "card": card})
             except Exception:
                 pass
 
@@ -400,20 +451,20 @@ class ChatMixin:
                     mp = get_pending_map()
                     clear_pending_map()
                     if mp:
-                        emit({"zhuangzhou_event": "panel", "panel": "map", "data": mp})
+                        emit({"xiao6_event": "panel", "panel": "map", "data": mp})
                 did_doc = ("open_doc_panel" in called) or any(n == "open_doc_panel" for n, _ in missed)
                 if did_doc:
-                    emit({"zhuangzhou_event": "panel", "panel": "doc"})
+                    emit({"xiao6_event": "panel", "panel": "doc"})
                 did_mem = ("open_memory_audit" in called) or any(n == "open_memory_audit" for n, _ in missed)
                 if did_mem:
-                    emit({"zhuangzhou_event": "panel", "panel": "memory"})
+                    emit({"xiao6_event": "panel", "panel": "memory"})
                 did_rev = ("review_output" in called) or any(n == "review_output" for n, _ in missed)
                 if did_rev:
                     from tools import get_pending_review, clear_pending_review
                     rp = get_pending_review()
                     clear_pending_review()
                     if rp:
-                        emit({"zhuangzhou_event": "panel", "panel": "review", "data": rp})
+                        emit({"xiao6_event": "panel", "panel": "review", "data": rp})
             except Exception:
                 pass
 
@@ -426,7 +477,7 @@ class ChatMixin:
                 if _rc.auto_review_enabled() and content and len(content) <= 4000:
                     critique = _rc.review_text(content[:4000])
                     if critique:
-                        emit({"zhuangzhou_event": "panel", "panel": "review", "data": {"original": content, "critique": critique}})
+                        emit({"xiao6_event": "panel", "panel": "review", "data": {"original": content, "critique": critique}})
             except Exception:
                 pass
 
@@ -435,7 +486,7 @@ class ChatMixin:
                 content = (content or "") + "\n\n" + pending_proposal
             emit({"choices": [{"delta": {"content": content or ""}}]})
             emit("[DONE]")
-            save_turn(session_id, "zhuangzhou", content or "")
+            save_turn(session_id, "xiao6", content or "")
             # 记忆压缩是 LLM 调用，可能耗时较长，放到后台线程避免阻塞 SSE 连接关闭
             threading.Thread(target=compress_memory, daemon=True).start()
             threading.Thread(target=extract_daily_note, daemon=True).start()
@@ -699,7 +750,7 @@ class ChatMixin:
         try:
             data = data_manager.export_data()
             body = json.dumps(data, ensure_ascii=False)
-            fname = "zhuangzhou-data-" + time.strftime("%Y%m%d-%H%M%S") + ".json"
+            fname = "xiao6-data-" + time.strftime("%Y%m%d-%H%M%S") + ".json"
             self._send(
                 200,
                 body,
@@ -760,7 +811,7 @@ class ChatMixin:
                     conn.close()
                     q.put(
                         {
-                            "zhuangzhou_event": "proactive",
+                            "xiao6_event": "proactive",
                             "kind": "briefing",
                             "content": make_daily_briefing(),
                             "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

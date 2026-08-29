@@ -1,0 +1,299 @@
+/* ═══════════════════════════════════════════════════════════════════
+   voice.js — 小6 桌宠语音实时监听
+   持续麦克风 VAD：说话→LISTENING；停顿→THINKING→ASR→自动对话→SPEAKING(TTS)→IDLE
+   依赖：robot.js 暴露的 window.ZZDesktopAvatar.setState()
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var mic = null;          // { stream, ctx, analyser, timeData, pcmBuffers, ... }
+  var listening = false;
+  var busy = false;        // 识别/思考/朗读中，不重复触发
+  var sessionId = null;
+  try { sessionId = localStorage.getItem('zhuangzhou_sid'); } catch (e) {}
+  if (!sessionId) { sessionId = 'pet-' + Date.now(); try { localStorage.setItem('zhuangzhou_sid', sessionId); } catch (e) {} }
+
+  var HISTORY_KEY = 'six_pet_chat_v1';
+  var history = [];
+  try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) {}
+
+  // ── VAD 参数 ──
+  var RMS_SPEECH = 0.018;      // 说话阈值（时域 RMS）
+  var SILENCE_MS = 900;        // 停顿多久判定一句话结束
+  var MIN_UTTER_MS = 500;      // 最短有效语音时长
+  var MAX_UTTER_MS = 12000;    // 最长语音（超时强制断句）
+
+  var speechActive = false;
+  var lastSpeechTs = 0;
+  var utterStartTs = 0;
+  var pcmChunks = [];
+  var sampleRate = 16000;
+  var audioCtx = null;
+  var analyser = null;
+  var timeData = null;
+  var rafId = 0;
+
+  // 设置状态（走 robot.js 接口 + 同步 .orb-wrap class，确保动画+颜色联动且不被轮询覆盖）
+  function setState(s) {
+    var norm = String(s || 'IDLE').toUpperCase();
+    if (window.ZZDesktopAvatar && window.ZZDesktopAvatar.setState) {
+      window.ZZDesktopAvatar.setState(norm);
+    }
+    // 同步 orb-wrap（bridge.js 轮询会参考它；避免状态被轮询结果覆盖）
+    var orb = document.querySelector('.orb-wrap');
+    if (orb) {
+      orb.className = 'orb-wrap';
+      if (norm !== 'IDLE') orb.classList.add(norm.toLowerCase());
+    }
+  }
+
+  // ── PCM 工具 ──
+  function mergeFloat32(chunks) {
+    if (!chunks.length) return null;
+    var len = 0;
+    for (var i = 0; i < chunks.length; i++) len += chunks[i].length;
+    var out = new Float32Array(len);
+    var off = 0;
+    for (var j = 0; j < chunks.length; j++) { out.set(chunks[j], off); off += chunks[j].length; }
+    return out;
+  }
+
+  async function encodeWav(pcm, origRate) {
+    var targetRate = 16000;
+    var samples = pcm;
+    if (origRate && origRate !== targetRate) {
+      try {
+        var offline = new OfflineAudioContext(1, Math.max(1, Math.ceil(pcm.length * targetRate / origRate)), targetRate);
+        var buf = offline.createBuffer(1, pcm.length, origRate);
+        buf.copyToChannel(pcm, 0);
+        var src = offline.createBufferSource();
+        src.buffer = buf;
+        src.connect(offline.destination);
+        src.start();
+        var rendered = await offline.startRendering();
+        samples = rendered.getChannelData(0);
+      } catch (e) { samples = pcm; }
+    }
+    var numFrames = samples.length;
+    var buffer = new ArrayBuffer(44 + numFrames * 2);
+    var view = new DataView(buffer);
+    function writeStr(offset, s) { for (var i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); }
+    writeStr(0, 'RIFF'); view.setUint32(4, 36 + numFrames * 2, true); writeStr(8, 'WAVE');
+    writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true); view.setUint32(24, targetRate, true);
+    view.setUint32(28, targetRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    writeStr(36, 'data'); view.setUint32(40, numFrames * 2, true);
+    var off2 = 44;
+    for (var k = 0; k < numFrames; k++) {
+      var s = Math.max(-1, Math.min(1, samples[k]));
+      view.setInt16(off2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      off2 += 2;
+    }
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  function computeRms() {
+    if (!analyser || !timeData) return 0;
+    try {
+      analyser.getByteTimeDomainData(timeData);
+      var sum = 0;
+      for (var i = 0; i < timeData.length; i++) {
+        var v = (timeData[i] - 128) / 128;
+        sum += v * v;
+      }
+      return Math.sqrt(sum / timeData.length);
+    } catch (e) { return 0; }
+  }
+
+  // ── 一句话结束 → ASR → 自动对话 → TTS ──
+  async function finalizeUtterance() {
+    if (busy || !listening) return;
+    busy = true;
+    var pcm = mergeFloat32(pcmChunks);
+    pcmChunks = [];
+    if (!pcm || !pcm.length) { busy = false; return; }
+    try {
+      setState('THINKING');
+      var wavBlob = await encodeWav(pcm, sampleRate);
+      var buf = await wavBlob.arrayBuffer();
+      var r = await fetch('/api/asr?ext=.wav', { method: 'POST', body: buf });
+      var d = await r.json();
+      var text = (d && d.ok && d.text) ? d.text.trim() : '';
+      if (!text) {
+        setState('IDLE');
+        busy = false;
+        return;
+      }
+      // 自动对话
+      history.push({ role: 'user', content: text });
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-30))); } catch (e) {}
+      setState('THINKING');
+      var reply = await chatOnce(text);
+      if (reply) {
+        setState('SPEAKING');
+        await speakText(reply);
+      }
+      history.push({ role: 'zhuangzhou', content: reply || '' });
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-30))); } catch (e) {}
+    } catch (e) {
+      // 识别失败静默回待机
+    } finally {
+      busy = false;
+      if (listening) setState('IDLE');   // 待机保持 IDLE（静止），由说话检测再切 LISTENING
+      else setState('IDLE');
+    }
+  }
+
+  // 调用 /api/chat 获取完整回复（非流式聚合）
+  function chatOnce(text) {
+    var msgs = history.slice(-12);
+    return fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: msgs, session_id: sessionId, temperature: 0.7, reasoning: false }),
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    }).then(function (raw) {
+      var full = '';
+      var buf = '';
+      var lines = raw.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        var s = lines[i].trim();
+        if (!s.startsWith('data:')) continue;
+        var payload = s.slice(5).trim();
+        if (payload === '[DONE]') break;
+        try {
+          var j = JSON.parse(payload);
+          if (j.zhuangzhou_event) continue;
+          var delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+          if (delta) full += delta;
+        } catch (e) {}
+      }
+      return full || '';
+    }).catch(function () { return ''; });
+  }
+
+  // TTS 朗读
+  function speakText(text) {
+    var clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return Promise.resolve();
+    return fetch('/api/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean, voice: 'zh-CN-YunxiNeural', rate: '+0%' }),
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.arrayBuffer();
+    }).then(function (ab) {
+      return new Promise(function (resolve) {
+        try {
+          var audio = new Audio(URL.createObjectURL(new Blob([ab], { type: 'audio/mpeg' })));
+          audio.onended = function () { resolve(); };
+          audio.onerror = function () { resolve(); };
+          audio.play().catch(function () { resolve(); });
+        } catch (e) { resolve(); }
+      });
+    }).catch(function () {});
+  }
+
+  // ── 主循环：VAD 断句 ──
+  function loop() {
+    if (!listening) return;
+    var rms = computeRms();
+    if (busy) {
+      // 识别/朗读中：丢弃音频
+      pcmChunks = [];
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
+    var now = Date.now();
+    if (rms > RMS_SPEECH) {
+      if (!speechActive) {
+        speechActive = true;
+        utterStartTs = now;
+        pcmChunks = [];
+        setState('LISTENING');
+      }
+      lastSpeechTs = now;
+      // 采集 PCM
+      if (analyser && pcmChunks) {
+        try {
+          var buf = audioCtx.createBuffer(1, analyser.fftSize, sampleRate);
+          var ch = buf.getChannelData(0);
+          analyser.getFloatTimeDomainData ? analyser.getFloatTimeDomainData(ch) : null;
+          // 简单降采样：取 analyser 时域数据
+          pcmChunks.push(new Float32Array(ch));
+        } catch (e) {}
+      }
+      if (now - utterStartTs > MAX_UTTER_MS) {
+        speechActive = false;
+        finalizeUtterance();
+      }
+    } else {
+      if (speechActive) {
+        if (now - lastSpeechTs > SILENCE_MS) {
+          var dur = now - utterStartTs;
+          speechActive = false;
+          if (dur >= MIN_UTTER_MS) finalizeUtterance();
+          else { pcmChunks = []; setState('LISTENING'); }
+        }
+      }
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // ── 启动/停止 ──
+  async function start() {
+    if (listening) return;
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      sampleRate = audioCtx.sampleRate || 16000;
+      var src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      src.connect(analyser);
+      timeData = new Uint8Array(analyser.fftSize);
+      mic = { stream: stream };
+      listening = true;
+      speechActive = false;
+      pcmChunks = [];
+      busy = false;
+      // 保持 IDLE（待机静止），等检测到说话再切 LISTENING
+      setState('IDLE');
+      rafId = requestAnimationFrame(loop);
+    } catch (e) {
+      // 麦克风不可用：保持现状（不打扰）
+    }
+  }
+
+  function stop() {
+    listening = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
+    if (mic && mic.stream) {
+      try { mic.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state !== 'closed') {
+      try { audioCtx.close(); } catch (e) {}
+    }
+    audioCtx = null; analyser = null; timeData = null; mic = null;
+    speechActive = false; pcmChunks = [];
+    setState('IDLE');
+  }
+
+  // 暴露接口
+  window.ZZVoice = {
+    start: start,
+    stop: stop,
+    get isListening() { return listening; },
+  };
+
+  // 自动启动（桌宠页加载后即监听）
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      try { start(); } catch (e) {}
+    }, 1200);
+  });
+})();

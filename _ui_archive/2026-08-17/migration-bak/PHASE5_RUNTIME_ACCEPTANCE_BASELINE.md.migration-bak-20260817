@@ -1,0 +1,118 @@
+# PHASE 5 — SIX RUNTIME ACCEPTANCE BASELINE
+
+> 建立于 2026-08-17（Phase 3 GUI = COMPLETE/FROZEN，Phase 4 Six Naming Migration = COMPLETE/FROZEN 之后）。
+> 原则：VERIFY-BEFORE-CHANGE。本基线**重新读取真实源码**，不依赖 Phase 3/4 报告假设。
+> 身份：Senior Runtime / GUI Integration Engineer + Release Gate Reviewer。产品：Six（中文 小6）。
+
+---
+
+## 1. Environment（实测）
+
+- OS：Windows（Administrator 会话）。Electron 壳为 `electron/` 规范壳（无 package.json，由 `electron .` 或外层壳拉起）。
+- **后端：LIVE** — `python server.py` 已在 `127.0.0.1:8010` 运行（实测 `/api/health` → 200，`ai_name:"小6"`，`tts_backend:"qwen3"`，`model:"agnes-2.5-flash"`）。
+- 后端健康：`/api/ready` → `ready:true, ok:false, degraded:true`（核心聊天可用，部分可选子系统降级；聊天流与工具链实测正常）。
+- 显示会话：headless agent 环境，**无 GUI 显示、无音频采集设备** → Electron 窗口视觉渲染与麦克风语音无法在本环境实机验收（详见 Final Report STAGE A/C 的 NOT OBSERVED 标注）。
+
+## 2. Electron Entry Points（规范壳 `electron/main.js`）
+
+- `app.disableHardwareAcceleration()`（远程桌面/无 GPU 下避免 GPU 子进程 FATAL）。
+- `bootstrap()`：`resolveBackendPort(ZHUANGZHOU_PORT||'8010')` 解析真实后端端口（探针 `/api/health` 校验 `ai_name`+`features` 专属标记），**仅探测，不拉起后端**。
+- 同时创建两个窗口，共享同一 backend：
+  - Avatar：`desktop-avatar/dyna-orb.html`（透明置顶 320×480）。
+  - Workspace：`zz-space/index.html`（有边框 1600×920）。
+- 可选自启 GPT-SoVITS（`D:\GPT-SoVITS`，端口 9880，路径守卫缺失即跳过）。
+- Tray：`Six · Advanced Workspace`；菜单 `显示/隐藏 工作区` / `显示/隐藏 语音球` / `退出 Six`。
+- IPC（仅最小化窗口桥，无任何执行语义）：`avatar:close` / `avatar:hide` / `avatar:focus` / `avatar:open-chat` / `avatar:set-ignore-mouse` / `avatar:move`。
+
+## 3. workspace-window.js
+
+- 1600×920，`title:"Six · Advanced Workspace"`，`backgroundColor:#07090d`。
+- 安全：`contextIsolation:true` / `nodeIntegration:false` / `webSecurity:true` / `sandbox:true`。
+- `will-navigate` 仅放行 localhost/127.0.0.1（`isSafeNavigation`）；`setWindowOpenHandler` 拒绝弹窗。
+
+## 4. avatar-window.js
+
+- 320×480 透明无边框置顶，`skipTaskbar:false`。
+- 同样 `contextIsolation/nodeIntegration:false/sandbox` + 导航守卫 + 拒绝弹窗。
+
+## 5. preload.js
+
+- `contextBridge.exposeInMainWorld('electronAPI', { close, hide, openChat, setIgnoreMouse, moveWindow, focusOrb })`。
+- **不暴露** node / fs / child_process / 任意执行能力。
+
+## 6. security.js
+
+- 纯 Node 模块，`isSafeExternalUrl` / `isSafeNavigation`：仅放行 `http(s)://localhost|127.0.0.1`，拒绝 `file:/javascript:/data:/` 等，拒绝 userinfo（fail-closed）。
+
+## 7. backend-launcher.js
+
+- `probeBackendIdentity(port)`：`GET /api/health` 校验 `ai_name`(string)+`features`(object) 专属标记。
+- `resolveBackendPort(preferred,maxOffset)`：首选命中即用；否则 8001.. 偏移探测；均未命中回退首选（**不自动拉起**）。
+
+## 8. zz-space/index.html（Advanced Workspace 主界面）
+
+- `<title>小6 · Advanced Workspace</title>`，品牌 `小6` / `Advanced Workspace`。
+- 结构：顶栏（品牌+CmdK+运行时+语音球）、左导航（首页/对话/项目/任务/记忆/知识/能力/设置）、中栏（Home/Conversation 四 Tab/各列表视图）、右上下文栏、orb-presence、Command Palette、Overlay、Toast/Banner。
+- 加载 `css/zz-workspace.css?v=30` + `js/zz-workspace.js?v=30`。
+
+## 9. zz-workspace.css / zz-workspace.js
+
+- `zz-workspace.css`：设计令牌、三栏布局、orb 动画、palette/overlay/toast。
+- `zz-workspace.js`（核心控制器）：
+  - `FEATURE_REGISTRY`（第 567 行起，**47 条**，A–F 分类，vis: default/advanced/hidden/conditional；与 `xiao6-hub/features.json` 一致）。
+  - `COMMANDS`：ask/search/task/memory/capabilities/projects/tasks/settings/voice + feature 派生命令。
+  - **SSE 解析**（第 220–242 行）：`fetch('/api/chat',{method:'POST'})` → `r.body.getReader()` → 行解析；`[DONE]`/`"DONE"` 终止；`m.zhuangzhou_event||m.event` 分发 `tool_start`→`onTool('start',...)`、`tool_end`、`agent_state`、`hud_state`、`proactive`、`scene`、`modal`、`wakeword_detected` 等。
+
+## 10. voice-orb.js（Workspace 3D 语音反应球）
+
+- `zz-space/js/voice-orb.js`：`ZZVoiceOrb` 挂 `canvas`，状态 `idle/listening/thinking/speaking`（4 视觉态 + 麦克风 FFT 音响应激），配色 NEXUS 青紫系。
+- **Active Orb（桌宠窗口）**：`desktop-avatar/dyna-orb.html` → `dyna-orb.js` + `dyna-orb-voice.js`。`dyna-orb.js` 实测含 **5 态契约**：`idle / listening / thinking / speaking / error`（grep 计数 idle×9/listening×1/thinking×1/speaking×1/error×1），且**零跨引用**其他 orb（自包含）。此为 Phase 2 冻结的 5-state 契约载体。
+
+## 11. EventBus / SSE 接入点
+
+- EventBus（`eventbus.py`）：`TOPIC_SSE="zz.sse"`，`publish_system` 自动包成 `{"zhuangzhou_event":<name>, ...fields}`；`FEATURE_EVENTBUS` 门控（默认 ON）。
+- 信封键 `zhuangzhou_event` 为**内部标识符**（红线 #16），前端 `app.js`/`zz-workspace.js` 均按此键分发。**不得修改**。
+- Chat SSE（`server_handlers_chat`）：兼容直推 `tool_start/tool_end`；`ai_core/execution/events.py` 统一经 EventBus 扇出。
+
+## 12. /api/chat
+
+- `POST /api/chat`：SSE 流，`data: {"choices":[{"delta":{"content":...}}]}` + `data: "[DONE]"`。
+- 实测（live）：`"ping"` → 完整 `content` + `[DONE]`；`"现在几点了"` → 实测产生 `zhuangzhou_event: tool_start` 与 `tool_end`（工具链实跑）。
+
+## 13. /api/agent/state
+
+- 实测 200：`{"enabled":true,"state":"IDLE","current_goal":null,"queue":[],"running":true,"consecutive_failures":0}`。
+
+## 14. /api/agent/approval
+
+- 审批经 `tool_started`/Policy Engine（`AGENT_POLICY_DEFAULT=auto`）；高危工具仍 `confirm` 审批。端点语义与事件名未在本次审批触发查询中实跑（见 Final Report §9 NOT OBSERVED）。
+
+## 15. Tool event / approval event
+
+- 事件名：`tool_started`/`tool_ended`（eventbus `SYSTEM_EVENT_NAMES`）、`zhuangzhou_event` 信封（`tool_start`/`tool_end`/`agent_state`/`hud_state`/`proactive`/`GOAL_COMPLETED`/`wakeword_detected` 等）。
+- 前端消费：`app.js` `handleToolEvent`（tool_start/tool_end/modal/panel/scene/wakeword_detected…），`zz-workspace.js` `onTool`。
+
+## 16. 当前启动脚本
+
+- Launcher：`launcher/start.ps1`（拉起 `python server.py` + Electron 数字人）；`xiao6-hub/start.bat`（`Six Hub - CODEX 风格 DSH + 小6 桌面端`）；`G:/ZhuangZhou/electron/start-zhuangzhou.bat`（桌面伴侣壳 `zhuangzhou-desktop`）。
+
+## 17. 当前实际端口（基线，STAGE J 待校验）
+
+| 端口 | 用途 | 实测 2026-08-17 |
+|---|---|---|
+| 8010 | 庄周/Six 后端（main） | **LIVE**（/api/health 200）|
+| 8000 | FlClash 代理（非 Six，已迁出） | 无响应（符合预期）|
+| 9880 | GPT-SoVITS（可选） | 无响应（未安装/未自启，符合预期）|
+| 3080 | — | 404（非 Six 监听）|
+| 3210 | — | 无响应 |
+
+## 18. 当前 Six 品牌状态
+
+- 用户可见：中文 **小6** / 英文 **Six** / Hub **Six Hub** / OS **小6 · Six OS**。
+- `.env`：`AI_DISPLAY_NAME=小6`，`ZHUANGZHOU_THEME=dark-cyan`，`ZhuangZhou_PORT=8010`。
+- `features.json`：`app.name:"小6 · Six OS"`，唤醒词 `(庄周 / 小周 / 小6)`（Voice 配置，**按设计保留**，本阶段仅审计不修改）。
+- 内部标识符保留：`ZHUANGZHOU_*` 环境变量、`window.zhuangzhou`/`window.xiao6`、`localStorage.zhuangzhou_sid`、`zhuangzhou_event`、`appId`、物理路径 `G:\ZhuangZhou`、仓库 `github.com/junhan0123/ZhuangZhou`、IPC `avatar:*`/`xiao6:*`/`companion:*`。
+
+---
+
+*本基线为 Phase 5 验收与归档的不可变参照；任何偏离均记录在 Final Report §20–§24。*

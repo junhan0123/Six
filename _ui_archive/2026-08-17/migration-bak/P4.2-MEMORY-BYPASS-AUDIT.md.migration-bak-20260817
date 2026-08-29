@@ -1,0 +1,106 @@
+# P4.2 · Memory Bypass Audit
+
+> 范围：P4.2（Canonical Memory API + Distiller Correction）指令 §14「Legacy Bypass Test」
+> 项目：`G:\ZhuangZhou\zhuangzhou-ui` · Core v1.4.0
+> 结论：**MEMORY BYPASS AUDIT = PASS**
+
+---
+
+## 1. 审计规则
+
+依据 P4.2 指令 §14：**生产环境任何 writer 都不得直接 `INSERT / UPDATE / DELETE FROM memories` 绕过 Canonical Memory API**。
+
+**允许的例外（不视为 bypass）：**
+- **Canonical API 本体**（`memory.py` 的写入函数）—— 它本身就是 canonical 写入路径；
+- **Migration 代码**（`_migrate_memories` / `_migrate_memory_truth`）—— 一次性 schema 演进，幂等、不删数据；
+- **只读兼容查询**（`SELECT`）—— 不涉及写入；
+- **Canonical Memory 子系统治理**（`memory_evolution/*`、`memory_intelligence`）—— 在已 canonical 化的行上维护治理列（`status`/`salience`/`confidence`/`source`/`verified_at`/`consolidated`/`archived`），属 P4.2 §4 **显式推迟**项，非外部旁路。
+
+**§14 真正针对的目标：** 来自 Memory 子系统**外部**的调用方（蒸馏器、导入、人物抽取、服务端 handler）写入 `memories` 时，必须经由 `memory.create_memory / upsert_memory / archive_memory / restore_memory`。
+
+---
+
+## 2. 全量静态扫描（全仓）
+
+对 `G:\ZhuangZhou\zhuangzhou-ui` 全仓匹配 `INSERT INTO memories | UPDATE memories | DELETE FROM memories`，逐条分类如下。
+
+### 2.1 `db.py`
+
+| 行 | 语句 | 所属函数 | 分类 | 状态 |
+|----|------|----------|------|------|
+| 262 | `DELETE FROM memories WHERE source_ref LIKE ?` | `import_memories` | 同源预清（idempotency clear） | **ALLOWED-EXCEPTION**（文档化） |
+| 409 | `UPDATE memories SET archived=? WHERE mem_id=?` | `archive_memory` | 曾被服务端 handler 调用的旁路 | **RESOLVED**（本次改走 canonical） |
+| 659-660 | `DELETE FROM memories WHERE content_hash IS NOT NULL AND id NOT IN (...)` | `_migrate_memories` | Migration | ALLOWED（migration） |
+| 669 | `UPDATE memories SET content_hash=? WHERE id=?` | `_migrate_memories` | Migration（回填 hash） | ALLOWED（migration） |
+
+### 2.2 `memory.py`（Canonical API 本体）
+
+| 行 | 语句 | 所属函数 | 分类 |
+|----|------|----------|------|
+| 463 | `UPDATE memories SET archived=? WHERE id=?` | `_m_set_archived`（被 `archive_memory`/`restore_memory` 调用） | ALLOWED（canonical 内部） |
+| 514 | `INSERT INTO memories(...)` | `create_memory` | ALLOWED（canonical 内部） |
+| 657 | `UPDATE memories SET ... WHERE id=?` | `update_memory` | ALLOWED（canonical 内部） |
+| 711 / 715 | `UPDATE memories SET status='deprecated', archived=1` / `archived=1` | `delete_memory`（逻辑删除 tombstone） | ALLOWED（canonical 内部） |
+
+### 2.3 `memory_intelligence.py`（治理 —— 推迟）
+
+| 行 | 语句 | 分类 |
+|----|------|------|
+| 175 | `UPDATE memories SET salience=? WHERE id=?`（重要性评分） | DEFERRED（治理列） |
+| 201 / 246 | `UPDATE memories SET confidence=?,source=?,status=?,verified_at=? WHERE id=?`（来源可信度推断） | DEFERRED（治理列） |
+
+### 2.4 `memory_evolution/*`（治理 —— 推迟）
+
+| 文件:行 | 语句 | 分类 |
+|---------|------|------|
+| `conflict_resolver.py:199` | `UPDATE memories SET status='pending_review', verified_at=... WHERE id=?` | DEFERRED（治理列） |
+| `consolidation.py:115` | `INSERT INTO memories(...)`（合并产物记忆） | DEFERRED（残留，见 §5） |
+| `consolidation.py:137` | `UPDATE memories SET status='consolidated', links=? WHERE id=?` | DEFERRED（治理列） |
+| `lifecycle.py:108` | `UPDATE memories SET status='decayed', verified_at=? WHERE id=?` | DEFERRED（治理列） |
+| `lifecycle.py:112` | `UPDATE memories SET archived=1 WHERE id=?` | DEFERRED（治理列） |
+
+---
+
+## 3. 生产调用方（§14 真正目标）收敛结论
+
+| 调用方 | 原路径 | P4.2 后路径 | 状态 |
+|--------|--------|-------------|------|
+| `memory_distiller._persist` | 直接 `INSERT` 且把 confidence/source 错塞进 tags | `memory.create_memory(confidence=, source=)` | ✅ RESOLVED |
+| `db.import_memories` | 直接 `INSERT` | `memory.create_memory(...)`（content_hash 幂等 + 同源预清） | ✅ RESOLVED |
+| `db.upsert_memory_by_mem_id` | 直接 `INSERT/UPDATE` | `memory.upsert_memory(mem)` | ✅ RESOLVED |
+| `db.upsert_person` | 直接 `INSERT/UPDATE` | `memory.upsert_memory({...})` | ✅ RESOLVED |
+| `db.archive_memory`（被 `server_handlers_memory.py:89` 调用） | 直接 `UPDATE memories SET archived` | `memory.archive_memory` / `memory.restore_memory`（带事件） | ✅ RESOLVED（本次新增修复） |
+
+**外部调用方零旁路。**
+
+---
+
+## 4. 测试证据
+
+| 测试 | 类型 | 结果 |
+|------|------|------|
+| `test_no_direct_insert_in_distiller` | 静态 | PASS |
+| `test_db_writers_route_canonical` | 静态（含 archive 路由 + 无直接 `UPDATE archived`） | PASS |
+| `test_legacy_adapter_distiller_routes_canonical` | 运行时 spy | PASS |
+| `test_legacy_adapter_import_routes_canonical` | 运行时 spy | PASS |
+| `test_legacy_adapter_person_routes_canonical` | 运行时 spy | PASS |
+| `test_legacy_caller_archive_routes_canonical` | 运行时 spy（handler 路径） | PASS |
+
+---
+
+## 5. 残留与后续（P4.3 跟踪，不影响 P4.2 GATE）
+
+1. **`consolidation.py:115` 直接 `INSERT`**（合并产物记忆）：P4.2 §4 显式推迟「MemorySource 拆分 / Lifecycle 整合」。建议 P4.3 使其经 `memory.create_memory`（带 content_hash + `MEMORY_CREATED` 事件）。风险：**低**——内部治理、按 content_hash 幂等、仅作用于既有 canonical 行。
+2. **`memory_intelligence` / `memory_evolution/*` 治理列更新**：同上推迟，建议 P4.3 统一纳入 canonical 治理管线（注意：`memory_intelligence` 维护的正是契约要求的真实 `confidence`/`source` 列，属正向治理）。
+3. **`import_memories` 同源预清 `DELETE`（db.py:262）**：建议 P4.3 提供 canonical `delete_by_source_ref` 助手以彻底消除直接 `DELETE`；当前为同源范围预清，不写入新内容，风险：**低**。
+
+---
+
+## 6. 结论
+
+- 生产调用方（蒸馏器 / 导入 / 人物 / 服务端归档）**全部收敛到 Canonical Memory API**，无旁路；
+- Canonical API 本体与 Migration 代码按例外允许；
+- 唯一残留为 Canonical Memory 子系统内部治理（memory_evolution / memory_intelligence），属 P4.2 §4 显式推迟项，已登记 P4.3 跟踪，风险低；
+- 静态 + 运行时测试全绿。
+
+**MEMORY BYPASS AUDIT = PASS。**

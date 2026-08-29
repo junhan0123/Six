@@ -1,0 +1,60 @@
+{
+  "f01": [
+    {
+      "tag": "1920x1080",
+      "htmlScrollWidth": 1920,
+      "htmlClientWidth": 1920,
+      "winW": 1920,
+      "bodyScrollWidth": 1920,
+      "canScrollX": 0,
+      "overflowX": "clip",
+      "clipActive": true,
+      "pass": true
+    },
+    {
+      "tag": "1440x900",
+      "htmlScrollWidth": 1440,
+      "htmlClientWidth": 1440,
+      "winW": 1440,
+      "bodyScrollWidth": 1680,
+      "canScrollX": 0,
+      "overflowX": "clip",
+      "clipActive": true,
+      "pass": true
+    },
+    {
+      "tag": "1000x800",
+      "htmlScrollWidth": 1000,
+      "htmlClientWidth": 1000,
+      "winW": 1000,
+      "bodyScrollWidth": 1460,
+      "canScrollX": 0,
+      "overflowX": "clip",
+      "clipActive": true,
+      "pass": true
+    },
+    {
+      "tag": "720x900",
+      "htmlScrollWidth": 720,
+      "htmlClientWidth": 720,
+      "winW": 720,
+      "bodyScrollWidth": 1320,
+      "canScrollX": 0,
+      "overflowX": "clip",
+      "clipActive": true,
+      "pass": true
+    }
+  ],
+  "contextOpen": {
+    "display": "flex",
+    "opacity": "1",
+    "left": 1538,
+    "right": 1898,
+    "top": 100,
+    "bottom": 1058,
+    "vw": 1920,
+    "visibleInViewport": true,
+    "canScrollX": 0,
+    "pass": true
+  }
+}

@@ -1,0 +1,250 @@
+# P5.2 IMPLEMENTATION FINAL REPORT
+
+> 身份：ZhuangZhou Senior Systems Architect / Cognitive Runtime Engineer
+> 仓库：G:\ZhuangZhou\zhuangzhou-ui · v1.4.0
+> 模式：IMPLEMENTATION ONLY · SCOPE LOCKED · VERIFY-BEFORE-CHANGE · ZERO UI
+> 状态：**P5.2 COMPLETE — 等待架构评审（STOP）**
+
+---
+
+## 1. Status
+
+**PASS。** P5.2 将 Cognitive / Agent Runtime 的 Memory 裸写路径收敛为单一权威路径：
+
+```
+Cognitive / Agent Runtime
+        │
+        ▼
+cognitive.memory_adapter          ← 极薄 FACADE（仅翻译 + 稳定 source_ref + 投影编排）
+        │
+        ▼
+memory.py  Canonical Memory API  ← 唯一写入权威
+        │
+        ▼
+memories 表 → P4 治理 / 检索 / 生命周期
+        ▲（兼容投影，读模型，非权威）
+memory_projection.py              ← user_model / episodes / conversation_memories 投影写入
+```
+
+达成：ONE MEMORY · ONE WRITE AUTHORITY · ONE RETRIEVAL · ONE GOVERNANCE · ONE LIFECYCLE。
+**P5.3–P5.8 = NOT IMPLEMENTED。**
+
+---
+
+## 2. Baseline / Post-test
+
+| 阶段 | passed | failed | errors |
+|---|---|---|---|
+| 冻结基线（P5.2 前，不含新测试） | 481 | 9 | 0 |
+| P5.2 后 · P5.2 定向测试 | 14 | 0 | 0 |
+| P5.2 后 · 全量 | 495 | 9 | 0 |
+
+`495 − 481 = 14` 恰为本次新增的 P5.2 契约测试（全部通过）。**原始套件维持 481/9/0，零 P5.2 回归。**
+
+---
+
+## 3. Files Changed
+
+**新增**
+- `cognitive/memory_adapter.py`（~241 行，FACADE ONLY）
+- `memory_projection.py`（~193 行，Memory 层兼容投影写入器 + §12 中性纯变换）
+- `tests/test_p5_2_memory_adapter.py`（14 个契约测试）
+- `P5.2_FINAL_REPORT.md`（本报告）
+
+**修改**
+- `cognitive/user_model.py`：`:168-180` 写入经 adapter；`:251-260` `canonical_project` 委托 `memory_projection.select_canonical_project`
+- `cognitive/episodic.py`：`:40-48` `add_episode` 写入经 adapter；`:96-103` 召回访问更新外置为 `touch_episodes`
+- `agent_runtime.py`：`:993-1024` `_record_conversation_memory` 经 adapter
+- `memory.py`：`:249-256` 移除 `from cognitive.user_model import canonical_project`，改读 `memory_projection.canonical_project`
+- `config.py`：`:96`/`:228`/`:323` 新增 `FEATURE_CANONICAL_COGNITIVE_MEMORY`
+
+**未触碰（刻意）**：`memory_distiller.py`（已走 Canonical，非目标）、`db.py`、`policy_engine`/`executor`/`capenter`、任何 UI/CSS/JS、P5.3–P5.8 模块。
+
+---
+
+## 4. Canonical Memory Integration
+
+VERIFY（改前重读真实源码）确认 Canonical API 全部存在且契约稳定：
+- `memory.py:486` `create_memory`（content_hash 幂等，`ON CONFLICT(content_hash) DO NOTHING`，返回新 id 或冲突时 `None`）
+- `memory.py:783` `upsert_memory`（提供 mem_id → PATCH/INSERT，返回 mem_id 或新 id）
+- `memory.py:624/686/698/710/743/858/878/449` `update/archive/restore/delete/delete_by_source_ref/retrieve/consolidate/publish_memory_event`
+- `memory.py:408` `_ALLOWED_STATUS`
+
+适配器仅调用：
+- `cognitive/memory_adapter.py:112` `memory.upsert_memory({...})`（user_model 权威写）
+- `cognitive/memory_adapter.py:160` `memory.create_memory(...)`（episode 权威写）
+- `cognitive/memory_adapter.py:212` `memory.create_memory(...)`（conversation 权威写）
+
+所有 Cognitive / Agent Runtime 写入均经此单点进入 Canonical API。
+
+---
+
+## 5. User Model Migration
+
+- `user_model` 表**保留为兼容投影 / 读模型**（仍被 Context Source / runtime 读取），写入收敛到 Canonical。
+- 路径：`cognitive.user_model.upsert_user_model`（`user_model.py:171-179`）→ `record_user_model` → `memory.upsert_memory`（稳定 `mem_id=cognitive:user_model` PATCH 单一逻辑记录）+ `memory_projection.write_user_model`（投影 O(1) 读模型）。
+- 对外契约不变：`upsert_user_model` 仍返回合并后的模型 `cur`。
+- 禁止双向事实源：Canonical 为权威，投影仅跟随。
+
+---
+
+## 6. Episodic Migration
+
+- `episodes` 表**保留为 legacy 投影**（召回读模型 + 向量索引 `scope='episode'` 引用键），写入收敛到 Canonical。
+- 路径：`cognitive.episodic.add_episode`（`episodic.py:43-48`）→ `record_episode` → `memory.create_memory`（content=summary，content_hash 幂等）+ `memory_projection.insert_episode`（投影，返回自增 id 维持向量索引引用）。
+- 召回访问统计副作用（原循环内 `UPDATE episodes`）外置为 `memory_projection.touch_episodes`（`episodic.py:100-102`），cognitive 内不再残留写 SQL。
+
+---
+
+## 7. Conversation Memory Migration
+
+- 仅做最小必要接线，不重构 Agent Runtime。
+- 路径：`agent_runtime._record_conversation_memory`（`agent_runtime.py:1015-1022`）→ `record_conversation_memory` → `memory.create_memory`（content=key_points 拼接）+ `memory_projection.insert_conversation_memory`（投影）。
+- **保持行为不变**：distillation（`_distill_memory`）、background extraction、SSE、goal loop、task loop、provider、capability boundary 均未改动；`_distill_memory` 仍调用 `_record_conversation_memory`，链路不变。
+
+---
+
+## 8. Source_ref / Idempotency Contract
+
+**source_ref 规范**（稳定，禁用每次重试随机 UUID）：
+- user_model：`cognitive:user_model:1`（`memory_adapter.py:49-50`，固定主键 1）
+- episode：`cognitive:episode:<sha1-16(title⊕summary⊕category)>`（`memory_adapter.py:60-62` `source_ref` + `:65-71` `stable_key`）
+- conversation：`cognitive:conversation:<date>:<sha1(key_points)>`（`memory_adapter.py:205`）
+
+**幂等性（复用既有机制，不另造第二套 hash/index）**：
+- episode / conversation：复用 `memory.py` `content_hash` UNIQUE（`db.py` `memory_content_hash`），同内容重复写不产生重复行（ON CONFLICT DO NOTHING）。
+- user_model：复用 `memory.upsert_memory` 的 `mem_id` PATCH 语义（单一逻辑记录，永不重复行）。
+- 测试证据：`tests/test_p5_2_memory_adapter.py::test_idempotent_memory_write`（重复写 → canonical_id 第二次 `None`、表内仅 1 行）。
+
+---
+
+## 9. Error Handling
+
+- `cognitive/memory_adapter.py:84-87` `_canonical_fail`：canonical 失败 → 显式日志 + **原样抛出原有异常**，**绝不 silent swallow、绝不伪造成功**。
+- 无第二套 exception hierarchy（沿用 canonical 既有异常）。
+- 测试证据：`tests/test_p5_2_memory_adapter.py::test_canonical_failure_does_not_silently_fallback`（`memory.create_memory` 抛错 → `pytest.raises(RuntimeError)`，且 episodes 投影 0 行，无 split-brain）。
+
+---
+
+## 10. Architecture Verification（§16 GATE）
+
+| # | 门禁 | 结果 |
+|---|---|---|
+| 1 | ONE MEMORY ENGINE | PASS（`memory_projection` 是投影写入器，非第二记忆系统） |
+| 2 | ONE MEMORY WRITE AUTHORITY | PASS（Canonical `memory.py`） |
+| 3 | Cognitive → Memory = FACADE ONLY | PASS |
+| 4 | Agent Runtime → Memory = FACADE ONLY | PASS |
+| 5 | No Cognitive → DB | PASS（`cognitive/` 零记忆表直写） |
+| 6 | No Agent Runtime → DB | PASS（`agent_runtime.py` 零记忆表直写） |
+| 7 | No second Retrieval | PASS |
+| 8 | No second Lifecycle | PASS |
+| 9 | No second Consolidation | PASS |
+| 10 | No destructive migration | PASS（无 DROP/TRUNCATE/DELETE ALL） |
+| 11 | Existing Memory Governance preserved | PASS（`memory.py` 仅移除反向依赖一行） |
+| 12 | Existing Retrieval preserved | PASS（`MemoryRecallSource`/`UnifiedRetrieval` 未动） |
+| 13 | Existing Context preserved | PASS |
+| 14 | UI = 0 | PASS |
+| 15 | Security Boundary = 0 | PASS |
+
+---
+
+## 11. Tests
+
+新增 `tests/test_p5_2_memory_adapter.py`（14 用例，全绿），覆盖指令 §13 A–F：
+
+- **A. Architecture**：`test_memory_adapter_uses_canonical_api`、`test_cognitive_has_no_direct_db_write`（静态）、`test_agent_runtime_has_no_direct_conversation_memory_write`（静态）、`test_memory_adapter_is_thin`（静态）、`test_no_second_memory_system`（静态）
+- **B. User Model**：`test_user_model_write_routes_through_adapter`、`test_source_ref_is_stable`、`test_idempotent_memory_write`
+- **C. Episodic**：`test_episode_write_routes_through_adapter`
+- **D. Conversation**：`test_conversation_memory_routes_canonical`
+- **E. Error**：`test_canonical_failure_does_not_silently_fallback`
+- **F. Regression / Authority**：`test_canonical_memory_is_authoritative`、`test_memory_reverse_dependency_removed`、`test_feature_flag_can_disable_canonical_path`
+
+运行（managed venv）：`python -m pytest tests/test_p5_2_memory_adapter.py -q` → `14 passed`。
+
+---
+
+## 12. Remaining Failures
+
+全量 9 failed，**逐项与冻结基线一致**，无 P5.2 引入：
+
+| 类 | 数量 | 清单 |
+|---|---|---|
+| A（P5.2 新回归） | **0** | — |
+| B（legacy 陈旧 event-contract，预存，归 P5.8） | 7 | `phase7-order2::test_be_count/test_symmetry`、`phase7-order3::test_be_count/test_symmetry`、`phase8-mvp::test_contract`、`phase8-order1::test_contract`、`phasec_native_runtime::TestPriorRegression::test_gate_guard_passes` |
+| C（冲突/接口不一致） | 0 | — |
+| D（环境相关 ASR，预存） | 2 | `test_external::test_status_default_all_disabled`、`test_external::test_asr_transcribe_disabled_without_key` |
+
+**关键校验**：9 个失败中**无任何一个**落在 `memory*` / `cognitive*` / `agent_runtime*` / `context*` 测试文件 → 零 P5.2 范围回归。`test_p4_memory_contract.py` / `test_p4_memory_governance.py` 与 `test_p5_2_memory_adapter.py` 均全绿。
+
+---
+
+## 13. Regression Audit
+
+- 基线 481/9/0 → 后 495/9/0；增量 14 = 本次新增 P5.2 测试，原始套件零回归。
+- 0 errors（全量）。
+- 无 memory/cognitive/agent_runtime/context 测试失败。
+- 既有测试期望**未修改**（含 `test_p4_memory_contract.py` 等）。
+- 未为让全量变绿而改动旧测试（测试纪律严守）。
+
+---
+
+## 14. Security Boundary
+
+- `cognitive/memory_adapter.py` 与 `memory_projection.py` 均**不 import** `policy_engine` / `executor` / `capability_runtime` / `capenter`（静态核查 `^\s*(from|import)\s+(memory|cognitive|policy_engine|executor|capability_runtime|sqlite3)` → 投影模块零命中）。
+- 未触发任何策略/审批/执行/MCP 能力行为变更。
+- `adapter` 无 SQL、无 DB 连接、无检索/排序/合并/生命周期/缓存（静态核查零命中）。
+- Security Boundary 变更 = 0。
+
+---
+
+## 15. Scope Audit
+
+- 仅 P5.2 相关 production code + 新增 P5.2 测试 + 本报告被改动。
+- **未进入** P5.3 Decision/Approval、P5.4 Lifecycle、P5.5 World State、P5.6 Learning、P5.7 Proactive、P5.8 EventBus。
+- **未改动** HTML/CSS/前端 JS/UI/visual assets。
+- 未改动 `memory_distiller.py`（已合规）、`db.py` schema、config 既有 dual-default/dead/ghost flag（仅干净新增一个 flag）。
+- 未修复 B/D 类预存失败（按纪律）。
+- P5.1 Findings（F1 silent empty-context / F2 docstring / F3 _current / F4 queue.clear）**均未触碰**，owner 归 P5.8/现状。
+
+---
+
+## 16. Git / Diff Audit
+
+- 仓库为 git 工作树（`git rev-parse --is-inside-work-tree` 确认）。
+- 重命名测试文件时 `git mv` 因环境后台 git 反复重建 `.git/index.lock` 而受阻；改用**文件系统 `mv`** 将 `tests/test_p5_2_memory_contract.py` → `tests/test_p5_2_memory_adapter.py`（指令 §13 要求的文件名）。
+- 因 git index 锁争用，git diff 不可可靠产出；改用**结构审计**替代：
+  - 定向 grep 确认 `cognitive/` 与 `agent_runtime.py` 对记忆表的 INSERT/UPDATE/DELETE = 0 命中（§5/§6/§7 迁移证据）
+  - 禁止路径 grep + 修改文件清单见 §3
+  - 静态矩阵见 §10 / §14
+- 结论：P5.2 之外无无关文件变化。
+
+---
+
+## 17. Rollback / Feature Flag
+
+- `FEATURE_CANONICAL_COGNITIVE_MEMORY`：
+  - `config.py:96` 模块级默认 `True`
+  - `config.py:228` 加入全局声明列表
+  - `config.py:323` `reload()` 读环境变量（缺省 `true`）
+- 读取：`cognitive/memory_adapter.py:74-81` `canonical_enabled()`
+- 行为：
+  - `true`（默认）：canonical 权威写 + legacy 兼容投影（双写，投影仅兼容）
+  - `false`：单点回滚为 **legacy 投影 only**（`memory_adapter` 跳过 canonical 调用，仅走 `memory_projection`），即 P5.2 前等价行为
+- 测试证据：`tests/test_p5_2_memory_adapter.py::test_feature_flag_can_disable_canonical_path`（OFF → memories 表 0 行、投影 1 行；默认 = true）。
+
+---
+
+## 18. STOP
+
+✅ **P5.2 COMPLETE**，全部门禁（§16 第 1–15 项）PASS。
+
+**P5.3–P5.8 = NOT IMPLEMENTED。**
+
+按指令 **STOP**：
+- 不自动修复 B 类（7）/ D 类（2）预存失败
+- 不进入 P5.3 Decision/Approval
+- 不修改 UI / Security Boundary / Proactive / EventBus
+- 不创建 WorldState / Learning
+- 不做数据清理
+
+仅输出本报告，等待架构评审。

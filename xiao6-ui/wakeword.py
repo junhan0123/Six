@@ -28,7 +28,7 @@ from wakeword_vosk import (
     load_phrases as _vosk_load_phrases,
 )
 
-ENABLED = os.environ.get("ZHUANGZHOU_KWS_ENABLED", "true").lower() in ("1", "true", "yes")
+ENABLED = os.environ.get("XIAO6_KWS_ENABLED", "true").lower() in ("1", "true", "yes")
 DEFAULT_MODEL = "hey_jarvis"  # openwakeword 内置模型别名
 THRESHOLD = 0.5  # 检测分数阈值（真机校准）
 SAMPLE_RATE = 16000
@@ -181,14 +181,14 @@ def start(detect_callback=None):
     global _thread
     with _lock:
         # 读取配置（而非硬编码 flag）
-        _state["enabled"] = os.environ.get("ZHUANGZHOU_KWS_ENABLED", "true").lower() in ("1", "true", "yes")
+        _state["enabled"] = os.environ.get("XIAO6_KWS_ENABLED", "true").lower() in ("1", "true", "yes")
         if not _state["enabled"]:
-            _state["note"] = "ZHUANGZHOU_KWS_ENABLED 未开启"
+            _state["note"] = "XIAO6_KWS_ENABLED 未开启"
             return dict(_state)
         if _state["listening"]:
             return dict(_state)
         # P8-2：优先 Vosk 中文短语 KWS
-        vosk_on = os.environ.get("ZHUANGZHOU_VOSK_KWS_ENABLED", "true").lower() in ("1", "true", "yes")
+        vosk_on = os.environ.get("XIAO6_VOSK_KWS_ENABLED", "true").lower() in ("1", "true", "yes")
         if vosk_on:
             try:
                 _spawn_vosk(detect_callback)

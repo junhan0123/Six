@@ -1,0 +1,79 @@
+/*
+ * avatar-renderer.js — Phase 8.5 A3：小6 Avatar 渲染升级（Renderer）
+ * ----------------------------------------------------------------------------
+ * 职责：把 AvatarState 派生结果（state + color）投影为小6的 SVG 脸。
+ * 纪律（最高约束）：
+ *   - 仅 Presentation Layer：消费 AvatarState 派生结果，不持有/不维护任务真相。
+ *   - 不新建 Runtime / Memory / EventBus / State System；仅一个「同态不重绘」的视图缓存。
+ *   - 资源加载失败时降级为 fallbackFace（CSS 脸），保证小6永不空白（测试 #6）。
+ *
+ * 配合既有 CSS 动画体系：渲染只设置 data-state / --avatar-color 并注入 SVG，
+ * 状态动画由 companion.css 的 .avatar--<state> 规则驱动（核心/环/光晕）。
+ */
+(function (global) {
+  'use strict';
+
+  var AvatarAssets = global.AvatarAssets;
+
+  // 视图缓存：仅记录"当前渲染态"，避免每次 render 重复 fetch（非任务状态副本）
+  var cache = { el: null, state: null, format: null };
+
+  // 统一渲染入口：render(el, state, color, opts)
+  //   opts.format ∈ {svg(default)|png|webp|webm|live2d}
+  //   opts.src    显式资源地址（覆盖 AvatarAssets 默认映射）
+  // 纪律：仅 Presentation Layer；不持有状态、不建事件总线；资源失败降级 CSS 脸。
+  function render(el, state, color, opts) {
+    if (!el) return;
+    opts = opts || {};
+    var format = (opts.format || 'svg').toLowerCase();
+    state = String(state || 'IDLE').toUpperCase();
+    el.setAttribute('data-state', state);
+    el.className = 'avatar avatar--' + state.toLowerCase();
+    el.style.setProperty('--avatar-color', color || '#5fb3c8');
+
+    // 同态不重绘（避免重复网络请求与重排）
+    if (cache.el === el && cache.state === state && cache.format === format) return;
+    cache.el = el; cache.state = state; cache.format = format;
+
+    var core = el.querySelector('.avatar-core') || el;
+
+    // 显式 src 优先；否则按 format 取 AvatarAssets 映射
+    var src = opts.src || (AvatarAssets && AvatarAssets.urlFor ? AvatarAssets.urlFor(state, format) : null);
+    if (format === 'svg') {
+      var url = src || (AvatarAssets && AvatarAssets.URLS[state]) || (AvatarAssets && AvatarAssets.URLS.IDLE);
+      if (!url) { core.innerHTML = AvatarAssets.fallbackFace(state, color); return; }
+      fetch(url)
+        .then(function (r) { if (!r.ok) throw new Error('bad-status'); return r.text(); })
+        .then(function (svg) { core.innerHTML = '<div class="avatar-svg">' + svg + '</div>'; })
+        .catch(function () { core.innerHTML = AvatarAssets.fallbackFace(state, color); });
+      return;
+    }
+    if (format === 'png' || format === 'webp') {
+      if (!src) { core.innerHTML = AvatarAssets.fallbackFace(state, color); return; }
+      core.innerHTML = '<img class="avatar-media" src="' + src + '" alt="' + state + '" />';
+      return;
+    }
+    if (format === 'webm') {
+      if (!src) { core.innerHTML = AvatarAssets.fallbackFace(state, color); return; }
+      core.innerHTML = '<video class="avatar-media" src="' + src + '" autoplay loop muted playsinline></video>';
+      return;
+    }
+    if (format === 'live2d') {
+      // Live2D：若宿主注入 SDK 渲染器则用，否则降级 SVG/CSS（不阻断）
+      if (global.ZZLive2D && typeof global.ZZLive2D.mount === 'function' && src) {
+        try { global.ZZLive2D.mount(core, src, state); return; } catch (e) {}
+      }
+      var fb = (AvatarAssets && AvatarAssets.URLS[state]) || (AvatarAssets && AvatarAssets.URLS.IDLE);
+      if (fb) { core.innerHTML = '<div class="avatar-svg"><img src="' + fb + '" alt="' + state + '" style="width:100%;height:100%"/></div>'; return; }
+      core.innerHTML = AvatarAssets.fallbackFace(state, color);
+      return;
+    }
+    // 未知 format → 降级
+    core.innerHTML = AvatarAssets.fallbackFace(state, color);
+  }
+
+  var API = { render: render };
+
+  global.AvatarRenderer = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof window !== 'undefined' ? window : globalThis);

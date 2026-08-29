@@ -1,0 +1,185 @@
+# P4 · P4-ARCHITECTURE-MAP
+
+> 阶段：P4 Phase 1 DESIGN ONLY · 项目：ZhuangZhou Core v1.4.0
+> 关联：`P4-MEMORY-CONTRACT.md` / `P4-CONTEXT-CONTRACT.md` / `P4-KNOWLEDGE-CONTRACT.md` / 主文档
+
+---
+
+## 1. 当前架构（Current Architecture，真实）
+
+```mermaid
+graph TB
+    subgraph RUNTIME[Chat Runtime]
+      CHAT[server_handlers_chat / tools]
+    end
+    CHAT --> FACADE[context.facade.build_context_prompt<br/>唯一装配入口]
+    FACADE --> ENGINE[Context Engine<br/>Collect/Rank/Budget/Bundle/Build]
+
+    ENGINE --> MS[MemorySource 单体]
+    MS --> BSP[memory.build_system_prompt<br/>= context_prefix + memory_block]
+    BSP --> PROFILE[(profile)]
+    BSP --> SUM[(memory_summary)]
+    BSP --> CHATLOG[(chat_log recent)]
+    BSP --> LEARN[(learnings)]
+
+    ENGINE --> UMS[UserModelSource] --> UM[(user_model)]
+    ENGINE --> ES[EpisodicSource] --> EP[(episodes)]
+    ENGINE --> KS[KnowledgeSource] --> KN[("knowledge/*.md")]
+    ENGINE --> KS2[PersonalContext/AI/Identity/Goal/...]
+
+    MEM[(memories)] --> DI[memory_distiller / hotspots / notes / imports]
+    MEM --> MI[memory_intelligence.recall]
+    MEM --> MQ[memory_query]
+    MEM --> ME[memory_evolution 治理]
+
+    EMB[embed.py] --> MV[(mem_vectors)]
+    PERC[perception_runtime] --> SF[semantic_fusion]
+
+    style MS fill:#5f1f1f,color:#fff
+    style BSP fill:#5f1f1f,color:#fff
+```
+
+**问题点（红框）：** MemorySource 单体把运行时状态+记忆打包成单一 blob，且 `build_memory_block`/`build_context_prefix` 与 UserModelSource/EpisodicSource 重复读取同表。
+
+---
+
+## 2. 目标架构（Target Architecture，设计）
+
+```mermaid
+graph TB
+    subgraph RUNTIME[Chat Runtime]
+      CHAT[server_handlers_chat / tools]
+    end
+    CHAT --> FACADE[Context Facade<br/>SINGLE ENTRY]
+    FACADE --> ENGINE[Context Engine<br/>Collect→Retrieve→Rank→Budget→Dedupe→Assemble→Build]
+
+    ENGINE --> RMS[EvolvedMemorySource] --> MEM[(memories 唯一 Canonical)]
+    ENGINE --> RT[RuntimeStateSource] --> RB[(reminders/geo/foci/tasks/hotspot)]
+    ENGINE --> UMS[UserModelSource] --> UM[(user_model)]
+    ENGINE --> ES[EpisodicSource] --> EP[(episodes)]
+    ENGINE --> KS[KnowledgeSource] --> KN[("knowledge/*.md")]
+    ENGINE --> IDS[IdentitySource/Goal/Personal...]
+
+    MEM --> API[Canonical Memory API]
+    API --> EV[memory_evolution 治理<br/>importance/conflict/consolidation/lifecycle/retrieval_policy]
+    EV --> RET[DefaultEvolutionPolicy 唯一检索]
+    EV --> LC[lifecycle 状态机]
+    MEM --> EB[(EventBus 唯一事件)]
+
+    KN --> KRT[knowledge_runtime] --> KS
+    EMB[embed.py 共享] --> MV[(mem_vectors scope=memory/episode)]
+    PERC[perception_runtime] --> SF[semantic_fusion Perception]
+
+    style MEM fill:#1f5f3a,color:#fff
+    style RET fill:#5f3a1f,color:#fff
+    style FACADE fill:#3a1f5f,color:#fff
+    style EB fill:#1f3a5f,color:#fff
+    style KN fill:#1f4f5f,color:#fff
+```
+
+**五权威各一：**
+1. Memory = `memories` + `memory_evolution`
+2. Retrieval = `DefaultEvolutionPolicy`
+3. Context Assembly = `context.facade`
+4. Knowledge = `knowledge_runtime`
+5. Lifecycle/Event = `lifecycle` + `eventbus`
+
+---
+
+## 3. 数据分层地图
+
+```mermaid
+graph LR
+    subgraph CANON[Canonical A]
+      MEM[(memories)]
+    end
+    subgraph DERIV[Derived B]
+      SUM[(memory_summary)]
+      CM[(conversation_memories)]
+      LN[(learnings)]
+    end
+    subgraph USER[User/State C/D/E]
+      UM[(user_model)]
+      EP[(episodes)]
+      CL[(chat_log)]
+      ID[(important_dates)]
+      PROF[(profile legacy)]
+    end
+    subgraph KNOW[Knowledge F]
+      KN[("knowledge/*.md")]
+    end
+    subgraph PROJ[Projection]
+      MV[(mem_vectors)]
+    end
+
+    MEM -.治理.-> UM
+    MEM -.治理.-> EP
+    MEM -.投影.-> MV
+    SUM -.压缩自.-> CL
+```
+
+---
+
+## 4. 检索分层地图
+
+| 层 | 实现 | 状态 |
+|---|---|---|
+| CORE | `DefaultEvolutionPolicy` + `embed.py` + `mem_vectors` | 统一权威(提升中) |
+| ADAPTER | `memory_intelligence.recall`、`cognitive.episodic.recall_episodes`、`memory_v2/semantic` | 降为内部/复用 |
+| SPECIALIZED | `knowledge_runtime.search`（关键词/结构化） | 独立，不共享接口 |
+| LEGACY | `memory.build_system_prompt` 单体 | 回退路径 |
+| ORPHAN | `knowledge_docs`/`knowledge_chunks` | 移除(零数据) |
+
+---
+
+## 5. Source 注册地图（context/builder.py，真实）
+
+| Source | 开关 | 最终 |
+|---|---|---|
+| EvolvedMemorySource | FEATURE_MEMORY_EVOLUTION(待定义) | KEEP |
+| RuntimeStateSource(新增) | FEATURE_RUNTIME_STATE(建议) | KEEP |
+| MemorySource(单体) | FEATURE_CONTEXT_ENGINE | DEPRECATE |
+| UserModelSource | FEATURE_USER_MODEL | KEEP |
+| EpisodicSource | FEATURE_EPISODIC_MEMORY | KEEP |
+| PersonalitySource | FEATURE_PERSONALITY | KEEP |
+| GoalSource | FEATURE_GOAL_SYSTEM | KEEP |
+| KnowledgeSource | FEATURE_KNOWLEDGE_PLATFORM | KEEP |
+| PersonalContextSource | FEATURE_PERSONAL_CONTEXT | KEEP |
+| PersonalAISource | FEATURE_PERSONAL_AI | KEEP |
+| IdentitySource | FEATURE_IDENTITY | KEEP |
+| MemoryRecallSource | FEATURE_MEMORY_INTELLIGENCE | MERGE→Evolved |
+| PerceptionSource | FEATURE_PERCEPTION_CONTEXT | KEEP |
+| MemoryV2Source | MEMORY_V2_ENABLE | DEPRECATE |
+
+---
+
+## 6. 事件地图
+
+```mermaid
+graph LR
+    M[(memories)] -->|写/归档/衰减| E1[MEMORY_* 事件]
+    CTX[Context Engine] -->|装配完成| E2[CONTEXT_BUILT]
+    KN[("knowledge/*.md")] -->|增改| E3[KNOWLEDGE_UPDATED]
+    E1 --> BUS[(EventBus)]
+    E2 --> BUS
+    E3 --> BUS
+```
+
+事件全部经 `eventbus.publish_domain`（强制 `DOMAIN_EVENT_NAMES` 校验），禁止模块私自 publish 未注册事件，禁止同义事件多名称。
+
+---
+
+## 7. 安全边界地图
+
+```mermaid
+graph TD
+    MEM[Memory] -->|只提供记忆| CE[Context Engine]
+    KN[Knowledge] -->|只提供知识| CE
+    CE -->|只提供上下文| CHAT[Chat Runtime]
+    CHAT -->|经 Policy/Permission/Approval| EX[Executor / Capability Runtime]
+    EX -.不反向调用.-> MEM
+    EX -.不反向调用.-> CE
+```
+
+- Memory/Context/Knowledge 不直连 Tool/Executor。
+- capability_runtime 仅由 Chat Runtime 调用（已验证）。

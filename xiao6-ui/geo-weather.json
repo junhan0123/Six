@@ -1,0 +1,23 @@
+{
+  "location": {
+    "lat": 34.7472,
+    "lon": 113.625,
+    "city": "Zhengzhou",
+    "city_zh": "郑州",
+    "region": "Henan",
+    "country": "China",
+    "countryCode": "CN",
+    "timezone": "Asia/Shanghai",
+    "ip": "42.235.33.129",
+    "isp": "China Unicom Henan Province Network"
+  },
+  "weather": {
+    "temp": "23",
+    "feels_like": "24",
+    "humidity": "74",
+    "condition": "Smoky haze",
+    "wind_kmh": "6",
+    "wind_dir": "NNW"
+  },
+  "collected_at": "2026-08-29 09:13:46"
+}

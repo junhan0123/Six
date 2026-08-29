@@ -1,0 +1,643 @@
+{
+  "sizes": [
+    {
+      "tag": "1920x1080",
+      "mode": "Desktop",
+      "docW": 2302,
+      "winW": 1920,
+      "docH": 1080,
+      "winH": 1080,
+      "canScrollX": 382,
+      "offenders": [
+        {
+          "sel": "aside#settingsPanel.settings-panel",
+          "left": 1920,
+          "right": 2480,
+          "w": 560,
+          "pos": "fixed"
+        },
+        {
+          "sel": "div.settings-head",
+          "left": 1921,
+          "right": 2480,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "span.settings-head-title",
+          "left": 1943,
+          "right": 2042,
+          "w": 99,
+          "pos": "static"
+        },
+        {
+          "sel": "svg",
+          "left": 1943,
+          "right": 1963,
+          "w": 20,
+          "pos": "static"
+        },
+        {
+          "sel": "use",
+          "left": 1948,
+          "right": 1960,
+          "w": 12,
+          "pos": "static"
+        },
+        {
+          "sel": "button#settingsClose.settings-close",
+          "left": 2426,
+          "right": 2458,
+          "w": 32,
+          "pos": "static"
+        },
+        {
+          "sel": "div.settings-body",
+          "left": 1921,
+          "right": 2480,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "nav.settings-nav",
+          "left": 1921,
+          "right": 2071,
+          "w": 150,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item.active",
+          "left": 1933,
+          "right": 2058,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1933,
+          "right": 2058,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1933,
+          "right": 2058,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1933,
+          "right": 2058,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1933,
+          "right": 2058,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1933,
+          "right": 2058,
+          "w": 125,
+          "pos": "static"
+        }
+      ]
+    },
+    {
+      "tag": "1600x900",
+      "mode": "Desktop",
+      "docW": 1982,
+      "winW": 1600,
+      "docH": 900,
+      "winH": 900,
+      "canScrollX": 382,
+      "offenders": [
+        {
+          "sel": "aside#settingsPanel.settings-panel",
+          "left": 1600,
+          "right": 2160,
+          "w": 560,
+          "pos": "fixed"
+        },
+        {
+          "sel": "div.settings-head",
+          "left": 1601,
+          "right": 2160,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "span.settings-head-title",
+          "left": 1623,
+          "right": 1722,
+          "w": 99,
+          "pos": "static"
+        },
+        {
+          "sel": "svg",
+          "left": 1623,
+          "right": 1643,
+          "w": 20,
+          "pos": "static"
+        },
+        {
+          "sel": "use",
+          "left": 1628,
+          "right": 1640,
+          "w": 12,
+          "pos": "static"
+        },
+        {
+          "sel": "button#settingsClose.settings-close",
+          "left": 2106,
+          "right": 2138,
+          "w": 32,
+          "pos": "static"
+        },
+        {
+          "sel": "div.settings-body",
+          "left": 1601,
+          "right": 2160,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "nav.settings-nav",
+          "left": 1601,
+          "right": 1751,
+          "w": 150,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item.active",
+          "left": 1613,
+          "right": 1738,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1613,
+          "right": 1738,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1613,
+          "right": 1738,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1613,
+          "right": 1738,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1613,
+          "right": 1738,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1613,
+          "right": 1738,
+          "w": 125,
+          "pos": "static"
+        }
+      ]
+    },
+    {
+      "tag": "1280x800",
+      "mode": "Desktop",
+      "docW": 1662,
+      "winW": 1280,
+      "docH": 800,
+      "winH": 800,
+      "canScrollX": 382,
+      "offenders": [
+        {
+          "sel": "aside#settingsPanel.settings-panel",
+          "left": 1280,
+          "right": 1840,
+          "w": 560,
+          "pos": "fixed"
+        },
+        {
+          "sel": "div.settings-head",
+          "left": 1281,
+          "right": 1840,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "span.settings-head-title",
+          "left": 1303,
+          "right": 1402,
+          "w": 99,
+          "pos": "static"
+        },
+        {
+          "sel": "svg",
+          "left": 1303,
+          "right": 1323,
+          "w": 20,
+          "pos": "static"
+        },
+        {
+          "sel": "use",
+          "left": 1308,
+          "right": 1320,
+          "w": 12,
+          "pos": "static"
+        },
+        {
+          "sel": "button#settingsClose.settings-close",
+          "left": 1786,
+          "right": 1818,
+          "w": 32,
+          "pos": "static"
+        },
+        {
+          "sel": "div.settings-body",
+          "left": 1281,
+          "right": 1840,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "nav.settings-nav",
+          "left": 1281,
+          "right": 1431,
+          "w": 150,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item.active",
+          "left": 1293,
+          "right": 1418,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1293,
+          "right": 1418,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1293,
+          "right": 1418,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1293,
+          "right": 1418,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1293,
+          "right": 1418,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1293,
+          "right": 1418,
+          "w": 125,
+          "pos": "static"
+        }
+      ]
+    },
+    {
+      "tag": "1000x800",
+      "mode": "Compact",
+      "docW": 1370,
+      "winW": 1000,
+      "docH": 800,
+      "winH": 800,
+      "canScrollX": 370,
+      "offenders": [
+        {
+          "sel": "aside#settingsPanel.settings-panel",
+          "left": 1000,
+          "right": 1560,
+          "w": 560,
+          "pos": "fixed"
+        },
+        {
+          "sel": "div.settings-head",
+          "left": 1001,
+          "right": 1560,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "span.settings-head-title",
+          "left": 1023,
+          "right": 1122,
+          "w": 99,
+          "pos": "static"
+        },
+        {
+          "sel": "svg",
+          "left": 1023,
+          "right": 1043,
+          "w": 20,
+          "pos": "static"
+        },
+        {
+          "sel": "use",
+          "left": 1028,
+          "right": 1040,
+          "w": 12,
+          "pos": "static"
+        },
+        {
+          "sel": "button#settingsClose.settings-close",
+          "left": 1506,
+          "right": 1538,
+          "w": 32,
+          "pos": "static"
+        },
+        {
+          "sel": "div.settings-body",
+          "left": 1001,
+          "right": 1560,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "nav.settings-nav",
+          "left": 1001,
+          "right": 1151,
+          "w": 150,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item.active",
+          "left": 1013,
+          "right": 1138,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1013,
+          "right": 1138,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1013,
+          "right": 1138,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1013,
+          "right": 1138,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1013,
+          "right": 1138,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 1013,
+          "right": 1138,
+          "w": 125,
+          "pos": "static"
+        }
+      ]
+    },
+    {
+      "tag": "720x900",
+      "mode": "Narrow",
+      "docW": 1442,
+      "winW": 720,
+      "docH": 900,
+      "winH": 900,
+      "canScrollX": 722,
+      "offenders": [
+        {
+          "sel": "aside#settingsPanel.settings-panel",
+          "left": 720,
+          "right": 1280,
+          "w": 560,
+          "pos": "fixed"
+        },
+        {
+          "sel": "div.settings-head",
+          "left": 721,
+          "right": 1280,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "span.settings-head-title",
+          "left": 743,
+          "right": 842,
+          "w": 99,
+          "pos": "static"
+        },
+        {
+          "sel": "svg",
+          "left": 743,
+          "right": 763,
+          "w": 20,
+          "pos": "static"
+        },
+        {
+          "sel": "use",
+          "left": 748,
+          "right": 760,
+          "w": 12,
+          "pos": "static"
+        },
+        {
+          "sel": "button#settingsClose.settings-close",
+          "left": 1226,
+          "right": 1258,
+          "w": 32,
+          "pos": "static"
+        },
+        {
+          "sel": "div.settings-body",
+          "left": 721,
+          "right": 1280,
+          "w": 559,
+          "pos": "static"
+        },
+        {
+          "sel": "nav.settings-nav",
+          "left": 721,
+          "right": 871,
+          "w": 150,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item.active",
+          "left": 733,
+          "right": 858,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 733,
+          "right": 858,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 733,
+          "right": 858,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 733,
+          "right": 858,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 733,
+          "right": 858,
+          "w": 125,
+          "pos": "static"
+        },
+        {
+          "sel": "button.settings-nav-item",
+          "left": 733,
+          "right": 858,
+          "w": 125,
+          "pos": "static"
+        }
+      ]
+    }
+  ],
+  "themes": [
+    {
+      "theme": "dark",
+      "bg": "rgb(10, 12, 16)",
+      "color": "rgb(238, 242, 247)",
+      "accent": "#5fb3c8",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "quantum",
+      "bg": "rgb(6, 8, 20)",
+      "color": "rgb(234, 240, 255)",
+      "accent": "#22d3ee",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "midnight",
+      "bg": "rgb(4, 6, 15)",
+      "color": "rgb(230, 236, 255)",
+      "accent": "#4f7bff",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "dark-cyan",
+      "bg": "rgb(6, 10, 15)",
+      "color": "rgb(232, 246, 250)",
+      "accent": "#22d3ee",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "dark-green",
+      "bg": "rgb(6, 15, 11)",
+      "color": "rgb(230, 250, 240)",
+      "accent": "#34d399",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "dark-purple",
+      "bg": "rgb(10, 6, 16)",
+      "color": "rgb(243, 234, 251)",
+      "accent": "#c084fc",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "dark-amber",
+      "bg": "rgb(16, 12, 6)",
+      "color": "rgb(251, 243, 224)",
+      "accent": "#fbbf24",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "dark-rose",
+      "bg": "rgb(16, 6, 9)",
+      "color": "rgb(251, 234, 240)",
+      "accent": "#fb7185",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    },
+    {
+      "theme": "light",
+      "bg": "rgb(240, 244, 248)",
+      "color": "rgb(15, 23, 42)",
+      "accent": "#0E7490",
+      "presence": "#8a93a6",
+      "dataPresence": "OFFLINE",
+      "btnFont": "Rajdhani",
+      "btnSize": "13px"
+    }
+  ],
+  "overflow": [],
+  "errors": []
+}

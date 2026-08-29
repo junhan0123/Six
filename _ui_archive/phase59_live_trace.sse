@@ -1,0 +1,8 @@
+data: {"xiao6_event": "tool_start", "tool": "get_time", "args": {"city": "北京"}}
+
+data: {"xiao6_event": "tool_end", "tool": "get_time", "result": "北京 时间：2026年08月19日 13:41:01 星期三"}
+
+data: {"choices": [{"delta": {"content": "13点41分。\n\n（我判断「现在北京时间几点了？用get_time工具查一下并告诉我」是一个值得建立的目标，是否要我创建并自动执行？确认后我会开始规划。）"}}]}
+
+data: "[DONE]"
+

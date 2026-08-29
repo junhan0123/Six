@@ -1,0 +1,44 @@
+# PHASE 3 — IMPLEMENTATION BASELINE
+*(VERIFY-BEFORE-CHANGE · 真实源码核验，非审计报告假定)*
+
+## 1. 启动链（确认）
+- `launcher/*` → `electron .` → `G:\ZhuangZhou\zhuangzhou-ui\package.json` `"main":"electron/main.js"`
+- `electron/main.js` 当前**仅**创建 orb 窗口（`desktop-avatar/dyna-orb.html`），`window-all-closed`→quit。
+- 孤儿壳 `gui/main.js`（workspace+tray+backend 自启+`<webview>` DSH）**无 launcher 引用**（Phase 2 已证），将被合并后归档。
+- 第二 Electron 壳 `G:\xiao6-hub\main.js` 独立存在（拉起 DSH 并 `<webview>` 嵌入）——本阶段仅改其 adapter/presentation（去 DSH webview、洗品牌），不新建第二 Runtime。
+
+## 2. 当前 Electron 主壳
+- `electron/main.js`：orb 窗口 + IPC（close/hide/open-chat/set-ignore-mouse/move）；安全：`contextIsolation:true, nodeIntegration:false, sandbox:true`；导航白名单 `security.js`。
+- `electron/avatar-window.js`：`createAvatarWindow({url})`，缺省 `dyna-orb.html`；`will-navigate`/`setWindowOpenHandler` 守卫。
+- `electron/preload.js`：最小桥（close/hide/open-chat/setIgnoreMouse/moveWindow）。
+
+## 3. 当前 Voice Orb 入口（冻结，勿改行为）
+- Web：Phase 2 指定 `zz-space petOrb`；但**实际 `#petOrb` 元素已不存在于 index.html**，`zz-space.js:284` `$('petOrb').addEventListener` 顶层无空守卫 → 加载即 FATAL（旧 GUI 硬崩）。
+- Electron：`desktop-avatar/dyna-orb.html` + `dyna-orb.js` + `dyna-orb-voice.js`（Phase 2 冻结，5 态 idle/listening/thinking/speaking/error）。
+
+## 4. 当前 GUI 入口
+- `zz-space/index.html` + `js/zz-space.js` + `css/zz-space.css`：旧 "AETHER PRO" 全屏粒子+状态中心+右侧卡片；依赖大量 `/api/*`（见下）。**加载即崩（F1）**，且非目标 Advanced Workspace 结构。
+- 根 `app.js`/`aboutme-panel.js` 等：遗留根级 UI，与 zz-space 并行存在（重复）。
+
+## 5. 当前 API 契约（server.py · BaseHTTPRequestHandler 路由表，已实测 200）
+- 只读 GET：`/api/health` `/api/agent/state` `/api/capabilities` `/api/tasks` `/api/goals` `/api/memory` `/api/memories` `/api/knowledge` `/api/chat/history` `/api/briefing` `/api/calendar/events` `/api/notes` `/api/weather` `/api/hotspots` `/api/geo` `/api/user_model` `/api/personal_context` `/api/episodes` `/api/self_awareness/status` `/api/proactive/status` `/api/capability_os/catalog` `/api/hud/state` `/api/boot/state` `/api/version` `/api/ready` `/api/sysmon` `/api/logs` `/api/perception/*` `/api/focus/app` `/api/clipboard/history` `/api/asr/status` `/api/wakeword` `/api/system-prompt` 等。
+- 写/动作 POST：`/api/chat`(SSE) `/api/speak` `/api/asr` `/api/transcribe` `/api/kws` `/api/agent/approval` `/api/agent/goal` `/api/agent/intent` `/api/action/plan` `/api/action/execute` `/api/capability_os/match` `/api/capability_os/plan` `/api/memory/query` `/api/memory/confirm` `/api/notes` `/api/memories` `/api/knowledge` `/api/data/import` `/api/boot/avatar-ready` 等。
+- 说明：Core contract 一律不改动，GUI 仅消费上述既有端点。
+
+## 6. 当前 DSH integration
+- `xiao6-hub/main.js`：`spawnDsh()` 拉起/复用 DSH（existingUrl `http://127.0.0.1:3080`，自起 `3210`），`<webview id="dsh-webview">` 加载 `server.url`（DSH）。品牌串 "DeepSeek Harness/DSH/DPH" 出现在 `renderer/index.html:16,44,82,90,91`、`renderer.js:57,60,63,174,181` 等。
+- 本阶段：webview `src` 改指 ZhuangZhou Advanced Workspace（`http://127.0.0.1:8010/zz-space/index.html`）；清洗 DSH 品牌串为 ZhuangZhou；不搬运 DSH UI。
+
+## 7. 当前旧 UI 引用关系
+- `zz-space.js:284` F1 崩；`gui/` 孤儿；`desktop-avatar/robot|gem-orb|liquid-orb|orb-pet|companion` 无生产引用（Phase 2 已证）；根 `app.js`/`avatar*.js`/`aboutme-panel.js` 为遗留根 UI（与 zz-space 重复）。
+- 重复热点：Voice pipeline（dyna-orb-voice vs zz-space VAD vs app.js kws）、Capability（/api/capabilities vs capability_os）、Memory（/api/memory vs /api/memories）、Chat（app.js vs zz-space）、Settings 多套。
+
+## 8. 本阶段实际修改文件列表（计划）
+- 新增：`zz-space/index.html`（重建）、`zz-space/css/zz-workspace.css`、`zz-space/js/zz-workspace.js`
+- 修改：`electron/main.js`（+workspace 窗口+tray+生命周期，单壳）、`electron/preload.js`（+工作区桥）、新增 `electron/workspace-window.js`
+- 修改：`zz-space/js/zz-space.js:284`（F1 空守卫，过渡兼容）
+- 归档：`gui/` → `gui.archive/`（先验证无 active 引用）
+- 修改：`xiao6-hub/renderer/index.html` + `renderer/renderer.js`（去 DSH webview + 洗品牌）
+- 不动：Core / DSH 源码 / Voice Orb Phase2 行为 / 既有 API 契约 / DB schema
+
+基线核验时间：2026-08-17。所有路径已 read 确认，与审计报告一致（除旧 zz-space 实际已崩、petOrb 元素缺失等已现场确认）。

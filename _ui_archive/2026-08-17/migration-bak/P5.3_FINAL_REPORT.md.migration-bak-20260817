@@ -1,0 +1,318 @@
+# P5.3 IMPLEMENTATION FINAL REPORT
+
+> 阶段：P5.3 — DECISION / APPROVAL BOUNDARY
+> 身份：Senior Architect + Senior Developer
+> 仓库：G:\ZhuangZhou\zhuangzhou-ui（v1.4.0）
+> 模式：IMPLEMENTATION ONLY / SCOPE LOCKED / VERIFY-BEFORE-CHANGE / ZERO UI
+> 状态：**P5.3 ARCHITECTURE ALREADY SATISFIED — 未新增生产代码，仅补充契约验证测试**
+
+---
+
+## 1. Status
+
+| 项 | 结论 |
+|---|---|
+| P5.3 实施状态 | **ARCHITECTURE ALREADY SATISFIED** |
+| 新增生产代码 | **0 文件**（严格遵循 §10：现有架构已完整满足 P5.3，不制造代码） |
+| 新增测试 | `tests/test_p5_3_decision_approval.py`（13 用例，全绿） |
+| 是否进入 P5.4+ | **否**（STOP，见 §18） |
+| UI / Voice Orb / GUI / TTS / ASR | **0 变更** |
+
+**核心判读**：Decision → Policy → Approval → Capability → Executor 边界在现有代码中**已全部存在、单一、且被强制**。不存在第二套 Decision / Policy / Approval / Capability / Executor。Cognitive 层零执行依赖。auto_approve 既有语义（M-05）可证明保留。因此本阶段不新建任何模块，仅以契约验证测试锁定边界、防止未来回归。
+
+---
+
+## 2. Baseline
+
+| 维度 | 值 |
+|---|---|
+| 进入 P5.3 前冻结基线（P5.2 完成后） | 495 passed / 9 failed / 0 errors |
+| P5.3 新增测试 | +13 passed |
+| P5.3 实施后全量 | **508 passed / 9 failed / 0 errors** |
+| P5.3 引入的 NEW REGRESSION | **0** |
+| 9 个失败归类 | 全部为冻结基线既有失败（B=7 陈旧 event-contract + D=2 环境/ASR），无任何 P5.3 范围失败 |
+
+---
+
+## 3. Verify Findings（改前重读真实源码）
+
+VERIFY 阶段（§3）逐项回答了 8 个问题，全部基于真实 `file:line`：
+
+| # | VERIFY 问题 | 真实答案（file:line） |
+|---|---|---|
+| 1 | Planner 如何表达「要做什么」？ | `agent_runtime._execute_task`（agent_runtime.py:520）经 `_resolve_dispatch(task)` 解析出 `tool/args`；`goal_decision_engine` + `_plan_gate`（agent_runtime.py:407-438）把计划内工具表达为 Task + 经 policy 裁决 |
+| 2 | Decision 在哪里发生？ | `agent_runtime._execute_task`：先 budget 闸门 → `policy.evaluate` 返回 `auto/confirm/block`（agent_runtime.py:556-558）；`_plan_gate` 做计划级 Decision（agent_runtime.py:430-436） |
+| 3 | Capability invocation 在哪里？ | 单一入口 `capability_os.execute_capability`（capability_os/__init__.py:195）、`mcp_host.executor.execute_mcp_capability_sync`（mcp_host/executor.py:153）、`permission_guard.guard.run`（permission_guard.py:80）、`ai_core.execution.run` → `tools.execute_tool`（ai_core/execution/api.py:125-126） |
+| 4 | Policy 检查在哪里？ | `policy_engine.evaluate`（policy_engine.py:230-240），全局唯一裁决真相源 |
+| 5 | Approval 检查在哪里？ | `policy_engine.request_approval`（policy_engine.py:257-289），唯一审批闸门（modal ticket + GOAL 预批准） |
+| 6 | Executor 唯一入口？ | `ai_core.execution.run` 声明为「全项目唯一执行入口」（ai_core/execution/api.py:1,31），最终委托 `tools.execute_tool`；外部/电脑能力分别经 `capability_os.execute_capability` / `permission_guard.guard.run` |
+| 7 | 是否已存在 Decision/Approval Boundary？ | **是**。边界已存在且被强制（见 §4-§7） |
+| 8 | 若已存在，P5.3 缺少什么？ | **无真实缺口**。边界已架构化、单一、被强制。P5.3 价值=文档化 + 契约验证测试，而非新模块（符合 §10） |
+
+**静态红线核查（§8 反向依赖）**：
+- `cognitive/*`：仅 import `db`/`embed`/`hashlib`/`datetime`/`json`/`copy`/`os`/`re` + 内部 cognitive 模块 → **零** `executor`/`capability_os`/`capability_runtime`/`policy_engine` 导入。
+- `policy_engine.py`：仅 import 标准库 → **不** import `agent_runtime`/`cognitive`（Runtime→Policy 单向，`policy_engine` 不反向依赖）。
+- `mcp_host/executor.py`、`capability_os/__init__.py`：均**不** import `agent_runtime`/`cognitive`。
+
+---
+
+## 4. Existing Decision Boundary
+
+- **入口**：`agent_runtime._execute_task`（agent_runtime.py:520-585）
+  - 预算闸门：`_call_budget.consume_call()`（agent_runtime.py:528）
+  - 分类路由：skill / external.mcp / computer / 兜底工具（agent_runtime.py:533-553）
+  - 兜底路径：`ExecutionPolicy.evaluate` → `auto/confirm/block`（agent_runtime.py:556-558）
+  - confirm → `policy.request_approval(...)`（agent_runtime.py:561）；非 approve → 返回 `rejected`（agent_runtime.py:562-563）
+  - 批准后 → `_execution_run(tool, args)`（agent_runtime.py:566，= `ai_core.execution.run` 单一入口）
+- **计划级 Decision**：`_plan_gate`（agent_runtime.py:407-438）对每个计划内工具 `policy.evaluate`；confirm 工具经 `request_approval` + `approve_in_goal` 预批准（agent_runtime.py:432-436）。
+- **电脑能力 Decision**：`_execute_computer_task`（agent_runtime.py:587-643）仅透传 capability/target/parameters，由 `permission_guard.guard.plan/run` 构造与执行（Agent/Runtime 不直构、不直调 executor，agent_runtime.py:601-604）。
+
+**判读**：Decision 是单一、明确的模块（agent_runtime 编排层），且与 Execution 严格分离。
+
+---
+
+## 5. Existing Policy Boundary
+
+- **唯一裁决**：`policy_engine.evaluate(tool, args, goal_id, default_deny=True)`（policy_engine.py:230-240）返回 `{"decision": "auto|confirm|block", ...}`。
+- **复用面**：
+  - `agent_runtime._execute_task` / `_plan_gate`（agent_runtime.py:413,430,556）
+  - `ai_core/execution.policy.ExecutionPolicy`（ai_core/execution/policy.py:8「逐字透传，不改变裁决语义」；:37-42 委托 `policy_engine`）
+  - `mcp_host.executor._authorize`（mcp_host/executor.py:40 `pe.evaluate(default_deny=True)`）
+  - `permission_guard`（permission_guard.py:91-94 委托 `policy_engine.request_approval`）
+- **无第二套 Policy**：全仓无 `policy_manager.py` / 第二个 `evaluate` 自由函数。
+
+---
+
+## 6. Existing Approval Boundary
+
+- **唯一审批**：`policy_engine.request_approval(tool, args, summary, goal_id, default_deny=True)`（policy_engine.py:257-289）
+  - 无 Goal 上下文且 `default_deny` → 直接 `reject`（policy_engine.py:260-261）
+  - 发 modal 审批卡（`publish_system("modal", ...)`），挂起等待 `ev.wait(timeout)`（policy_engine.py:267-283）
+  - 裁决后 `approve_in_goal(goal_id, tool)` 记入目标级批准集合（policy_engine.py:287-288）
+- **配套状态管理**：`pre_approve_tools`（policy_engine.py:243-246）、`approve_in_goal`（policy_engine.py:249-252）、`resolve`（policy_engine.py:292-300，POST /api/agent/approval 唤醒）。
+- **无第二套 Approval**：全仓仅 `policy_engine.py` 定义能力级 `request_approval` 自由函数（`self_awareness/approval.py:89` 的 `request_approval(self, proposal)` 是自我进化治理，属不同关切，不构成第二套能力 Approval）。无 `CognitiveApproval`/`AgentApproval`/`SecondApprovalManager`/`ParallelApprovalQueue`。
+
+---
+
+## 7. Existing Capability Boundary
+
+| 能力类别 | 单一入口 | 执行器 | 策略/审批 |
+|---|---|---|---|
+| 原生 Skill | `ai_core.execution.run` → `tools.execute_tool` | `execute_tool` | ExecutionPolicy（policy_engine） |
+| 外部 MCP | `capability_os.execute_capability`（capability_os/__init__.py:195）→ `mcp_host.executor` | `MCPExecutor` | `_authorize` → `policy_engine`（mcp_host/executor.py:40,51） |
+| 电脑能力 | `permission_guard.guard.run`（permission_guard.py:80） | `computer_executor` + `VerificationLayer` | `policy_engine`（agent_runtime.py:595-596） |
+| 默认 Chat | `capability_runtime.py`（P1 适配层） | 收敛到 `ai_core.execution.run` / `execute_tool` | `policy_engine`（capability_runtime.py:9,16） |
+
+- **无第二套 Capability Executor**：`capability_runtime.py` 自述「严格不新建第二套执行/权限/注册表」（capability_runtime.py:4-18），仅作为 Chat 收敛适配层，委派既有单一执行链。
+- **无第二套 Registry**：能力清单真相源 = `capability_os.discovery.dispatch_tool_list()`（capability_runtime.py:7）。
+
+---
+
+## 8. Changes Made
+
+**生产代码变更：无（0 文件）。** 严格遵循 §10（现有架构已满足 P5.3，不制造代码）与 §7（不创建第二套 Policy/Approval/Executor）。
+
+唯一交付物为新增测试（契约验证，非生产代码）：
+- `tests/test_p5_3_decision_approval.py`（新增，13 用例）
+
+P5.1 / P5.2 模块与代码**完全未改**（继承架构）。Security Boundary **完全保留**。
+
+---
+
+## 9. Decision Contract
+
+- **既有契约（已存在，复用，不新建）**：Decision 以 `policy.evaluate` 返回值表达 → `{"decision": "auto|confirm|block", "reason": ..., "permission": ...}`（policy_engine.py:230-240）。
+- **Action intent 表达**：经 `agent_runtime._resolve_dispatch` 解析为 `(tool, args)`（agent_runtime.py:523）；外部 MCP 以 `external.mcp.<server>.<tool>` 稳定 id 表达（agent_runtime.py:646-648）。
+- **风险/敏感等级**：复用 `policy_engine` 既有分类（`auto/confirm/block` + `risk_of` 用于电脑能力 MEDIUM⟺confirm 映射，agent_runtime.py:615），**未自创新风险体系**（符合 §6）。
+- **是否需要用户确认**：由 `decision=="confirm"` 显式驱动 `request_approval`（agent_runtime.py:559-561）。
+- **Decision rationale**：经 `summary` 透传至审批卡（policy_engine.py:268-274）。
+
+**结论**：Decision Contract 已存在且稳定，P5.3 不重复定义。
+
+---
+
+## 10. Approval Contract
+
+- **既有契约（已存在，复用，不新建）**：`policy_engine.request_approval(tool, args, summary, goal_id, default_deny=True) -> "approve"|"reject"|"timeout"`（policy_engine.py:257-289）。
+- **复用而非新建**：Decision（agent_runtime）直接调用既有 `policy.request_approval`（agent_runtime.py:561）；`mcp_host`/`permission_guard` 同样复用（mcp_host/executor.py:51；permission_guard.py:92-94）。
+- **无第二 Approval 系统**：已静态验证（§6）。
+- **Apability → Approval 方向正确**：Runtime/Executor → Policy/Approval（允许）；Approval/Capability → Runtime/Cognitive（禁止，已验证无反向依赖）。
+
+---
+
+## 11. Security Verification
+
+| 检查 | 结果 | 证据 |
+|---|---|---|
+| Planner ≠ Executor（无 Planner→Executor 直连） | PASS | `_execute_task` 经 `_execution_run`（Execution.run）收口，不直调 execute_tool（agent_runtime.py:566） |
+| Decision ≠ Execution | PASS | Decision=policy.evaluate 结果；Execution=execute_tool，经 Execution.run 分隔 |
+| Policy ≠ Approval（各自单一） | PASS | policy_engine.py 内 evaluate 与 request_approval 分离且唯一 |
+| Approval ≠ Capability | PASS | request_approval 只裁决，不执行；执行在获批后由 Executor 完成 |
+| Capability ≠ Tool implementation | PASS | 能力 id → execute_capability → MCPExecutor/execute_tool，经 policy 门 |
+| Cognitive → DB | DENY | cognitive/* 零执行导入（§3 静态核查） |
+| Cognitive → Executor/Capability/Policy（反向执行链） | DENY | cognitive/* 不 import executor/capability_os/capability_runtime/policy_engine |
+| Agent Runtime → Memory DB | DENY | （继承自 P5.2） |
+| Memory → Cognitive（反向） | DENY | （继承自 P5.2，memory.py 仅 import memory_projection） |
+| 无第二 Retrieval/Lifecycle/Consolidation | PASS | （继承自 P5.1/P5.2） |
+| auto_approve 语义保留（M-05） | PASS | `mcp_host/executor._authorize` 中 `auto_approve` 参数**不参与决策**（mcp_host/executor.py:28-58）；confirm 级一律走 `request_approval`，不被静默放行 |
+| Context 不执行 Capability | PASS | context/facade.py 仅 import builder/models/memory，无 capability 执行依赖 |
+
+**Security Boundary：PRESERVED（未改一行安全相关代码）。**
+
+---
+
+## 12. Tests
+
+新增 `tests/test_p5_3_decision_approval.py`（13 用例，全绿），覆盖 §11 A–M：
+
+| 测试 | 覆盖 | 类型 |
+|---|---|---|
+| `test_cognitive_has_no_execution_imports` | A,G（Cognitive 无执行依赖） | 静态 |
+| `test_no_second_policy_approval_executor_modules` | H,I,J（无第二套系统模块） | 静态 |
+| `test_only_one_capability_approval_free_function` | I（唯一能力级 request_approval） | 静态 |
+| `test_capability_runtime_converges_to_single_execution` | J（适配层收敛，非第二 Executor） | 静态 |
+| `test_decision_single_executor_entry` | E,§5（Decision 经单一入口收口） | 静态 |
+| `test_context_does_not_execute_capability` | §5（Context 不执行能力） | 静态 |
+| `test_policy_approval_capability_boundary` | C,D（Decision→Capability 经单一入口且该入口强制 Policy/Approval） | 静态 |
+| `test_policy_has_no_reverse_runtime_cognitive_dependency` | §8（反向依赖缺失） | 静态 |
+| `test_single_executor_enforces_policy_gate` | B,E（block 裁决下 execute_tool 不被调用） | 真实链路行为 |
+| `test_decision_confirm_routes_through_approval` | B,C,D（confirm→request_approval→Capability） | 真实链路行为 |
+| `test_auto_approve_does_not_bypass_confirm` | F（M-05 confirm 不被 auto_approve 旁路） | 真实链路行为（_authorize） |
+| `test_p51_p52_modules_load` | K,L（P5.1/P5.2 模块冒烟） | 冒烟 |
+| `test_security_boundary_tests_collectable` | M（Security/P5.1/P5.2 测试可收集） | 冒烟 |
+
+行为测试仅 stub 叶子工具（`tools.execute_tool`）与 policy 裁决（`policy_engine.evaluate/request_approval`），边界本身（Decision→Policy→Approval→Capability→Executor）走真实代码（符合「测试优先真实链路，禁止大规模 mock 掩盖架构错误」）。
+
+---
+
+## 13. Regression
+
+| 套件 | 结果 |
+|---|---|
+| P5.3 定向 `test_p5_3_decision_approval.py` | **13 passed** |
+| P5.1 `test_p5_1_cognitive_context.py` | passed（含于下项） |
+| P5.2 `test_p5_2_memory_adapter.py` | passed |
+| Security `test_p2_real_chat_runtime.py` + `test_goal_decision_engine.py` | passed |
+| 上述合集 | **82 passed / 0 failed** |
+| 全量 `tests/` | **508 passed / 9 failed / 0 errors** |
+
+- P5.3 引入的 NEW REGRESSION：**0**。
+- 全量 508 = 495（P5.2 后）+ 13（P5.3）；原始套件维持冻结基线，零 P5.3 回归。
+- 未为通过测试修改任何旧测试（遵守 §14 测试纪律）。
+
+---
+
+## 14. Remaining Failures
+
+9 个失败与冻结基线**逐项一致**，全部为既有 B/D 类，无任何 P5.3 范围失败：
+
+| 失败测试 | 归类 | 属主 |
+|---|---|---|
+| phase7-order2.backend.test.py::test_be_count / test_symmetry | B（陈旧 event-contract） | P5.8 |
+| phase7-order3.backend.test.py::test_be_count / test_symmetry | B（陈旧 event-contract） | P5.8 |
+| phase8-mvp.backend.test.py::test_contract | B（陈旧 event-contract） | P5.8 |
+| phase8-order1.backend.test.py::test_contract | B（陈旧 event-contract） | P5.8 |
+| phasec_native_runtime.test.py::TestPriorRegression::test_gate_guard_passes | B（陈旧契约） | P5.8 |
+| test_external.py::test_asr_transcribe_disabled_without_key | D（环境/ASR） | 环境 |
+| test_external.py::test_status_default_all_disabled | D（环境/ASR） | 环境 |
+
+- A 类（P5.3 新引入）= **0**；C 类（环境依赖）= **0**（上述 D 为环境配置类，非 P5.3 引入）。
+- 按指令**不修复** B/D 类预存失败，不修改无关测试。
+
+---
+
+## 15. Scope Audit
+
+| 阶段/边界 | 状态 |
+|---|---|
+| P5.1（Cognitive Context） | COMPLETE / unchanged |
+| P5.2（Canonical Memory Adapter） | COMPLETE / unchanged |
+| **P5.3（Decision/Approval Boundary）** | **COMPLETE**（ARCHITECTURE ALREADY SATISFIED） |
+| P5.4（Lifecycle） | **NOT IMPLEMENTED** |
+| P5.5（World State） | **NOT IMPLEMENTED** |
+| P5.6（Learning） | **NOT IMPLEMENTED** |
+| P5.7（Proactive） | **NOT IMPLEMENTED** |
+| P5.8（EventBus） | **NOT IMPLEMENTED** |
+
+变更面审计：
+- UI = 0；Voice Orb = 0；GUI = 0；ASR = 0；TTS = 0
+- Memory = 0（P5.2 后未再改动）
+- World State = 0；Learning = 0；Proactive = 0
+- Security Boundary = **PRESERVED**
+- Cognitive 执行依赖 = 0（未新增任何 import）
+
+**P5.3 之外无无关文件变化**（仅新增 1 个测试文件）。
+
+---
+
+## 16. Git/Diff Audit
+
+- 仓库为 git 仓库。本阶段**未产生任何 production diff**（0 文件改动）。
+- 唯一新增（untracked）：`tests/test_p5_3_decision_approval.py`。
+- 无 P5.1/P5.2/Security 文件被修改（继承架构，无回归）。
+- 验证方式：定向 grep 确认 cognitive/、policy_engine.py、mcp_host/executor.py、capability_os/__init__.py、agent_runtime.py 在 P5.3 阶段**无新增执行相关改动**；全量回归 508/9/0 与冻结基线一致，佐证无副作用改动。
+
+---
+
+## 17. Architecture Verdict
+
+```
+User Intent
+    ↓
+Context (facade.py — 不执行能力)        ✅ 已验证
+    ↓
+Goal (goals.py)
+    ↓
+Planner (_plan_gate / goal_decision_engine)  ✅ 已存在
+    ↓
+Decision (_execute_task: policy.evaluate → auto/confirm/block)  ✅ 已存在、单一
+    ↓
+Action Required?
+    ├── NO  → Response
+    └── YES → Policy (policy_engine.evaluate)  ✅ 全局唯一裁决
+              ↓
+            Approval (policy_engine.request_approval)  ✅ 全局唯一审批
+              ↓
+            Capability (capability_os / mcp_host / permission_guard / capability_runtime 适配层)
+              ↓
+            Executor (ai_core.execution.run → tools.execute_tool)  ✅ 单一收口
+              ↓
+            Result
+```
+
+**门禁结论（§16）**：
+1. ONE MEMORY ENGINE = PASS（继承 P5.1/P5.2）
+2. ONE MEMORY WRITE AUTHORITY = PASS（继承 P5.2）
+3. Cognitive → Memory = FACADE ONLY = PASS
+4. Agent Runtime → Memory = FACADE ONLY = PASS
+5. **ONE DECISION BOUNDARY = PASS** ✅（本阶段确认）
+6. **ONE POLICY = PASS** ✅
+7. **ONE APPROVAL = PASS** ✅
+8. **ONE CAPABILITY EXECUTOR = PASS** ✅
+9. No Cognitive → DB = PASS
+10. No Agent Runtime → DB = PASS
+11. No second Retrieval = PASS
+12. No second Lifecycle = PASS
+13. No second Consolidation = PASS
+14. No second Approval/Policy/Executor = PASS
+15. No destructive migration = PASS（本阶段零数据迁移）
+16. Existing Memory Governance preserved = PASS
+17. Existing Retrieval preserved = PASS
+18. Existing Context preserved = PASS
+19. UI = 0 = PASS
+20. Security Boundary = PRESERVED = PASS
+
+**Architecture Verdict：PASS — P5.3 boundary 已架构化、单一、被强制；无第二系统；Cognitive 零执行依赖。**
+
+---
+
+## 18. Recommendation for P5.4
+
+1. **P5.3 无需后续代码补丁**：边界已满足，建议将本报告的契约验证测试纳入 CI 门禁，防止未来引入第二套 Decision/Policy/Approval/Executor。
+2. **P5.4（Lifecycle）入口建议**：Lifecycle 应继续复用既有 `memory.py` Governance/Lifecycle（P5.1 已落地），新增生命周期接线时须遵守本阶段确立的单向依赖（Runtime→Policy/Approval/Capability，禁止反向）。
+3. **B/D 类失败**：交由各自属主（P5.8 / 环境）处理，P5.3 阶段不碰。
+4. **STOP**：P5.3 已完成，等待架构评审；**不自动进入 P5.4**，不修改 UI / Security Boundary / P5.1 F1-F3 / P5.2。
+
+---
+
+*证据绑定真实 file:line；所有结论可在 `G:\ZhuangZhou\zhuangzhou-ui` 源码与 `tests/test_p5_3_decision_approval.py` 复验。*

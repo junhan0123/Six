@@ -1,0 +1,108 @@
+/*
+ * phase6-runtime-viz.frontend.test.js — Phase 6 Order 3/5/6 运行时可视化绑定验证
+ * 运行：node tests/phase6-runtime-viz.frontend.test.js
+ * 验证项：
+ *   - Execution Timeline（User Goal→Planner→Reasoning→Tool→Reflection→Result）从 AppState 派生。
+ *   - Memory Context（记忆/知识/世界模型）从 AppState 派生。
+ *   - 单一来源纪律：模块不直连后端（无 fetch / XHR / /api/ 调用）。
+ * 不依赖浏览器 / Three.js / 网络（纯状态机单测）。
+ */
+'use strict';
+const assert = require('assert');
+const path = require('path');
+const fs = require('fs');
+
+require(path.join(__dirname, '../zz-events.js'));             // 设置 global.ZZ_EVENTS（app-state.js 依赖）
+require(path.join(__dirname, '../app-state.js'));             // 设置 global.AppState
+const RuntimeViz = require(path.join(__dirname, '../runtime-visualization.js'));
+const AppState = require(path.join(__dirname, '../app-state.js'));
+const ZZ = require(path.join(__dirname, '../zz-events.js'));
+const E = ZZ.EVENTS;
+
+let pass = 0, fail = 0;
+function check(name, fn) {
+  try { fn(); console.log('  [PASS] ' + name); pass++; }
+  catch (e) { console.log('  [FAIL] ' + name + '\n      ' + e.message); fail++; }
+}
+
+// 1) Execution Timeline：完整生命周期推进
+AppState.applyEvent(E.GOAL_CREATED, { goalId: 1, title: '分析项目结构', priority: 'high' });
+AppState.applyEvent(E.GOAL_RUNNING, { goalId: 1 });   // 设置 exec.currentGoalId（执行中目标）
+AppState.applyEvent(E.AGENT_CREATED, { agentId: 'a1', goalId: 1, name: '庄周编排体', type: 'orchestrator' });
+AppState.applyEvent(E.AGENT_STARTED, { agentId: 'a1', goalId: 1 });
+AppState.applyEvent(E.AGENT_THINKING, { agentId: 'a1', goalId: 1 });
+AppState.applyEvent(E.TASK_CREATED, { taskId: 10, goalId: 1, agentId: 'a1', title: '读取文件' });
+AppState.applyEvent(E.TASK_RUNNING, { taskId: 10, goalId: 1, agentId: 'a1', progress: 30 });
+AppState.applyEvent(E.MEMORY_CREATED, { memoryId: 'm1', goalId: 1, title: '项目结构摘要', source: 'reflection' }); // 真实流程：先 Created（绑定 goalId）
+AppState.applyEvent(E.MEMORY_STORED, { memoryId: 'm1', goalId: 1, title: '项目结构摘要', knowledgeId: 'k1', source: 'reflection' });
+
+check('ExecutionTimeline: 6 个阶段且顺序正确', () => {
+  const tl = RuntimeViz.getExecutionTimeline(AppState.getState());
+  assert.strictEqual(tl.length, 6);
+  assert.deepStrictEqual(tl.map(s => s.stage),
+    ['user_goal', 'planner', 'reasoning', 'tool', 'reflection', 'result']);
+});
+check('ExecutionTimeline: user_goal=Active', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[0].status, 'Active');
+});
+check('ExecutionTimeline: planner=Thinking（agent 当前状态）', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[1].status, 'Thinking');
+});
+check('ExecutionTimeline: reasoning=Active（Thinking）', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[2].status, 'Active');
+});
+check('ExecutionTimeline: tool=Active（Running）', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[3].status, 'Active');
+});
+check('ExecutionTimeline: reflection=Done（Stored）', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[4].status, 'Done');
+});
+check('ExecutionTimeline: result=Idle（未完成）', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[5].status, 'Idle');
+});
+
+AppState.applyEvent(E.GOAL_COMPLETED, { goalId: 1, progress: 100 });
+check('ExecutionTimeline: result=Done（Completed）', () => {
+  assert.strictEqual(RuntimeViz.getExecutionTimeline(AppState.getState())[5].status, 'Done');
+});
+
+// 2) Memory Context
+check('MemoryContext: memories 含 m1', () => {
+  const mc = RuntimeViz.getMemoryContext(AppState.getState());
+  assert.strictEqual(mc.memories.length, 1);
+  assert.strictEqual(mc.memories[0].id, 'm1');
+});
+check('MemoryContext: knowledge 含 k1（来源 reflection）', () => {
+  const mc = RuntimeViz.getMemoryContext(AppState.getState());
+  assert.strictEqual(mc.knowledge.length, 1);
+  assert.strictEqual(mc.knowledge[0].source, 'reflection');
+});
+check('MemoryContext: worldModel 初始为 0 集合', () => {
+  const mc = RuntimeViz.getMemoryContext(AppState.getState());
+  assert.strictEqual(mc.worldModel.windows, 0);
+  assert.strictEqual(mc.worldModel.processes, 0);
+});
+check('MemoryContext: context.loadedItems = 记忆 + 知识', () => {
+  const mc = RuntimeViz.getMemoryContext(AppState.getState());
+  assert.strictEqual(mc.context.loadedItems, 2);
+});
+
+// World Model 投影（Phase 7 Order 1 事件）
+AppState.applyEvent(E.WINDOW_OPENED, { windowId: 'w1', title: '编辑器', appId: 'a' });
+AppState.applyEvent(E.PROCESS_SPAWNED, { pid: 999, name: 'node' });
+check('MemoryContext: worldModel 随 WINDOW_OPENED / PROCESS_SPAWNED 更新', () => {
+  const mc = RuntimeViz.getMemoryContext(AppState.getState());
+  assert.strictEqual(mc.worldModel.windows, 1);
+  assert.strictEqual(mc.worldModel.processes, 1);
+});
+
+// 3) 单一来源纪律：不直连后端
+check('RuntimeViz 不直连后端（无 fetch / XHR / /api/）', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../runtime-visualization.js'), 'utf8');
+  assert.ok(!src.includes('fetch('), '含 fetch 直连');
+  assert.ok(!src.includes('XMLHttpRequest'), '含 XHR 直连');
+  assert.ok(!src.includes('/api/'), '含 /api/ 直连');
+});
+
+console.log(`\nRUNTIME VIZ (Order 3/5/6): ${fail === 0 ? 'PASS' : 'FAIL'}  (passed=${pass}, failed=${fail})`);
+process.exit(fail === 0 ? 0 : 1);

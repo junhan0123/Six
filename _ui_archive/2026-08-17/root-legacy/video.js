@@ -1,0 +1,87 @@
+// video.js —— 全屏视频播放面板（照 hotspot 模式动态注入 DOM）
+// 由 app.js handleToolEvent 收到 { xiao6_event:'panel', panel:'video', url, title } 时调用 window.ZZVideo.open()
+
+const VID = { panel: null, frame: null, native: null, titleEl: null, open: false };
+
+// 把任意视频链接规整成可嵌入的播放器地址
+function vidIframeUrl(raw) {
+  if (!raw) return '';
+  const u = raw.trim();
+  // 已经是嵌入页，直接用
+  if (/player\.bilibili\.com\/player\.html/.test(u) || /youtube\.com\/embed\//.test(u)) return u;
+  // B 站 BV 链接 → 官方嵌入播放器（支持 autoplay）
+  const bili = u.match(/bilibili\.com\/video\/(BV[0-9A-Za-z]+)/i);
+  if (bili) return `https://player.bilibili.com/player.html?bvid=${bili[1]}&autoplay=1&high_quality=1&danmaku=0`;
+  // YouTube 普通 / 短链 → embed
+  const yt = u.match(/youtube\.com\/watch\?v=([0-9A-Za-z_-]+)/i) || u.match(/youtu\.be\/([0-9A-Za-z_-]+)/i);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1`;
+  // 其它（腾讯 / 直链 mp4 等）原样返回，交给 iframe 或原生 <video> 兜底
+  return u;
+}
+
+function vidBuild() {
+  if (VID.panel) return;
+  const html = `
+  <div class="video-panel" id="video-panel">
+    <div class="video-backdrop" data-close="1"></div>
+    <div class="video-stage">
+      <div class="video-bar">
+        <div class="video-title" id="video-title">视频</div>
+        <button class="video-close" id="video-close" title="关闭（Esc）" aria-label="关闭"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-close"/></svg></button>
+      </div>
+      <div class="video-frame-wrap">
+        <iframe id="video-frame" class="video-frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowfullscreen frameborder="0" src=""></iframe>
+        <video id="video-native" class="video-frame" hidden controls playsinline></video>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  VID.panel = document.getElementById('video-panel');
+  VID.frame = document.getElementById('video-frame');
+  VID.native = document.getElementById('video-native');
+  VID.titleEl = document.getElementById('video-title');
+  document.getElementById('video-close').addEventListener('click', vidClose);
+  VID.panel.querySelector('[data-close]').addEventListener('click', vidClose);
+}
+
+function vidOpen(url, title) {
+  vidBuild();
+  if (!url) return;
+  const embed = vidIframeUrl(url);
+  VID.titleEl.textContent = title || '视频';
+  // 本地 / 直链媒体文件走原生 <video>，其余走嵌入 iframe
+  if (/\.(mp4|webm|ogg|m3u8)(\?|$)/i.test(url) || !/^https?:\/\//.test(url)) {
+    VID.frame.hidden = true;
+    VID.native.hidden = false;
+    VID.native.src = url;
+    try { VID.native.play().catch(() => {}); } catch (_) {}
+  } else {
+    VID.native.hidden = true;
+    VID.frame.hidden = false;
+    VID.frame.src = embed;
+  }
+  requestAnimationFrame(() => document.body.classList.add('video-mode'));
+  VID.open = true;
+  window.dispatchEvent(new CustomEvent('xiao6:video-mode', { detail: { active: true, url } }));
+  // Sprint 1/2：登记到 OverlayManager（统一 ESC / 焦点 / 栈）
+  if (window.OverlayManager) window.OverlayManager.track('video', { el: VID.panel, onClose: vidCloseImpl, type: window.OverlayManager.OverlayType.PANEL, trap: false });
+}
+
+function vidCloseImpl() {
+  document.body.classList.remove('video-mode');
+  VID.open = false;
+  // 延迟清空 src，避免关闭瞬间还在出声
+  setTimeout(() => {
+    if (VID.frame) VID.frame.src = '';
+    if (VID.native) { try { VID.native.pause(); } catch (_) {} VID.native.removeAttribute('src'); }
+  }, 350);
+  window.dispatchEvent(new CustomEvent('xiao6:video-mode', { detail: { active: false } }));
+}
+
+function vidClose() {
+  if (window.OverlayManager && window.OverlayManager.isOpen('video')) window.OverlayManager.close('video');
+  else vidCloseImpl();
+}
+
+window.ZZVideo = { open: vidOpen, close: vidClose };

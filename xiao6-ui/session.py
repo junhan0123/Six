@@ -9,7 +9,7 @@
   * Runtime     → agent_runtime.py（只读投影，不改执行逻辑）
   * Event       → eventbus.py（本阶段不新增任何事件；复用既有 DOMAIN 事件）
   * Memory      → memory / memory_v2（本阶段不涉及）
-- 本模块仅持久化两种“协调元数据 / 引用指针”（位于既有 zhuangzhou.db，非新 db 文件）：
+- 本模块仅持久化两种“协调元数据 / 引用指针”（位于既有 xiao6.db，非新 db 文件）：
   * session_registry   —— 会话生命周期协调索引（created_at/updated_at/status），无内容列。
   * session_checkpoints —— 可恢复边界的**引用**（goal_id/task_id/chat_log_id/runtime_ref），
                           不复制目标/任务/对话内容。

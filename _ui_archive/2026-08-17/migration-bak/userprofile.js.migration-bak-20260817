@@ -1,0 +1,147 @@
+// userprofile.js — 庄周 · 用户画像只读面板（Phase 2 · P1 认知层前端）
+// 拉取 /api/user_model 与 /api/episodes，经 window.ZZPanel 渲染到通用侧弹面板。
+// 仅读取、不修改。遵循既有 ES module 桥约定：对外暴露 window.ZZUserProfile。
+//
+// 依赖：app.js 暴露的 window.ZZPanel（{open, close, update}）。
+// 本模块自包含：自行绑定 rail chip 的点击事件。
+
+// ─── 工具 ───
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function isBlank(v) {
+  if (v == null) return true;
+  if (typeof v === 'string') return v.trim() === '';
+  if (Array.isArray(v)) return v.length === 0 || v.every(isBlank);
+  if (typeof v === 'object') return Object.keys(v).length === 0 || Object.values(v).every(isBlank);
+  return false;
+}
+
+// 沟通风格字段的中文可读映射
+const CS_LABELS = {
+  verbosity: { concise: '简洁', verbose: '详尽' },
+  formality: { casual: '随意', formal: '正式' },
+  humor: { welcome: '可接受幽默', avoid: '避免幽默' },
+};
+
+function fmtIdentity(idn) {
+  if (!idn || typeof idn !== 'object') return '';
+  return [idn.name, idn.role, idn.org].filter(x => x && String(x).trim()).join(' · ');
+}
+
+function fmtCommStyle(cs) {
+  if (!cs || typeof cs !== 'object') return '';
+  const out = [];
+  for (const [k, lbl] of Object.entries(CS_LABELS)) {
+    const v = cs[k];
+    if (v && lbl[v]) out.push(lbl[v]);
+  }
+  return out.join(' / ');
+}
+
+function fmtPrefs(p) {
+  if (!p || typeof p !== 'object') return '';
+  const bits = [];
+  for (const [k, v] of Object.entries(p)) {
+    if (isBlank(v)) continue;
+    const val = Array.isArray(v) ? v.join('、') : v;
+    bits.push(`${k} = ${val}`);
+  }
+  return bits.join('；');
+}
+
+// ─── 渲染基元（复用既有 .zz-panel-* 样式）───
+function section(title, bodyHtml) {
+  return `<div class="zz-panel-section"><div class="zz-panel-section-title">${esc(title)}</div>${bodyHtml}</div>`;
+}
+function tags(arr) {
+  const items = (arr || []).filter(x => x != null && String(x).trim())
+    .map(x => `<span class="zz-panel-tag">${esc(x)}</span>`).join('');
+  return `<div class="zz-panel-tags">${items}</div>`;
+}
+function list(arr) {
+  const items = (arr || []).filter(x => x != null && String(x).trim())
+    .map(x => `<li>${esc(x)}</li>`).join('');
+  return `<ul class="zz-panel-list">${items}</ul>`;
+}
+
+// ─── 用户模型渲染 ───
+function renderUserModel(m) {
+  if (!m || typeof m !== 'object') return '';
+  const parts = [];
+  const idn = fmtIdentity(m.identity);
+  if (idn) parts.push(section('身份', `<div class="zz-panel-name">${esc(idn)}</div>`));
+  if (Array.isArray(m.expertise) && m.expertise.length) parts.push(section('专长领域', tags(m.expertise)));
+  const cs = fmtCommStyle(m.communication_style);
+  if (cs) parts.push(section('沟通风格', `<div class="zz-panel-tagline">${esc(cs)}</div>`));
+  const pf = fmtPrefs(m.preferences);
+  if (pf) parts.push(section('偏好', `<div class="zz-panel-tagline">${esc(pf)}</div>`));
+  if (Array.isArray(m.recurring_projects) && m.recurring_projects.length) parts.push(section('长期项目', list(m.recurring_projects)));
+  if (Array.isArray(m.values) && m.values.length) parts.push(section('价值观', list(m.values)));
+  if (Array.isArray(m.feedback) && m.feedback.length) parts.push(section('被纠正 / 偏好反馈', list(m.feedback)));
+  return parts.join('');
+}
+
+// ─── 情节记忆渲染 ───
+function renderEpisodes(eps) {
+  if (!Array.isArray(eps) || !eps.length) {
+    return section('相关经历', `<div class="zz-panel-tagline">暂无相关经历。聊得越多、越深入，庄周会自动记住重要的事。</div>`);
+  }
+  const items = eps.map(e => {
+    const cat = esc(e.category || '');
+    const title = esc(e.title || '(无标题)');
+    const sum = esc((e.summary || '').slice(0, 220));
+    const created = esc(e.created || '');
+    const imp = typeof e.importance === 'number' ? e.importance.toFixed(2) : '';
+    return `<div class="up-ep">
+      <div class="up-ep-head"><span class="up-ep-cat">${cat}</span><span class="up-ep-title">${title}</span></div>
+      <div class="up-ep-sum">${sum}</div>
+      <div class="up-ep-meta">${created}${imp ? ` · 重要度 ${imp}` : ''}</div>
+    </div>`;
+  }).join('');
+  return section(`相关经历（${eps.length}）`, `<div class="up-ep-list">${items}</div>`);
+}
+
+// ─── 数据加载 ───
+async function loadData() {
+  const [umRes, epRes] = await Promise.allSettled([
+    fetch('/api/user_model').then(r => r.json()),
+    fetch('/api/episodes?limit=30').then(r => r.json()),
+  ]);
+  const um = umRes.status === 'fulfilled' ? (umRes.value || {}) : {};
+  const eps = epRes.status === 'fulfilled' ? (epRes.value.episodes || []) : [];
+  return { um, eps };
+}
+
+// ─── 打开面板 ───
+async function open() {
+  const panel = window.ZZPanel;
+  if (!panel || !panel.open) { console.warn('[userprofile] ZZPanel 未就绪'); return; }
+  // 先弹窗 + loading，再异步拉取，避免白屏
+  panel.open({
+    title: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-brain"/></svg> 用户画像',
+    subtitle: '庄周记住了你',
+    html: '<div class="up-loading">读取认知层…</div>',
+  });
+  try {
+    const { um, eps } = await loadData();
+    const umHtml = renderUserModel(um);
+    const umBlock = umHtml || '<div class="zz-panel-tagline">庄周还在了解你。多聊几句，它会自动记住你的身份、偏好与长期项目。</div>';
+    const epBlock = renderEpisodes(eps);
+    const footer = '<div class="zz-panel-footer"><span>数据本地存储 · 仅本机</span>' +
+      '<button class="up-refresh" id="upRefreshBtn" type="button">↻ 刷新</button></div>';
+    panel.update({ html: umBlock + epBlock + footer });
+    const rb = document.getElementById('upRefreshBtn');
+    if (rb) rb.addEventListener('click', () => open());
+  } catch (err) {
+    panel.update({ html: `<div class="zz-panel-tagline">读取失败：${esc(err && err.message ? err.message : err)}</div>` });
+  }
+}
+
+// ─── 对外桥 ───
+window.ZZUserProfile = { open, refresh: open };
+
+// ─── 绑定 rail chip（自包含，遵循 ES module 桥约定）───
+const _btn = document.getElementById('btnUserProfile');
+if (_btn) _btn.addEventListener('click', () => open());

@@ -1,0 +1,146 @@
+/*
+ * phase7-order4.frontend.test.js — Phase 7 Order 4 前端状态投影验证
+ * 运行：node tests/phase7-order4.frontend.test.js
+ * 验证项：
+ *  1) ComputerAction 生命周期 reducer（PLANNED/CALLED/DONE/VERIFIED/FAILED/DENIED/UNVERIFIED）
+ *     → 写入 state.computer.actions（AppState 单一写入入口 applyEvent）
+ *  2) Overlay 数据源（state.computer.actions）随事件正确演进到终态
+ *  3) Galaxy / Overlay 红线：电脑动作不创建新的 Galaxy 节点；不覆盖 Goal/Agent/Task 状态
+ *  不依赖浏览器 / Three.js / 网络（纯状态机单测）。
+ */
+'use strict';
+const assert = require('assert');
+const path = require('path');
+
+const ZZ = require(path.join(__dirname, '../zz-events.js'));
+const AppState = require(path.join(__dirname, '../app-state.js'));
+const GalaxyState = require(path.join(__dirname, '../galaxy-state.js'));
+const E = ZZ.EVENTS;
+
+let pass = 0, fail = 0;
+function check(name, fn) {
+  try { fn(); console.log('  [PASS] ' + name); pass++; }
+  catch (e) { console.log('  [FAIL] ' + name + '\n      ' + e.message); fail++; }
+}
+
+// UI 观察者（模拟 Overlay / glance 订阅 computer.actions）
+const uiEvents = [];
+const unsub = AppState.subscribe('*', (payload, name) => uiEvents.push({ name, payload }));
+
+// 基准 Goal/Agent/Task（用于验证电脑动作事件不覆盖其状态）
+AppState.applyEvent(E.GOAL_CREATED, { goalId: 7, title: '测试目标', priority: 'high' });
+AppState.applyEvent(E.AGENT_CREATED, { agentId: 'a7', goalId: 7, name: '庄周编排体', type: 'orchestrator' });
+AppState.applyEvent(E.TASK_CREATED, { taskId: 500, goalId: 7, agentId: 'a7', title: '打开记事本' });
+AppState.applyEvent(E.TASK_STARTED, { taskId: 500, goalId: 7, agentId: 'a7' });
+
+// ---------------------------------------------------------------------------
+console.log('\n=== Phase 7 Order 4 前端状态投影单测 ===');
+
+// 1) 完整生命周期 PLANNED → CALLED → DONE → VERIFIED（单一动作 a1）
+AppState.applyEvent(E.COMPUTER_ACTION_PLANNED, {
+  actionId: 'a1', capability: 'open_application', target: 'notepad.exe',
+  risk: 'MEDIUM', expectedEffect: '启动记事本', parameters: { target: 'notepad.exe' }, goalId: 7
+});
+check('PLANNED：action a1 已建，status=planned，capability/target 写入', () => {
+  const a = AppState.getState().computer.actions['a1'];
+  assert.ok(a, 'action a1 缺失');
+  assert.strictEqual(a.status, 'planned');
+  assert.strictEqual(a.capability, 'open_application');
+  assert.strictEqual(a.target, 'notepad.exe');
+  assert.strictEqual(a.risk, 'MEDIUM');
+});
+
+AppState.applyEvent(E.COMPUTER_ACTION_CALLED, { actionId: 'a1', capability: 'open_application', permissionDecision: 'confirm', goalId: 7 });
+check('CALLED：status=called，permissionDecision=confirm', () => {
+  const a = AppState.getState().computer.actions['a1'];
+  assert.strictEqual(a.status, 'called');
+  assert.strictEqual(a.permissionDecision, 'confirm');
+});
+
+AppState.applyEvent(E.COMPUTER_ACTION_DONE, { actionId: 'a1', capability: 'open_application', result: { ok: true, launched: 'notepad.exe' }, goalId: 7 });
+check('DONE：status=done，result 写入', () => {
+  const a = AppState.getState().computer.actions['a1'];
+  assert.strictEqual(a.status, 'done');
+  assert.ok(a.result && a.result.ok === true);
+});
+
+AppState.applyEvent(E.COMPUTER_ACTION_VERIFIED, { actionId: 'a1', capability: 'open_application', verified: true, detail: '应用已在运行观测中', goalId: 7 });
+check('VERIFIED：verified=true 且 status 由 done→verified（Overlay 终态）', () => {
+  const a = AppState.getState().computer.actions['a1'];
+  assert.strictEqual(a.verified, true);
+  assert.strictEqual(a.status, 'verified');
+  assert.strictEqual(a.verificationDetail, '应用已在运行观测中');
+});
+
+// 2) 失败路径：FAILED（动作 a2）
+AppState.applyEvent(E.COMPUTER_ACTION_PLANNED, { actionId: 'a2', capability: 'read_file', target: 'x.txt', risk: 'LOW', goalId: 7 });
+AppState.applyEvent(E.COMPUTER_ACTION_CALLED, { actionId: 'a2', capability: 'read_file', permissionDecision: 'auto', goalId: 7 });
+AppState.applyEvent(E.COMPUTER_ACTION_FAILED, { actionId: 'a2', capability: 'read_file', error: '读取失败', goalId: 7 });
+check('FAILED：status=failed，result.error 写入', () => {
+  const a = AppState.getState().computer.actions['a2'];
+  assert.strictEqual(a.status, 'failed');
+  assert.ok(a.result && a.result.error === '读取失败');
+});
+
+// 3) 拒绝路径：DENIED（动作 a3）
+AppState.applyEvent(E.COMPUTER_ACTION_PLANNED, { actionId: 'a3', capability: 'open_application', target: 'x', risk: 'MEDIUM', goalId: 7 });
+AppState.applyEvent(E.COMPUTER_ACTION_DENIED, { actionId: 'a3', capability: 'open_application', risk: 'MEDIUM', reason: '用户拒绝', goalId: 7 });
+check('DENIED：status=denied，decisionReason 写入', () => {
+  const a = AppState.getState().computer.actions['a3'];
+  assert.strictEqual(a.status, 'denied');
+  assert.strictEqual(a.decisionReason, '用户拒绝');
+});
+
+// 4) 验证未过：UNVERIFIED（动作 a4）
+AppState.applyEvent(E.COMPUTER_ACTION_PLANNED, { actionId: 'a4', capability: 'open_application', target: 'y', risk: 'MEDIUM', goalId: 7 });
+AppState.applyEvent(E.COMPUTER_ACTION_CALLED, { actionId: 'a4', capability: 'open_application', permissionDecision: 'confirm', goalId: 7 });
+AppState.applyEvent(E.COMPUTER_ACTION_DONE, { actionId: 'a4', capability: 'open_application', result: { ok: true }, goalId: 7 });
+AppState.applyEvent(E.COMPUTER_ACTION_UNVERIFIED, { actionId: 'a4', capability: 'open_application', verified: false, detail: '应用未在运行观测中出现', goalId: 7 });
+check('UNVERIFIED：verified=false，status 由 done→unverified', () => {
+  const a = AppState.getState().computer.actions['a4'];
+  assert.strictEqual(a.verified, false);
+  assert.strictEqual(a.status, 'unverified');
+});
+
+// 5) Overlay 数据源：getState().computer.actions 含 4 个动作
+check('Overlay 数据：computer.actions 含 4 个动作（a1-a4）', () => {
+  const acts = AppState.getState().computer.actions;
+  assert.strictEqual(Object.keys(acts).length, 4);
+});
+
+// 6) 红线：电脑动作不创建新的 Galaxy 节点
+check('红线：无 Computer Galaxy 节点（action:a1 未写入 GalaxyState，getNode 返回 null）', () => {
+  assert.strictEqual(GalaxyState.getNode('action:a1'), null);
+});
+check('红线：Task 轨道节点仍存在（task:500 未受电脑动作影响）', () => {
+  const n = GalaxyState.getNode('task:500');
+  assert.ok(n && n.type === 'task');
+});
+
+// 7) 红线：电脑动作事件不覆盖 Goal/Agent/Task 状态
+check('红线：电脑动作事件不覆盖 Goal(a7)/Agent(a7)/Task(500) 状态', () => {
+  assert.strictEqual(AppState.getGoal(7).status, 'Created');
+  assert.strictEqual(AppState.getAgent('a7').status, 'Created');
+  assert.strictEqual(AppState.getTask(500).status, 'Started');
+});
+
+// 8) UI 观察者收到完整 ComputerAction 生命周期
+const seq = uiEvents.map(e => e.name);
+[E.COMPUTER_ACTION_PLANNED, E.COMPUTER_ACTION_CALLED, E.COMPUTER_ACTION_DONE,
+ E.COMPUTER_ACTION_VERIFIED, E.COMPUTER_ACTION_FAILED, E.COMPUTER_ACTION_DENIED,
+ E.COMPUTER_ACTION_UNVERIFIED].forEach(ev => {
+  check('UI 观察者收到 ' + ev, () => {
+    assert.ok(seq.includes(ev), '未收到 ' + ev);
+  });
+});
+
+// 9) 单一来源纪律：所有事件名均来自 ZZ.EVENTS（无硬编码字符串绕过）
+check('合约纪律：7 个 ComputerAction 事件名均为 ZZ.EVENTS 常量', () => {
+  assert.ok([E.COMPUTER_ACTION_PLANNED, E.COMPUTER_ACTION_CALLED, E.COMPUTER_ACTION_DONE,
+    E.COMPUTER_ACTION_FAILED, E.COMPUTER_ACTION_DENIED, E.COMPUTER_ACTION_VERIFIED,
+    E.COMPUTER_ACTION_UNVERIFIED].every(Boolean));
+});
+
+unsub();
+console.log(`\nFRONTEND (Order 4): ${fail === 0 ? 'PASS' : 'FAIL'}  (passed=${pass}, failed=${fail})`);
+process.exit(fail === 0 ? 0 : 1);

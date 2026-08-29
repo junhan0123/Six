@@ -1,0 +1,92 @@
+# Phase 38I · 语音链加固实施报告（§1 / §4 / §6-§7 / §9 / §11）
+
+> 日期：2026-08-13 · 身份：Senior Developer（前端 / 语音链路）
+> 纪律：VERIFY → AUDIT → RESEARCH → PLAN → IMPLEMENT → VERIFY → REPORT → STOP
+> 范围：规范最高优先级语音链收口（研究先于代码，§1 强制首交付已先行产出）
+> 红线守查：未改 `server.py` / 未新增 API / 未改核心架构 / 密钥未回显 / 用户术语未泄漏
+
+---
+
+## 〇、本回合交付
+
+| 项 | 规范 | 状态 | 证据 |
+| --- | --- | --- | --- |
+| Hermes 语音真实研究（先于代码） | §1 | ✅ 完成 | `final/_audit/PHASE38I_HERMES_VOICE_RESEARCH.md` |
+| 双声音根因消除（speechSynthesis 退出正常回复链） | §4 | ✅ 完成 | `tts-engine.js` / `voice-core.js` 无 `speechSynthesis.speak` |
+| 单一播放责任 + 卡顿守卫 | §6-§7 | ✅ 完成 | `seq` 锁存 + `PLAYBACK_STALL_MS` |
+| TTS 文本净化（Sanitizer） | §9/§11 | ✅ 完成 | `sanitizeForTts` 12/12 单测通过 |
+| Edge TTS = 唯一实时 Provider（前端侧） | §2 | ✅ 合规 | 前端从不传 `__sovits__`，实时链 = `/api/speak`(edge-tts) |
+| GPT-SoVITS 不进入实时链（前端侧） | §3 | ✅ 合规 | 活体前端零 `__sovits__` 引用 |
+
+---
+
+## 一、§1 研究（REALITY FIRST，真实源码）
+
+样本：`G:/HermesData/hermes-agent/`
+- `docs/streaming-tts.md` — 四阶段管线 + 网关双播放抑制
+- `apps/desktop/src/lib/voice-playback.ts` — **全文无 `speechSynthesis`**；`sequence`+`isCurrent` 锁存；`PLAYBACK_STALL_MS=15s`
+- `apps/desktop/src/lib/speech-text.ts` — `sanitizeTextForSpeech`（单一净化器范本）
+- `agent/tts_provider.py` — TTS Provider ABC（built-ins always win）
+
+关键结论（写入研究文档附录）：
+- Hermes 正常回复链**从不调用 `speechSynthesis`** —— 直接验证本规范 §4「第二声音」红线。
+- 「one cleaner, all paths」：所有要念的文本只净化一次（§9/§11 范本）。
+- `sequence` 锁存 + 卡顿守卫 = §6/§7 工程实现范本。
+
+ZhuangZhou 真实证据：
+- 实时链：`FinalChat.send → /api/chat → FinalVoice.speakReply → FinalTTS.speak → POST /api/speak(edge-tts)`（`chat-runner.js` / `voice-core.js` / `tts-engine.js`）。
+- 后端路由（`server.py:3004`）：仅当 `config.TTS_BACKEND=="sovits"`+参考音频+可达才走 GPT-SoVITS；前端**从不**传 `__sovits__` → 前端侧实时链恒为 edge-tts（§2/§3 合规）。
+- 双声音根因（确定性）：`tts-engine.js:fallbackSpeak` 在 edge-tts 分句中途失败时，用 `speechSynthesis` 重读整段 `lastText`，而首句正以 edge-tts 播放 → 两声叠加。
+
+---
+
+## 二、IMPLEMENT（前端，零后端改动）
+
+### 2.1 消除双声音（§4）
+- `tts-engine.js`：删除 `fallbackSpeak`（speechSynthesis 重读）。`playNext()` 的 `.catch` 在 synth 失败后**静默放弃剩余队列**（已起播首句自然收尾，单一声音）。新增同音色 blob 兜底 `playViaElement`（fetch `/api/speak` → Blob → `<audio>`，仍是 edge-tts，绝不换声），仅在无 AudioContext 的极罕见环境启用。
+- `voice-core.js`：删除 `speakReply` / `speak` 中 `speechSynthesis` 兜底分支（FinalTTS 恒在，缺失则静默）。
+
+### 2.2 单一播放责任 + 卡顿守卫（§6-§7）
+- `seq` 自增锁存：`speak()` 内 `onDone` 回调仅当 `mySeq===seq` 时触发；`cancel()` 自增 `seq` 使过期播放失效（借鉴 Hermes `isCurrent`）。
+- `PLAYBACK_STALL_MS=15s`：每句起播 `armStall()`；`onended` 重置；超时无进度则复位，杜绝语音态卡死 "speaking"。
+
+### 2.3 TTS 文本净化（§9/§11）
+- 新增 `sanitizeForTts(text)`（移植 Hermes 并中文化）：剥离 fenced/inline code、markdown 链接→文本、URL→「链接」、emoji、标题/粗体/引用/列表标记、思考前缀（含 `…`/`...`/`。。。`），中文化段落合并。
+- 在 `speak()` 内、`splitSentences()` **之前**统一净化 —— 所有路径（语音回复 + proactive 播报）共用一处（"one cleaner, all paths"）。
+- 导出 `FinalTTS.sanitizeForTts` 供验证。
+
+---
+
+## 三、VERIFY（本回合实证）
+
+```
+node --check final/components/tts-engine.js        → OK
+node --check final/components/voice-core.js        → OK
+grep -rn "speechSynthesis.speak\|new SpeechSynthesisUtterance" final/components/  → NONE（第二声音根因消除）
+node final/_audit/_tts_sanitize_test.js             → 12 PASS / 0 FAIL
+```
+
+净化单测覆盖：加粗/行内代码、markdown 链接、裸 URL、代码块、思考前缀（含 `…`）、标题、引用、列表、emoji、多段合并、空输入；分句合理切分（长句≤60 字）。
+
+§45/§47 顺带核验：活体 `index.html` + `components/` 中 `RC/Beta/Phase/后端/server.py/EventBus/Planner/Executor` 仅出现在 **HTML 注释 / 代码注释**（用户不可见），无用户可见泄漏 → §45/§47 合规。
+
+---
+
+## 四、待确认项（STOP 前需你裁定，本回合未擅自处置）
+
+1. **`config.TTS_BACKEND` 与 §2/§3 张力**：当前后端 `/api/health` 返回 `tts_backend:"sovits"`，实时链**实际默认走 GPT-SoVITS**（若该后端已配参考音频且可达）。规范 §2「Edge TTS = 实时唯一 Provider」、§3「GPT-SoVITS 严禁参与实时链」与此冲突。前端侧已合规（从不注入 sovits）；翻转用户已配置项属配置决策，**本回合未改 `server.py`/config**。请裁定：(a) 保持 sovits 为自选实时音色；或 (b) 实时默认改回 edge-tts（改 config，不动 server.py）。
+2. **chat-history 产品化（§31）**：经核实，前序 Phase 已落地 —— `final/js/chat-log.js`（拉 `/api/chat/history?limit=50`）、`state.js`（保留 chatHistory）、`overlay-system.js:826-832`（「对话」层 + 「继续对话」按钮 → `FinalChat.continueSession`）、`chat-runner.js:110`（每轮 `FinalChatLog.refresh`）。§31 实质完成。
+3. **上下文阈值自动切换（§32-§38）**：尚未实施，需复用既有 Context Engine，禁新建第二套。下回合 RESEARCH 后实施。
+4. **最终报告 + E2E（§59-§62）**：待上述收口后产出 `PHASE38I_FINAL_REPORT.md` + `PHASE38I_E2E_VERIFICATION.md`，达标后 STOP。
+
+---
+
+## 五、红线守查
+
+| 红线 | 结果 |
+| --- | --- |
+| 不修改 `server.py` / 后端业务 | ✅ 纯前端改动 |
+| 不新增 API / 不改核心架构 | ✅ 仅消费既有 `/api/speak` |
+| 不突破 Electron 启动后端 | ✅ 未触碰 |
+| 密钥不明文回显 | ✅ 未涉及 |
+| 用户只看到庄周/对话/能力/记忆/语音/设置/状态 | ✅ §45/§47 核验通过 |

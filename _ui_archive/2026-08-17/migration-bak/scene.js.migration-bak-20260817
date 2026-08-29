@@ -1,0 +1,193 @@
+// scene.js —— 声明式场景卡片通道（参考实现 scene 同款，庄周架构重写）
+// 收到 { zhuangzhou_event:'scene', card:{id,kind,action,...} } 时由 app.js 调 window.ZZScene.apply(ev)。
+// 卡片按 id 幂等渲染 / 更新 / 移除，无需 agent 反复重发整块 UI。
+// 支持 kind：text/weather/media/choice/list/progress/metric/form/stack|row|col/selfcheck/awakening。
+// 容器卡（stack/row/col）的 children 可递归嵌套任意子卡。
+
+const ZZScene = (() => {
+  let layer = null;
+
+  function ensureLayer() {
+    if (layer) return layer;
+    const host = document.querySelector('.main') || document.body;
+    if (!host) return null;
+    layer = document.createElement('div');
+    layer.className = 'scene-layer';
+    host.appendChild(layer);
+    return layer;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function cardById(id) {
+    return layer ? layer.querySelector('.scene-card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]') : null;
+  }
+
+  function kindIcon(kind) {
+    return {
+      text: '▤', weather: '🌤', media: '🎬', choice: '◆', list: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-menu"/></svg>', progress: '◑',
+      metric: '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-chart"/></svg>', form: '✎', stack: '▥', row: '▤', col: '▤',
+      selfcheck: '✓', awakening: '✦',
+    }[kind] || '▤';
+  }
+
+  // 递归渲染卡片正文（不含 head）。composite 卡（stack/row/col）会递归调用。
+  function bodyHTML(card) {
+    const kind = card.kind || 'text';
+    const t = (card.body || '').trim();
+    let h = '';
+    if (t) h += '<div class="sc-text">' + esc(t) + '</div>';
+
+    if (kind === 'list') {
+      const items = card.items || [];
+      if (items.length) h += '<ul class="sc-list">' + items.map((it) => '<li>' + esc(it) + '</li>').join('') + '</ul>';
+    } else if (kind === 'choice') {
+      const items = card.items || [];
+      if (items.length) h += '<div class="sc-choices">' + items.map((it) =>
+        '<button class="sc-choice" data-opt="' + esc(it) + '">' + esc(it) + '</button>').join('') + '</div>';
+    } else if (kind === 'media') {
+      const url = (card.media_url || '').trim();
+      const mt = (card.media_type || 'image');
+      if (url) {
+        if (mt === 'video') h += '<button class="sc-media-btn" data-url="' + esc(url) + '"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-play"/></svg> 播放视频</button>';
+        else h += '<img class="sc-img" src="' + esc(url) + '" alt="' + esc(card.title || 'media') + '" loading="lazy">';
+      }
+    } else if (kind === 'progress') {
+      const pct = Math.max(0, Math.min(100, Number(card.percent || 0)));
+      h += '<div class="sc-progress"><div class="sc-bar"><div class="sc-fill" style="width:' + pct + '%"></div></div>' +
+           '<div class="sc-pct">' + pct + '%' + (card.status ? ' · ' + esc(card.status) : '') + '</div></div>';
+    } else if (kind === 'metric') {
+      const val = esc(card.value || '');
+      const unit = esc(card.unit || '');
+      const delta = (card.delta || '').trim();
+      const dir = (card.delta_dir || 'flat');
+      let deltaHTML = '';
+      if (delta) {
+        const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '■';
+        deltaHTML = '<span class="sc-delta sc-delta-' + esc(dir) + '">' + arrow + ' ' + esc(delta) + '</span>';
+      }
+      h += '<div class="sc-metric">' +
+           '<div class="sc-metric-val">' + val + (unit ? '<span class="sc-metric-unit">' + unit + '</span>' : '') + '</div>' +
+           (card.label ? '<div class="sc-metric-label">' + esc(card.label) + '</div>' : '') +
+           (deltaHTML ? '<div class="sc-metric-delta">' + deltaHTML + '</div>' : '') +
+           '</div>';
+    } else if (kind === 'form') {
+      const fields = card.fields || [];
+      const submit = esc(card.submit_text || '提交');
+      if (fields.length) {
+        h += '<form class="sc-form" onsubmit="return false;">' +
+             fields.map((f) => '<label class="sc-field"><span>' + esc(f.label || f.name) + '</span>' +
+               '<input class="sc-input" data-name="' + esc(f.name) + '" placeholder="' + esc(f.placeholder || '') + '"></label>').join('') +
+             '<button class="sc-submit" type="button">' + submit + '</button></form>';
+      }
+    } else if (kind === 'selfcheck') {
+      const items = card.items || [];
+      if (items.length) {
+        h += '<ul class="sc-check">' + items.map((it) =>
+          '<li class="' + (it.ok ? 'ok' : 'bad') + '"><span class="sc-tick">' + (it.ok ? '✓' : '<svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-close"/></svg>') + '</span>' +
+          esc(it.label) + '</li>').join('') + '</ul>';
+      }
+      if (card.summary) h += '<div class="sc-summary">' + esc(card.summary) + '</div>';
+    } else if (kind === 'awakening') {
+      if (card.button_label) h += '<button class="sc-awaken" type="button">' + esc(card.button_label) + '</button>';
+    } else if (kind === 'stack' || kind === 'row' || kind === 'col') {
+      const children = card.children || [];
+      if (children.length) {
+        const layout = kind === 'row' ? 'row' : 'col';
+        h += '<div class="sc-children sc-children-' + layout + '">' +
+             children.map((c) => '<div class="sc-child">' + bodyHTML(c) + '</div>').join('') + '</div>';
+      }
+    }
+    return h;
+  }
+
+  function render(card) {
+    if (!ensureLayer()) return;
+    const id = card.id;
+    const kind = card.kind || 'text';
+    let el = cardById(id);
+    const isNew = !el;
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'scene-card';
+      el.setAttribute('data-id', id);
+      layer.appendChild(el);
+    }
+    el.setAttribute('data-kind', kind);
+
+    let html = '';
+    const title = (card.title || '').trim();
+    if (title) {
+      html += '<div class="sc-head"><span class="sc-kind">' + kindIcon(kind) + '</span>' +
+              '<span class="sc-title">' + esc(title) + '</span>' +
+              '<button class="sc-close" title="移除" aria-label="移除">×</button></div>';
+    } else {
+      html += '<button class="sc-close sc-close--bare" title="移除" aria-label="移除">×</button>';
+    }
+    html += '<div class="sc-body">' + bodyHTML(card) + '</div>';
+    el.innerHTML = html;
+
+    el.querySelectorAll('.sc-close').forEach((b) => b.addEventListener('click', () => remove(id)));
+    el.querySelectorAll('.sc-choice').forEach((b) => b.addEventListener('click', () => {
+      const opt = b.getAttribute('data-opt') || b.textContent;
+      if (window.ZZChat && window.ZZChat.send) window.ZZChat.send(opt);
+      remove(id);
+    }));
+    const mv = el.querySelector('.sc-media-btn');
+    if (mv) mv.addEventListener('click', () => {
+      const u = mv.getAttribute('data-url');
+      if (u && window.ZZVideo) window.ZZVideo.open(u, title);
+    });
+    // form 提交：把各字段值拼成消息回传
+    const fm = el.querySelector('.sc-form');
+    if (fm) {
+      const btn = fm.querySelector('.sc-submit');
+      if (btn) btn.addEventListener('click', () => {
+        const parts = [];
+        fm.querySelectorAll('.sc-input').forEach((inp) => {
+          const nm = inp.getAttribute('data-name') || 'field';
+          const v = (inp.value || '').trim();
+          if (v) parts.push(nm + '：' + v);
+        });
+        const msg = parts.join('；') || (card.submit_text || '提交');
+        if (window.ZZChat && window.ZZChat.send) window.ZZChat.send(msg);
+        remove(id);
+      });
+    }
+    // awakening 按钮：回传按钮文字
+    const aw = el.querySelector('.sc-awaken');
+    if (aw) aw.addEventListener('click', () => {
+      const lbl = (card.button_label || '唤醒').trim();
+      if (window.ZZChat && window.ZZChat.send) window.ZZChat.send(lbl);
+      remove(id);
+    });
+
+    if (isNew) requestAnimationFrame(() => { el.classList.add('entering'); });
+  }
+
+  function remove(id) {
+    if (!layer) return;
+    const el = cardById(id);
+    if (!el) return;
+    el.classList.add('leaving');
+    setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 220);
+  }
+
+  function apply(ev) {
+    const card = ev && ev.card;
+    if (!card || !card.id) return;
+    if (card.action === 'remove') { remove(card.id); return; }
+    render(card);
+  }
+
+  function clear() {
+    if (!layer) return;
+    layer.innerHTML = '';
+  }
+
+  return { apply, remove, clear, render };
+})();
+window.ZZScene = ZZScene;

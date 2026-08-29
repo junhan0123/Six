@@ -22,7 +22,7 @@ def _fetch_hackernews(top=5):
     try:
         req = urllib.request.Request(
             "https://hacker-news.firebaseio.com/v0/topstories.json",
-            headers={"User-Agent": "ZhuangZhou/1.0"},
+            headers={"User-Agent": "Xiao6/1.0"},
         )
         ids = json.loads(urllib.request.urlopen(req, timeout=10).read())[:top]
         items = []
@@ -30,7 +30,7 @@ def _fetch_hackernews(top=5):
             try:
                 r = urllib.request.Request(
                     f"https://hacker-news.firebaseio.com/v0/item/{iid}.json",
-                    headers={"User-Agent": "ZhuangZhou/1.0"},
+                    headers={"User-Agent": "Xiao6/1.0"},
                 )
                 it = json.loads(urllib.request.urlopen(r, timeout=10).read())
                 if it and it.get("title"):

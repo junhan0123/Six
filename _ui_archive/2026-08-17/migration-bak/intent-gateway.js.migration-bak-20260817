@@ -1,0 +1,30 @@
+/*
+ * intent-gateway.js — 庄周 Phase 6 Order 5 · 前端意图网关客户端（薄层）
+ * ----------------------------------------------------------------------------
+ * 纪律（readiness §4 R1 / §5）：Command UI 只经本模块把自由文本投递到唯一
+ *   Intent Gateway 入口（/api/agent/intent）；状态变更由后端经 publish_domain()
+ *   → Event Bridge → AppState 回流，本模块与 command-palette 绝不直接写 AppState / 不直连业务逻辑。
+ *
+ * 链路：Command UI → ZZIntentGateway.dispatch → POST /api/agent/intent
+ *       → Backend Intent Gateway → publish_domain(INTENT_*) → Event Bridge → AppState → Galaxy State。
+ * 本文件不依赖 DOM / Three.js / 网络细节之外逻辑，可在 Node 中单测（fetch 由运行环境提供）。
+ */
+(function (global) {
+  'use strict';
+
+  function dispatch(text) {
+    var body = JSON.stringify({ text: text || '' });
+    if (typeof fetch !== 'function') return Promise.resolve({ ok: false, error: 'no fetch' });
+    return fetch('/api/agent/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body
+    })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return { ok: false, error: 'network' }; });
+  }
+
+  var API = { dispatch: dispatch };
+  global.ZZIntentGateway = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof window !== 'undefined' ? window : globalThis);

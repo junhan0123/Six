@@ -1,0 +1,1881 @@
+// 庄周 · 热点追踪大屏
+// 真数据来自 /api/hotspots；装饰数据（事件流 / 跑马灯 / 统计）沿用科技感动效。
+
+const PLATFORM_CONFIG = {
+  douyin:      { listId: 'hs-douyin-list',     updateId: 'hs-douyin-update',     style: 'heat',  label: '抖音' },
+  xiaohongshu: { listId: 'hs-xhs-list',        updateId: 'hs-xhs-update',        style: 'heat',  label: '小红书' },
+  wechat:      { listId: 'hs-wechat-list',     updateId: 'hs-wechat-update',     style: 'label', label: '微信热点' },
+  weibo:       { listId: 'hs-weibo-list',     updateId: 'hs-weibo-update',      style: 'heat',  label: '微博' },
+};
+
+const hotspotLists = { douyin: [], xiaohongshu: [], wechat: [], weibo: [] };
+
+// 地域联动状态：geoRegions 来自后端实时聚合，regionFilter 为当前选中地域（点击「区域关注度」筛选事件流）
+let geoRegions = [];
+let regionFilter = '';
+let bootTimer = null;   // 开场扫描线兜底清理定时器
+
+// 实时事件流（装饰性卡片）
+const MOCK_FEED = [
+  { time:'19:25', cat:'自然灾害', catColor:'#e05c5c', title:'四川宜宾县发生6.0级地震', desc:'震源深度10公里，暂无人员伤亡报告，救援力量已巡查到达震源周边', loc:'中国·四川', img:'' },
+  { time:'19:24', cat:'科技',     catColor:'#5c9ee0', title:'神舟十八号发射任务圆满成功', desc:'载人飞船与空间站组合体成功对接，状态良好。', loc:'酒泉卫星发射中心', img:'' },
+  { time:'19:23', cat:'财经',     catColor:'#c97d30', title:'特斯拉全球召回超110万辆汽车', desc:'涉及安全带及软件问题，特斯拉免费修复。', loc:'全球', img:'' },
+  { time:'19:22', cat:'体育',     catColor:'#4eaa6e', title:'巴黎奥运圣火抵达马赛港', desc:'开幕式倒计时启动，法国全境传递沿线盛况空前，7月26日开幕。', loc:'法国·马赛', img:'' },
+  { time:'19:21', cat:'社会',     catColor:'#9b6bc4', title:'台风"玛莉亚"逼近东南沿海', desc:'预计26日凌晨在浙江登陆，多地发布台风橙色预警，船只回港避险。', loc:'中国·东南沿海', img:'' },
+  { time:'19:19', cat:'科技',     catColor:'#5c9ee0', title:'华为发布全新 AI 芯片', desc:'性能较上代提升60%，将首批搭载于旗舰产品线，引发行业广泛关注。', loc:'中国·深圳', img:'' },
+  { time:'19:18', cat:'政策',     catColor:'#6bbfbf', title:'欧盟正式通过 AI 监管法案', desc:'《人工智能法案》生效，将对高风险AI系统实施强制合规审查。', loc:'比利时·布鲁塞尔', img:'' },
+  { time:'19:17', cat:'旅游',     catColor:'#c4a030', title:'多地景区迎来客流高峰', desc:'暑期旅游热度持续攀升，热门景区单日接待游客超历史纪录。', loc:'中国多地', img:'' },
+];
+
+const TICKER_ITEMS = [
+  { time:'19:20', text:'上海发布高温红色预警，气温预计突破40℃' },
+  { time:'19:19', text:'全球芯片市场半年年报告发布，亚太份额持续上升' },
+  { time:'19:18', text:'欧盟通过 AI 法案，将对高风险系统强制审查' },
+  { time:'19:17', text:'多地景区迎来客流高峰，暑运旅游市场表现亮眼' },
+  { time:'19:16', text:'国际油价小幅上涨，布伦特原油突破85美元/桶' },
+  { time:'19:15', text:'A股午后强势拉升，沪指收涨1.24%，科技板块领涨' },
+  { time:'19:14', text:'北京时间明日凌晨2点：欧洲杯决赛，全球直播' },
+  { time:'19:13', text:'研究显示：今夏北半球平均气温创历史新高' },
+];
+
+// 刷新间隔 / 陈旧阈值（必须定义在 PANEL_HTML 之前，否则模板插值 ${STALE_WARNING_MINUTES} 触发 TDZ 崩溃）
+const REFRESH_INTERVAL_MINUTES = 5;   // 看板自动刷新间隔
+const STALE_WARNING_MINUTES = 15;     // 超过该时间显示数据陈旧提示
+
+// ── 面板 HTML 模板 ──
+const PANEL_HTML = `
+<div class="hotspot-panel" id="hotspot-panel">
+  <div class="hs-hud" aria-hidden="true">
+    <div class="hs-scanline"></div>
+  </div>
+
+  <div class="hs-header">
+    <div class="hs-title-block">
+      <div class="hs-title-en">时事热点检测平台</div>
+      <div class="hs-title-zh">全球热点事件追踪系统</div>
+    </div>
+    <div class="hs-header-right">
+      <div class="hs-header-meta">
+        <div class="hs-header-tag"><span class="hs-tag-icon">◈</span>卫星链路<br><span class="hs-tag-status">在线</span></div>
+        <div class="hs-header-tag"><span class="hs-tag-icon">≡</span>数据源<br><span class="hs-tag-status">稳定</span></div>
+        <div class="hs-header-tag"><span class="hs-tag-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-hexagon"/></svg></span>AI分析引擎<br><span class="hs-tag-status">运行中</span></div>
+      </div>
+      <div class="hs-clock-block">
+        <div class="hs-clock" id="hs-clock">19:26:17</div>
+        <div class="hs-live-dot">● 实时</div>
+      </div>
+      <button class="hs-tts-btn" id="hs-tts-btn" type="button" title="朗读当前热点"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-volume"/></svg></button>
+      <button class="hs-selfcheck-btn" id="hs-selfcheck-btn" type="button" title="系统自检报告"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-pulse"/></svg></button>
+      <button class="hs-refresh-btn" id="hs-refresh-btn" type="button" title="立即刷新热点">↻</button>
+      <button class="hs-exit-btn" id="hs-exit-btn" type="button" title="关闭热点模式">×</button>
+    </div>
+  </div>
+
+  <div class="hs-stale-bar" id="hs-stale-bar" style="display:none">
+    <span class="hs-stale-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-warning"/></svg></span>
+    <span>热点数据已超过 ${STALE_WARNING_MINUTES} 分钟未更新，点击右上角刷新按钮或重新进入本页面可强制刷新。</span>
+  </div>
+
+  <div class="hs-stats-bar">
+    <div class="hs-stat hs-stat--warn">
+      <div class="hs-stat-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-warning"/></svg></div>
+      <div class="hs-stat-body">
+        <div class="hs-stat-label">全球预警事件</div>
+        <div class="hs-stat-value" id="hs-stat-alert">7</div>
+        <div class="hs-stat-delta hs-delta-up" id="hs-stat-alert-delta">较前15分钟 ↑2</div>
+      </div>
+    </div>
+    <div class="hs-stat hs-stat--hot">
+      <div class="hs-stat-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-flame"/></svg></div>
+      <div class="hs-stat-body">
+        <div class="hs-stat-label">高关注度事件</div>
+        <div class="hs-stat-value" id="hs-stat-hot">23</div>
+        <div class="hs-stat-delta hs-delta-up" id="hs-stat-hot-delta">较前15分钟 ↑6</div>
+      </div>
+    </div>
+    <div class="hs-stat hs-stat--data">
+      <div class="hs-stat-icon">◈</div>
+      <div class="hs-stat-body">
+        <div class="hs-stat-label">信息源总量</div>
+        <div class="hs-stat-value" id="hs-stat-data">0</div>
+        <div class="hs-stat-delta" id="hs-stat-data-delta">实时数据流/分钟</div>
+      </div>
+    </div>
+    <div class="hs-stat hs-stat--ai">
+      <div class="hs-stat-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-hexagon"/></svg></div>
+      <div class="hs-stat-body">
+        <div class="hs-stat-label">AI 分析置信度</div>
+        <div class="hs-stat-value" id="hs-stat-ai">87%</div>
+        <div class="hs-stat-delta" id="hs-stat-ai-delta">模型状态：稳定</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hs-body">
+
+    <div class="hs-col hs-col-left">
+      <div class="hs-list-card" id="hs-douyin-card">
+        <div class="hs-card-header">
+          <span class="hs-platform-dot hs-dot-douyin"></span>
+          <span class="hs-platform-name">抖音</span>
+          <span class="hs-card-badge">热榜</span>
+          <span class="hs-card-update" id="hs-douyin-update">刚刚更新</span>
+        </div>
+        <ul class="hs-list" id="hs-douyin-list"></ul>
+      </div>
+      <div class="hs-list-card" id="hs-xhs-card">
+        <div class="hs-card-header">
+          <span class="hs-platform-dot hs-dot-xhs"></span>
+          <span class="hs-platform-name">小红书</span>
+          <span class="hs-card-badge">热榜</span>
+          <span class="hs-card-update" id="hs-xhs-update">刚刚更新</span>
+        </div>
+        <ul class="hs-list" id="hs-xhs-list"></ul>
+      </div>
+    </div>
+
+    <div class="hs-col hs-col-center">
+      <div class="hs-earth-container hs-earth-core" id="hs-earth-container">
+        <div class="hs-earth-label">全球实时热点 · 地理标注</div>
+        <canvas id="hs-earth-canvas"></canvas>
+        <div class="hs-earth-tooltip" id="hs-earth-tooltip" hidden></div>
+        <div class="hs-earth-status" id="hs-earth-status" hidden></div>
+        <div class="hs-region-popup" id="hs-region-popup" hidden>
+          <div class="hs-rp-head">
+            <span class="hs-rp-title" id="hs-rp-title"></span>
+            <button class="hs-rp-close" id="hs-rp-close" type="button" aria-label="关闭">×</button>
+          </div>
+          <div class="hs-rp-body" id="hs-rp-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hs-col hs-col-right">
+      <div class="hs-list-card" id="hs-wechat-card">
+        <div class="hs-card-header">
+          <span class="hs-platform-dot hs-dot-wechat"></span>
+          <span class="hs-platform-name">微信热点</span>
+          <span class="hs-card-badge">热点榜</span>
+          <span class="hs-card-update" id="hs-wechat-update">刚刚更新</span>
+        </div>
+        <ul class="hs-list" id="hs-wechat-list"></ul>
+      </div>
+      <div class="hs-list-card" id="hs-weibo-card">
+        <div class="hs-card-header">
+          <span class="hs-platform-dot hs-dot-weibo"></span>
+          <span class="hs-platform-name">微博</span>
+          <span class="hs-card-badge">热搜榜</span>
+          <span class="hs-card-update" id="hs-weibo-update">刚刚更新</span>
+        </div>
+        <ul class="hs-list" id="hs-weibo-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="hs-feed-bar">
+    <div class="hs-feed-label">
+      <span class="hs-feed-live-dot">●</span>
+      <span>实时</span>
+      <span class="hs-feed-subtitle">热榜聚合</span>
+      <span class="hs-feed-desc">来自抖音/小红书/微博/微信公开榜单</span>
+    </div>
+    <div class="hs-feed-viewport" id="hs-feed-viewport">
+      <div class="hs-feed-track" id="hs-feed-track"></div>
+    </div>
+    <div class="hs-feed-controls">
+      <span class="hs-feed-auto-label" id="hs-feed-auto">自动滚动中</span>
+      <button class="hs-feed-nav" id="hs-feed-prev" type="button" aria-label="上一条">‹</button>
+      <button class="hs-feed-nav" id="hs-feed-next" type="button" aria-label="下一条">›</button>
+    </div>
+  </div>
+
+  <div class="hs-ticker-bar">
+    <div class="hs-ticker-inner" id="hs-ticker-inner"></div>
+  </div>
+
+</div>
+`;
+
+// ── 右侧聊天框（热点画面右侧）：主页当前会话的延伸视图 ──
+const CHAT_HTML = `
+<div class="hs-chat" id="hs-chat" aria-hidden="true">
+  <div class="hs-chat-head">
+    <div class="hs-chat-title-block">
+      <span class="hs-chat-title"><span class="hs-chat-dot"></span>与庄周对话</span>
+      <span class="hs-chat-sub">当前会话延伸视图</span>
+    </div>
+    <button class="hs-chat-clear" id="hs-chat-clear" type="button" title="清空对话">清空</button>
+  </div>
+  <div class="hs-chat-context" id="hs-chat-context"></div>
+  <div class="hs-chat-log" id="hs-chat-log">
+    <div class="hs-chat-empty">
+      <div class="hs-chat-empty-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-globe"/></svg></div>
+      <div class="hs-chat-empty-title">热点 + 对话</div>
+      <div class="hs-chat-empty-sub">一边看全球脉搏，一边问庄周</div>
+    </div>
+  </div>
+  <div class="hs-chat-input">
+    <textarea id="hs-chat-text" rows="1" placeholder="问点什么…（Enter 发送 / Shift+Enter 换行）"></textarea>
+    <button class="hs-chat-mic" id="hs-chat-mic" type="button" title="点击说话（本地 FunASR 语音识别）">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z"/></svg>
+    </button>
+    <button class="hs-chat-send" id="hs-chat-send" type="button" title="发送">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M3 11 21 3l-8 18-2.5-7.5L3 11Zm3.9 1.4 5.1 1.7L13.7 19 8.9 12.4Z"/></svg>
+    </button>
+  </div>
+</div>
+`;
+
+// ── 状态 ──
+let hotspotMeta = { source:'loading', fetchedAt:null, stale:true, refreshMinutes:5, status:{} };
+let hotspotActive = false;
+let earth = null;
+let clockTimer = null, feedAutoTimer = null, hotspotRefreshTimer = null;
+let feedIndex = 0;
+let earthInitPromise = null;
+let pendingRegions = null;   // 地球未就绪时的地域数据缓冲，ensure 完成后 flush，保证红点必渲染
+
+const $ = (id) => document.getElementById(id);
+
+// ── 热榜列表渲染 ──
+const TREND_ICONS = { up:'↑', down:'↓', same:'—' };
+const TREND_CLASSES = { up:'hs-trend-up', down:'hs-trend-dn', same:'hs-trend-same' };
+
+function renderList(listId, items, style = 'heat', platform = '', config = {}) {
+  const ul = $(listId);
+  if (!ul) return;
+  if (!items.length) {
+    ul.innerHTML = `<li class="hs-item hs-item-empty">
+      <span class="hs-rank">--</span>
+      <span class="hs-item-text">实时源未配置或暂不可用</span>
+      <span class="hs-heat">--</span>
+      <span class="hs-trend hs-trend-same">—</span>
+    </li>`;
+    return;
+  }
+  ul.innerHTML = items.map(({ rank, text, heat, trend, isNew, url }) => {
+    const rankCls = rank <= 3 ? `hs-rank-top${rank}` : '';
+    const trendIcon = TREND_ICONS[trend] || '';
+    const trendCls = TREND_CLASSES[trend] || '';
+    const newBadge = isNew ? '<span class="hs-new-badge">新</span>' : '';
+    const heatLabel = style === 'heat'
+      ? `<span class="hs-heat">${heat}</span>`
+      : `<span class="hs-label-badge">${heat}</span>`;
+    const clickable = url ? ' hs-item-clickable' : '';
+    return `<li class="hs-item${clickable}" data-url="${url ? encodeURI(url) : ''}">
+      <span class="hs-rank ${rankCls}">${rank}</span>
+      <span class="hs-item-text">${text}${newBadge}</span>
+      ${heatLabel}
+      <span class="hs-trend ${trendCls}">${trendIcon}</span>
+    </li>`;
+  }).join('');
+  // 点击条目 -> 弹出详情卡片（有外链则在卡片内「查看原文」）
+  ul.querySelectorAll('.hs-item').forEach((li, i) => {
+    const item = items[i];
+    if (!item) return;
+    li.style.cursor = 'pointer';
+    li.addEventListener('click', () => {
+      const statusSrc = (hotspotMeta.status && hotspotMeta.status[platform] && hotspotMeta.status[platform].source) || '';
+      const data = {
+        platform,
+        platformLabel: config.label,
+        color: CAT_COLORS[config.label] || '#8fb6d8',
+        rank: item.rank,
+        text: item.text,
+        heat: item.heat,
+        trend: item.trend,
+        url: item.url || '',
+        source: statusSrc,
+      };
+      if (window.ZZModal && window.ZZModal.openHotspot) {
+        window.ZZModal.openHotspot(data);
+      } else if (item.url) {
+        window.open(item.url, '_blank', 'noopener');
+      }
+    });
+  });
+}
+
+function renderAllLists() {
+  for (const [platform, config] of Object.entries(PLATFORM_CONFIG)) {
+    renderList(config.listId, hotspotLists[platform] || [], config.style, platform, config);
+  }
+}
+
+function formatFetchedAt(value) {
+  if (!value) return '未知';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '未知';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function normalizeHotspotItem(item, idx) {
+  return {
+    rank: Number(item?.rank || idx + 1),
+    text: item?.text || '',
+    heat: item?.heat || '',
+    trend: item?.trend || 'same',
+    isNew: !!item?.isNew,
+    url: item?.url || '',
+    region: item?.region || '',
+    lat: item?.lat ?? null,
+    lon: item?.lon ?? null,
+  };
+}
+
+function setText(id, text) {
+  const el = $(id);
+  if (el) el.textContent = text;
+}
+
+function updateHotspotMeta() {
+  let total = 0, hot = 0, alert = 0;
+  const RISK = ['地震', '台风', '火灾', '爆炸', '事故', '疫情', '制裁', '冲突', '暴跌', '预警', '坍塌', '暴雨', '洪水', '通报'];
+  for (const [platform, config] of Object.entries(PLATFORM_CONFIG)) {
+    const items = hotspotLists[platform] || [];
+    const status = hotspotMeta.status?.[platform] || {};
+    total += items.length;
+    items.forEach((it, i) => {
+      if (i < 3) hot++;
+      if (RISK.some(k => (it.text || '').includes(k))) alert++;
+    });
+    const source = status.ok
+      ? `${status.source || '实时'}${hotspotMeta.stale ? '缓存' : '数据'}`
+      : '未配置';
+    setText(config.updateId, `${source} · ${formatFetchedAt(hotspotMeta.fetchedAt)}`);
+  }
+  setText('hs-stat-data', String(total));
+  setText('hs-stat-data-delta', `四平台热榜 / ${REFRESH_INTERVAL_MINUTES} 分钟刷新`);
+  setText('hs-stat-hot', String(hot));
+  setText('hs-stat-hot-delta', `各平台 Top3 高热条目`);
+  setText('hs-stat-alert', String(alert));
+  setText('hs-stat-alert-delta', alert ? `含风险关键词事件` : `暂未发现风险事件`);
+  const ai = Math.min(99, 82 + Math.round(total / 20));
+  setText('hs-stat-ai', ai + '%');
+  const isStale = isDataStale();
+  setText('hs-stat-ai-delta', isStale ? '数据已陈旧，请手动刷新' : '模型状态：稳定');
+  // 顶部陈旧提示条
+  const staleBar = $('hs-stale-bar');
+  if (staleBar) staleBar.style.display = isStale ? 'flex' : 'none';
+}
+
+function isDataStale() {
+  if (!hotspotMeta.fetchedAt) return true;
+  const fetched = new Date(hotspotMeta.fetchedAt).getTime();
+  if (Number.isNaN(fetched)) return true;
+  return (Date.now() - fetched) > STALE_WARNING_MINUTES * 60 * 1000;
+}
+
+async function refreshHotspots({ force = false } = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (force) params.set('refresh', '1');
+    if (hotspotActive) params.set('viewed', '1');
+    const query = params.toString();
+    const res = await fetch('/api/hotspots' + (query ? `?${query}` : ''));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    for (const platform of Object.keys(PLATFORM_CONFIG)) {
+      const list = data?.platforms?.[platform] || [];
+      hotspotLists[platform] = Array.isArray(list)
+        ? list.slice(0, 14).map(normalizeHotspotItem).filter(item => item.text).slice(0, 10)
+        : [];
+    }
+    hotspotMeta = {
+      source: 'hotspot-api',
+      fetchedAt: data.fetchedAt,
+      stale: !!data.stale,
+      refreshMinutes: REFRESH_INTERVAL_MINUTES,
+      status: data.status || {},
+    };
+    renderAllLists();
+    renderFeed();
+    renderTicker();
+    updateHotspotMeta();
+    // 地域联动：把后端实时聚合的地域分布渲染成可点击列表，并驱动 3D 地球热点环
+    geoRegions = data?.geo?.regions || [];
+    renderRegionList();
+    if (earth && earth.updateHotspots) earth.updateHotspots(geoRegions);
+    else pendingRegions = geoRegions;   // 地球还在初始化，先缓存，ensure 完成后 flush
+  } catch (err) {
+    hotspotMeta = { ...hotspotMeta, stale: true };
+    updateHotspotMeta();
+    console.warn('[Hotspot] 热榜刷新失败:', err.message);
+  }
+}
+
+function startHotspotRefresh() {
+  if (hotspotRefreshTimer) clearInterval(hotspotRefreshTimer);
+  hotspotRefreshTimer = setInterval(() => { refreshHotspots().catch(() => {}); },
+    REFRESH_INTERVAL_MINUTES * 60 * 1000);
+}
+function stopHotspotRefresh() {
+  if (hotspotRefreshTimer) clearInterval(hotspotRefreshTimer);
+  hotspotRefreshTimer = null;
+}
+
+// ── 实时事件流（用真实热榜 Top 条目生成，避免硬编码旧数据）──
+const CAT_COLORS = {
+  '抖音':'#ff0050', '小红书':'#ff2442', '微信':'#07c160', '微博':'#e6162d',
+  '自然灾害':'#e05c5c', '科技':'#5c9ee0', '财经':'#c97d30',
+  '体育':'#4eaa6e', '社会':'#9b6bc4', '政策':'#6bbfbf', '旅游':'#c4a030',
+};
+
+// 平台主色（用于 3D 地球真实地域环着色）
+const PLATFORM_COLOR = {
+  douyin: '#ff0050', xiaohongshu: '#ff2442', wechat: '#07c160', weibo: '#e6162d',
+};
+
+function buildFeedFromHotspots() {
+  // 未筛选：各平台取前 2 条混合（原行为）
+  if (!regionFilter) {
+    const top = [];
+    for (const [key, cfg] of Object.entries(PLATFORM_CONFIG)) {
+      (hotspotLists[key] || []).slice(0, 2).forEach((it) => {
+        top.push({ ...it, platform: key, platformLabel: cfg.label });
+      });
+    }
+    top.sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    return top.slice(0, 8);
+  }
+  // 已筛选某地域：跨平台聚合该地域全部条目，按 rank 排序
+  const all = [];
+  for (const [key, cfg] of Object.entries(PLATFORM_CONFIG)) {
+    (hotspotLists[key] || []).forEach((it) => {
+      if (it.region === regionFilter) all.push({ ...it, platform: key, platformLabel: cfg.label });
+    });
+  }
+  all.sort((a, b) => (a.rank || 99) - (b.rank || 99));
+  return all.slice(0, 10);
+}
+
+// ── 区域关注度（真实地域，可点击筛选事件流 + 高亮地球环）──
+function renderRegionList() {
+  const el = $('hs-region-list');
+  if (!el) return;
+  if (!geoRegions.length) {
+    el.innerHTML = `<div class="hs-region-row hs-region-empty">暂无地域分布数据</div>`;
+    return;
+  }
+  const max = Math.max(1, ...geoRegions.map((r) => r.count));
+  el.innerHTML = geoRegions.slice(0, 8).map((r) => {
+    const pct = Math.round((100 * r.count) / max);
+    const active = regionFilter === r.region ? ' active' : '';
+    const plats = (r.platforms || []).map(([p]) => PLATFORM_CONFIG[p]?.label || p).join(' · ');
+    return `<div class="hs-region-row${active}" data-region="${r.region}" role="button" tabindex="0" title="点击筛选「${r.region}」相关热点">
+      <span class="hs-region-name">${r.region}<span class="hs-region-plats">${plats}</span></span>
+      <div class="hs-bar-track"><div class="hs-bar-fill" style="width:${pct}%"></div></div>
+      <span class="hs-region-pct">${r.count}</span>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.hs-region-row[data-region]').forEach((row) => {
+    const toggle = () => {
+      const reg = row.getAttribute('data-region');
+      regionFilter = regionFilter === reg ? '' : reg;
+      renderRegionList();
+      renderFeed();
+      renderTicker();
+      earth?.highlightRegion(regionFilter);
+      hsChatRenderContext();
+    };
+    row.addEventListener('click', toggle);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+}
+
+// 为地球骨架点（城市名）构建虚拟地域对象：从各平台热榜中匹配含该城市的条目
+function buildVirtualRegion(city) {
+  const all = [];
+  for (const [key, cfg] of Object.entries(PLATFORM_CONFIG)) {
+    (hotspotLists[key] || []).forEach((it) => {
+      if ((it.region || '').includes(city) || (it.text || '').includes(city)) {
+        all.push({ ...it, platform: key });
+      }
+    });
+  }
+  all.sort((a, b) => (a.rank || 99) - (b.rank || 99));
+  return {
+    region: city,
+    count: all.length,
+    platforms: [],
+    top: all.slice(0, 5).map((it) => ({
+      platform: it.platform,
+      text: it.text,
+      url: it.url || '',
+    })),
+  };
+}
+
+// ── 地球红点点击 → 选中地域（与列表同语义）+ 弹该地域 Top 热搜浮层 ──
+function handleEarthRegionPick(region) {
+  if (!region) { closeRegionPopup(); return; }
+  regionFilter = regionFilter === region ? '' : region;   // 再点同一点 = 取消
+  renderRegionList();
+  renderFeed();
+  renderTicker();
+  earth?.highlightRegion(regionFilter);
+  hsChatRenderContext();
+  if (regionFilter) {
+    const r = geoRegions.find((x) => x.region === region) || buildVirtualRegion(region);
+    showRegionPopup(regionFilter, r);
+  } else {
+    closeRegionPopup();
+  }
+}
+
+function showRegionPopup(region, r = null) {
+  const popup = $('hs-region-popup');
+  if (!popup) return;
+  if (!r) r = geoRegions.find((x) => x.region === region);
+  if (!r) { closeRegionPopup(); return; }
+  $('hs-rp-title').textContent = `${r.region} · 共 ${r.count} 条`;
+  const top = (r.top || []).slice(0, 5);
+  $('hs-rp-body').innerHTML = top.length
+    ? top.map((it, i) => {
+        const cfg = PLATFORM_CONFIG[it.platform] || {};
+        const label = cfg.label || it.platform;
+        const color = PLATFORM_COLOR[it.platform] || '#22D3EE';
+        const hasUrl = !!it.url;
+        const clickable = hasUrl ? `<a class="hs-rp-item" href="${it.url}" target="_blank" rel="noopener" title="${it.text}">` : `<div class="hs-rp-item hs-rp-item-disabled" title="暂无原文链接">`;
+        const closer = hasUrl ? '</a>' : '</div>';
+        return `${clickable}
+          <span class="hs-rp-rank">${i + 1}</span>
+          <span class="hs-rp-plat" style="color:${color}">${label}</span>
+          <span class="hs-rp-text">${it.text}</span>
+        ${closer}`;
+      }).join('')
+    : '<div class="hs-rp-empty">该地域暂无 Top 热搜条目</div>';
+  popup.hidden = false;
+  if (window.OverlayManager) window.OverlayManager.track('hotspot-region', {
+    el: popup, onClose: closeRegionPopup, type: window.OverlayManager.OverlayType.DIALOG,
+    trap: false, autofocus: false
+  });
+}
+
+function closeRegionPopup() {
+  if (window.OverlayManager) window.OverlayManager.untrack('hotspot-region');
+  const popup = $('hs-region-popup');
+  if (popup) popup.hidden = true;
+}
+
+function renderFeed() {
+  const track = $('hs-feed-track');
+  if (!track) return;
+  const items = buildFeedFromHotspots();
+  if (!items.length) {
+    track.innerHTML = `<div class="hs-feed-card"><div class="hs-feed-title">暂无实时数据</div><div class="hs-feed-desc">进入热点模式后将自动刷新。</div></div>`;
+    return;
+  }
+  track.innerHTML = items.map((item) => {
+    const color = CAT_COLORS[item.platformLabel] || '#8fb6d8';
+    const time = formatFetchedAt(hotspotMeta.fetchedAt);
+    return `<div class="hs-feed-card">
+      <div class="hs-feed-card-top">
+        <span class="hs-feed-time">${time}</span>
+        <span class="hs-feed-cat" style="background:${color}22;color:${color};border-color:${color}44">${item.platformLabel}</span>
+      </div>
+      <div class="hs-feed-title">${item.text}</div>
+      <div class="hs-feed-desc">热度 ${item.heat || '—'} · 排名 ${item.rank}</div>
+      <div class="hs-feed-loc"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-flame"/></svg> ${item.platformLabel}热搜${item.region ? ` · ${item.region}` : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function scrollFeedTo(idx) {
+  const track = $('hs-feed-track');
+  const viewport = $('hs-feed-viewport');
+  if (!track || !viewport) return;
+  const cards = track.querySelectorAll('.hs-feed-card');
+  if (!cards.length) return;
+  feedIndex = ((idx % cards.length) + cards.length) % cards.length;
+  const cardW = cards[0].offsetWidth + 12;
+  const maxScroll = track.scrollWidth - viewport.offsetWidth;
+  const target = Math.min(feedIndex * cardW, maxScroll);
+  viewport.scrollTo({ left: target, behavior: 'smooth' });
+}
+
+function startFeedAuto() {
+  if (feedAutoTimer) clearInterval(feedAutoTimer);
+  feedAutoTimer = setInterval(() => { scrollFeedTo(feedIndex + 1); }, 4000);
+}
+function stopFeedAuto() {
+  if (feedAutoTimer) clearInterval(feedAutoTimer);
+  feedAutoTimer = null;
+}
+
+// ── 底部跑马灯（用真实热榜条目生成）──
+function buildTickerFromHotspots() {
+  // 每个平台取 Top1 作为跑马灯内容
+  const all = [];
+  for (const [key, cfg] of Object.entries(PLATFORM_CONFIG)) {
+    const it = (hotspotLists[key] || [])[0];
+    if (it) all.push({ time: cfg.label, text: it.text });
+  }
+  return all.length ? all : [{ time: '实时', text: '热点数据加载中…' }];
+}
+
+function renderTicker() {
+  const el = $('hs-ticker-inner');
+  if (!el) return;
+  const items = buildTickerFromHotspots();
+  const html = items.map(({ time, text }) =>
+    `<span class="hs-ticker-item"><span class="hs-ticker-time">${time}</span>${text}</span>`
+  ).join('<span class="hs-ticker-sep">●</span>');
+  el.innerHTML = html + '<span class="hs-ticker-sep">●</span>' + html;
+}
+
+// ── 朗读摘要：把当前各平台 Top3 拼成一段口语化文本 ──
+function buildTtsSummary() {
+  const parts = [];
+  for (const [key, cfg] of Object.entries(PLATFORM_CONFIG)) {
+    const items = (hotspotLists[key] || []).slice(0, 3);
+    if (!items.length) continue;
+    const list = items.map((it, i) => `第${i + 1}，${it.text || ''}`).join('；');
+    parts.push(`${cfg.label}热榜：${list}`);
+  }
+  return parts.length ? ('以下是当前实时热点。' + parts.join('。') + '。') : '当前暂无热点数据。';
+}
+
+// ── 实时时钟 ──
+function updateClock() {
+  const el = $('hs-clock');
+  if (!el) return;
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  el.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+function startClock() { updateClock(); if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(updateClock, 1000); }
+function stopClock() { if (clockTimer) clearInterval(clockTimer); clockTimer = null; }
+
+function _onScanDone(e) {
+  if (e && e.animationName !== 'hs-scan') return;
+  const panel = $('hotspot-panel');
+  if (panel) panel.classList.remove('hs-booting');
+  if (bootTimer) { clearTimeout(bootTimer); bootTimer = null; }
+}
+
+function replayHotspotBoot() {
+  const panel = $('hotspot-panel');
+  if (!panel) return;
+  if (bootTimer) { clearTimeout(bootTimer); bootTimer = null; }
+  panel.classList.remove('hs-booting');
+  const scanline = panel.querySelector('.hs-scanline');
+  if (scanline) {
+    scanline.removeEventListener('animationend', _onScanDone);
+    scanline.addEventListener('animationend', _onScanDone, { once: true });
+  }
+  void panel.offsetWidth;
+  panel.classList.add('hs-booting');
+  // 兜底：即使 animationend 未触发，2.6s 后强制移除开场类，防止扫描线残留
+  bootTimer = setTimeout(() => {
+    bootTimer = null;
+    _onScanDone(null);
+  }, 2600);
+}
+
+// ── 模式切换 ──
+function setPanelVisible(visible) {
+  hotspotActive = visible;
+  document.body.classList.toggle('hotspot-mode', visible);
+  if (!visible) {
+    $('hotspot-panel')?.classList.remove('hs-booting');
+    if (bootTimer) { clearTimeout(bootTimer); bootTimer = null; }
+  }
+  const btn = document.getElementById('hsOpenBtn');
+  if (btn) btn.classList.toggle('active', visible);
+  window.dispatchEvent(new CustomEvent('zhuangzhou:hotspot-mode', { detail: { active: visible } }));
+}
+
+export function setHotspotMode(visible) {
+  const next = !!visible;
+  if (hotspotActive === next) return;
+  if (!next) {
+    if (window.OverlayManager) { window.OverlayManager.untrack('hotspot'); window.OverlayManager.untrack('hotspot-region'); }
+    setPanelVisible(false);
+    stopClock(); stopFeedAuto(); stopHotspotRefresh();
+    earth?.pause();
+  } else {
+    setPanelVisible(true);
+    if (window.OverlayManager) {
+      var hsOverlayEl = $('hs-overlay');
+      if (hsOverlayEl) window.OverlayManager.track('hotspot', {
+        el: hsOverlayEl,
+        onClose: function () { setHotspotMode(false); },
+        type: window.OverlayManager.OverlayType.PANEL,
+        trap: false,
+        autofocus: false
+      });
+    }
+    replayHotspotBoot();
+    startClock(); startFeedAuto(); startHotspotRefresh();
+    refreshHotspots({ force: true }).catch(() => {});  // 进入热点模式强制刷新
+    ensureEarth().then((e) => {
+      console.log('[HotspotEarth] ensureEarth resolved, e=', !!e, 'hotspotActive=', hotspotActive);
+      if (!e) { setEarthStatus('地球实例未创建', 'error'); return; }
+      if (!hotspotActive) { console.log('[HotspotEarth] paused because hotspotActive=false'); e.pause(); return; }
+      e.resume();
+      e.updateHotspots(pendingRegions || geoRegions);
+      pendingRegions = null;
+      console.log('[HotspotEarth] calling triggerAppear');
+      setEarthStatus('正在请求出场动画...', 'info');
+      requestAnimationFrame(() => e.triggerAppear());
+    }).catch((err) => {
+      console.error('[HotspotEarth] ensureEarth rejected:', err);
+      setEarthStatus('地球初始化异常：' + (err.message || String(err)), 'error');
+    });
+  }
+}
+
+export function toggleHotspot() { setHotspotMode(!hotspotActive); }
+
+// ── 初始化 ──
+function ensurePanel() {
+  if ($('hs-overlay')) return;
+  document.body.insertAdjacentHTML('beforeend',
+    `<div class="hs-overlay" id="hs-overlay"><div class="hs-scale-stage" id="hs-scale-stage">${PANEL_HTML}</div></div>`);
+}
+
+// 数据大屏等比缩放：以 1920×1080 为设计稿，按窗口短边比例整体缩放
+function updateHotspotScale() {
+  const stage = $('hs-scale-stage');
+  if (!stage) return;
+  const designW = 1920;
+  const designH = 1080;
+  // 适配带留白的弹窗框：在 overlay 可视区内留出边距，使大屏像居中的弹窗而非全屏接管
+  const ov = $('hs-overlay');
+  const availW = (ov ? ov.clientWidth : window.innerWidth) - 56;
+  const availH = (ov ? ov.clientHeight : window.innerHeight) - 56;
+  const scale = Math.min(availW / designW, availH / designH);
+  stage.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', updateHotspotScale);
+
+export async function initHotspot() {
+  ensurePanel();
+  updateHotspotScale();
+  // 点击半透明遮罩层关闭热点弹窗（点击内容区不关闭）
+  $('hs-overlay')?.addEventListener('click', (e) => {
+    if (e.target === $('hs-overlay')) toggleHotspot();
+  });
+  renderAllLists();
+  renderFeed();
+  renderTicker();
+  updateHotspotMeta();
+  refreshHotspots({ force: true }).catch(() => {});  // 页面初始化即强制刷新一次
+
+  $('hs-exit-btn')?.addEventListener('click', () => toggleHotspot());
+  $('hs-refresh-btn')?.addEventListener('click', () => {
+    const btn = $('hs-refresh-btn');
+    btn?.classList.add('spin');
+    setTimeout(() => btn?.classList.remove('spin'), 500);
+    refreshHotspots({ force: true }).catch(() => {});
+  });
+  $('hs-tts-btn')?.addEventListener('click', () => {
+    const summary = buildTtsSummary();
+    if (window.ZZModal && window.ZZModal.speak) window.ZZModal.speak(summary);
+  });
+  $('hs-selfcheck-btn')?.addEventListener('click', () => window.open('selfcheck.html', '_blank', 'noopener'));
+  $('hs-feed-prev')?.addEventListener('click', () => { stopFeedAuto(); scrollFeedTo(feedIndex - 1); });
+  $('hs-feed-next')?.addEventListener('click', () => { stopFeedAuto(); scrollFeedTo(feedIndex + 1); });
+  $('hsOpenBtn')?.addEventListener('click', () => toggleHotspot());
+  // 右侧聊天框已移除，不再初始化热点聊天视图
+  // initHotspotChat();
+  // 地域弹窗关闭：显式按钮 + Esc
+  $('hs-rp-close')?.addEventListener('click', () => { regionFilter = ''; renderRegionList(); renderFeed(); renderTicker(); earth?.highlightRegion(''); closeRegionPopup(); });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!earth) return;
+    if (document.hidden) earth.pause();
+    else if (hotspotActive) earth.resume();
+  });
+}
+
+/* ============================================================
+   右侧聊天框：作为主页当前会话的延伸视图
+   不再维护独立 HS_SESSION / hsChatMessages，全部走 window.ZZChat
+   ============================================================ */
+const hsMic = { rec: null, stream: null, chunks: [], recording: false, mime: '' };
+
+function hsIsProactiveNoise(text) {
+  const t = String(text || '');
+  return /^\s*🌐\s*舆情扫描更新/.test(t) || /^\s*⚠️/.test(t) || /^\s*🚨/.test(t);
+}
+function hsChatScroll() {
+  const log = $('hs-chat-log');
+  if (log) log.scrollTop = log.scrollHeight;
+}
+function hsChatAddBubble(role, text = '') {
+  const log = $('hs-chat-log');
+  if (!log) return null;
+  const el = document.createElement('div');
+  // 主页 role 为 'zhuangzhou'，右侧样式类为 'bot'
+  const clsRole = role === 'user' ? 'user' : 'bot';
+  el.className = 'hs-chat-bubble hs-chat-' + clsRole;
+  el.textContent = text;
+  log.appendChild(el);
+  return el;
+}
+function hsChatRender() {
+  const log = $('hs-chat-log');
+  const zz = window.ZZChat;
+  if (!log || !zz) return;
+  const msgs = (zz.getMessages() || []).filter(m => m && m.role && m.content && !hsIsProactiveNoise(m.content));
+  const streaming = zz.isStreaming();
+  const sendBtn = $('hs-chat-send');
+  const clearBtn = $('hs-chat-clear');
+  if (sendBtn) sendBtn.disabled = streaming;
+  if (clearBtn) clearBtn.disabled = streaming;
+  if (!msgs.length && !streaming) {
+    log.innerHTML = `
+      <div class="hs-chat-empty">
+        <div class="hs-chat-empty-icon"><svg class="zz-icon stroke" aria-hidden="true"><use href="#zz-globe"/></svg></div>
+        <div class="hs-chat-empty-title">热点 + 对话</div>
+        <div class="hs-chat-empty-sub">一边看全球脉搏，一边问庄周</div>
+      </div>`;
+    return;
+  }
+  log.innerHTML = '';
+  for (const m of msgs) hsChatAddBubble(m.role, m.content);
+  if (streaming) {
+    const bubble = document.createElement('div');
+    bubble.className = 'hs-chat-bubble hs-chat-bot hs-streaming';
+    bubble.textContent = '';
+    log.appendChild(bubble);
+  }
+  hsChatScroll();
+}
+
+// 渲染右侧聊天框顶部的「热点上下文」：把当前选中的地域/热点和主对话链接起来
+function hsChatRenderContext() {
+  const el = $('hs-chat-context');
+  if (!el) return;
+  if (!regionFilter) { el.innerHTML = ''; el.hidden = true; return; }
+  const r = (geoRegions || []).find((x) => x.region === regionFilter);
+  const count = r?.count || 0;
+  const plats = (r?.platforms || []).map(([p]) => PLATFORM_CONFIG[p]?.label || p).join(' · ') || '多平台';
+  el.hidden = false;
+  el.innerHTML = `
+    <div class="hs-ctx-chip" data-region="${escapeHtml(regionFilter)}">
+      <span class="hs-ctx-dot"></span>
+      <span class="hs-ctx-main">
+        <span class="hs-ctx-region">${escapeHtml(regionFilter)}</span>
+        <span class="hs-ctx-meta">${escapeHtml(plats)} · ${count} 条相关</span>
+      </span>
+      <button class="hs-ctx-ask" type="button" title="让庄周分析该地区热点">分析</button>
+      <button class="hs-ctx-close" type="button" title="取消聚焦">×</button>
+    </div>`;
+  el.querySelector('.hs-ctx-ask')?.addEventListener('click', () => {
+    const zz = window.ZZChat;
+    if (zz && !zz.isStreaming()) zz.send(`帮我分析一下「${regionFilter}」最近有什么热点？`);
+  });
+  el.querySelector('.hs-ctx-close')?.addEventListener('click', () => {
+    regionFilter = '';
+    renderRegionList();
+    renderFeed();
+    renderTicker();
+    earth?.highlightRegion('');
+    closeRegionPopup();
+    hsChatRenderContext();
+  });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function hsChatAppendStream(delta) {
+  const log = $('hs-chat-log');
+  if (!log) return;
+  log.querySelector('.hs-chat-empty')?.remove();
+  let bubble = log.querySelector('.hs-chat-bubble.hs-streaming');
+  if (!bubble) {
+    bubble = document.createElement('div');
+    bubble.className = 'hs-chat-bubble hs-chat-bot hs-streaming';
+    bubble.textContent = '';
+    log.appendChild(bubble);
+  }
+  bubble.textContent += delta;
+  hsChatScroll();
+}
+async function hsChatSend() {
+  const ta = $('hs-chat-text');
+  const sendBtn = $('hs-chat-send');
+  const zz = window.ZZChat;
+  if (!ta || !zz || zz.isStreaming()) return;
+  const text = ta.value.trim();
+  if (!text) return;
+  ta.value = ''; ta.style.height = 'auto';
+  if (sendBtn) sendBtn.disabled = true;
+  try {
+    await zz.send(text);
+  } finally {
+    if (sendBtn) sendBtn.disabled = !!zz && zz.isStreaming();
+  }
+}
+function initHotspotChat() {
+  const zz = window.ZZChat;
+  if (!zz) {
+    // app.js 作为普通 script 在 module 之后加载，稍后才能拿到 ZZChat
+    setTimeout(initHotspotChat, 50);
+    return;
+  }
+  zz.offUpdate(hsChatRender);
+  zz.offStreamDelta(hsChatAppendStream);
+  zz.onUpdate(hsChatRender);
+  zz.onStreamDelta(hsChatAppendStream);
+  zz.triggerUpdate();
+
+  const ta = $('hs-chat-text');
+  const sendBtn = $('hs-chat-send');
+  sendBtn?.addEventListener('click', hsChatSend);
+  ta?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); hsChatSend(); }
+  });
+  ta?.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+  $('hs-chat-clear')?.addEventListener('click', () => {
+    if (zz.isStreaming()) return;
+    zz.clearMessages();
+  });
+  $('hs-chat-mic')?.addEventListener('click', hsChatToggleMic);
+}
+
+// ── 右侧聊天框：语音输入（复用主界面本地 FunASR /api/asr）──
+function hsChatToggleMic() {
+  if (hsMic.recording) { hsChatStopMic(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    hsChatMicHint('当前环境不支持麦克风录音'); return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    hsMic.chunks = [];
+    hsMic.mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+    hsMic.stream = stream;
+    hsMic.rec = hsMic.mime
+      ? new MediaRecorder(stream, { mimeType: hsMic.mime })
+      : new MediaRecorder(stream);
+    hsMic.rec.ondataavailable = (e) => { if (e.data && e.data.size) hsMic.chunks.push(e.data); };
+    hsMic.rec.onstop = hsChatOnMicStop;
+    hsMic.rec.start();
+    hsMic.recording = true;
+    const btn = $('hs-chat-mic');
+    if (btn) { btn.classList.add('recording'); btn.title = '聆听中…再点一次结束'; }
+  }).catch((e) => {
+    hsChatMicHint(e && e.name === 'NotAllowedError' ? '麦克风权限被拒绝' : '无法访问麦克风');
+  });
+}
+function hsChatStopMic() {
+  if (hsMic.rec && hsMic.rec.state !== 'inactive') hsMic.rec.stop();
+  if (hsMic.stream) hsMic.stream.getTracks().forEach((t) => t.stop());
+  hsMic.recording = false;
+  const btn = $('hs-chat-mic');
+  if (btn) { btn.classList.remove('recording'); btn.title = '点击说话（本地 FunASR 语音识别）'; }
+}
+async function hsChatOnMicStop() {
+  const btn = $('hs-chat-mic');
+  const blob = new Blob(hsMic.chunks, { type: hsMic.mime || 'audio/webm' });
+  hsMic.chunks = [];
+  if (!blob.size) { hsChatMicHint('未捕获到音频'); return; }
+  try {
+    const buf = await blob.arrayBuffer();
+    const r = await fetch('/api/asr?ext=.webm', { method: 'POST', body: buf });
+    const d = await r.json();
+    if (d.ok && d.text) {
+      const ta = $('hs-chat-text');
+      if (ta) {
+        ta.value = (ta.value ? ta.value + ' ' : '') + d.text;
+        ta.focus();
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+      }
+      hsChatMicHint('识别成功');
+    } else {
+      hsChatMicHint(d.error || '未识别到语音内容');
+    }
+  } catch (e) {
+    hsChatMicHint('语音识别请求失败');
+  }
+}
+function hsChatMicHint(msg) {
+  const btn = $('hs-chat-mic');
+  const prev = btn?.title;
+  if (btn) btn.title = msg;
+  console.log('[hs-chat-mic]', msg);
+  setTimeout(() => { if (btn && prev) btn.title = prev; }, 2200);
+}
+
+// ── 地球懒加载 ──
+function showEarthError(msg) {
+  const container = $('hs-earth-container');
+  if (!container) return;
+  let el = $('hs-earth-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'hs-earth-error';
+    el.className = 'hs-earth-error';
+    container.appendChild(el);
+  }
+  el.textContent = msg || '地球加载失败';
+  el.hidden = false;
+}
+function clearEarthError() {
+  $('hs-earth-error')?.setAttribute('hidden', '');
+}
+
+function setEarthStatus(html, type = 'info') {
+  const el = $('hs-earth-status');
+  if (!el) return;
+  el.innerHTML = html;
+  el.dataset.type = type;
+  el.hidden = false;
+}
+function hideEarthStatus() {
+  $('hs-earth-status')?.setAttribute('hidden', '');
+}
+
+function showEarthTooltip(x, y, region, count) {
+  const el = $('hs-earth-tooltip');
+  if (!el) return;
+  el.textContent = `${region} · ${count || 0} 条`;
+  el.style.left = `${x + 12}px`;
+  el.style.top = `${y - 28}px`;
+  el.hidden = false;
+}
+function hideEarthTooltip() {
+  $('hs-earth-tooltip')?.setAttribute('hidden', '');
+}
+
+function ensureEarth() {
+  if (earthInitPromise) return earthInitPromise;
+  const canvas = $('hs-earth-canvas');
+  if (!canvas) return Promise.resolve(null);
+  earth = new HotspotEarth(canvas);
+  earthInitPromise = earth.init().then(() => { clearEarthError(); earth.onRegionPick = handleEarthRegionPick; return earth; }).catch((err) => {
+    console.warn('[HotspotEarth] 初始化失败：', err);
+    showEarthError(err?.message || '地球初始化失败，请刷新页面或检查 WebGL');
+    try { earth?.dispose(); } catch {}
+    earth = null;
+    earthInitPromise = null;
+    return null;
+  });
+  return earthInitPromise;
+}
+
+/* ============================================================
+   以下 HotspotEarth 类 — 3D 地球热点可视化
+   ============================================================ */
+
+const THREE_LOCAL = './vendor/three/three.module.js';
+const THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const THREE_CDN_FALLBACK = 'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+const TEX = {
+  earth:    new URL('./vendor/earth/earth_atmos_2048.jpg', import.meta.url).href,
+  normal:   new URL('./vendor/earth/earth_normal_2048.jpg', import.meta.url).href,
+  specular: new URL('./vendor/earth/earth_specular_2048.jpg', import.meta.url).href,
+  clouds:   new URL('./vendor/earth/earth_clouds_2048.png', import.meta.url).href,
+};
+
+function createProceduralEarthTexture(T) {
+  const W = 1024, H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // 备用纹理：蓝色海洋 + 蓝调大陆 + 蓝色网格（兜底用，与「蓝色地球」基调一致）
+  const oceanGrad = ctx.createLinearGradient(0, 0, 0, H);
+  oceanGrad.addColorStop(0, '#06203f');
+  oceanGrad.addColorStop(0.3, '#0a3a6b');
+  oceanGrad.addColorStop(0.5, '#0e4a85');
+  oceanGrad.addColorStop(0.7, '#0a3a6b');
+  oceanGrad.addColorStop(1, '#06203f');
+  ctx.fillStyle = oceanGrad;
+  ctx.fillRect(0, 0, W, H);
+  // 经纬网格（增加科技感，也帮助判断是否渲染）
+  ctx.strokeStyle = 'rgba(120, 180, 255, 0.14)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 12; i++) {
+    const x = (i / 12) * W;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let i = 0; i <= 6; i++) {
+    const y = (i / 6) * H;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  // 大陆（蓝调，与蓝色地球基调一致）
+  ctx.fillStyle = '#6fa8dc';
+  const p = (x, y) => [x / 360 * W, (90 - y) / 180 * H];
+  function poly(coords) {
+    ctx.beginPath();
+    coords.forEach(([x, y], i) => { const [cx, cy] = p(x, y); i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy); });
+    ctx.closePath(); ctx.fill();
+  }
+  poly([[-170,72],[-60,72],[-55,45],[-65,25],[-85,15],[-115,20],[-130,30],[-140,55],[-165,62]]);
+  poly([[-73,76],[-20,83],[-17,76],[-30,70],[-55,68],[-66,72]]);
+  poly([[-82,12],[-60,12],[-35,5],[-35,-25],[-55,-55],[-68,-55],[-75,-40],[-80,-10]]);
+  poly([[0,72],[30,72],[35,60],[30,45],[15,38],[0,38],[-10,45],[-10,60]]);
+  poly([[-18,38],[52,38],[52,10],[45,-10],[35,-35],[20,-55],[10,-35],[0,0],[-18,15]]);
+  poly([[30,72],[180,72],[180,40],[140,20],[120,10],[100,5],[80,12],[60,20],[40,38],[28,60]]);
+  poly([[95,25],[110,10],[105,0],[95,5],[90,15]]);
+  poly([[114,-22],[154,-22],[154,-39],[140,-38],[125,-33],[113,-28]]);
+  ctx.fillStyle = 'rgba(220, 245, 255, 0.75)';
+  ctx.beginPath(); ctx.rect(0, H * 0.89, W, H * 0.11); ctx.fill();
+  ctx.beginPath(); ctx.rect(0, 0, W, H * 0.04); ctx.fill();
+  // 在赤道加一条高亮带，帮助判断纹理是否加载
+  ctx.strokeStyle = 'rgba(34, 211, 238, 0.25)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, H * 0.5); ctx.lineTo(W, H * 0.5); ctx.stroke();
+  const tex = new T.CanvasTexture(canvas);
+  if (T.SRGBColorSpace) tex.colorSpace = T.SRGBColorSpace;
+  return tex;
+}
+
+const HOTSPOT_COORDS = [
+  { lat: 39.9, lon: 116.4, label: '北京' },
+  { lat: 31.2, lon: 121.5, label: '上海' },
+  { lat: 22.5, lon: 114.1, label: '深圳' },
+  { lat: 40.7, lon: -74.0, label: '纽约' },
+  { lat: 51.5, lon: -0.1,  label: '伦敦' },
+  { lat: 48.9, lon: 2.3,   label: '巴黎' },
+  { lat: 35.7, lon: 139.7, label: '东京' },
+  { lat: -33.9, lon: 151.2,label: '悉尼' },
+  { lat: 55.8, lon: 37.6,  label: '莫斯科' },
+  { lat: 19.4, lon: -99.1, label: '墨西哥城' },
+  { lat: -23.5, lon: -46.6,label: '圣保罗' },
+  { lat: 28.6, lon: 77.2,  label: '新德里' },
+];
+
+let THREE = null;
+async function loadThree() {
+  if (THREE) return THREE;
+  try { THREE = await import(THREE_LOCAL); }
+  catch { try { THREE = await import(THREE_CDN); } catch { THREE = await import(THREE_CDN_FALLBACK); } }
+  return THREE;
+}
+
+function latLonToVec3(lat, lon, radius) {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 180) * (Math.PI / 180);
+  return new THREE.Vector3(
+    -radius * Math.sin(phi) * Math.cos(theta),
+     radius * Math.cos(phi),
+     radius * Math.sin(phi) * Math.sin(theta),
+  );
+}
+
+export class HotspotEarth {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.renderer = null; this.scene = null; this.camera = null;
+    this.earth = null; this.clouds = null; this.atmo = null; this.atmo2 = null;
+    this.stars = null;
+    this.ambient = null; this.dynamic = null; this.regionMeshes = {};
+    this.highlight = ''; this._regions = []; this.hoverRegion = '';
+    this.isDragging = false; this.prevMouse = { x: 0, y: 0 };
+    this.rotX = 0.1; this.rotY = 0;
+    this.velX = 0; this.velY = 0.0008;
+    this.camDist = 3.25; this.camDistMin = 2.35; this.camDistMax = 4.5;
+    this.appearing = false; this.appearScale = 0;
+    this.animFrame = null; this._bound = {}; this.raycaster = null; this.onRegionPick = null;
+    this.disposed = false; this._appearTimer = null; this._onContextLost = null;
+    // 城市/热点标记风格：'pulse'（脉冲环，默认）| 'beam'（光柱）| 'ring'（环点旧版）
+    this.markerStyle = 'ring';
+  }
+
+  async init() {
+    setEarthStatus('正在加载 3D 引擎...', 'info');
+    try {
+    const T = await loadThree();
+    if (!T || !T.Scene) throw new Error('Three.js 加载失败');
+    setEarthStatus('Three.js 已加载，正在创建 WebGL 上下文...', 'info');
+    this.scene = new T.Scene();
+    const w = this.canvas.clientWidth || 400;
+    const h = this.canvas.clientHeight || 400;
+    this.camera = new T.PerspectiveCamera(45, w / h, 0.1, 100);
+    this.camera.position.set(0, 0, this.camDist);
+    this.renderer = new T.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    setEarthStatus('WebGL 上下文创建成功，正在加载地球纹理...', 'info');
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    this.renderer.setSize(w, h, false);
+    if (T.SRGBColorSpace) this.renderer.outputColorSpace = T.SRGBColorSpace;
+    if (T.ACESFilmicToneMapping) { this.renderer.toneMapping = T.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.15; }
+
+    // —— 参考实现同款光照：纯白太阳光 + 冷青半球光 + 较弱环境光 ——
+    const sun = new T.DirectionalLight(0xffffff, 2.35);
+    sun.position.set(5, 2.2, 4.5);
+    this.scene.add(sun);
+    this.scene.add(new T.HemisphereLight(0xdcecff, 0x111827, 0.72));
+    this.scene.add(new T.AmbientLight(0xffffff, 0.16));
+
+    const loader = new T.TextureLoader();
+    const loadTex = (url) => new Promise((res) => loader.load(url, res, undefined, () => res(null)));
+
+    // 同步加载四张 NASA 纹理（地球/法线/高光/云层）
+    setEarthStatus('正在加载基础地球纹理...', 'info');
+    const [earthTex, normalTex, specTex, cloudTex] = await Promise.all([
+      loadTex(TEX.earth), loadTex(TEX.normal), loadTex(TEX.specular), loadTex(TEX.clouds),
+    ]);
+    [earthTex, cloudTex].forEach((tex) => { if (tex && T.SRGBColorSpace) tex.colorSpace = T.SRGBColorSpace; });
+
+    // —— 参考实现同款地球材质：真实 NASA 纹理，不调蓝、无自发光 ——
+    const usedEarthTex = earthTex || createProceduralEarthTexture(T);
+    const geo = new T.SphereGeometry(1, 64, 64);
+    const mat = new T.MeshPhongMaterial({
+      map: usedEarthTex,
+      normalMap: normalTex || undefined,
+      specularMap: specTex || undefined,
+      specular: new T.Color(0x1d3557),
+      shininess: 28,
+    });
+    this.earth = new T.Mesh(geo, mat);
+    this.scene.add(this.earth);
+    setEarthStatus('地球网格已创建，正在添加大气与星空...', 'info');
+
+    // —— 参考实现同款云层 ——
+    if (cloudTex) {
+      const cloudGeo = new T.SphereGeometry(1.012, 48, 48);
+      const cloudMat = new T.MeshPhongMaterial({ map: cloudTex, transparent: true, opacity: 0.75, depthWrite: false });
+      this.clouds = new T.Mesh(cloudGeo, cloudMat);
+      this.scene.add(this.clouds);
+    }
+
+    // —— 参考实现同款大气层（0x4488ff 外晕 + 0x88ccff 内缘） ——
+    const atmoGeo = new T.SphereGeometry(1.06, 32, 32);
+    const atmoMat = new T.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.06, side: T.BackSide, depthWrite: false });
+    this.atmo = new T.Mesh(atmoGeo, atmoMat);
+    this.scene.add(this.atmo);
+
+    const atmo2Geo = new T.SphereGeometry(1.035, 32, 32);
+    const atmo2Mat = new T.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.035, side: T.FrontSide, depthWrite: false });
+    this.atmo2 = new T.Mesh(atmo2Geo, atmo2Mat);
+    this.scene.add(this.atmo2);
+
+    // —— 参考实现同款星空（2000 points） ——
+    const starVerts = [];
+    for (let i = 0; i < 2000; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 18 + Math.random() * 12;
+      starVerts.push(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta),
+      );
+    }
+    const starGeo = new T.BufferGeometry();
+    starGeo.setAttribute('position', new T.Float32BufferAttribute(starVerts, 3));
+    const starMat = new T.PointsMaterial({ color: 0xffffff, size: 0.06, sizeAttenuation: true, transparent: true });
+    this.stars = new T.Points(starGeo, starMat);
+    this.scene.add(this.stars);
+    setEarthStatus('星空已添加，正在初始化热点环...', 'info');
+
+    // —— 城市骨架红点（参考实现同款） ——
+    this._buildAmbient(T);
+    // —— 庄周动态地域热点（保留热搜功能） ——
+    this.dynamic = new T.Group();
+    this.earth.add(this.dynamic);
+    this.earth.scale.setScalar(0);
+    if (this.clouds) this.clouds.scale.setScalar(0);
+    this.atmo.scale.setScalar(0); this.atmo2.scale.setScalar(0);
+    this.stars.material.opacity = 0;
+    this.raycaster = new T.Raycaster();
+    this._bindEvents();
+    this._setupContextLoss();
+    setEarthStatus('初始化完成，等待出场动画...', 'success');
+    this._animate();
+    // 自动出场兜底：如果外部 500ms 内没有触发 triggerAppear，自动显示地球
+    // 避免 setHotspotMode 的 promise 链因 hotspotActive 状态变化而漏掉出场
+    setTimeout(() => {
+      if (this.disposed) return;
+      if (!this.appearing && this.earth && this.earth.scale.x < 0.01) {
+        console.warn('[HotspotEarth] auto-triggering appear from init safety net');
+        setEarthStatus('自动触发出场动画...', 'info');
+        this.triggerAppear();
+      }
+    }, 500);
+    } catch (err) {
+      console.error('[HotspotEarth] init failed:', err);
+      setEarthStatus(`初始化失败：${err?.message || '未知错误'}<br>请刷新页面或检查浏览器 WebGL 设置`, 'error');
+      throw err;
+    }
+  }
+
+  _setupContextLoss() {
+    this._onContextLost = (e) => {
+      e.preventDefault();
+      console.warn('[HotspotEarth] WebGL context lost');
+      this.dispose();
+      earth = null;
+      earthInitPromise = null;
+    };
+    this.canvas.addEventListener('webglcontextlost', this._onContextLost);
+  }
+
+  // 脉冲点 / 脉冲环的 billboard 贴图（CanvasTexture，始终面向相机）
+  _makePulseDotSprite(color, scale, opacity) {
+    if (!THREE) return null;
+    const cvs = document.createElement('canvas');
+    cvs.width = 64; cvs.height = 64;
+    const ctx = cvs.getContext('2d');
+    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 28);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.45, 'rgba(255,255,255,0.5)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(cvs);
+    const mat = new THREE.SpriteMaterial({
+      map: tex, color, transparent: true, opacity,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const s = new THREE.Sprite(mat);
+    s.scale.setScalar(scale);
+    return { sprite: s, mat };
+  }
+
+  _makePulseRingSprite(color, scale, opacity) {
+    if (!THREE) return null;
+    const cvs = document.createElement('canvas');
+    cvs.width = 128; cvs.height = 128;
+    const ctx = cvs.getContext('2d');
+    ctx.beginPath(); ctx.arc(64, 64, 56, 0, Math.PI * 2);
+    ctx.lineWidth = 9; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.stroke();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath(); ctx.arc(64, 64, 46, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    const tex = new THREE.CanvasTexture(cvs);
+    const mat = new THREE.SpriteMaterial({
+      map: tex, color, transparent: true, opacity,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const s = new THREE.Sprite(mat);
+    s.scale.setScalar(scale);
+    return { sprite: s, mat };
+  }
+
+  // 脉冲环风格：中心光点 + 固定内环 + 2 个向外扩散的 billboard 脉冲环
+  _makePulse(group, pos, colorHex, size, intensity, region = '') {
+    if (!THREE) return null;
+    const color = new THREE.Color(colorHex);
+
+    // 命中球：比视觉范围大，确保每个亮点都能点开
+    const hitGeo = new THREE.SphereGeometry(Math.max(size * 7.0, 0.14), 14, 14);
+    const hitMat = new THREE.MeshBasicMaterial({
+      transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const hit = new THREE.Mesh(hitGeo, hitMat);
+    hit.position.copy(pos);
+
+    // 中心光点（始终面向相机）
+    const dotBase = size * 1.1;
+    const dotObj = this._makePulseDotSprite(color, dotBase, 0.85 + 0.15 * intensity);
+    const dot = dotObj ? dotObj.sprite : new THREE.Object3D();
+    dot.position.copy(pos);
+
+    // 内环固定
+    const ringBase = size * 1.7;
+    const ringObj = this._makePulseRingSprite(color, ringBase, 0.55 + 0.25 * intensity);
+    const ring = ringObj ? ringObj.sprite : new THREE.Object3D();
+    ring.position.copy(pos);
+
+    // 2 个外脉冲环，相位错开
+    const waveBase = size * 1.5;
+    const waves = [];
+    for (let i = 0; i < 2; i++) {
+      const wObj = this._makePulseRingSprite(color, waveBase, 0.45 + 0.15 * intensity);
+      if (!wObj) continue;
+      wObj.sprite.position.copy(pos);
+      waves.push({ sprite: wObj.sprite, mat: wObj.mat, phaseOffset: i * Math.PI });
+    }
+
+    [hit, dot, ring, ...waves.map(w => w.sprite)].forEach((o) => { o.userData.region = region; });
+    group.add(hit, dot, ring, ...waves.map(w => w.sprite));
+
+    return {
+      ring, ringMat: ringObj ? ringObj.mat : null,
+      dot, dotMat: dotObj ? dotObj.mat : null,
+      core: null, coreMat: null,
+      hit, phase: Math.random() * 6.28, baseSize: size, intensity,
+      isPulse: true, waves, dotBase, ringBase, waveBase,
+    };
+  }
+
+  // 光柱风格：从地表沿法线向外射出的发光柱 + 底部光环 + 顶部光球
+  _makeBeam(group, pos, colorHex, size, intensity, region = '') {
+    if (!THREE) return null;
+    const color = new THREE.Color(colorHex);
+    const normal = pos.clone().normalize();
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+
+    // 光柱高度随热度/强度略增，骨架点（低强度）更短，避免拥挤
+    const H = 0.10 + intensity * 0.07;
+    const rTop = size * 0.05;
+    const rBase = size * 0.16;
+
+    // 光柱本体（顶端略细，营造光束收束感）
+    const pillarGeo = new THREE.CylinderGeometry(rTop, rBase, H, 12, 1, true);
+    const pillarMat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.35 + 0.35 * intensity,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+    pillar.position.copy(pos.clone().add(normal.clone().multiplyScalar(H / 2)));
+    pillar.quaternion.copy(quat);
+
+    // 底部光环（贴地，呼吸脉冲）
+    const baseRingGeo = new THREE.RingGeometry(size * 0.42, size * 0.78, 24);
+    const baseRingMat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.45 + 0.3 * intensity,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const baseRing = new THREE.Mesh(baseRingGeo, baseRingMat);
+    baseRing.position.copy(pos);
+    baseRing.lookAt(pos.clone().multiplyScalar(2));
+
+    // 顶部光球（高亮时放大变亮）
+    const topGeo = new THREE.SphereGeometry(size * 0.42, 12, 12);
+    const topMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.7 + 0.3 * intensity,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const top = new THREE.Mesh(topGeo, topMat);
+    top.position.copy(pos.clone().add(normal.clone().multiplyScalar(H)));
+
+    // 命中体：不可见球体，确保点击容错
+    const hitGeo = new THREE.SphereGeometry(Math.max(size * 5.0, 0.095), 14, 14);
+    const hitMat = new THREE.MeshBasicMaterial({
+      transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const hit = new THREE.Mesh(hitGeo, hitMat);
+    hit.position.copy(pos);
+
+    [pillar, baseRing, top, hit].forEach((o) => { o.userData.region = region; });
+    group.add(pillar, baseRing, top, hit);
+
+    // 字段命名与 ring 风格对齐，便于 _animate 统一驱动
+    return {
+      ring: baseRing, ringMat: baseRingMat,
+      dot: top, dotMat: topMat,
+      core: pillar, coreMat: pillarMat,
+      hit, phase: 0, baseSize: size, isBeam: true,
+    };
+  }
+
+  _createBeacon(group, pos, colorHex, size, intensity, region = '') {
+    if (this.markerStyle === 'ring') {
+      // —— 纯色静态小球：无环、无光晕、不闪烁 ——
+      if (!THREE) return null;
+      const color = new THREE.Color(colorHex);
+
+      // 可见点：实心小球
+      const dotGeo = new THREE.SphereGeometry(size, 12, 12);
+      const dotMat = new THREE.MeshBasicMaterial({ color, depthWrite: false });
+      const dot = new THREE.Mesh(dotGeo, dotMat);
+      dot.position.copy(pos);
+
+      // 命中体：不可见球体，确保点击容错
+      const hitGeo = new THREE.SphereGeometry(Math.max(size * 4.0, 0.08), 14, 14);
+      const hitMat = new THREE.MeshBasicMaterial({
+        transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide,
+      });
+      const hit = new THREE.Mesh(hitGeo, hitMat);
+      hit.position.copy(pos);
+
+      dot.userData.region = region;
+      hit.userData.region = region;
+      group.add(dot, hit);
+
+      return { ring: null, ringMat: null, dot, dotMat, core: null, coreMat: null, hit, baseSize: size };
+    }
+    if (this.markerStyle === 'beam') {
+      // 光柱风格
+      return this._makeBeam(group, pos, colorHex, size, intensity, region);
+    }
+    // 默认脉冲环风格
+    return this._makePulse(group, pos, colorHex, size, intensity, region);
+  }
+
+  _buildAmbient(T) {
+    // 12 个主要城市作骨架点：纯色小球，无环、无光晕、不闪烁
+    // 真实热点另由 updateHotspots 叠加（平台色小球）；骨架点本身也可点击
+    const group = new T.Group();
+    HOTSPOT_COORDS.forEach(({ lat, lon, label }) => {
+      const pos = latLonToVec3(lat, lon, 1.02);
+      // 可见点：实心小红球
+      const dotGeo = new T.SphereGeometry(0.007, 12, 12);
+      const dotMat = new T.MeshBasicMaterial({ color: 0xff4444, depthWrite: false });
+      const dot = new T.Mesh(dotGeo, dotMat);
+      dot.position.copy(pos);
+      dot.userData = { region: label, isAmbient: true };
+
+      // 不可见命中球：确保 360° 可点
+      const hitGeo = new T.SphereGeometry(0.045, 12, 12);
+      const hitMat = new T.MeshBasicMaterial({
+        transparent: true, opacity: 0, depthWrite: false, side: T.DoubleSide,
+      });
+      const hit = new T.Mesh(hitGeo, hitMat);
+      hit.position.copy(pos);
+      hit.userData = { region: label, isAmbient: true };
+
+      group.add(dot, hit);
+    });
+    this.ambient = group;
+    this.earth.add(group);
+  }
+
+  // 平台主色，用于真实地域环着色
+  _regionColor(r) {
+    const pkey = (r.platforms && r.platforms[0] && r.platforms[0][0]) || 'weibo';
+    return PLATFORM_COLOR[pkey] || '#22D3EE';
+  }
+
+  _disposeGroup(g) {
+    if (!g) return;
+    g.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
+  }
+
+  // 用后端实时聚合的地域数据重建地球热点信标：地图上只显示标注点，文字移入点击弹窗
+  updateHotspots(regions) {
+    if (!this.earth || !THREE) return;
+    if (this.dynamic) { this.earth.remove(this.dynamic); this._disposeGroup(this.dynamic); }
+    const group = new THREE.Group();
+    this.regionMeshes = {};
+
+    // 按热度排序并限制总数，从源头减少视觉拥挤
+    this._regions = (regions || [])
+      .filter((r) => r && r.lat != null && r.lon != null)
+      .sort((a, b) => (b.count || 0) - (a.count || 0))
+      .slice(0, 12);
+    const max = Math.max(1, ...this._regions.map((r) => r.count));
+
+    this._regions.forEach((r) => {
+      const pos = latLonToVec3(r.lat, r.lon, 1.02);
+      const intensity = Math.min(1, r.count / max);
+      // 静态纯色小球半径：无环、无光晕，只做极轻微大小区分
+      const size = 0.006 + intensity * 0.003;
+      const colorHex = this._regionColor(r);
+      const beacon = this._createBeacon(group, pos, colorHex, size, 0.55 + intensity * 0.45, r.region);
+      if (beacon) {
+        beacon.phase = Math.random() * 6.28;
+        beacon.data = r;
+        this.regionMeshes[r.region] = beacon;
+      }
+    });
+    this.dynamic = group;
+    this.earth.add(group);
+    if (this.highlight) this.highlightRegion(this.highlight);
+  }
+
+  highlightRegion(region) {
+    this.highlight = region || '';
+  }
+
+  // 取最近的「正面可见」地域命中：过滤掉被地球本体遮挡的背面标记（防穿透地球误点）
+  _firstVisibleRegionHit(hits) {
+    if (!this.camera) return null;
+    const camPos = this.camera.position;
+    for (const h of hits) {
+      if (!h.object.userData || !h.object.userData.region) continue;
+      // 命中点法向（地球位于原点，从球心指向命中点即朝外的法向）
+      const normal = h.point.clone().normalize();
+      // 视线方向：从命中点指向相机
+      const viewDir = camPos.clone().sub(h.point).normalize();
+      // 法向与视线同向（都朝外）即正面可见；允许接近 limb 的微小夹角
+      if (normal.dot(viewDir) > -0.08) return h;
+    }
+    return null;
+  }
+
+  // 兜底拾取：若没直接命中标记命中体，则取射线在地球表面的落点，找最近的地域标记
+  _pickNearestRegionFromSurface(ray) {
+    if (!this.earth || !this._regions) return '';
+    const earthHits = ray.intersectObject(this.earth, false);
+    if (!earthHits.length) return '';
+    const p = earthHits[0].point.clone().normalize();
+    let best = null, bestDot = -1;
+    for (const r of this._regions) {
+      if (r.lat == null || r.lon == null) continue;
+      const rp = latLonToVec3(r.lat, r.lon, 1).normalize();
+      const d = p.dot(rp);
+      if (d > bestDot) { bestDot = d; best = r; }
+    }
+    // 只有在 10° 以内（cos 10°≈0.985）才认为点中了附近的热点，避免空白处误触
+    if (best && bestDot > 0.985) return best.region;
+    return '';
+  }
+
+  // 射线拾取：优先命中标记命中体；未命中时兜底到地球表面最近地域
+  _pickRegion(e) {
+    if (!this.dynamic || !this.raycaster || !THREE) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const pickTargets = [
+      ...(this.dynamic ? this.dynamic.children : []),
+      ...(this.ambient ? this.ambient.children : []),
+    ];
+    const hits = this.raycaster.intersectObjects(pickTargets, false);
+    const hit = this._firstVisibleRegionHit(hits);
+    const region = hit ? hit.object.userData.region : this._pickNearestRegionFromSurface(this.raycaster);
+    if (region) this._flashBeacon(region);
+    if (this.onRegionPick) this.onRegionPick(region);
+  }
+
+  _flashBeacon(region) {
+    const m = this.regionMeshes[region];
+    if (!m) return;
+    const t0 = performance.now();
+    const animate = () => {
+      const p = Math.min(1, (performance.now() - t0) / 320);
+      const boost = 1 + 0.7 * Math.sin(p * Math.PI);
+      if (m.isPulse) {
+        if (m.dot) m.dot.scale.setScalar((m.dotBase || 0.02) * boost);
+        if (m.ring) m.ring.scale.setScalar((m.ringBase || 0.04) * boost);
+        (m.waves || []).forEach((w) => { w.sprite.scale.setScalar((m.waveBase || 0.04) * boost); });
+      } else {
+        if (m.ring) m.ring.scale.setScalar(boost);
+        if (m.dot) m.dot.scale.setScalar(boost);
+        if (m.core) m.core.scale.setScalar(boost);
+      }
+      if (p < 1) requestAnimationFrame(animate);
+    };
+    animate();
+  }
+
+  // hover 检测：命中地域环时显示 tooltip
+  _updateHover(p) {
+    if (!this.dynamic || !this.raycaster || !THREE || this.isDragging) { hideEarthTooltip(); this.canvas.style.cursor = 'grab'; return; }
+    // hover 射线检测节流：每 40ms 最多一次，降低高刷新率下的 GPU/CPU 开销
+    const now = performance.now();
+    if (now - (this._lastHover || 0) < 40) return;
+    this._lastHover = now;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = p.clientX - rect.left, y = p.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) { hideEarthTooltip(); this.canvas.style.cursor = 'grab'; return; }
+    const ndc = new THREE.Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1);
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const hoverTargets = [
+      ...(this.dynamic ? this.dynamic.children : []),
+      ...(this.ambient ? this.ambient.children : []),
+    ];
+    const hits = this.raycaster.intersectObjects(hoverTargets, false);
+    const hit = this._firstVisibleRegionHit(hits);
+    const region = hit ? hit.object.userData.region : this._pickNearestRegionFromSurface(this.raycaster);
+    if (!region) { hideEarthTooltip(); this.hoverRegion = ''; this.canvas.style.cursor = 'crosshair'; return; }
+    const r = (this._regions || []).find((x) => x.region === region);
+    showEarthTooltip(p.clientX, p.clientY, region, r?.count || 0);
+    this.hoverRegion = region;            // 光标悬停的地域 → 该标记随光标放大变亮
+    this.canvas.style.cursor = 'crosshair';
+  }
+
+  _bindEvents() {
+    const c = this.canvas;
+    const onDown = (e) => { this.isDragging = true; const p = e.touches ? e.touches[0] : e; this.prevMouse = { x: p.clientX, y: p.clientY }; this._downPos = { x: p.clientX, y: p.clientY }; this.velX = 0; this.velY = 0; hideEarthTooltip(); };
+    const onMove = (e) => {
+      const p = e.touches ? e.touches[0] : e;
+      if (!this.isDragging) { this._updateHover(p); return; }
+      e.preventDefault();
+      const dx = p.clientX - this.prevMouse.x, dy = p.clientY - this.prevMouse.y;
+      this.velY = dx * 0.003; this.velX = dy * 0.003;
+      this.rotY += this.velY; this.rotX += this.velX;
+      this.rotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.rotX));
+      this.prevMouse = { x: p.clientX, y: p.clientY };
+    };
+    const onUp = () => { this.isDragging = false; this.canvas.style.cursor = 'crosshair'; };
+    const onLeave = () => { this.isDragging = false; hideEarthTooltip(); this.hoverRegion = ''; this.canvas.style.cursor = 'crosshair'; };
+    const onClick = (e) => {
+      if (!this._downPos) return;
+      const moved = Math.hypot(e.clientX - this._downPos.x, e.clientY - this._downPos.y);
+      this._downPos = null;
+      if (moved > 6) return;            // 拖拽距离过大 → 视为旋转，不触发点击
+      this._pickRegion(e);
+    };
+    const onWheel = (e) => { e.preventDefault(); this.camDist += e.deltaY * 0.002; this.camDist = Math.max(this.camDistMin, Math.min(this.camDistMax, this.camDist)); };
+    c.style.cursor = 'crosshair';
+    c.addEventListener('mousedown', onDown);
+    c.addEventListener('mousemove', onMove);
+    c.addEventListener('mouseup', onUp);
+    c.addEventListener('mouseleave', onLeave);
+    c.addEventListener('click', onClick);
+    c.addEventListener('touchstart', onDown, { passive: true });
+    c.addEventListener('touchmove', onMove, { passive: false });
+    c.addEventListener('touchend', onUp);
+    c.addEventListener('wheel', onWheel, { passive: false });
+    this._bound = { onDown, onMove, onUp, onLeave, onWheel, onClick };
+  }
+
+  triggerAppear() {
+    console.log('[HotspotEarth] triggerAppear called. appearing=', this.appearing, 'scale=', this.earth?.scale.x);
+    if (this.appearing) {
+      setEarthStatus('出场动画已在进行中...', 'info');
+      return;
+    }
+    // 如果已经显示完成，不再重置
+    if (this.earth && this.earth.scale.x > 0.99) {
+      setEarthStatus('地球已显示', 'success');
+      setTimeout(hideEarthStatus, 400);
+      return;
+    }
+    this.appearing = true; this.appearScale = 0;
+    if (this.earth) this.earth.scale.setScalar(0);
+    if (this.clouds) this.clouds.scale.setScalar(0);
+    if (this.atmo) this.atmo.scale.setScalar(0);
+    if (this.atmo2) this.atmo2.scale.setScalar(0);
+    if (this.stars) this.stars.material.opacity = 0;
+    setEarthStatus('正在显示地球...', 'info');
+    // 安全兜底：3 秒后若出场动画仍未完成，强制归位，防止渲染卡死时白屏
+    if (this._appearTimer) clearTimeout(this._appearTimer);
+    this._appearTimer = setTimeout(() => {
+      if (!this.appearing) return;
+      console.warn('[HotspotEarth] appear animation safety timeout');
+      setEarthStatus('出场动画超时，已强制显示地球', 'warn');
+      this.appearing = false; this.appearScale = 1;
+      if (this.earth) this.earth.scale.setScalar(1);
+      if (this.clouds) this.clouds.scale.setScalar(1);
+      if (this.atmo) this.atmo.scale.setScalar(1);
+      if (this.atmo2) this.atmo2.scale.setScalar(1);
+      if (this.stars) this.stars.material.opacity = 1;
+    }, 3000);
+  }
+
+  _animate() {
+    this.animFrame = requestAnimationFrame(() => this._animate());
+    if (this.appearing) {
+      this.appearScale += (1 - this.appearScale) * 0.07;
+      const s = this.appearScale;
+      if (this.earth) this.earth.scale.setScalar(s);
+      if (this.clouds) this.clouds.scale.setScalar(s);
+      if (this.atmo) this.atmo.scale.setScalar(s);
+      if (this.atmo2) this.atmo2.scale.setScalar(s);
+      if (this.stars) this.stars.material.opacity = Math.min(1, s * 1.5);
+      // 每 10 帧刷新一次状态面板，避免 DOM 操作过频
+      if (Math.round(s * 100) % 10 === 0) {
+        setEarthStatus(`地球出场中... scale=${s.toFixed(2)}`, 'info');
+      }
+      if (s > 0.999) {
+        this.appearing = false;
+        if (this._appearTimer) { clearTimeout(this._appearTimer); this._appearTimer = null; }
+        if (this.earth) this.earth.scale.setScalar(1);
+        if (this.clouds) this.clouds.scale.setScalar(1);
+        if (this.atmo) this.atmo.scale.setScalar(1);
+        if (this.atmo2) this.atmo2.scale.setScalar(1);
+        if (this.stars) this.stars.material.opacity = 1;
+        setTimeout(hideEarthStatus, 400);
+      }
+    }
+    if (!this.isDragging) {
+      this.velX *= 0.92; this.velY *= 0.92;
+      this.rotX += this.velX; this.rotY += this.velY + 0.0018;
+      this.rotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.rotX));
+    }
+    if (this.earth) { this.earth.rotation.x = this.rotX; this.earth.rotation.y = this.rotY; }
+    if (this.clouds) { this.clouds.rotation.x = this.rotX; this.clouds.rotation.y = this.rotY + performance.now() * 0.000008; }
+    const curr = this.camera.position.length();
+    const next = curr + (this.camDist - curr) * 0.1;
+    this.camera.position.setLength(next);
+    // 真实地域信标：柔和脉冲 + 高亮放大
+    if (this.dynamic) {
+      const t = performance.now() * 0.0025;
+      for (const region in this.regionMeshes) {
+        const m = this.regionMeshes[region];
+        const isHi = region === this.highlight;
+        const isHover = region === this.hoverRegion;
+        const pulse = 0.65 + 0.35 * Math.sin(t + m.phase);
+        const boost = isHi ? 1.35 : (isHover ? 1.55 : 1);
+        if (m.isPulse) {
+          // 脉冲环风格：中心点 + 内环呼吸 + 外环持续向外扩散
+          if (m.dotMat) m.dotMat.opacity = isHover || isHi ? 1 : 0.9;
+          if (m.dot) m.dot.scale.setScalar(boost * m.baseSize * 1.1);
+          if (m.ringMat) m.ringMat.opacity = ((isHi || isHover ? 0.85 : 0.55) * pulse) + (isHi || isHover ? 0.1 : 0);
+          if (m.ring) m.ring.scale.setScalar(boost * m.baseSize * 1.7 * (0.95 + 0.05 * pulse));
+          const waveBase = m.baseSize * 1.5;
+          const cycle = Math.PI * 2;
+          (m.waves || []).forEach((w) => {
+            const localT = (t + m.phase + w.phaseOffset) % cycle;
+            const p = localT / cycle;
+            w.sprite.scale.setScalar(waveBase * (1 + p * 2.0));
+            w.mat.opacity = (0.55 * (1 - p) + 0.05) * m.intensity * (isHi || isHover ? 1.3 : 1);
+          });
+        } else if (m.isBeam) {
+          // 光柱风格：柱体呼吸 + 底部光环脉冲 + 顶部光球随高亮放大
+          m.pillarMat.opacity = ((isHi || isHover ? 0.8 : 0.5) * pulse) + (isHi || isHover ? 0.15 : 0);
+          m.ringMat.opacity = ((isHi || isHover ? 0.95 : 0.55) * pulse) + (isHi || isHover ? 0.15 : 0);
+          const s = boost * (1 + 0.12 * Math.sin(t * 1.2 + m.phase));
+          m.ring.scale.setScalar(s);
+          m.dot.scale.setScalar(boost);
+          m.dotMat.opacity = isHover || isHi ? 1 : 0.9;
+        } else {
+          // 静态小圆点：无光晕、无呼吸、无持续动画
+        }
+      }
+    }
+    this._checkResize();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  _checkResize() {
+    const c = this.canvas, w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    const dpr = this.renderer.getPixelRatio();
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
+      this.renderer.setSize(w, h, false);
+      this.camera.aspect = w / h;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  pause() {
+    if (this.animFrame) { cancelAnimationFrame(this.animFrame); this.animFrame = null; }
+    if (this._appearTimer) { clearTimeout(this._appearTimer); this._appearTimer = null; }
+  }
+  resume() {
+    if (pendingRegions && this.updateHotspots) { this.updateHotspots(pendingRegions); pendingRegions = null; }
+    if (!this.animFrame && this.renderer) this._animate();
+  }
+  dispose() {
+    this.disposed = true;
+    if (this._appearTimer) clearTimeout(this._appearTimer);
+    if (this._onContextLost) this.canvas?.removeEventListener('webglcontextlost', this._onContextLost);
+    if (this.animFrame) cancelAnimationFrame(this.animFrame);
+    const c = this.canvas, b = this._bound;
+    if (b.onDown) c.removeEventListener('mousedown', b.onDown);
+    if (b.onMove) c.removeEventListener('mousemove', b.onMove);
+    if (b.onUp) c.removeEventListener('mouseup', b.onUp);
+    if (b.onLeave) c.removeEventListener('mouseleave', b.onLeave);
+    if (b.onDown) c.removeEventListener('touchstart', b.onDown);
+    if (b.onMove) c.removeEventListener('touchmove', b.onMove);
+    if (b.onUp) c.removeEventListener('touchend', b.onUp);
+    if (b.onWheel) c.removeEventListener('wheel', b.onWheel);
+    if (b.onClick) c.removeEventListener('click', b.onClick);
+    this._disposeGroup(this.dynamic);
+    this._disposeGroup(this.ambient);
+    [this.stars, this.atmo, this.atmo2].forEach((o) => {
+      if (!o) return;
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
+    this.dynamic = null; this.ambient = null; this.regionMeshes = {};
+    this.stars = null; this.atmo = null; this.atmo2 = null;
+    this.renderer?.dispose();
+    this.renderer = null;
+  }
+}
+
+// ── 暴露热点面板桥：供 app.js 通过 zhuangzhou_event 打开全屏热点模式 ──
+window.ZZHotspot = {
+  open: () => setHotspotMode(true),
+  close: () => setHotspotMode(false),
+  toggle: toggleHotspot,
+};
+
+// 自启动（module 在 DOM 解析完成后执行）
+initHotspot();

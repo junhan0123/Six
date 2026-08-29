@@ -190,6 +190,9 @@ DOMAIN_EVENT_NAMES = {
     # —— Order 5：Intent Gateway 生命周期（User Intent → Goal Decision Engine → Goal）——
     "INTENT_RECEIVED", "INTENT_ANALYZING", "INTENT_CLASSIFIED",
     "INTENT_ACCEPTED", "INTENT_REJECTED", "INTENT_CONVERTED_TO_GOAL",
+    # —— Phase 7 · Agent Trust Layer（执行意图透明化 + 工具风险分级）——
+    "AGENT_INTENT_ANALYZED",
+    "TOOL_RISK_CHECKED",
     # —— Phase 7 Order 1：Computer World Model（只读世界观测事件；动作能力在 Order 2+）——
     "COMPUTER_WORLD_SYNC",
     "WINDOW_OPENED", "WINDOW_CLOSED", "WINDOW_FOCUSED",
@@ -229,7 +232,7 @@ def publish_domain(name: str, payload: dict, source: str = "") -> None:
     """发布一条领域事件到 SSE 扇出（前端 AppState 合约入口）。
 
     信封格式（与前端 event-bridge.js 约定）：
-        {"zhuangzhou_event": <name>, "payload": <payload>, "ts": <unix>}
+        {"xiao6_event": <name>, "payload": <payload>, "ts": <unix>}
 
     纪律（readiness §4 R1 / §5.2）：
     - name 必须是 DOMAIN_EVENT_NAMES（与前端 zz-events.js 单一来源对齐），否则拒绝。
@@ -242,7 +245,7 @@ def publish_domain(name: str, payload: dict, source: str = "") -> None:
         raise TypeError("[EventBus] payload 必须为 dict（§15.5 禁不可序列化对象）")
     bus.publish(
         TOPIC_SSE,
-        {"zhuangzhou_event": name, "payload": payload, "ts": time.time()},
+        {"xiao6_event": name, "payload": payload, "ts": time.time()},
         source=source or "domain",
     )
 
@@ -288,14 +291,14 @@ SYSTEM_EVENT_NAMES = {
 def publish_system(name: str, fields: dict, source: str = "") -> None:
     """发布一条系统事件到 SSE（与 publish_domain 平行的校验纪律，单一来源 SYSTEM_EVENT_NAMES）。
 
-    信封保持扁平结构 {"zhuangzhou_event": <name>, ...fields}，与前端独立监听器（app.js /
+    信封保持扁平结构 {"xiao6_event": <name>, ...fields}，与前端独立监听器（app.js /
     glance-card.js）既有解析约定一致（字段在顶层，不由 payload 包裹）。
     """
     if name not in SYSTEM_EVENT_NAMES:
         raise ValueError(f"[EventBus] 未知系统事件名（须登记到 SYSTEM_EVENT_NAMES）: {name}")
     if not isinstance(fields, dict):
         raise TypeError("[EventBus] fields 必须为 dict")
-    payload = {"zhuangzhou_event": name}
+    payload = {"xiao6_event": name}
     payload.update(fields)
     bus.publish(TOPIC_SSE, payload, source=source or "system")
 

@@ -1,0 +1,226 @@
+/*
+ * phase7-companion-avatar.frontend.test.js — Phase 7 Desktop Companion · Avatar 状态派生验证
+ * 运行：node tests/phase7-companion-avatar.frontend.test.js
+ * 验证项：
+ *   1) 9 态映射（IDLE/WAITING/THINKING/PLANNING/EXECUTING/COMPLETED/ERROR/OFFLINE）+ 任务要求的 5 场景
+ *   2) 与真实 AppState + ExecutionChannel 的集成一致性（Avatar 状态严格跟随 AppState）
+ *   3) 纪律：纯函数、无第二状态/EventBus/State 系统
+ * 不依赖浏览器 / Electron / 网络（纯状态机单测 + 纯函数单测）。
+ */
+'use strict';
+const assert = require('assert');
+const path = require('path');
+const fs = require('fs');
+
+const AvatarState = require(path.join(__dirname, '../avatar-state.js'));
+
+let pass = 0, fail = 0;
+function check(name, fn) {
+  try { fn(); console.log('  ✓ ' + name); pass++; }
+  catch (e) { console.log('  ✗ ' + name + '\n      ' + e.message); fail++; }
+}
+
+// 加载一份全新（隔离）的 AppState + ExecutionChannel + AvatarState
+function loadFresh() {
+  ['../zz-events.js', '../app-state.js', '../execution-channel.js', '../avatar-state.js'].forEach((m) => {
+    try { delete require.cache[require.resolve(m)]; } catch (_) {}
+  });
+  require(path.join(__dirname, '../zz-events.js')); // 必须先置备 ZZ_EVENTS（单一事件名来源）
+  const AppState = require(path.join(__dirname, '../app-state.js'));
+  const EC = require(path.join(__dirname, '../execution-channel.js'));
+  const AvatarState2 = require(path.join(__dirname, '../avatar-state.js'));
+  global.AppState = AppState;
+  global.ExecutionChannel = EC;
+  global.ZZSSE = undefined; // 默认判定在线
+  global.AvatarState = AvatarState2;
+  return { AppState, EC, AvatarState: AvatarState2 };
+}
+
+console.log('\n[A] 纯函数派生：9 态映射（消费 AppState + ExecutionChannel 快照）');
+
+check('IDLE：无活动信号时待命', () => {
+  const r = AvatarState.derive({ agents: {}, goals: {}, intents: {}, tasks: {}, execution: { errors: [] } },
+    { current: null, history: [] }, { online: true });
+  assert.strictEqual(r.state, 'IDLE');
+  assert.strictEqual(r.label, '待命');
+});
+
+check('测试1 离线：online=false → OFFLINE', () => {
+  const r = AvatarState.derive({ agents: {}, execution: { errors: [] } },
+    { current: null, history: [] }, { online: false });
+  assert.strictEqual(r.state, 'OFFLINE');
+  assert.strictEqual(r.label, '离线');
+});
+
+check('测试2 执行任务：agent Working → EXECUTING', () => {
+  const r = AvatarState.derive(
+    { agents: { a1: { id: 'a1', status: 'Working' } }, execution: { errors: [] } },
+    { current: null, history: [] }, { online: true });
+  assert.strictEqual(r.state, 'EXECUTING');
+});
+
+check('测试3 工具调用：ExecutionChannel 进行中且有 running step → EXECUTING + 工具标签', () => {
+  const exec = {
+    status: 'running', prompt: '查一下天气',
+    steps: [{ tool: 'web_search', label: '联网搜索', status: 'running' }],
+  };
+  const r = AvatarState.derive({ agents: {}, execution: { errors: [] } },
+    { current: exec, history: [] }, { online: true });
+  assert.strictEqual(r.state, 'EXECUTING');
+  assert.strictEqual(r.context.tool, '联网搜索');
+  assert.strictEqual(r.context.progress, 0); // 0/1 完成
+});
+
+check('THINKING：agent Thinking → THINKING', () => {
+  const r = AvatarState.derive(
+    { agents: { a1: { id: 'a1', status: 'Thinking' } }, execution: { errors: [] } },
+    { current: null, history: [] }, { online: true });
+  assert.strictEqual(r.state, 'THINKING');
+});
+
+check('PLANNING：intent Analyzing → PLANNING', () => {
+  const r = AvatarState.derive(
+    { agents: {}, intents: { i1: { id: 'i1', status: 'Analyzing', title: '规划周报' } }, execution: { errors: [] } },
+    { current: null, history: [] }, { online: true });
+  assert.strictEqual(r.state, 'PLANNING');
+  assert.strictEqual(r.context.intent, '规划周报');
+});
+
+check('WAITING：agent Waiting → WAITING', () => {
+  const r = AvatarState.derive(
+    { agents: { a1: { id: 'a1', status: 'Waiting' } }, execution: { errors: [] } },
+    { current: null, history: [] }, { online: true });
+  assert.strictEqual(r.state, 'WAITING');
+});
+
+check('COMPLETED：ExecutionChannel 近期完成 → COMPLETED（短时）', () => {
+  const now = Date.now();
+  const exec = { status: 'completed', prompt: '生成图片', completedAt: now };
+  const r = AvatarState.derive({ agents: {}, execution: { errors: [] } },
+    { current: exec, history: [] }, { online: true, now: now });
+  assert.strictEqual(r.state, 'COMPLETED');
+});
+
+check('测试4 异常：近期 ERROR_OCCURRED → ERROR', () => {
+  const now = Date.now();
+  const app = { agents: {}, execution: { errors: [{ message: 'backend timeout', ts: now }] } };
+  const r = AvatarState.derive(app, { current: null, history: [] }, { online: true, now: now });
+  assert.strictEqual(r.state, 'ERROR');
+  assert.strictEqual(r.context.error, 'backend timeout');
+});
+
+check('优先级：ERROR 高于 EXECUTING（agent Working 且有错误 → ERROR）', () => {
+  const now = Date.now();
+  const app = {
+    agents: { a1: { id: 'a1', status: 'Working' } },
+    execution: { errors: [{ message: 'oops', ts: now }] },
+  };
+  const r = AvatarState.derive(app, { current: null, history: [] }, { online: true, now: now });
+  assert.strictEqual(r.state, 'ERROR');
+});
+
+check('优先级：OFFLINE 最高（在线时 EXECUTING，离线后直接 OFFLINE）', () => {
+  const exec = { status: 'running', steps: [{ tool: 'x', label: 'X', status: 'running' }] };
+  const online = AvatarState.derive({ agents: {}, execution: { errors: [] } }, { current: exec, history: [] }, { online: true });
+  assert.strictEqual(online.state, 'EXECUTING');
+  const off = AvatarState.derive({ agents: {}, execution: { errors: [] } }, { current: exec, history: [] }, { online: false });
+  assert.strictEqual(off.state, 'OFFLINE');
+});
+
+console.log('\n[B] 集成一致性：Avatar 状态严格跟随真实 AppState + ExecutionChannel');
+
+check('IDLE：干净状态 → IDLE', () => {
+  const { AvatarState: AS } = loadFresh();
+  assert.strictEqual(AS.deriveFromGlobals().state, 'IDLE');
+});
+
+check('THINKING：AGENT_CREATED + AGENT_THINKING → THINKING', () => {
+  const { AppState, AvatarState: AS } = loadFresh();
+  AppState.applyEvent('AGENT_CREATED', { agentId: 'a1', name: '庄周', type: 'agent' });
+  AppState.applyEvent('AGENT_THINKING', { agentId: 'a1' });
+  assert.strictEqual(AS.deriveFromGlobals().state, 'THINKING');
+});
+
+check('PLANNING：INTENT_RECEIVED + INTENT_ANALYZING → PLANNING', () => {
+  const { AppState, AvatarState: AS } = loadFresh();
+  AppState.applyEvent('INTENT_RECEIVED', { intentId: 'i1', text: '下周计划' });
+  AppState.applyEvent('INTENT_ANALYZING', { intentId: 'i1' });
+  assert.strictEqual(AS.deriveFromGlobals().state, 'PLANNING');
+});
+
+check('WAITING：AGENT_WAITING → WAITING', () => {
+  const { AppState, AvatarState: AS } = loadFresh();
+  AppState.applyEvent('AGENT_CREATED', { agentId: 'a1', type: 'agent' });
+  AppState.applyEvent('AGENT_WAITING', { agentId: 'a1' });
+  assert.strictEqual(AS.deriveFromGlobals().state, 'WAITING');
+});
+
+check('测试2 执行任务（集成）：AGENT_WORKING → EXECUTING', () => {
+  const { AppState, AvatarState: AS } = loadFresh();
+  AppState.applyEvent('AGENT_CREATED', { agentId: 'a1', type: 'agent' });
+  AppState.applyEvent('AGENT_WORKING', { agentId: 'a1' });
+  assert.strictEqual(AS.deriveFromGlobals().state, 'EXECUTING');
+});
+
+check('测试3 工具调用（集成）：ExecutionChannel 真实流转 → EXECUTING + 工具标签', () => {
+  const { EC, AvatarState: AS } = loadFresh();
+  EC.startExecution('分析当前项目');
+  EC.onToolStart({ tool: 'file_read' });
+  const r = AS.deriveFromGlobals();
+  assert.strictEqual(r.state, 'EXECUTING');
+  assert.strictEqual(r.context.tool, '读取文件');
+  EC.onToolEnd({ tool: 'file_read', result: 'ok' });
+  EC.completeExecution();
+});
+
+check('COMPLETED（集成）：ExecutionChannel 完成后短时 → COMPLETED', () => {
+  const { EC, AvatarState: AS } = loadFresh();
+  EC.startExecution('生成图片');
+  EC.completeExecution();
+  assert.strictEqual(AS.deriveFromGlobals({ now: Date.now() }).state, 'COMPLETED');
+});
+
+check('测试4 异常（集成）：ERROR_OCCURRED → ERROR', () => {
+  const { AppState, AvatarState: AS } = loadFresh();
+  AppState.applyEvent('ERROR_OCCURRED', { message: 'agent crashed', severity: 'error' });
+  assert.strictEqual(AS.deriveFromGlobals({ now: Date.now() }).state, 'ERROR');
+});
+
+console.log('\n[C] 纪律：纯函数 / 无第二状态系统 / 无 EventBus');
+
+check('纯函数：相同输入恒得相同输出', () => {
+  const a = { agents: { a1: { id: 'a1', status: 'Working' } }, execution: { errors: [] } };
+  const e = { current: null, history: [] };
+  const m = { online: true };
+  assert.strictEqual(JSON.stringify(AvatarState.derive(a, e, m)), JSON.stringify(AvatarState.derive(a, e, m)));
+});
+
+check('纯函数：返回对象不回写模块内部状态（输入变更不影响已返回值）', () => {
+  const a = { agents: {}, execution: { errors: [] } };
+  const r1 = AvatarState.derive(a, { current: null, history: [] }, { online: true });
+  a.agents.a1 = { id: 'a1', status: 'Working' }; // 变更输入（不应急及 r1）
+  assert.strictEqual(r1.state, 'IDLE');
+});
+
+check('avatar-state.js 不新建 AppState / EventBus / 持久化（无第二状态系统）', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../avatar-state.js'), 'utf8');
+  // 不应定义 AppState 的权威状态容器（agents/goals/execution 形状 = 第二状态系统嫌疑）
+  assert.ok(!/\bstate\s*=\s*\{[^}]*agents/.test(src), '模块不应定义 AppState 权威状态容器');
+  assert.ok(!/\bstate\s*=\s*\{[^}]*execution/.test(src), '模块不应定义 execution 状态容器');
+  assert.ok(!/new EventBus/.test(src), '含 new EventBus');
+  assert.ok(!/localStorage/.test(src) && !/IndexedDB/.test(src), '引入了持久化存储（新 Memory 嫌疑）');
+  // 合法消费：从既有全局读取 AppState / ExecutionChannel（而非创建）
+  assert.ok(/global\.AppState/.test(src), '未从既有 AppState 读取（消费关系缺失）');
+  assert.ok(/global\.ExecutionChannel/.test(src), '未从既有 ExecutionChannel 读取（消费关系缺失）');
+  assert.ok(src.includes('derive') && src.includes('deriveFromGlobals'), '缺少纯派生入口');
+});
+
+check('avatar-state.js 不直连后端（无 fetch / XHR / /api/）', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../avatar-state.js'), 'utf8');
+  assert.ok(!src.includes('fetch('), '含 fetch 直连');
+  assert.ok(!src.includes('XMLHttpRequest'), '含 XHR 直连');
+  assert.ok(!src.includes('/api/'), '含 /api/ 直连');
+});
+
+console.log(`\nCOMPANION AVATAR (Phase 7): ${fail === 0 ? 'PASS' : 'FAIL'}  (passed=${pass}, failed=${fail})`);
+process.exit(fail === 0 ? 0 : 1);

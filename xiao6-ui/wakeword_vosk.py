@@ -28,8 +28,8 @@ DEFAULT_PHRASES = ["庄周", "小周"]
 
 
 def load_phrases():
-    """读取 ZHUANGZHOU_WAKE_PHRASE（逗号分隔），空则回退默认。"""
-    raw = os.environ.get("ZHUANGZHOU_WAKE_PHRASE", "庄周,小周") or "庄周,小周"
+    """读取 XIAO6_WAKE_PHRASE（逗号分隔），空则回退默认。"""
+    raw = os.environ.get("XIAO6_WAKE_PHRASE", "庄周,小周") or "庄周,小周"
     out = [p.strip() for p in raw.split(",") if p.strip()]
     return out or list(DEFAULT_PHRASES)
 

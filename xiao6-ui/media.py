@@ -3,7 +3,7 @@
 
 能力：文生图 / 文生视频 / 文生音乐。
 默认：零密钥优先，未配置即返回「未启用」文案，绝不消耗任何积分。
-配置后（.env 配 ZHUANGZHOU_MEDIA_PROVIDER=minimax + MINIMAX_API_KEY[+MINIMAX_GROUP_ID]）
+配置后（.env 配 XIAO6_MEDIA_PROVIDER=minimax + MINIMAX_API_KEY[+MINIMAX_GROUP_ID]）
 可真实调用 MiniMax；调用失败仍优雅降级，不影响主链路。
 
 支持运行时通过 config.update_env_file() 热重载。

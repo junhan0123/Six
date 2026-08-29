@@ -12,7 +12,7 @@
 - Chat SSE 保持兼容：chat 路径仍经 server.py 的 emit 闭包直推 tool_start/tool_end；
   Execution 事件经 EventBus SYSTEM 通道，两者互不干扰。
 
-事件信封：publish_system 自动包成 {"zhuangzhou_event": <name>, ...fields}。
+事件信封：publish_system 自动包成 {"xiao6_event": <name>, ...fields}。
 """
 
 from __future__ import annotations

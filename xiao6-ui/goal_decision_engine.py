@@ -39,6 +39,10 @@ COMPLEX = [
     "年报", "总结", "整个", "全部", "项目", "系统", "流程", "自动化", "一系列", "多个",
     "完整", "梳理成", "整理成", "做成", "对比",
 ]
+# Phase 6 · 长期目标明确信号：命中即判为长任务 C（进入 GoalSystem）
+LONG_TERM = [
+    "长期", "持续", "坚持", "养成", "每天", "每周", "学习", "练习", "培养", "锻炼", "习惯",
+]
 PRIOR = [
     "继续", "接着", "恢复", "回到", "刚才", "之前", "上次", "先前", "那个目标",
     "之前的目标", "刚才的目标", "上次的目标", "刚那个",
@@ -140,6 +144,9 @@ class GoalDecisionEngine:
 
     # ---- 确定性分类 ----
     def _classify(self, text: str) -> str:
+        # Phase 6 · 长期目标明确信号优先 → C（进入 GoalSystem）
+        if any(w in text for w in LONG_TERM):
+            return "C"
         if any(w in text for w in PRIOR):
             return "E"
         if any(w in text for w in AMBIGUOUS):
@@ -170,6 +177,8 @@ class GoalDecisionEngine:
         s = 0.5
         if any(v in text for v in LONG_VERBS):
             s += 0.15
+        if any(v in text for v in LONG_TERM):
+            s += 0.3
         cx = sum(1 for c in COMPLEX if c in text)
         s += min(cx * 0.1, 0.3)
         if len(text) > 12:

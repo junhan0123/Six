@@ -1,0 +1,70 @@
+/*
+ * avatar-assets.js — Phase 8.5 A2：小6角色资产映射（八态）
+ * ----------------------------------------------------------------------------
+ * 资源规范：assets/avatar/*.svg 为自绘矢量资产（无版权风险，可商用）。
+ * 八态与 avatar-state.js STATES 一一对应：IDLE / WAITING / THINKING / PLANNING /
+ * EXECUTING / COMPLETED / ERROR / OFFLINE。
+ *
+ * 纪律：本模块仅声明 URL 映射与降级脸，不持有任何状态、不新建 Runtime。
+ * 渲染由 avatar-renderer.js 负责（Presentation Layer，消费 AvatarState 派生结果）。
+ */
+(function (global) {
+  'use strict';
+
+  var BASE = 'assets/avatar/';
+  var ASSET_VER = '?v=20260805b11'; // Beta1.1：SVG 资产已重写（统一表情类），强制刷新缓存
+
+  // 八态 → SVG 资源（单一来源；与 avatar-state.js STATES 顺序/命名一致）
+  var URLS = {
+    IDLE:      BASE + 'idle.svg' + ASSET_VER,
+    WAITING:   BASE + 'waiting.svg' + ASSET_VER,
+    THINKING:  BASE + 'thinking.svg' + ASSET_VER,
+    PLANNING:  BASE + 'planning.svg' + ASSET_VER,
+    EXECUTING: BASE + 'executing.svg' + ASSET_VER,
+    COMPLETED: BASE + 'completed.svg' + ASSET_VER,
+    ERROR:     BASE + 'error.svg' + ASSET_VER,
+    OFFLINE:   BASE + 'offline.svg' + ASSET_VER
+  };
+
+  // P3 统一接口：按 format 的资源映射（png/webp/webm 为可选位图资产；缺省时渲染器降级 SVG/CSS）
+  var FORMAT_MAP = {
+    png:  { ext: 'png' },
+    webp: { ext: 'webp' },
+    webm: { ext: 'webm' }
+  };
+
+  // 取某态某格式的 URL（缺映射返回 null，由渲染器降级）
+  function urlFor(state, format) {
+    state = String(state || 'IDLE').toUpperCase();
+    if (format === 'svg') return URLS[state] || URLS.IDLE;
+    var fm = FORMAT_MAP[format];
+    if (!fm) return null;
+    return BASE + state.toLowerCase() + '.' + fm.ext;
+  }
+
+  var ORDER = ['IDLE', 'WAITING', 'THINKING', 'PLANNING', 'EXECUTING', 'COMPLETED', 'ERROR', 'OFFLINE'];
+
+  // 资源加载失败时的降级脸（极简 HTML 脸，复用既有 CSS 动画，保证小6永不空白）
+  // 包装 .avatar-face 便于分组变换：观察(translateX) 与 眨眼(height)/专注(scaleY) 互不冲突
+  function fallbackFace(state, color) {
+    return (
+      '<span class="avatar-face">' +
+        '<span class="avatar-eye avatar-eye--l"></span>' +
+        '<span class="avatar-eye avatar-eye--r"></span>' +
+        '<span class="avatar-mouth"></span>' +
+      '</span>'
+    );
+  }
+
+  var API = {
+    BASE: BASE,
+    URLS: URLS,
+    FORMAT_MAP: FORMAT_MAP,
+    ORDER: ORDER,
+    urlFor: urlFor,
+    fallbackFace: fallbackFace
+  };
+
+  global.AvatarAssets = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof window !== 'undefined' ? window : globalThis);

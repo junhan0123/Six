@@ -44,7 +44,7 @@ _CATEGORY = {
 def _http_head(url: str, timeout: int = 8) -> tuple[bool, str]:
     """对给定 URL 发 HEAD/GET，返回 (ok, detail)。"""
     try:
-        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "ZhuangZhou/2.0"})
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Xiao6/2.0"})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return True, f"HTTP {resp.status}"
     except urllib.error.HTTPError as e:
@@ -116,7 +116,7 @@ def _check_tts() -> dict[str, Any]:
             return {
                 "name": "TTS 语音合成",
                 "ok": False,
-                "detail": "GPT-SoVITS 已启用但未配置参考音频（ZHUANGZHOU_GPT_SOVITS_REF）",
+                "detail": "GPT-SoVITS 已启用但未配置参考音频（XIAO6_GPT_SOVITS_REF）",
             }
         if not os.path.isfile(GPT_SOVITS_REF_AUDIO):
             return {"name": "TTS 语音合成", "ok": False, "detail": f"参考音频不存在：{GPT_SOVITS_REF_AUDIO}"}

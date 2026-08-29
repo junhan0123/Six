@@ -1,0 +1,123 @@
+# P4.1 · P4-CONFIG-DEFAULT-DESIGN
+
+> 阶段：P4.1 DESIGN ONLY · 项目：ZhuangZhou Core v1.4.0
+> 关联：`P4-DEPRECATION-MATRIX.md`
+> 真实复核结论：配置默认值存在**双来源漂移**，须收敛为单一权威。
+
+---
+
+## 1. 真实复核：配置双来源漂移（已确认）
+
+`config.py` 在导入时**自动**执行 `load_env()`(421) 与 `reload()`(422)（顶层调用，非 `__main__` 守卫）。
+
+```mermaid
+graph TD
+    A[import config] --> B[模块级默认常量 56-94<br/>FEATURE_USER_MODEL=False 等]
+    A --> C[load_env 421: 读 .env→os.environ]
+    A --> D[reload 422: 重读 env<br/>默认 'true']
+    B -.被覆盖.-> D
+    D --> E[运行时实际值=env 默认 true]
+```
+
+| 位置 | 内容 | 值倾向 |
+|---|---|---|
+| 模块级常量 (config.py:56–94) | `FEATURE_USER_MODEL=False` 等 | **多为 False（decoy 快照）** |
+| `reload()` 块 (config.py:271–350) | `os.environ.get(..., "true")` | **默认 true（实际权威）** |
+
+**结论：** 运行时以 `reload()` 的 `"true"` 为准 → 生产多为 ON。模块级常量(56–94)是**误导性 decoy**，是 Phase 0 基线记录的「默认 OFF」漂移根因。**单一权威 = `reload()` 块；模块级常量须去噪或对齐。**
+
+---
+
+## 2. 第二 flag 权威（memory_v2/flags.py）
+
+`memory_v2/flags.py` 拥有**独立于 config.py 的 flag 系统**：
+- `MEMORY_V2_ENABLE` / `SEMANTIC_MEMORY_ENABLE` / `MEMORY_EVOLUTION_ENABLE`
+- 全部 `_env_bool(..., False)`，默认 OFF，env 可达。
+
+```mermaid
+graph TD
+    A[config.py reload 块] -->|权威1| F1[FEATURE_* 系列]
+    B[memory_v2/flags.py] -->|权威2(独立)| F2[MEMORY_V2_ENABLE 等]
+    F1 -.与 F2 概念重叠.-> C[漂移风险]
+```
+
+- `FEATURE_MEMORY_EVOLUTION`（context/builder.py:92、memory_evolution/context_source.py:7 引用）**在 config.py 从未定义** → ghost flag，导致 EvolvedMemorySource 永不注册。
+- 处置：把 memory_v2 的 flag **合并入 config.py 单一权威**，memory_v2/flags.py 弃用（见 Deprecation Matrix）。
+
+---
+
+## 3. 单一权威设计
+
+```mermaid
+flowchart TB
+    subgraph SINGLE[单一权威: config.py reload 块]
+      D[DEFAULT_FEATURE_FLAGS 字典<br/>每 flag 一处声明]
+    end
+    D --> T[类型注解(无矛盾默认)]
+    D --> R[reload 读 env 覆盖]
+    D --> X[memory_v2/flags 删除]
+    D --> Y[ghost flag 正式登记]
+```
+
+| 原则 | 说明 |
+|---|---|
+| 一处声明 | 每个 FEATURE_* 在 `reload()` 块仅声明一次（含默认） |
+| 类型注解无矛盾 | 模块级 `: bool = ` 仅作类型注解/IDE 提示，**不写与 reload 矛盾的默认**（或加注释指向 reload 为权威） |
+| 合并第二权威 | memory_v2/flags.py 的 flag 迁入 config.py；该文件标记 deprecated |
+| ghost flag 登记 | `FEATURE_MEMORY_EVOLUTION` 在 config.py 正式定义（默认 OFF，P4.4 启用） |
+| 无隐式漂移 | 禁止模块级常量与 reload 块值不一致且无注释说明 |
+
+---
+
+## 4. 需登记/修正的 flag
+
+| flag | 当前 | P4.1 处置 |
+|---|---|---|
+| `FEATURE_MEMORY_EVOLUTION` | 未定义（ghost） | config.py 定义，默认 OFF（P4.4 转 ON 注册 EvolvedMemorySource） |
+| `MEMORY_V2_ENABLE` | memory_v2/flags 独立 | 迁入 config.py（或保留别名指向 config） |
+| `SEMANTIC_MEMORY_ENABLE` | memory_v2/flags 独立 | 同上 |
+| `FEATURE_USER_MODEL` 等模块级 False | decoy | 模块级改为注解或加"权威在 reload"注释，消除误导 |
+| `FEATURE_CONTEXT_ENGINE` | 两处均 true | 保持，移除模块级与 reload 矛盾风险（已一致） |
+
+---
+
+## 5. 配置单一源落地（P4.6）
+
+```mermaid
+sequenceDiagram
+    participant C as config.py
+    participant M as memory_v2/flags.py
+    C->>C: 定义 DEFAULT_FEATURE_FLAGS(单一)
+    C->>C: 移除模块级矛盾默认
+    C->>C: 登记 FEATURE_MEMORY_EVOLUTION
+    M->>C: flag 迁入 config.py
+    M->>M: 标记 deprecated
+```
+
+| 步骤 | 动作 | 文件 |
+|---|---|---|
+| C1 | 抽取 `DEFAULT_FEATURE_FLAGS` 单一字典 | config.py |
+| C2 | 模块级 `: bool =` 改为纯注解或统一指向 reload | config.py |
+| C3 | 登记 `FEATURE_MEMORY_EVOLUTION`（默认 OFF） | config.py |
+| C4 | memory_v2 flag 迁入 / 别名化 | config.py + memory_v2/flags.py |
+| C5 | 移除 ghost 引用风险 | 全局 grep |
+
+---
+
+## 6. 测试策略（DESIGN，P4.6 执行）
+
+| 测试 | 验证 |
+|---|---|
+| 单一权威 | grep 确认无第二 flag 定义源（除 reload 块） |
+| ghost 消除 | `FEATURE_MEMORY_EVOLUTION` 可被 getattr 取到 |
+| 无矛盾默认 | 模块级注解与 reload 默认不冲突/有注释 |
+| 回退一致 | 设 flag=false 时行为即时回退旧路径 |
+
+---
+
+## 7. 执行入口（摘要）
+
+- **修改**：`config.py`（单一 DEFAULT_FEATURE_FLAGS + 登记 ghost flag + 去噪模块级默认）、`memory_v2/flags.py`（deprecate，迁入 config）。
+- **复用**：`load_env`/`reload` 机制，不重写。
+- **回归门**：单一权威 + ghost 消除 + 无矛盾默认 + Legacy Bypass（配置维度）。
+- 详见 `P4-IMPLEMENTATION-ROADMAP.md` P4.6。

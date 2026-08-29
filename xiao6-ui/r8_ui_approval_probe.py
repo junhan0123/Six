@@ -48,7 +48,7 @@ def _http(method, path, body=None, timeout=60):
 def main():
     print("R8-UI Approval-over-Stream 验证（服务器 :8035）")
     env = dict(os.environ)
-    env["ZhuangZhou_PORT"] = str(PORT)
+    env["Xiao6_PORT"] = str(PORT)
     env["BIND_HOST"] = "127.0.0.1"
     proc = subprocess.Popen([PY, "server.py"], cwd=_PROJECT, env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
@@ -102,7 +102,7 @@ def main():
             print(f"[goal try {i}] code={code} {body[:120]}")
             for _ in range(25):
                 for e in events:
-                    if e.get("zhuangzhou_event") == "modal" and e.get("kind") == "agent_approval":
+                    if e.get("xiao6_event") == "modal" and e.get("kind") == "agent_approval":
                         ticket = e.get("ticket")
                         break
                 if ticket:
@@ -126,7 +126,7 @@ def main():
             "title": "R8-UI 审批验证 reject：用命令行执行 dir 并返回输出"})
         for _ in range(25):
             for e in events:
-                if e.get("zhuangzhou_event") == "modal" and e.get("kind") == "agent_approval" \
+                if e.get("xiao6_event") == "modal" and e.get("kind") == "agent_approval" \
                         and e.get("ticket") != ticket:
                     ticket2 = e.get("ticket")
                     break

@@ -1,0 +1,263 @@
+/*
+ * dependency-manager.js — Xiao6 依赖管理器（Phase B · 开箱即用）
+ *
+ * 性质：纯前端只读探针 + 状态投影。不修改任何运行时 / 不写后端 / 不自动执行破坏性行为。
+ * 纪律：
+ *   - 仅消费既有 GET/POST 端点（/api/health /ready /boot/state /providers/probe /config）。
+ *   - 绝不自行跑 shell / pip / npm；缺失依赖只"检测 + 报告 + 给出可跳过/可安装指引"。
+ *   - 三级依赖模型：CORE(缺则阻塞 Ready) / OPTIONAL(可跳过) / ENHANCED(增强体验)。
+ *   - 状态（能力六态，与设置中心 STATUS6 同一套 key）：READY / NOT_CONFIGURED / NOT_INSTALLED / NOT_TESTED / OPTIONAL / UNAVAILABLE / ERROR / DISABLED。
+ * 复用：DESIGN.md + ui2.css 设计令牌（颜色走 --bg/--fg/--accent 等变量，失败回退）。
+ */
+(function (global) {
+  'use strict';
+
+  /* 能力状态枚举：统一收敛到 capability-health.js（ZZCapabilityHealth.CAP_STATE），单一真相源。
+     规约 §八 12 态 + 历史兼容键；禁 ON/OFF 二值、禁"配置即 READY"造假。 */
+  var TIER = { CORE: 'core', OPTIONAL: 'optional', ENHANCED: 'enhanced' };
+  var STATUS = (global.ZZCapabilityHealth && global.ZZCapabilityHealth.CAP_STATE) || {
+    READY: 'ready', NOT_CONFIGURED: 'not_configured', NOT_INSTALLED: 'not_installed',
+    NOT_TESTED: 'not_tested', OPTIONAL: 'optional', UNAVAILABLE: 'unavailable',
+    ERROR: 'error', DISABLED: 'disabled'
+  };
+
+  function getJSON(url, opts) {
+    var ctrl = new AbortController();
+    var t = setTimeout(function () { ctrl.abort(); }, (opts && opts.timeout) || 8000);
+    return fetch(url, Object.assign({ signal: ctrl.signal }, opts || {}))
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .catch(function () { return { _network_error: true }; })
+      .then(function (d) { clearTimeout(t); return d; });
+  }
+  function postJSON(url, body) {
+    return getJSON(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+      timeout: 30000,
+    });
+  }
+
+  // 探测：聚合真实后端信号 → 标准化依赖项列表
+  async function probe() {
+    var health = await getJSON('/api/health');
+    var ready = await getJSON('/api/ready');
+    var boot = await getJSON('/api/boot/state');
+    var cfg = await getJSON('/api/config');
+    var probeRes = await postJSON('/api/providers/probe', {}).catch(function () { return { probe: {} }; });
+
+    var items = [];
+
+    // —— CORE：后端自身存活（缺则整个小6不可用）——
+    // 后端 reachable + status=alive + 身份识别通过即视为服务可用；不因为知识索引等
+    // 非核心降级项失败而阻塞首次使用（health.ok 是综合状态，包含增强项自检）。
+    var backendReachable = health && health.status === 'alive' && !(health._network_error);
+    var backendIdentityOk = backendReachable && health.ai_name === '小6' && Array.isArray(health.tools);
+    var backendOk = backendIdentityOk;
+    items.push({
+      id: 'backend',
+      label: '小6服务',
+      tier: TIER.CORE,
+      status: backendOk ? STATUS.READY : STATUS.UNAVAILABLE,
+      detail: backendOk
+        ? ('在线 · AI=' + (health.ai_name || '小6') + ' · 模型=' + (health.model || '—'))
+        : (backendReachable
+           ? '后端有响应，但身份识别异常（可能不是小6服务）。'
+           : '无法连接本地服务（:8000）。小6需要服务运行才能工作。'),
+      skippable: false,
+      fix: backendReachable
+        ? '请确认 8000 端口上运行的是小6后端。'
+        : '请确认小6服务已启动（或双击启动脚本）。',
+    });
+
+    // —— CORE：AI 模型（云端 Key 或本地模型）——
+    // 真实探测：配置存在才发 /api/test-llm 验证连通；连通成功=READY，失败=ERROR，
+    // 超时/未测=NOT_TESTED（已配置待验证）。绝不凭"Key 非空"直接判 READY。
+    var keyPresent = (ready && ready.key_present) || (cfg && (cfg.AGNES_API_KEY || cfg.AGES_API_KEY));
+    var modelSet = (cfg && (cfg.AGNES_MODEL || cfg.ACTIVE_LLM)) || (health && health.model);
+    var aiTested = null;   // null=未测/超时, true=连通, false=失败
+    if (backendOk && (keyPresent || modelSet)) {
+      try {
+        var tllm = await postJSON('/api/test-llm', {});
+        aiTested = (tllm && tllm._network_error) ? null : !!(tllm && tllm.ok === true);
+      } catch (e) { aiTested = null; }
+    }
+    var aiStatus = !backendOk ? STATUS.UNAVAILABLE
+      : !(keyPresent || modelSet) ? STATUS.NOT_CONFIGURED
+      : (aiTested === true) ? STATUS.READY
+      : (aiTested === false) ? STATUS.ERROR
+      : STATUS.NOT_TESTED;
+    items.push({
+      id: 'ai_model',
+      label: 'AI 模型（对话核心）',
+      tier: TIER.CORE,
+      status: aiStatus,
+      detail: !backendOk ? '服务不可达，无法验证'
+        : (keyPresent || modelSet)
+          ? ((aiTested === true) ? ('已连通 · ' + (cfg.AGNES_MODEL || cfg.ACTIVE_LLM || modelSet || '默认模型'))
+             : (aiTested === false) ? '已配置，但连通测试失败（点 设置→AI/模型→测试连通 查看原因）'
+             : '已配置，连通测试未通过/未完成（待验证）')
+          : '未检测到 API Key / 本地模型。对话能力不可用。',
+      skippable: false,
+      fix: '在「设置 → AI / 模型」选择云端 Provider 并填入 Key，或接入本地模型（Ollama / LM Studio / MLX）。',
+    });
+
+    // —— CORE：就绪状态 ——
+    // /api/ready.ready 是启动流程完成标志；ready.ok 是综合健康（含知识索引等增强项），
+    // 增强项降级不应阻塞首次进入主界面。
+    var readyOk = ready && ready.ready === true;
+    items.push({
+      id: 'readiness',
+      label: '启动就绪',
+      tier: TIER.CORE,
+      status: readyOk ? STATUS.READY : (backendOk ? STATUS.NOT_TESTED : STATUS.UNAVAILABLE),
+      detail: 'boot=' + ((boot && boot.state) || '?') + ' · ready=' + (readyOk ? 'yes' : 'no') +
+        (ready && ready.degraded ? ' · 存在非致命降级项' : ''),
+      skippable: false,
+      fix: '等待服务完成初始化（通常几秒）。若长时间未就绪，查看运行日志。',
+    });
+
+    // —— OPTIONAL：语音输入（ASR）——
+    // 真实探测：已配置则查 /api/asr/status；enabled=true 才算 READY，否则"已配置待验证"。
+    var asr = (cfg && cfg.XIAO6_ASR_PROVIDER) || 'none';
+    var asrStatus = null;
+    try { asrStatus = await getJSON('/api/asr/status'); } catch (e) {}
+    var asrEnabled = !!(asrStatus && asrStatus.enabled === true);
+    items.push({
+      id: 'asr',
+      label: '语音输入（ASR）',
+      tier: TIER.OPTIONAL,
+      status: asr && asr !== 'none' ? (asrEnabled ? STATUS.READY : STATUS.NOT_TESTED) : STATUS.OPTIONAL,
+      detail: asr && asr !== 'none'
+        ? (asrEnabled ? ('已启用 · ' + asr) : ('已配置（' + asr + '），待验证后端识别可用'))
+        : '未启用。你仍可完全用文字与小6交互。',
+      skippable: true,
+      fix: '设置 → 语音 → ASR 选择 Vosk / Whisper / 云端。可选能力，缺失不影响核心使用。',
+    });
+
+    // —— OPTIONAL：语音输出（TTS）——
+    // 后端已暴露 tts_backend（且自检 TTS 语音合成 ok）→ 视为 READY；仅配置未上报则"待验证"。
+    var tts = (cfg && cfg.XIAO6_TTS_BACKEND) || (health && health.tts_backend) || 'none';
+    var ttsReady = !!(health && health.tts_backend);
+    items.push({
+      id: 'tts',
+      label: '语音输出（TTS）',
+      tier: TIER.OPTIONAL,
+      status: tts && tts !== 'none' ? (ttsReady ? STATUS.READY : STATUS.NOT_TESTED) : STATUS.OPTIONAL,
+      detail: tts && tts !== 'none'
+        ? (ttsReady ? ('已启用 · ' + tts) : ('已配置（' + tts + '），待验证'))
+        : '未启用。可开启系统/云端/本地音色。',
+      skippable: true,
+      fix: '设置 → 语音 → TTS 选择 Edge-TTS / GPT-SoVITS。可选能力。',
+    });
+
+    // —— OPTIONAL：本地 Provider 探测（Ollama / LM Studio / MLX 等）——
+    var probeMap = (probeRes && probeRes.probe) || {};
+    var localKeys = Object.keys(probeMap).filter(function (k) {
+      var p = probeMap[k];
+      return p && p.reachable === true;
+    });
+    var anyLocal = localKeys.length > 0;
+    items.push({
+      id: 'local_provider',
+      label: '本地模型运行时（Ollama / LM Studio / MLX）',
+      tier: TIER.OPTIONAL,
+      status: anyLocal ? STATUS.READY : STATUS.OPTIONAL,
+      detail: anyLocal
+        ? ('检测到本地服务：' + localKeys.join(', '))
+        : '未检测到本地模型服务。使用云端模型无需此项。',
+      skippable: true,
+      fix: '可选。若要用本地模型，请安装并启动 Ollama / LM Studio / MLX，并填入 Base URL。',
+    });
+
+    // —— ENHANCED：视觉/感知（Vision / Perception）——
+    var visionOk = health && (health.vision === true || (cfg && cfg.FEATURE_VISION));
+    items.push({
+      id: 'vision',
+      label: '视觉 / 屏幕感知',
+      tier: TIER.ENHANCED,
+      status: visionOk ? STATUS.READY : STATUS.OPTIONAL,
+      detail: visionOk ? '已启用' : '未启用。小6可"看"屏幕时需要此能力。',
+      skippable: true,
+      fix: '增强能力。设置 → Vision 开启；需要本地视觉模型或云端视觉接口。',
+    });
+
+    return {
+      ok: backendOk,
+      items: items,
+      summary: summarize(items),
+    };
+  }
+
+  function summarize(items) {
+    var s = { ready:0, not_configured:0, not_installed:0, not_tested:0, optional:0, unavailable:0, error:0, disabled:0, coreBlock:0, attention:0 };
+    items.forEach(function (it) {
+      s[it.status] = (s[it.status] || 0) + 1;
+      var needs = (it.status === STATUS.NOT_CONFIGURED || it.status === STATUS.NOT_INSTALLED ||
+                   it.status === STATUS.NOT_TESTED || it.status === STATUS.UNAVAILABLE ||
+                   it.status === STATUS.ERROR || it.status === STATUS.DISABLED);
+      if (needs) s.attention += 1;
+      if (it.tier === TIER.CORE && needs) s.coreBlock += 1;
+    });
+    return s;
+  }
+
+  // 渲染：三级依赖表（纯展示，复用设计令牌类）
+  function render(host, result) {
+    if (!host) return;
+    if (!result) { host.innerHTML = '<div class="zz-dep__loading">正在检测环境…</div>'; return; }
+    var tierLabel = {}; tierLabel[TIER.CORE] = '核心（缺失将阻塞使用）';
+    tierLabel[TIER.OPTIONAL] = '可选（可跳过）'; tierLabel[TIER.ENHANCED] = '增强（提升体验）';
+    // 状态文案统一取自 capability-health.js（单一真相源），不再本地维护副本
+    var CH = global.ZZCapabilityHealth;
+    var statusLabel = CH ? {
+      ready: CH.label('ready'), not_configured: CH.label('not_configured'),
+      not_installed: CH.label('not_installed'), not_tested: CH.label('not_tested'),
+      optional: CH.label('optional'), unavailable: CH.label('unavailable'),
+      error: CH.label('error'), disabled: CH.label('disabled')
+    } : {
+      ready: '就绪', not_configured: '未配置', not_installed: '未安装', not_tested: '已配置待验证',
+      optional: '未启用', unavailable: '不可用', error: '异常', disabled: '已停用'
+    };
+
+    var html = '<div class="zz-dep">';
+    html += '<div class="zz-dep__head">依赖检测 · ' +
+      (result.summary.coreBlock > 0
+        ? '<span class="zz-dep__badge zz-dep__badge--bad">核心缺失 ' + result.summary.coreBlock + '</span>'
+        : '<span class="zz-dep__badge zz-dep__badge--ok">可启动</span>') +
+      ' <span class="zz-dep__muted">就绪 ' + result.summary.ready + ' · 待验证 ' + result.summary.not_tested +
+      ' · 未配置 ' + result.summary.not_configured + ' · 可选 ' + result.summary.optional + '</span></div>';
+
+    var tiers = [TIER.CORE, TIER.OPTIONAL, TIER.ENHANCED];
+    tiers.forEach(function (tier) {
+      var list = result.items.filter(function (i) { return i.tier === tier; });
+      if (!list.length) return;
+      html += '<div class="zz-dep__tier"><div class="zz-dep__tier-name">' + tierLabel[tier] + '</div>';
+      list.forEach(function (it) {
+        html += '<div class="zz-dep__row zz-dep__row--' + it.status + '">';
+        html += '<span class="zz-dep__dot zz-dep__dot--' + it.status + '"></span>';
+        html += '<div class="zz-dep__main"><div class="zz-dep__label">' + esc(it.label) +
+          ' <span class="zz-dep__status">' + statusLabel[it.status] + '</span></div>';
+        html += '<div class="zz-dep__detail">' + esc(it.detail) + '</div>';
+        if (it.status !== STATUS.READY) {
+          html += '<div class="zz-dep__fix">↳ ' + esc(it.fix) + (it.skippable ? ' <em>（可跳过）</em>' : ' <em>（必需）</em>') + '</div>';
+        }
+        html += '</div></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    host.innerHTML = html;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  global.ZZDependencyManager = {
+    TIER: TIER, STATUS: STATUS,
+    probe: probe, render: render, summarize: summarize,
+  };
+})(typeof window !== 'undefined' ? window : globalThis);

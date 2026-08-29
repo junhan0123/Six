@@ -1,0 +1,70 @@
+/*
+ * bootstrap-wire.js — Xiao6 开箱即用接线层（Phase B/C · 最小增量）
+ *
+ * 职责（极薄，不修改任何既有组件）：
+ *   - 把"运行详情"入口（data-cc-open）接到 Control Center（ZZControlCenter.open）。
+ *   - 提供 Control Center 的模态宿主容器开合（点击 scrim / 关闭按钮 / Esc 关闭）。
+ *   - 不触碰 boot.js、不自行拉后端、不新增任何 API；仅做"入口 → 既有模块"的桥接。
+ *
+ * 纪律（与任务 §八 一致）：
+ *   - 零侵入：只桥接，不重写 Control Center / First Launch 的业务逻辑。
+ *   - 首启向导（first-launch.js）自带 DOMContentLoaded 自触发，本文件不重复触发。
+ */
+(function (global) {
+  'use strict';
+
+  function host() { return document.getElementById('zzControlCenterHost'); }
+  function body() {
+    var h = host();
+    return h ? h.querySelector('.zz-cc-modal-body') : null;
+  }
+
+  function openControlCenter() {
+    var h = host();
+    var b = body();
+    if (!h || !b) return;
+    if (global.ZZControlCenter && typeof global.ZZControlCenter.open === 'function') {
+      try { global.ZZControlCenter.open(b); } catch (e) { /* 渲染失败不应阻断开合 */ }
+    }
+    h.hidden = false;
+    requestAnimationFrame(function () { h.classList.add('is-open'); });
+  }
+
+  function closeControlCenter() {
+    var h = host();
+    if (!h || h.hidden) return;
+    h.classList.remove('is-open');
+    setTimeout(function () { h.hidden = true; }, 200);
+  }
+
+  function init() {
+    // 运行详情入口（data-cc-open）→ 打开 Control Center
+    // 注意：侧栏"设置"(data-cap="settings") 不再走此通道，改由 ZZCapabilities.run('settings')
+    // → FinalOverlay.open('settings') 单一处理，避免与 Control Center 同时弹出（DEFECT A 修复）。
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest && e.target.closest('[data-cc-open]');
+      if (trigger) {
+        e.preventDefault();
+        openControlCenter();
+        return;
+      }
+      // 关闭：scrim 或关闭按钮
+      if (e.target.closest && e.target.closest('[data-cc-close]')) {
+        closeControlCenter();
+        return;
+      }
+    });
+    // Esc 关闭
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeControlCenter();
+    });
+    // 暴露给其它入口（如未来在 ⌘K / 顶栏增加入口时复用）
+    global.ZZControlCenterWire = { open: openControlCenter, close: closeControlCenter };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -1,0 +1,54 @@
+{
+  "mission_a": {
+    "mission": "A",
+    "status": "PASS",
+    "elapsed_ms": 563
+  },
+  "mission_b": {
+    "mission": "B",
+    "status": "PASS",
+    "elapsed_ms": 555
+  },
+  "mission_c": {
+    "mission": "C",
+    "status": "PASS",
+    "elapsed_ms": 879
+  },
+  "mission_d": {
+    "mission": "D",
+    "status": "PASS",
+    "elapsed_ms": 865
+  },
+  "mission_e": {
+    "mission": "E",
+    "status": "PASS",
+    "elapsed_ms": 5712,
+    "triggered": 1
+  },
+  "mission_f": {
+    "mission": "F",
+    "status": "PASS",
+    "elapsed_ms": 490
+  },
+  "mission_g": {
+    "mission": "G",
+    "status": "PASS",
+    "elapsed_ms": 753
+  },
+  "mission_h": {
+    "mission": "H",
+    "status": "PASS",
+    "elapsed_ms": 971
+  },
+  "mission_i": {
+    "mission": "I",
+    "status": "PASS",
+    "elapsed_ms": 682
+  },
+  "mission_j": {
+    "mission": "J",
+    "status": "PASS",
+    "elapsed_ms": 1988,
+    "artifacts": 3
+  }
+}

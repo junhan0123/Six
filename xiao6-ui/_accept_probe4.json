@@ -1,0 +1,192 @@
+{
+  "creationAbs": [
+    359,
+    1378,
+    3383,
+    7400,
+    15406,
+    31415
+  ],
+  "backoff": [
+    1019,
+    2005,
+    4017,
+    8006,
+    16009
+  ],
+  "maxConc": 1,
+  "endOfflineDot": "reconnecting",
+  "recovered": false,
+  "dotTimeline": [
+    {
+      "t": 372,
+      "dot": "connecting",
+      "creations": 1
+    },
+    {
+      "t": 1381,
+      "dot": "connecting",
+      "creations": 2
+    },
+    {
+      "t": 2389,
+      "dot": "reconnecting",
+      "creations": 2
+    },
+    {
+      "t": 3402,
+      "dot": "reconnecting",
+      "creations": 3
+    },
+    {
+      "t": 4410,
+      "dot": "reconnecting",
+      "creations": 3
+    },
+    {
+      "t": 5424,
+      "dot": "reconnecting",
+      "creations": 3
+    },
+    {
+      "t": 6427,
+      "dot": "reconnecting",
+      "creations": 3
+    },
+    {
+      "t": 7432,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 8441,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 9451,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 10458,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 11467,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 12478,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 13481,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 14492,
+      "dot": "reconnecting",
+      "creations": 4
+    },
+    {
+      "t": 15500,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 16513,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 17516,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 18521,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 19528,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 20538,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 21551,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 22555,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 23557,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 24565,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 25571,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 26577,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 27584,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 28591,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 29601,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 30607,
+      "dot": "reconnecting",
+      "creations": 5
+    },
+    {
+      "t": 31616,
+      "dot": "reconnecting",
+      "creations": 6
+    },
+    {
+      "t": 32626,
+      "dot": "reconnecting",
+      "creations": 6
+    },
+    {
+      "t": 33637,
+      "dot": "reconnecting",
+      "creations": 6
+    }
+  ]
+}

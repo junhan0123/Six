@@ -90,10 +90,10 @@ def maybe_install_asr():
     """
     可选：首次启动安装语音识别重依赖（torch / torchaudio / funasr / modelscope）。
     默认关闭，避免首次启动拉取 ~2GB 体积；用户可在「设置 → 语音」启用时触发，
-    或设环境变量 ZHUANGZHOU_INSTALL_ASR=1 在首次启动静默安装。
+    或设环境变量 XIAO6_INSTALL_ASR=1 在首次启动静默安装。
     失败不阻断启动。
     """
-    if os.environ.get("ZHUANGZHOU_INSTALL_ASR", "").lower() not in ("1", "true", "yes"):
+    if os.environ.get("XIAO6_INSTALL_ASR", "").lower() not in ("1", "true", "yes"):
         return {"attempted": False}
     req = os.path.join(HERE, "requirements.txt")
     if not os.path.isfile(req):

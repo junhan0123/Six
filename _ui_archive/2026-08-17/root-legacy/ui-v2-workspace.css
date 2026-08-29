@@ -1,0 +1,178 @@
+/* =============================================================================
+ * ui-v2-workspace.css · UI-v2 P1 — AI OS Core Workspace Reconstruction
+ * -----------------------------------------------------------------------------
+ * 设计意图：把首页从「AI 展示页面」收敛为「个人 AI OS 每日工作空间」。
+ *   P1-1 视觉收敛：Galaxy 退居背景 / 降 HUD 装饰 / 去玻璃多卡片。
+ *   P1-2 AI Core Identity：os-core 成为舞台中心，承载 身份 + 在线状态 + 能力摘要。
+ *   P1-3 Command Dock → Intent Console（仅视觉升级，不碰发送逻辑）。
+ *   P1-4 NOW 工作区：os-readout(目标/记忆/知识) + os-timeline(执行/活动) 真实数据。
+ *
+ * 纪律：本文件为 P0-B 之后的「增量覆盖层」，位于 ui-v2-readout.css 之后加载，
+ *       仅用与既有等同特异度 + 更靠后源序赢得级联；不修改 AppState / EventBus /
+ *       Agent Runtime / 不新增事件 / 不删除任何旧功能结构。
+ * ========================================================================== */
+
+/* ── P1-1(a) Galaxy 退居背景：首页不把星系当主视觉 ─────────────────────────── */
+body:not(.universe-mode) #solarCanvas {
+  opacity: 0.16;
+  filter: blur(3px) saturate(0.6) brightness(0.85);
+  transition: opacity var(--dur-slow) var(--ease-soft),
+              filter var(--dur-slow) var(--ease-soft);
+}
+/* galaxy-veil（叙事纱）在首页同步淡出，避免二次视觉噪音 */
+body:not(.universe-mode) .galaxy-veil { opacity: 0.04; }
+
+/* ── P1-2 AI Core 成为舞台中心（推翻 ui2 收敛层「核心推角落露 Galaxy」）────── */
+.os-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(120% 120% at 50% 42%,
+      color-mix(in srgb, var(--surface-2) 64%, transparent),
+      transparent 70%),
+    var(--surface);
+}
+.os-core canvas { filter: drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 22%, transparent)); }
+
+.os-hero {
+  align-self: center;
+  position: relative;
+  z-index: 2;
+  max-width: 540px;
+  margin: 0;
+  transform: none;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-8);
+}
+.os-hero-eyebrow { opacity: 0.85; }
+.os-hero-title { font-size: 40px; letter-spacing: 0.08em; opacity: 0.96; }
+.os-hero-sub { font-size: 15px; }
+.os-hero-desc { display: none; }       /* 营销文案不进工作空间 */
+.os-hero-actions { display: none; }    /* 与导航/Dock 重复的入口已收口 */
+
+/* 在线状态徽章：居中置于核心顶部，去玻璃 */
+.os-core-state {
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--sp-6) var(--sp-14);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--presence-color) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--presence-color) 38%, transparent);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* ── P1-2(c) 能力摘要：AI 身份块内的「当前能力范围」计数器 ────────────────── */
+.os-core-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-12);
+  margin-top: var(--sp-4);
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+}
+.os-cs-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.os-cs-item b {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-bright);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+.os-cs-item i {
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+.os-cs-sep { width: 1px; height: 30px; background: var(--line-soft); }
+
+/* ── P1-1(b) 降低装饰 HUD：主题选择器收成细点、品牌/时钟降噪 ─────────────── */
+.os-hud .os-theme-picker {
+  gap: 5px;
+  padding: 4px 6px;
+}
+.os-hud .os-theme-picker button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+}
+.os-hud .os-brand { letter-spacing: 0.1em; opacity: 0.82; }
+.os-hud .os-clock { opacity: 0.55; }
+.os-hud .os-state { opacity: 0.85; }
+
+/* ── P1-1(c) 去玻璃 / 多卡片：面板降为环境面，不再用重边框阴影 ───────────── */
+.os-panel {
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.os-panel > h3 {
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ── P1-1(d) 降低星图入口权重（保留功能，仅视觉降权）────────────────────── */
+.os-nav-btn[data-nav="galaxy"] { opacity: 0.5; }
+.os-nav-btn[data-nav="galaxy"]:hover { opacity: 1; }
+
+/* ── P1-3 Command Dock → Intent Console（仅视觉，发送逻辑不动）──────────── */
+.os-dock {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  box-shadow: 0 24px 70px -38px var(--glow);
+}
+.os-dock-console-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  margin-bottom: var(--sp-10);
+}
+.os-dock-glyph {
+  font-size: 15px;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.os-dock-console-head h3 {
+  margin: 0;
+  letter-spacing: 0.2em;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.os-dock-prompt {
+  margin-left: auto;
+  font-size: 12px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+/* #osDock 内部由 command-dock.js 渲染，此处仅为其加一层科技感内框 */
+.os-dock .zz-command-dock { width: 100%; }
+.os-dock .os-dock-bar {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+  box-shadow: 0 0 28px -10px color-mix(in srgb, var(--accent) 55%, transparent),
+              inset 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* ── P1-4 NOW 工作区：os-readout 读数条与核心同语汇（已由 ui-v2-readout.css 定义）──
+ *  此处仅确保其在 Galaxy 退居后不被画布干扰、层级稳定 */
+.os-readout { z-index: 6; }

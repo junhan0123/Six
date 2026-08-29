@@ -26,7 +26,7 @@ REVIEW_SYSTEM_PROMPT = (
 )
 
 # 自动审视开关对应的环境变量名；默认关闭。
-AUTO_REVIEW_ENV = "ZHUANGZHOU_AUTO_REVIEW"
+AUTO_REVIEW_ENV = "XIAO6_AUTO_REVIEW"
 
 # 审视调用的最大 token 上限（尽量压低成本）。agnes_completion 当前版本
 # 不一定接受该参数，因此调用处会做防御式降级（见 _call_review_llm）。
@@ -100,7 +100,7 @@ def review_text(text: str, context: str = "") -> str:
 
 
 def auto_review_enabled() -> bool:
-    """是否开启自动审视。读环境变量 ZHUANGZHOU_AUTO_REVIEW，默认关闭。
+    """是否开启自动审视。读环境变量 XIAO6_AUTO_REVIEW，默认关闭。
 
     取值（不区分大小写）为 1/true/yes/on 时视为开启，其余一律视为关闭。
     """

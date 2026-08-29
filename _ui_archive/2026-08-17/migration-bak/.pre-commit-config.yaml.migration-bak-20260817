@@ -1,0 +1,18 @@
+# 庄周 · pre-commit 钩子（团队提交前自动门禁）
+# 安装: pip install pre-commit && pre-commit install
+# 本机若无网拉取 hook 镜像，可直接用 scripts/ci.sh 作为等价本地门禁。
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=200"]

@@ -16,9 +16,9 @@ import os
 import tempfile
 
 # 环境变量键
-ENV_ENABLED = "ZHUANGZHOU_KWS_ENABLED"
-ENV_PHRASES = "ZHUANGZHOU_WAKE_PHRASE"
-ENV_SENSITIVITY = "ZHUANGZHOU_KWS_SENSITIVITY"
+ENV_ENABLED = "XIAO6_KWS_ENABLED"
+ENV_PHRASES = "XIAO6_WAKE_PHRASE"
+ENV_SENSITIVITY = "XIAO6_KWS_SENSITIVITY"
 
 # 默认值：产品名「庄周」及其口语昵称「小周」均可唤醒；保留旧名「小6」兼容既有用户。
 # 注：产品早期代号小6，后定名庄周；唤醒词需随产品名演进，故默认含庄周/小周。
@@ -30,9 +30,9 @@ def get_kws_config():
     """读取并返回唤醒词相关配置。
 
     返回 dict：
-      - enabled    : ZHUANGZHOU_KWS_ENABLED 为 "true"（忽略大小写）时为 True
-      - phrases    : 由 ZHUANGZHOU_WAKE_PHRASE 逗号切分、去空白、去空项得到的列表
-      - sensitivity: ZHUANGZHOU_KWS_SENSITIVITY 浮点；解析失败回退 0.6
+      - enabled    : XIAO6_KWS_ENABLED 为 "true"（忽略大小写）时为 True
+      - phrases    : 由 XIAO6_WAKE_PHRASE 逗号切分、去空白、去空项得到的列表
+      - sensitivity: XIAO6_KWS_SENSITIVITY 浮点；解析失败回退 0.6
     """
     enabled = os.environ.get(ENV_ENABLED, "false").lower() == "true"
 

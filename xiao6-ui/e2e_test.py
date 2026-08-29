@@ -1,4 +1,4 @@
-"""ZhuangZhou 端到端测试：工具闭环 + 普通对话 + TTS。"""
+"""Xiao6 端到端测试：工具闭环 + 普通对话 + TTS。"""
 
 import json
 import urllib.error
@@ -26,7 +26,7 @@ def post_chat(text):
             obj = json.loads(payload)
         except Exception:
             continue
-        if obj.get("zhuangzhou_event"):
+        if obj.get("xiao6_event"):
             events.append(obj)
         else:
             c = obj.get("choices", [{}])[0].get("delta", {}).get("content", "")
@@ -55,14 +55,14 @@ def run(name, text, expect_tool=None):
         print("  [ERROR] %s" % e)
         return False
     for ev in events:
-        if ev.get("zhuangzhou_event") == "tool_start":
+        if ev.get("xiao6_event") == "tool_start":
             print("  工具启动: %s  args=%s" % (ev.get("tool"), ev.get("args")))
-        elif ev.get("zhuangzhou_event") == "tool_end":
+        elif ev.get("xiao6_event") == "tool_end":
             print("  工具结果: %s -> %s" % (ev.get("tool"), str(ev.get("result"))[:80]))
     print("  回复: %s" % content[:200])
     ok = True
     if expect_tool:
-        tools = [e.get("tool") for e in events if e.get("zhuangzhou_event") == "tool_end"]
+        tools = [e.get("tool") for e in events if e.get("xiao6_event") == "tool_end"]
         if expect_tool not in tools:
             print("  [FAIL] 期望触发工具 %s，实际 %s" % (expect_tool, tools))
             ok = False
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     print("\n=== TTS 语音合成 ===")
     try:
-        ctype, size = post_speak("你好，我是 ZhuangZhou，您的智能副驾。")
+        ctype, size = post_speak("你好，我是 Xiao6，您的智能副驾。")
         print("  Content-Type: %s" % ctype)
         print("  音频字节数: %d" % size)
         tts_ok = ("audio/mpeg" in ctype) and size > 1000

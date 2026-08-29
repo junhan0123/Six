@@ -1,0 +1,405 @@
+# P5 — COGNITIVE ARCHITECTURE DESIGN
+
+> **Phase:** P5 PHASE 1 — DESIGN GATE（DESIGN ONLY / ZERO IMPLEMENTATION）
+> **Identity:** ZhuangZhou Senior Systems Architect / Cognitive Runtime Architect
+> **Repo:** `G:\ZhuangZhou\zhuangzhou-ui` (v1.4.0)
+> **Mode:** 只读设计。未修改任何生产代码 / DB / 配置 / UI / 测试。
+> **前置：** P5 PHASE 0 = COMPLETE（P5-COGNITIVE-BASELINE.md）。P0–P4 全部 PASS。
+> **目标：** 把现有 Agent Runtime / Cognitive 正式接入 P4 已建立的 Memory / Context / Retrieval / Governance / EventBus / Policy 基础，形成统一、可验证、可回滚的 Cognitive Runtime。
+
+---
+
+## 0. 设计红线（绝对禁止，贯穿 P5 全阶段）
+
+1. 禁止修改 UI / HTML / CSS / 前端 JS。
+2. 禁止重建 Memory、重建 Context Engine、重建 Retrieval、重建 Task System、重建 Policy Engine、创建第二套 Executor。
+3. 禁止 Cognitive 直接访问 DB（裸 `db_conn().execute`）。
+4. 禁止 Cognitive / Agent Runtime 直接执行 Capability（须经 Policy→Permission→Approval→Executor）。
+5. 禁止删除历史数据、DROP、TRUNCATE、不可逆数据迁移。
+6. 禁止修改测试、为通过测试而改测试、自动修复 A/B/C/D、自动进入 IMPLEMENTATION。
+7. 所有数据迁移必须可回滚（Feature Flag + Adapter + Legacy Path + Migration Marker）。
+
+---
+
+## 1. 重新 VERIFY 的结论（真实 file:line，含对 Phase 0 的修正）
+
+本 PHASE 1 不依赖 Phase 0 记忆，重新核实真实源码。以下为设计的事实基座，**凡与 Phase 0 报告不一致处以本表为准**。
+
+### 1.1 执行 / 能力边界（核实源：agent_runtime.py / capability_runtime.py / capability_os / tools.py / mcp_host / policy_engine.py）
+- `agent_runtime.py:862-868` planner 自构 prompt，**从不调用** `context.facade.build_context_prompt`（全文件 grep `facade.` = No matches）。
+- `_execute_skill_task`（`agent_runtime.py:707`）→ `execute_tool`（`715-716`），**无 Policy 门**。
+- MCP 路径：`capability_os.execute_capability(..., auto_approve=True, goal_id)`（`agent_runtime.py:652-653`；签名 `__init__.py:195`）。
+- `_distill_memory`（`agent_runtime.py:933`）→ `memory_distiller.distill` + `_record_conversation_memory`（`953-984`）**裸 SQL 直写 `conversation_memories` 表**，绕过 Canonical Memory API。
+- `_consecutive_failures`（`agent_runtime.py:53` init / `554` reset）**仅 reset、全文件无 increment**；`_MAX_CONSECUTIVE_FAIL=2`（`55`）**定义但从不引用**；`_queue` 仅初始化、无失败清零逻辑 → **连续失败换工具/清零队列功能未实现（A=1 缺陷）**。
+- 裸 `bus.publish`：`agent_runtime.py:1181` `"agent:state"`、`1189` `TOPIC_HUD_STATE="zz.hud.state"`（`eventbus.py:29`）。
+- `capability_runtime._execution_run`（`180-181`）为 Chat 单一汇聚 + Policy 门；OFF fallback（`157-161`）直连 `execute_tool`；`_feature_enabled`（`27-32`）读 `FEATURE_CAPABILITY_RUNTIME`。
+- `capability_os.invoke_capability`（`__init__.py:255-259`）**休眠旁路**：tool/builtin/computer_action 直连 `execute_tool(allowed=None)`，跳过 Policy 门。
+- `tools.execute_tool`（`tools.py:3990`）**内部无 Policy 门**。
+- `mcp_host/executor._authorize`（`executor.py:119`）接收 `auto_approve` 形参但**函数体从不引用**；`confirm` 级强制 `request_approval`（`executor.py:51-53`）；仅 `auto` 级（只读观察类 external.mcp.*）免审批（M-05）。即 `auto_approve=True` 在 MCP 层**形同虚设**，但 `confirm` 级仍走过审批。
+- `policy_engine.evaluate`（`196-197`）→ `{decision: auto|confirm|block, reason, permission}`；`request_approval`（`257-259`）→ `approve|reject|timeout`，无 `goal_id` 且 `default_deny` 直接 `reject`（`260-261`）。
+
+### 1.2 Cognitive / Memory（核实源：cognitive/ / memory.py / memory_evolution/）
+- `cognitive/` **仅含** `__init__.py / episodic.py / extractor.py / user_model.py`（**修正 Phase 0**：无 observer/sources 子模块）。
+- `user_model.upsert_user_model`（`user_model.py:168-182`）**裸 INSERT `user_model` 表**；`episodic.add_episode`（`episodic.py:40-51`）**裸 INSERT `episodes` 表**；均不经 Canonical Memory API。
+- `personality.py` 在**仓库根目录**（非 cognitive/），`bus.publish("PersonalityChanged",...)`（`personality.py:87`）为裸发布。
+- memory↔cognitive 互相 import 仅 2 处惰性导入：`memory.py:251` `from cognitive.user_model import canonical_project`；`cognitive/extractor.py:94` `from memory import MEM_KEEP`。**无加载期环**。
+- `memory.py` Canonical API：`create_memory:482` / `update_memory:620` / `upsert_memory:779` / `archive_memory:694` / `restore_memory:706` / `delete_memory:739` / `delete_by_source_ref:739` / `retrieve_memories:854` / `consolidate_memories:874` / `publish_memory_event:445` / `_ALLOWED_STATUS:404`。
+- `memory_evolution/` = P4 Governance/Consolidation/Lifecycle 实现（**非第四套记忆演化**）：`importance / conflict_resolver / consolidation / lifecycle / retrieval_policy / context_source(EvolvedMemorySource)`。`consolidation.py:115` 有内部治理 INSERT（P4.2 判低风险）。
+
+### 1.3 Context / EventBus / Config（核实源：context/ / eventbus.py / config.py）
+- `context/facade.build_context_prompt`（`facade.py:31`）管线 Collect→Rank→Budget→Bundle→Build（`builder.py:124/126/128/130/132`）。`_legacy_prompt`（`24-28`）→ `memory.build_system_prompt`，仅 `FEATURE_CONTEXT_ENGINE=False` 或异常回退时走。
+- **无** `build_cognitive_context` / `build_agent_context`（需新增）。
+- 8 个 Source 类在 `context/` 根（**修正 Phase 0**：非 `context/sources/` 目录）：`core_prompt_source / runtime_state_source / memory_recall_source / cognitive_sources(UserModelSource:15,EpisodicSource:46) / personality_source / goal_source / knowledge_source` + 其余，全部注册于 `builder.py:54-78`。`MemorySource` 类在文件 `context/sources.py:18-39`，**未注册（dead）**；`builder.py:13` docstring 谎称注册它（文档/代码漂移）。
+- `eventbus.DOMAIN_EVENT_NAMES` = **78**（177-225）；`SYSTEM_EVENT_NAMES` = **22**（255-285）。`publish_domain`（`239` raise）/ `publish_system`（`294` raise）校验正确但**无强制拦截机制**。
+- 5 处裸 `bus.publish`（均不在合约内）：`goals.py:48 "zz.goal"`、`agent_runtime.py:1181 "agent:state"`、`agent_runtime.py:1189 "zz.hud.state"`、`personality.py:87 "PersonalityChanged"`、`mobile.py:46 "zz.mobile.sync"`。
+- config 双默认漂移：6 个 flag 模块 `False`（63/69/79/81/83/85）↔ `reload()` env `"true"`（285/288/302/304/308/310）。`FEATURE_CAPABILITY_RUNTIME:93=True` **不在 reload 全局列表（219）→ 无法关闭（dead kill-switch）**。`FEATURE_PROACTIVE_ENGINE` 在 `ENV_KEYS:561` 但 **config 未定义（ghost key）**。
+
+### 1.4 Proactive / Perception / World / Goals（核实源：proactive.py / proactive_agent/ / perception/ / verification.py / goals.py）
+- **两套 proactive 属实**：legacy `proactive.py`（TICK `tick_loop:331`、扫描 `_check_goal_stalled:686` + `_proactive_scan:853` 经 `proactive_engine.decide`）与 `proactive_agent/`（observer→trigger(`check_goal_stalled:83`)→evaluator→suggestion(`push_proactive("discovery"):80`)→scheduler）。二者均在生产活跃（`server.py` 启动/引用）。`proactive_decision`/`proactive_result` 由 `proactive.py:827/846/850` 发（**非** proactive_agent/）。
+- **WorldModel 确实不是模块**：仅 `COMPUTER_WORLD_SYNC` 事件 + `verification.PerceptionWorldModelObserver`（`verification.py:135-158`，只读、读 `perception.observe()` 快照、不持久化、不供 Agent Runtime/Context）。`perception/` 生产栈（Phase 20）**不发任何 PERCEPTION_* 事件**；`PERCEPTION_*` 事件仅由测试态 `perception_runtime.py:110-146` 发。
+- Goals FSM 健康：`create_goal:230` active / `delete_goal:324` archived 软删 / `recalc_progress:380` completed / `set_round:170`。`_emit` 双通道：裸 `bus.publish("zz.goal"):48`（内部订阅）+ `publish_domain:87`（前端合约，权威）。`Goal.to_dict` 含 `status:119`，生产安全。
+
+---
+
+## 2. 目标架构总览
+
+```
+                    ┌──────────────────────── P4 基础（已建，不重建）────────────────────────┐
+                    │  Canonical Memory API │ Unified Retrieval │ Memory Governance │ EventBus │ Policy │
+                    └─────────────────────────────────────────────────────────────────────────┘
+                                          ▲ 接入（P5 新增 Adapter/Facade，不新建系统）
+   ┌──────────────┐   Decision/Intent    ┌──────────────────┐   Policy→Perm→Approval→Exec   ┌──────────────┐
+   │  Cognitive    │ ───────────────────▶ │  Agent Runtime   │ ───────────────────────────▶ │ Capability    │
+   │  (observe/    │ ◀──── World State ── │  (goal daemon)   │ ◀──── Memory/Context ─────── │ (MCP/Skill/   │
+   │   reason/     │   Context Facade     │                  │   (build_cognitive_context)  │ Tool/Computer)│
+   │   decide/     │                      │                  │                              │              │
+   │   learn)      │                      └──────────────────┘                              └──────────────┘
+   └──────────────┘                                │
+         │ write only via CognitiveMemoryAdapter ─┘ (→ memory.create_memory / source_ref)
+         ▼
+   Canonical Memory API（唯一写权威；memory_evolution 治理；EventBus 事件）
+```
+
+**核心判定**：P5 不新建任何"第二套"系统。新增的仅是：
+- `context.facade.build_cognitive_context(...)` —— **同一引擎的第二个消费模式**（非第二引擎）。
+- `cognitive/memory_adapter.py` —— Cognitive→Canonical Memory 的**唯一写门面**（FACADE ONLY，消除裸 DB）。
+- `world_state.py` + `WorldStateSource` —— 瞬态只读组合，**非持久 World Model**。
+- `cognitive/decision.py`（`CognitiveDecision` / `CapabilityIntent`）—— 决策数据结构。
+- EventBus 新事件族 + CI lint 禁裸 `bus.publish`。
+
+---
+
+## 3. 架构关系图 A–J（Mermaid）
+
+### A. Chat → Context
+```mermaid
+flowchart LR
+  U[User] --> CH[server_handlers_chat]
+  CH --> FAC[context.facade.build_context_prompt]
+  FAC --> B[LegacyContextBuilder: Collect→Rank→Budget→Bundle→Build]
+  B --> SRC[CorePrompt/RuntimeState/MemoryRecall/UserModel/Episodic/Knowledge/Goal/Personality/Identity Sources]
+  SRC -->|read-only| MEM[(Memory/DB)]
+  B --> LLM[Chat LLM]
+```
+
+### B. Agent → Cognitive Context
+```mermaid
+flowchart LR
+  AR[Agent Runtime _run_goal] --> CC[context.facade.build_cognitive_context goal_id,task]
+  CC --> B[LegacyContextBuilder 同一管线]
+  B --> SRC2[... + WorldStateSource(新增)]
+  SRC2 -->|read-only| MEM[(Memory/DB)] & PER[perception.observe 只读]
+  CC --> PROMPT[Agent Planner Prompt 替换 862-868 自构]
+```
+
+### C. Memory → Retrieval → Context
+```mermaid
+flowchart LR
+  MEM[(memories 表)] --> RET[UnifiedRetrieval / DefaultEvolutionPolicy]
+  RET --> MR[MemoryRecallSource] --> B[Context Builder]
+  COG[Cognitive] -->|write| ADAPT[cognitive.memory_adapter] --> API[memory.create_memory source_ref] --> MEM
+```
+
+### D. Cognitive → Decision
+```mermaid
+flowchart LR
+  OBS[Observation] --> REA[Reasoning] --> DEC[CognitiveDecision]
+  DEC --> INT[CapabilityIntent: cap_id,args,approval_required]
+  DEC -.禁止.-> EXEC[直接 execute_capability]
+```
+
+### E. Decision → Policy → Permission → Approval → Executor
+```mermaid
+flowchart LR
+  INT[CapabilityIntent] --> POL[policy_engine.evaluate: auto|confirm|block]
+  POL -->|auto| EX[Executor 直行]
+  POL -->|confirm| APP[request_approval goal_id] --> EX
+  POL -->|block| DENY[Deny]
+  EX --> CRT[capability_runtime.execute / mcp_host._authorize]
+```
+
+### F. Observation → Cognitive Loop
+```mermaid
+flowchart LR
+  PER[perception.observe] --> WS[WorldState]
+  WS --> OBS[Observation in Cognitive Cycle]
+  OBS --> CTX[build_cognitive_context] --> REA --> DEC
+```
+
+### G. Learning → Memory Governance
+```mermaid
+flowchart LR
+  EXP[Experience/Outcome/Feedback] --> ADAPT[cognitive.memory_adapter]
+  ADAPT --> API[memory.create_memory source_ref=cognitive:*]
+  API --> GOV[memory_evolution: importance/conflict/consolidation/lifecycle]
+  GOV --> MEM[(memories)]
+```
+
+### H. World State → Cognitive
+```mermaid
+flowchart LR
+  UM[user_model] --> WS[WorldStateProvider]
+  RS[runtime_state] --> WS
+  G[goals/tasks] --> WS
+  PER[perception.observe] --> WS
+  CAP[capability registry] --> WS
+  WS -->|read-only snapshot| COG[Cognitive / Agent Runtime]
+```
+
+### I. Proactive → Cognitive
+```mermaid
+flowchart LR
+  TRG[proactive_agent.trigger] --> CTX[build_cognitive_context]
+  CTX --> DEC[CognitiveDecision] --> INT[CapabilityIntent]
+  INT --> POL[Policy→Approval→Exec]
+  EXEC[Execution] --> OBS[Observation] --> LEARN[Learning→Memory]
+```
+
+### J. EventBus 全链路
+```mermaid
+flowchart LR
+  PUB[所有生产者] -->|必须| PD[publish_domain DOMAIN=78]
+  PUB -->|必须| PS[publish_system SYSTEM=22]
+  PD --> BUS[(EventBus)]
+  PS --> BUS
+  BUS --> FE[前端 AppState / SSE]
+  BUS --> COG[Cognitive Observers]
+  NOTE[裸 bus.publish 5处: goals:48/agent_runtime:1181+1189/personality:87/mobile:46] -.禁止.-> BUS
+```
+
+---
+
+## 4. Canonical Contract 表（10 个，统一契约）
+
+> 每张契约定义：输入 / 输出 / Owner / Storage / Lifecycle / Event / Error / Security / Caller / Forbidden Caller。
+
+### 4.1 Memory Contract（P4 既有，P5 收敛目标）
+| 项 | 内容 |
+|---|---|
+| 输入 | content, event_type, source_ref, confidence, source, status, ... |
+| 输出 | memory id / None（幂等） |
+| Owner | `memory.py`（唯一写权威） |
+| Storage | `memories` 表（唯一） |
+| Lifecycle | active→(consolidated\|decayed\|deprecated)→archived；tombstone 软删 |
+| Event | MEMORY_CREATED/UPDATED/STORED/LINKED/ARCHIVED/RETRIEVED/CONSOLIDATED/DECAYED |
+| Error | content 空 / status 非法 / content_hash 冲突中止 |
+| Security | 仅经 API；禁止裸 DB |
+| Caller | cognitive.memory_adapter / distiller / db 适配器 / context sources |
+| Forbidden | cognitive→db_conn 裸写；agent_runtime 裸 SQL |
+
+### 4.2 Context Contract（P4 既有 + P5 新增认知消费模式）
+| 项 | 内容 |
+|---|---|
+| 输入 | `build_context_prompt(user_text,tier)` 或 `build_cognitive_context(goal_id,task,mode)` |
+| 输出 | 最终 Context 文本 |
+| Owner | `context.facade` |
+| Storage | 无（组装层） |
+| Lifecycle | 每次请求重建 |
+| Event | CONTEXT_BUILT / CONTEXT_TRUNCATED / CONTEXT_DEDUPED |
+| Error | 单源故障隔离（一源失败不影响其余） |
+| Security | 只读 Source；无 executor/capability_runtime import |
+| Caller | server_handlers_chat（prompt）/ agent_runtime（cognitive） |
+| Forbidden | agent_runtime 自构 planner prompt（替换 862-868） |
+
+### 4.3 Cognitive Context Contract（P5 新增）
+| 项 | 内容 |
+|---|---|
+| 输入 | goal_id, task, mode=plan\|act\|reflect |
+| 输出 | Agent Planner Context（含 WorldState 段） |
+| Owner | `context.facade.build_cognitive_context` |
+| Storage | 无 |
+| Lifecycle | 每次规划/执行重建 |
+| Event | 复用 CONTEXT_*；新增 COGNITIVE_CONTEXT_BUILT |
+| Error | 同 Context Contract（源故障隔离） |
+| Security | 只读 Source + WorldStateSource（只读） |
+| Caller | agent_runtime._run_goal / _execute_task |
+| Forbidden | 直接调用 memory/perception 拼 prompt |
+
+### 4.4 World State Contract（P5 新增，最小）
+| 项 | 内容 |
+|---|---|
+| 输入 | goal_id / task（可选作用域） |
+| 输出 | `WorldState` 快照：User/System/Task/Environment/Capability/Temporal |
+| Owner | `world_state.py:WorldStateProvider` |
+| Storage | **不持久**（瞬态；可选 TTL 缓存） |
+| Lifecycle | 每次决策重建；Environment 段随 perception TTL 过期 |
+| Event | WORLD_STATE_SYNC（env 段；复用 COMPUTER_WORLD_SYNC 语义） |
+| Error | 单源缺失降级（缺环境则不含 env 段） |
+| Security | Cognitive/Agent **只读**；仅 Perception 写 env 段 |
+| Caller | build_cognitive_context / Cognitive Cycle |
+| Forbidden | Cognitive 写 WorldState；WorldState 落库为巨型表 |
+
+### 4.5 Observation Contract（P5 新增）
+| 项 | 内容 |
+|---|---|
+| 输入 | perception.observe() / goal/task 状态变化 |
+| 输出 | Observation 记录（结构化） |
+| Owner | `cognitive/observer.py`（新增，薄） |
+| Storage | 经 memory_adapter → memories(source_ref=cognitive:observation) |
+| Lifecycle | 随 memory lifecycle |
+| Event | OBSERVATION_RECORDED |
+| Error | 感知失败 → 跳过 env 段 |
+| Security | 只读 perception；写经 adapter |
+| Caller | Cognitive Cycle / WorldStateProvider |
+| Forbidden | 直接 db_conn |
+
+### 4.6 Decision Contract（P5 新增）
+| 项 | 内容 |
+|---|---|
+| 输入 | context + world_state + reasoning |
+| 输出 | `CognitiveDecision{intent, target_capability, args, approval_required, rationale}` |
+| Owner | `cognitive/decision.py` |
+| Storage | 无（瞬态） |
+| Lifecycle | 单次决策 |
+| Event | DECISION_MADE / DECISION_APPROVED / DECISION_DENIED |
+| Error | 无 capability → 不产生 Intent（仅建议） |
+| Security | **只产 Decision/Intent，不直接执行** |
+| Caller | Cognitive Cycle |
+| Forbidden | 调用 execute_capability / execute_tool |
+
+### 4.7 Intent Contract（P5 新增）
+| 项 | 内容 |
+|---|---|
+| 输入 | CognitiveDecision |
+| 输出 | `CapabilityIntent{cap_id, args, approval_tier}` |
+| Owner | `cognitive/decision.py` |
+| Storage | 无 |
+| Lifecycle | 单次 |
+| Event | INTENT_TO_POLICY |
+| Error | 非法 cap_id → 拒绝 |
+| Security | 经 Policy→Approval→Executor |
+| Caller | Agent Runtime 执行桥 |
+| Forbidden | 自带 auto_approve 硬编码 |
+
+### 4.8 Learning Contract（P5 新增，复用 P4）
+| 项 | 内容 |
+|---|---|
+| 输入 | Experience/Outcome/Feedback/Reflection |
+| 输出 | Learning Candidate（memory.create_memory source_ref=cognitive:learning） |
+| Owner | `cognitive/learning.py`（新增，薄）+ memory_evolution |
+| Storage | memories（经 adapter） |
+| Lifecycle | 同 Memory Contract；consolidation 成长期 Learning |
+| Event | LEARNING_CANDIDATE / LEARNING_PROMOTED |
+| Error | 无 outcome 反馈 → 不提升 confidence（防自我强化） |
+| Security | 写经 adapter；conflict_resolver 不覆盖 verified |
+| Caller | Cognitive Cycle Learning 阶段 |
+| Forbidden | 直接覆盖 verified memory |
+
+### 4.9 Event Contract（P5 新增 + 收敛）
+| 项 | 内容 |
+|---|---|
+| 输入 | 领域/系统事件名 + payload |
+| 输出 | SSE 信封 |
+| Owner | `eventbus.publish_domain` / `publish_system` |
+| Storage | 无 |
+| Lifecycle | 即时扇出 |
+| Event | COGNITIVE_*/AGENT_*/DECISION_*/OBSERVATION_*/LEARNING_*（见 EVENT-CONTRACT-DESIGN） |
+| Error | 未注册名 → raise（强制） |
+| Security | **禁止裸 bus.publish**（CI lint） |
+| Caller | 所有生产者 |
+| Forbidden | Memory↔Agent 直接调用（改经 EventBus/adapter） |
+
+### 4.10 Proactive Contract（P5 统一）
+| 项 | 内容 |
+|---|---|
+| 输入 | Trigger 信号 |
+| 输出 | `CapabilityIntent`（经 Cognitive Decision） |
+| Owner | `proactive_agent/`（唯一权威引擎） |
+| Storage | 无（建议经 adapter→memories） |
+| Lifecycle | 每次 cycle |
+| Event | proactive_decision / proactive_result（仅此引擎发） |
+| Error | 低置信 → 不发 Intent |
+| Security | 同 Decision/Intent 契约 |
+| Caller | server tick / goal 事件 |
+| Forbidden | 第二套 proactive.py 决策逻辑 |
+
+---
+
+## 5. Legacy Migration Map（每个旧路径的处置）
+
+| 旧路径 | 文件:line | 处置 | 说明 |
+|---|---|---|---|
+| agent_runtime 自构 planner prompt | `agent_runtime.py:862-868` | **MIGRATE** | 替换为 `build_cognitive_context` |
+| `_execute_skill_task` 直连 execute_tool | `707/715-716` | **ADAPTER** | 经 `capability_runtime.execute`（统一 Policy 门） |
+| MCP `auto_approve=True` | `652-653` | **MIGRATE** | 由 policy 决策派生 approval_tier；删硬编码 |
+| `_distill_memory` 裸 SQL | `933/953-984` | **ADAPTER** | 经 `cognitive.memory_adapter` |
+| `_consecutive_failures` 缺陷 | `53/55/554` | **KEEP(defect)** | 登记 P5-PRE-REQ-01，P5.1 实现修复 |
+| `capability_os.invoke_capability` 休眠旁路 | `255-259` | **DEPRECATE** | 路由 `capability_runtime.execute`；后续 REMOVE-LATER |
+| cognitive/user_model 裸写 | `168-182` | **ADAPTER** | 经 `memory_adapter`（保留 user_model 表作投影，由 adapter 维护） |
+| cognitive/episodic 裸写 | `40-51` | **ADAPTER** | 经 `memory_adapter` |
+| memory.py:251 反向 import cognitive | `251` | **MIGRATE** | 改经 `memory_adapter` 取 canonical，消除反向依赖 |
+| personality.py 裸 publish | `87` | **MIGRATE** | 加 `PERSONALITY_CHANGED` 到 SYSTEM，经 `publish_system` |
+| goals.py:48 裸 publish | `48` | **ADAPTER** | 保留内部订阅主题但经封装；或迁移到 publish_domain |
+| agent_runtime 裸 publish | `1181/1189` | **MIGRATE** | 统一 `AGENT_STATE` 事件经 `publish_system` |
+| mobile.py:46 裸 publish | `46` | **MIGRATE** | 加 `MOBILE_SYNC` 到 SYSTEM，经 `publish_system` |
+| proactive.py legacy TICK + decide | `331/686/853` | **DEPRECATE** | 决策逻辑迁 `proactive_agent/`；transport 保留 ADAPTER |
+| proactive_agent/ | 全目录 | **KEEP** | 唯一 Proactive 引擎 |
+| perception/ | 全目录 | **KEEP** | 生产感知栈（只读） |
+| perception_runtime.py | 全文件 | **KEEP(test-only)** | 测试态；不发生产事件 |
+| verification.PerceptionWorldModelObserver | `135-158` | **KEEP** | 只读 observer；WorldState 数据源之一 |
+| mcp_host._authorize auto_approve 未用 | `executor.py:29/119` | **MIGRATE** | 明确 auto_approve 仅在 decision==auto 生效 |
+| config 双默认 flag | `63/69/79/81/83/85` | **MIGRATE** | P5.7 配置归一（单源 env 驱动、typed） |
+| FEATURE_CAPABILITY_RUNTIME dead | `93` | **MIGRATE** | 接入 reload 全局或明确恒 ON 注释 |
+| FEATURE_PROACTIVE_ENGINE ghost | `561` | **MIGRATE** | 定义或移除键 |
+
+**处置语义**：KEEP=保留原样；ADAPTER=包一层门面（不改存储）；MIGRATE=逻辑迁到新契约；DEPRECATE=标记弃用、保留并行、后续 REMOVE-LATER；REMOVE-LATER=迁移完成后下个 Phase 删除（本 Phase 不删）。
+
+---
+
+## 6. Security Matrix（调用边界）
+
+| 调用方 → 被调方 | 标记 | 说明 |
+|---|---|---|
+| Cognitive → Memory | **FACADE ONLY** | 仅经 `cognitive.memory_adapter` → `memory.create_memory` |
+| Cognitive → Context | **FACADE ONLY** | 仅经 `context.facade.build_cognitive_context` |
+| Cognitive → World State | **FACADE ONLY（只读）** | 仅经 `world_state.WorldStateProvider` |
+| Cognitive → Capability | **DENY** | 禁止直接 execute；只产 Decision/Intent |
+| Cognitive → Executor | **DENY** | 禁止；经 Policy→Approval→Executor |
+| Agent → MCP | **APPROVAL REQUIRED** | confirm 级须 `request_approval(goal_id)` |
+| Agent → Approval | **APPROVAL REQUIRED** | 由 policy 决策派生；删 `auto_approve=True` 硬编码 |
+| Memory → Cognitive | **EVENT ONLY** | 经 EventBus；禁直接 import（消除 memory.py:251 反向依赖） |
+| World → Cognitive | **FACADE ONLY（只读）** | WorldStateProvider 组合；Cognitive 不写 |
+| Agent → Context | **FACADE ONLY** | build_cognitive_context |
+| 任何 → 裸 bus.publish | **DENY** | 必须 publish_domain/publish_system（CI lint） |
+| capability_os.invoke_capability 旁路 | **DENY（DEP）** | 休眠旁路；MIGRATE 后移除 |
+
+---
+
+## 7. P5-PRE-REQ-01（真实产品缺陷，登记不修）
+
+- **现象**：`tests/test_goal_decision_engine.py::test_consecutive_failure_clear_queue` 失败（A=1）。
+- **根因**：`agent_runtime._consecutive_failures`（`53/55/554`）仅 reset、无 increment；阈值常量 `_MAX_CONSECUTIVE_FAIL=2` 从不引用；队列无失败清零逻辑 → "连续失败→换工具/清零队列"功能未实现。
+- **设计要点**（P5.1 IMPLEMENTATION 统一修复，不在本 DESIGN 修复）：
+  - `increment`：`_run_task` 失败分支 `self._consecutive_failures += 1`。
+  - `reset`：成功分支保留 `=0`。
+  - `threshold`：引用 `_MAX_CONSECUTIVE_FAIL`，达阈触发 `_try_alternative_tool` / `_queue.clear()`。
+  - `queue clear`：达阈清空待执行队列并 replan。
+  - `recovery`：复用 P3 Recovery/Idempotency（不新建恢复机制）。
+
+---
+
+## 8. DESIGN GATE 预览（详见 P5-DESIGN-GATE.md）
+
+20 项 PASS 准则逐条核对见 `P5-DESIGN-GATE.md`。本设计满足：无第二 Memory/Context/Retrieval/Task/Policy/Executor（§0 红线 + §2 新增仅 Adapter/Facade）；不绕过 Approval（§4.6/§6）；不直接执行 Capability（§4.6 DENY）；Agent Runtime 接入 P4 Context（§3B/§4.3）；Memory 写回全可迁 Canonical（§4.1/§5）；World≠Memory（§4.4）；Learning↔Governance 分层（§4.8）；Proactive 单一 Contract（§4.10）；EventBus 无同义漂移（§5 MIGRATE 裸发布）；Legacy 有迁移路线（§5）；迁移可回滚（§0/§9）；P0–P4 不被破坏；UI=0；Security Boundary=0；无未解环依赖。
+
+**结论（详版在 DESIGN-GATE.md）：DESIGN GATE = PASS。**

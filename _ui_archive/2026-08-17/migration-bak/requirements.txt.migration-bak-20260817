@@ -1,0 +1,26 @@
+# 庄周 (ZhuangZhou) · 运行依赖
+# 后端 server.py 以纯标准库为主；以下为「可选增强」依赖——
+# 缺失时 server.py 会自动降级（跳过语音 / 返回监控友好提示），不影响核心对话功能。
+
+# 语音合成 TTS（懒加载，缺失则跳过语音输出）
+edge-tts>=1.0.0
+
+# 系统监控指标（懒加载，缺失则返回友好提示，建议放在含 psutil 的 venv 中运行）
+psutil>=5.9.0
+
+# 繁→简中文地名归一（浏览器实时定位反查 BigDataCloud 返回繁体，转简体显示）
+zhconv>=1.4.3
+
+# 数值计算（embed.py 本地向量余弦相似度 / knowledge RAG 必需；声明以保证可复现安装）
+numpy>=1.24.0
+
+# 音频输入（wakeword.py 唤醒词麦克风采集；懒加载，缺失则唤醒词不可用）
+sounddevice>=0.4.6
+
+# 本地语音识别 ASR（FunASR + Paraformer，离线/隐私优先；GPU 或 CPU 均可）
+# 注意：torch/torchaudio 须用与 CUDA 匹配的预编译 wheel，安装时指定 pytorch 源：
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124
+torchaudio==2.6.0+cu124
+funasr>=1.0.0
+modelscope>=1.0.0

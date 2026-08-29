@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "description": "小6桌面数字人启动器配置 (Phase 31.1 Desktop Launcher Shortcut Foundation v1.0)",
+  "project": {
+    "name": "zhuangzhou-desktop-avatar",
+    "root": ".."
+  },
+  "backend": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 8010,
+    "python_bin": "",
+    "script": "server.py",
+    "health_endpoint": "/api/health",
+    "health_timeout_sec": 30,
+    "log_file": "logs/backend.log"
+  },
+  "electron": {
+    "enabled": true,
+    "bin": "electron-bin/electron.exe",
+    "args": [".", "--disable-gpu-sandbox"],
+    "url": "http://localhost:8010/gui/chat.html",
+    "log_file": "logs/electron.log"
+  },
+  "logs": {
+    "dir": "logs",
+    "startup_log": "startup.log"
+  },
+  "pid_files": {
+    "backend": "logs/backend.pid",
+    "electron": "logs/electron.pid"
+  },
+  "notes": {
+    "python_bin_empty": "留空则按 python3 -> python 顺序自动探测；不自动安装依赖",
+    "electron_bin_source": "launcher/electron-bin/electron.exe 为离线解压自本地缓存 v33.4.11，非联网安装、仅项目内",
+    "red_lines": "不修改系统设置/注册表/自启/环境变量，仅项目内启动入口；stop 仅按本项目 PID 精确关闭"
+  }
+}

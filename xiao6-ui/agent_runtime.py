@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Agent Runtime —— 目标驱动的编排状态机（核心新建）。
+"""小6 · Agent Runtime —— 目标驱动的编排状态机（核心新建）。
 
 状态机：IDLE -> PLANNING -> EXECUTING -> REFLECTING -> (IDLE | PLANNING)
 职责：编排已有能力，不做任何业务逻辑。
@@ -946,7 +946,7 @@ class AgentRuntime:
             except Exception:
                 tool_names = []
         # —— P5.1：Planner Context 改由 Canonical Context Engine 生成 ——
-        # 替换 agent_runtime.py:862-868 原硬编码「你是庄周的调度器…」自构 prompt。
+        # 替换 agent_runtime.py:862-868 原硬编码「你是小6的调度器…」自构 prompt。
         # 记忆 / 目标 / 用户画像 / 人格 / 身份等认知上下文统一经 context.facade.build_cognitive_context
         # （与 Chat 共享同一 LegacyContextBuilder，禁止第二套 Context 组装 / 第二套 Prompt Builder）。
         # 仅「调度指令 + 动态工具清单 + 当前任务」作为即时调用规格保留在 Runtime
@@ -967,7 +967,7 @@ class AgentRuntime:
         else:
             cog_ctx = ""
         dispatch_instruction = (
-            "你是庄周的调度器。根据任务选择最合适的工具并给出参数（只输出 JSON）。\n"
+            "你是小6的调度器。根据任务选择最合适的工具并给出参数（只输出 JSON）。\n"
             f"可用工具：{', '.join(tool_names)}\n"
             f"任务标题：{task.get('title')}\n"
             f"子步骤：{task.get('steps')}\n"
@@ -1219,7 +1219,7 @@ class AgentRuntime:
             payload = {
                 "agentId": self._agent_id_for(goal_id),
                 "goalId": goal_id,
-                "name": "庄周编排体",
+                "name": "小6编排体",
                 "type": "orchestrator",
             }
             payload.update(extra)
@@ -1293,13 +1293,13 @@ class AgentRuntime:
                 fields["goal_id"] = goal_id
             fields.update(extra)
             publish_system("agent_state", fields, source="agent_runtime")
-            # agent:state 主题（独立消费者）保持原信封结构（含 zhuangzhou_event）
+            # agent:state 主题（独立消费者）保持原信封结构（含 xiao6_event）
             agent_state_envelope = dict(fields)
-            agent_state_envelope["zhuangzhou_event"] = "agent_state"
+            agent_state_envelope["xiao6_event"] = "agent_state"
             bus.publish("agent:state", agent_state_envelope, source="agent_runtime")
             # Phase 11 全息 HUD：把 Agent 编排态映射为 HUD 光环状态，供前端光环/glance 订阅
             hud_state = self._hud_state_for(event)
-            hud_payload = {"zhuangzhou_event": "hud_state", "state": hud_state}
+            hud_payload = {"xiao6_event": "hud_state", "state": hud_state}
             if goal_id is not None:
                 hud_payload["goal_id"] = goal_id
             if "progress" in extra:

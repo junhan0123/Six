@@ -1,0 +1,20 @@
+{
+  "loaded": true,
+  "httpStatus": 200,
+  "pageErrors": 0,
+  "consoleErrors": 1,
+  "hasZZDynaOrb": true,
+  "orbApi": [
+    "init",
+    "start",
+    "stop",
+    "setState",
+    "setVolume",
+    "getState"
+  ],
+  "orbStreamCreations": 0,
+  "speechRecAvailable": true,
+  "notes": [
+    "No microphone/ASR in headless Chromium -> a real voice utterance cannot be driven. Voice->Runtime->GUI data flow cannot be exercised end-to-end here."
+  ]
+}

@@ -45,7 +45,7 @@ def _use_eventbus():
 def flush_scene_events():
     """把当前暂存卡片实时推给所有在线 SSE 连接（后台任务调用，如软件安装进度）。
 
-    取出的卡片会逐条以 zhuangzhou_event:scene 推给每个订阅者（/api/stream 长连接）。
+    取出的卡片会逐条以 xiao6_event:scene 推给每个订阅者（/api/stream 长连接）。
     若无可推送内容则空操作，安全幂等。
     FEATURE_EVENTBUS=true 经 EventBus 发布；false/异常回退 SUBSCRIBERS 直发（§1.6）。
     """
@@ -67,6 +67,6 @@ def flush_scene_events():
         for q in SUBSCRIBERS:
             try:
                 for card in out:
-                    q.put({"zhuangzhou_event": "scene", "card": card})
+                    q.put({"xiao6_event": "scene", "card": card})
             except Exception:
                 pass

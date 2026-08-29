@@ -1,0 +1,43 @@
+// verify.js — 小6 语音球改造验证脚本（环境恢复后运行，只读）
+// 用法: node verify.js
+'use strict';
+const http = require('http');
+const { spawnSync } = require('child_process');
+
+const FILES = [
+  'G:\\ZhuangZhou\\zhuangzhou-ui\\desktop-avatar\\orb-pet.js',
+  'G:\\ZhuangZhou\\zhuangzhou-ui\\desktop-avatar\\orb-pet-voice.js',
+  'G:\\ZhuangZhou\\zhuangzhou-ui\\gui\\main.js',
+  'G:\\ZhuangZhou\\zhuangzhou-ui\\qwen3_tts.py',
+  'G:\\ZhuangZhou\\zhuangzhou-ui\\config.py',
+  'G:\\ZhuangZhou\\zhuangzhou-ui\\server_handlers_chat.py',
+];
+const BASE = 'http://127.0.0.1:8010';
+const URLS = ['/api/hud/state', '/desktop-avatar/orb-pet.html', '/desktop-avatar/orb-pet.js', '/desktop-avatar/orb-pet-voice.js'];
+
+function check(file) {
+  const isPy = /\.py$/.test(file);
+  const args = isPy ? ['-m', 'py_compile', file] : ['--check', file];
+  const r = spawnSync(process.execPath, args, { encoding: 'utf8', timeout: 20000 });
+  return { file, ok: r.status === 0, exitCode: r.status, stderr: (r.stderr || '').trim().slice(0, 300) };
+}
+
+function httpGet(path, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    const req = http.get(BASE + path, (res) => {
+      const chunks = [];
+      res.setEncoding('utf8');
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ path, statusCode: res.statusCode, contentType: res.headers['content-type'] || null }));
+    });
+    req.on('error', (e) => resolve({ path, error: e.message }));
+    req.setTimeout(timeoutMs, () => req.destroy(new Error('timeout')));
+  });
+}
+
+(async () => {
+  console.log('=== 1) syntax ===');
+  for (const f of FILES) console.log(JSON.stringify(check(f)));
+  console.log('=== 2) API ===');
+  for (const p of URLS) console.log(JSON.stringify(await httpGet(p)));
+})().catch((e) => { console.error('FATAL: ' + e.stack); process.exit(1); });

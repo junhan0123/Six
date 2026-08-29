@@ -1,0 +1,2 @@
+[stage] launching chromium
+[stage] context created

@@ -1,0 +1,89 @@
+# P2-RUNTIME-RELEASE-GATE.md — Runtime Release Gate
+
+> 阶段：P2 · REAL CHAT RUNTIME VALIDATION & RELEASE GATE · 最终裁定
+> 身份：Senior Runtime Engineer / Verification Engineer
+> 项目：G:\ZhuangZhou\zhuangzhou-ui · v1.4.0
+
+---
+
+## 1. 门禁清单
+
+| 门禁项 | 要求 | P2 实测 | 判定 |
+|---|---|---|---|
+| A = 0 | 真实产品缺陷 | **0** | ✅ |
+| B = 0 | 陈旧/错误测试（P2 改坏的） | **0** | ✅ |
+| Collection Errors = 0 | 收集错误 | **0** | ✅ |
+| Security = PASS | 安全边界 | PASS（§4 / P2-SECURITY-RECHECK） | ✅ |
+| Default Chat E2E = PASS | 真实入口 E2E | 12/12（P2-A） | ✅ |
+| Capability Routing = PASS | 无旁路 | PASS（P2-CAPABILITY-ROUTING-AUDIT） | ✅ |
+| Policy = PASS | 策略门 | PASS | ✅ |
+| Permission = PASS | 权限边界 | PASS | ✅ |
+| Approval = PASS | 审批权威 | PASS（fail-safe + GOAL 路径） | ✅ |
+| Execution = PASS | 执行入口 | PASS（单一入口 `ai_core.execution.run`） | ✅ |
+| Failure Recovery = PASS / C-backlog | 失败恢复 | PASS（C2 留 backlog，不伪造） | ✅ |
+| Event Integrity = PASS | 事件完整性 | PASS（执行级唯一；O-class 观察项见 §3） | ✅ |
+| Duplicate Execution = 0 | 重复执行 | **0** | ✅ |
+| Legacy Bypass = 0 | 旧路径旁路 | **0** | ✅ |
+| UI Changes = 0 | UI 冻结 | **0**（仅 .md + 测试文件） | ✅ |
+| Feature Flag ON/OFF = PASS | 开关 | PASS（P2-FEATURE-FLAG-REPORT） | ✅ |
+| P1 Regression = 0 | 无 P1 回归 | **0**（失败集与 P1 完全一致） | ✅ |
+
+---
+
+## 2. 全量回归对比（P1 → P2）
+
+| 指标 | P1 baseline | P2 | Δ |
+|---|---|---|---|
+| Collected | 388 | **400** | +12（P2-A TEST 01-12） |
+| Passed | 384 | **396** | +12 |
+| Failed | 4 | **4** | 0 |
+| Errors | 0 | 0 | 0 |
+| Collection Errors | 0 | 0 | 0 |
+
+**4 个失败 = P0.5 已知 C/D，与 P1 逐一吻合（无新增）：**
+
+| 测试 | 分类 | 是否影响真实 Runtime | 是否阻断 release |
+|---|---|---|---|
+| `test_gate_guard_passes` | C1（GATE-GUARD 脚本缺失） | 否 | 否 |
+| `test_consecutive_failure_clear_queue` | C2（未实现能力） | 否 | 否 |
+| `test_status_default_all_disabled` | D1（ASR ffmpeg 环境差异） | 否 | 否 |
+| `test_asr_transcribe_disabled_without_key` | D2（ASR ffmpeg 环境差异） | 否 | 否 |
+
+---
+
+## 3. 非阻塞观察项（O-class，不计入 A/B/C/D，不阻断）
+
+- **P2-E §3.1**：MCP 路径 `tool_started`/`tool_finished` 事件重复发射（执行唯一，仅事件重复）。建议后续去重。
+- **P2-E §3.2**：`COMPUTER_ACTION_PHASE` 双发布源（Complex Path）。建议后续收敛。
+- **P2-E §3.3**：`TOOL_CALLED`/`TOOL_DONE` 为死声明（无发布点）。建议后续清理。
+- **P2-F §3**：默认 Chat 本地 confirm 工具不弹审批（用户键盘操作模型；远程已被白名单隔离）——设计内，非缺陷。
+
+---
+
+## 4. 最终裁定
+
+### ✅ **B. RUNTIME READY WITH C/D BACKLOG**
+
+**判定依据**（对照 P2 指令 FINAL DECISION）：
+- 无 A 类缺陷、无 B 类回归、无 Security bypass、无 Duplicate Execution、无 Policy/Permission/Approval bypass、无 Capability → Tool 旁路、无 P1 回归。
+- 剩余 4 个失败全为**已知的 C/D**（C1/C2 未实现能力、D1/D2 环境依赖），**不影响真实 Runtime**，且已在 P0.5/P1/P2 连续三阶段稳定一致。
+- P2 全程**零产品代码改动**（仅新增 8 份交付文档 + 1 个 E2E 测试文件），严格守住所红线（UI 冻结、不伪造、不修产品行为刷绿、不删测试、不降断言）。
+
+**结论**：P1 建立的 Unified Capability Runtime 已通过真实 Default Chat 用户入口验证——可安全、唯一、可控地执行能力。Runtime Foundation 可冻结，后续重点交还 UI / Product Integration。
+
+---
+
+## 5. 交付物清单（G:\ZhuangZhou\zhuangzhou-ui\）
+
+| 文件 | 类型 |
+|---|---|
+| `P2-BASELINE.md` | Phase 0 基线（10 节） |
+| `P2-CAPABILITY-ROUTING-AUDIT.md` | P2-B 路由审计 |
+| `P2-FAILURE-RECOVERY.md` | P2-C 失败恢复评估（C2 留 backlog） |
+| `P2-FEATURE-FLAG-REPORT.md` | P2-D 开关验证（ON/OFF/fail-safe） |
+| `P2-EVENT-STATE-AUDIT.md` | P2-E 事件/状态审计 |
+| `P2-SECURITY-RECHECK.md` | P2-F 安全复核 |
+| `P2-RUNTIME-RELEASE-GATE.md` | P2-H 发布门禁（本文件） |
+| `tests/test_p2_real_chat_runtime.py` | P2-A 真实 Chat E2E（TEST 01-12，12/12 PASS） |
+
+**分类汇总**：A=0 · B=0 · C=2（C1/C2）· D=2（D1/D2）· O=3（观察项）· Collection Errors=0。

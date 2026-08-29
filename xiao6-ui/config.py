@@ -32,12 +32,12 @@ LMSTUDIO_MODEL: str = ""
 MLX_BASE_URL: str = ""
 MLX_MODEL: str = ""
 # ---- 新功能开关（KWS 唤醒 / 文档面板 / 成果审视分身）----
-ZHUANGZHOU_KWS_ENABLED: str = "true"
-ZHUANGZHOU_WAKE_PHRASE: str = "庄周,小周,小6"
-ZHUANGZHOU_KWS_SENSITIVITY: str = "0.6"
-ZHUANGZHOU_VOSK_KWS_ENABLED: str = "true"   # P8-2：优先用 Vosk 中文短语 KWS（开启且模型可用时）
-ZHUANGZHOU_DOC_DIR: str = "docs"
-ZHUANGZHOU_AUTO_REVIEW: str = "false"
+XIAO6_KWS_ENABLED: str = "true"
+XIAO6_WAKE_PHRASE: str = "庄周,小周,小6"
+XIAO6_KWS_SENSITIVITY: str = "0.6"
+XIAO6_VOSK_KWS_ENABLED: str = "true"   # P8-2：优先用 Vosk 中文短语 KWS（开启且模型可用时）
+XIAO6_DOC_DIR: str = "docs"
+XIAO6_AUTO_REVIEW: str = "false"
 TTS_VOICE: str = ""
 TTS_RATE: str = ""
 TTS_BACKEND: str = ""
@@ -103,7 +103,7 @@ FEATURE_CAPABILITY_RUNTIME: bool = True
 # Agent Runtime 是否自动跑闭环（false=仅显式目标触发；true=可自驱）
 AGENT_RUNTIME_AUTO: bool = False
 # Policy Engine 未显式注册工具的默认权限（auto/confirm/session/never）；P10-4 起默认 auto（低危 auto，高危 confirm）
-AGENT_POLICY_DEFAULT: str = "auto"
+AGENT_POLICY_DEFAULT: str = "ask"
 # 低危工具自动执行总开关（true=启用 P10-4 低危 auto 策略）
 AGENT_LOW_RISK_DEFAULT: bool = True
 # Phase 11 全息 HUD（常驻状态光环 / 情境 glance 卡 / 可选 3D 化身）
@@ -190,7 +190,7 @@ REMOTE_ACCESS_TOKEN: str = ""
 REMOTE_TOOL_WHITELIST: str = ""               # 远程会话可用工具白名单（逗号分隔）；空=内置安全默认
 PORT: int = 8000
 BIND_HOST: str = "127.0.0.1"                  # 监听网口；默认仅本机；设为 0.0.0.0 需同时配置 REMOTE_ACCESS_TOKEN
-ZHUANGZHOU_PROXY_URL: str = ""
+XIAO6_PROXY_URL: str = ""
 # 安全沙箱（对应参考实现「安全沙箱」设置）
 SANDBOX_FILE_ENABLED: bool = True
 SANDBOX_EXEC_ENABLED: bool = True
@@ -282,7 +282,7 @@ def reload():
     global XFYUN_ASR_APPID, XFYUN_ASR_APIKEY, XFYUN_ASR_APISECRET
     global VOLCENGINE_ASR_KEY, VOLCENGINE_ASR_SECRET
     global DISCORD_BOT_TOKEN, FEISHU_APP_ID, FEISHU_APP_SECRET, SOCIAL_INBOUND_TOKEN, FEISHU_WS_ENABLED
-    global PORT, ZHUANGZHOU_PROXY_URL, BIND_HOST
+    global PORT, XIAO6_PROXY_URL, BIND_HOST
     global TOOL_FACTORY_ENABLED, TOOL_FACTORY_COMMAND_ENABLED, TOOL_FACTORY_DOMAIN_ALLOWLIST
     global AGENT_DELEGATE_ENABLED, AGENT_DELEGATE_AUTO, AGENT_DELEGATE_TIMEOUT, AGENT_DELEGATE_CLI
     global REMOTE_ACCESS_TOKEN, REMOTE_TOOL_WHITELIST
@@ -291,7 +291,7 @@ def reload():
     global WEB_SEARCH_SERPER_KEY, WEB_SEARCH_JINA_KEY, WEB_SEARCH_BRAVE_KEY, WEB_SEARCH_SEARXNG_URL
     global LLM2_BASE_URL, LLM2_API_KEY, LLM2_MODEL, LLM2_PROVIDER, ACTIVE_LLM
     global OLLAMA_BASE_URL, OLLAMA_MODEL, LMSTUDIO_BASE_URL, LMSTUDIO_MODEL, MLX_BASE_URL, MLX_MODEL
-    global ZHUANGZHOU_KWS_ENABLED, ZHUANGZHOU_WAKE_PHRASE, ZHUANGZHOU_KWS_SENSITIVITY, ZHUANGZHOU_VOSK_KWS_ENABLED, ZHUANGZHOU_DOC_DIR, ZHUANGZHOU_AUTO_REVIEW
+    global XIAO6_KWS_ENABLED, XIAO6_WAKE_PHRASE, XIAO6_KWS_SENSITIVITY, XIAO6_VOSK_KWS_ENABLED, XIAO6_DOC_DIR, XIAO6_AUTO_REVIEW
     global BUILD_CHANNEL
 
     # Phase I / 38F · 发布通道：development / rc / release；其它值一律按 development 处理
@@ -320,16 +320,16 @@ def reload():
     LMSTUDIO_MODEL = os.environ.get("LMSTUDIO_MODEL", "")
     MLX_BASE_URL = os.environ.get("MLX_BASE_URL", "").rstrip("/")
     MLX_MODEL = os.environ.get("MLX_MODEL", "")
-    ZHUANGZHOU_KWS_ENABLED = os.environ.get("ZHUANGZHOU_KWS_ENABLED", "true").lower()
-    ZHUANGZHOU_WAKE_PHRASE = os.environ.get("ZHUANGZHOU_WAKE_PHRASE", "庄周,小周,小6")
-    ZHUANGZHOU_KWS_SENSITIVITY = os.environ.get("ZHUANGZHOU_KWS_SENSITIVITY", "0.6")
-    ZHUANGZHOU_VOSK_KWS_ENABLED = os.environ.get("ZHUANGZHOU_VOSK_KWS_ENABLED", "true").lower()
-    ZHUANGZHOU_DOC_DIR = os.environ.get("ZHUANGZHOU_DOC_DIR", "docs")
-    ZHUANGZHOU_AUTO_REVIEW = os.environ.get("ZHUANGZHOU_AUTO_REVIEW", "false").lower()
+    XIAO6_KWS_ENABLED = os.environ.get("XIAO6_KWS_ENABLED", "true").lower()
+    XIAO6_WAKE_PHRASE = os.environ.get("XIAO6_WAKE_PHRASE", "庄周,小周,小6")
+    XIAO6_KWS_SENSITIVITY = os.environ.get("XIAO6_KWS_SENSITIVITY", "0.6")
+    XIAO6_VOSK_KWS_ENABLED = os.environ.get("XIAO6_VOSK_KWS_ENABLED", "true").lower()
+    XIAO6_DOC_DIR = os.environ.get("XIAO6_DOC_DIR", "docs")
+    XIAO6_AUTO_REVIEW = os.environ.get("XIAO6_AUTO_REVIEW", "false").lower()
 
     AI_DISPLAY_NAME = os.environ.get("AI_DISPLAY_NAME", "小6")
-    THEME = os.environ.get("ZHUANGZHOU_THEME", "dark-cyan")
-    MEMORY_GRAPH_ENABLED = os.environ.get("ZHUANGZHOU_MEMORY_GRAPH", "true").lower() in ("1", "true", "yes")
+    THEME = os.environ.get("XIAO6_THEME", "light")
+    MEMORY_GRAPH_ENABLED = os.environ.get("XIAO6_MEMORY_GRAPH", "true").lower() in ("1", "true", "yes")
     # Phase 1 Step 5：主路径默认切到 Context Engine（输出与旧实现逐字节一致）。
     # 生产默认值 = ON（true）：context/facade.py:build_context_prompt 为 C-CTX 唯一聚合入口，
     # 所有运行时系统提示词装配（含 tools._fc_fallback，见 COND-A1 X1-F1 修复）均经此门面，禁止第二路径。
@@ -372,7 +372,7 @@ def reload():
     FEATURE_COGNITIVE_CONTEXT = os.environ.get("FEATURE_COGNITIVE_CONTEXT", "true").lower() in ("1", "true", "yes")
     FEATURE_CANONICAL_COGNITIVE_MEMORY = os.environ.get("FEATURE_CANONICAL_COGNITIVE_MEMORY", "true").lower() in ("1", "true", "yes")
     AGENT_RUNTIME_AUTO = os.environ.get("AGENT_RUNTIME_AUTO", "false").lower() in ("1", "true", "yes")
-    AGENT_POLICY_DEFAULT = (os.environ.get("AGENT_POLICY_DEFAULT", "auto") or "auto").strip().lower()
+    AGENT_POLICY_DEFAULT = (os.environ.get("AGENT_POLICY_DEFAULT", "ask") or "ask").strip().lower()
     AGENT_LOW_RISK_DEFAULT = os.environ.get("AGENT_LOW_RISK_DEFAULT", "true").lower() in ("1", "true", "yes")
     # Phase 9 Step 2：GDE 默认开启；与 FEATURE_AGENT_RUNTIME 协同（.env 已 true）
     FEATURE_GOAL_DECISION = os.environ.get("FEATURE_GOAL_DECISION", "true").lower() in ("1", "true", "yes")
@@ -410,12 +410,12 @@ def reload():
     # Phase 20.5 · Memory Truth Layer（默认开启；关闭即退回旧 ranking）
     FEATURE_MEMORY_TRUTH = os.environ.get("FEATURE_MEMORY_TRUTH", "true").lower() in ("1", "true", "yes")
 
-    TTS_VOICE = os.environ.get("ZhuangZhou_TTS_VOICE", "zh-CN-YunxiNeural")
-    TTS_RATE = os.environ.get("ZhuangZhou_TTS_RATE", "+0%")
-    TTS_BACKEND = os.environ.get("ZHUANGZHOU_TTS_BACKEND", "edge")
-    GPT_SOVITS_URL = os.environ.get("ZHUANGZHOU_GPT_SOVITS_URL", "http://localhost:9880")
-    GPT_SOVITS_REF_AUDIO = os.environ.get("ZHUANGZHOU_GPT_SOVITS_REF", "")
-    GPT_SOVITS_PROMPT_TEXT = os.environ.get("ZHUANGZHOU_GPT_SOVITS_PROMPT", "")
+    TTS_VOICE = os.environ.get("Xiao6_TTS_VOICE", "zh-CN-YunxiNeural")
+    TTS_RATE = os.environ.get("Xiao6_TTS_RATE", "+0%")
+    TTS_BACKEND = os.environ.get("XIAO6_TTS_BACKEND", "edge")
+    GPT_SOVITS_URL = os.environ.get("XIAO6_GPT_SOVITS_URL", "http://localhost:9880")
+    GPT_SOVITS_REF_AUDIO = os.environ.get("XIAO6_GPT_SOVITS_REF", "")
+    GPT_SOVITS_PROMPT_TEXT = os.environ.get("XIAO6_GPT_SOVITS_PROMPT", "")
     # Qwen3-TTS 本地声线（TTS_BACKEND=qwen3 时生效；默认走本地 vLLM 推理服务）
     QWEN3_TTS_URL = os.environ.get("QWEN3_TTS_URL", "http://127.0.0.1:8001/v1")
     QWEN3_TTS_MODEL = os.environ.get("QWEN3_TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B")
@@ -424,16 +424,16 @@ def reload():
     QWEN3_TTS_REF_AUDIO = os.environ.get("QWEN3_TTS_REF_AUDIO", "")
 
     HOTDATA_KEY = os.environ.get("HOTDATA_KEY", "")
-    ZHUANGZHOU_PROXY_URL = os.environ.get("ZHUANGZHOU_PROXY_URL", "")
+    XIAO6_PROXY_URL = os.environ.get("XIAO6_PROXY_URL", "")
 
-    WEB_SEARCH_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_KEY", "")
-    WEB_SEARCH_ENGINE = os.environ.get("ZHUANGZHOU_WEB_SEARCH_ENGINE", "tavily")
+    WEB_SEARCH_KEY = os.environ.get("XIAO6_WEB_SEARCH_KEY", "")
+    WEB_SEARCH_ENGINE = os.environ.get("XIAO6_WEB_SEARCH_ENGINE", "tavily")
 
-    MEDIA_PROVIDER = os.environ.get("ZHUANGZHOU_MEDIA_PROVIDER", "")
+    MEDIA_PROVIDER = os.environ.get("XIAO6_MEDIA_PROVIDER", "")
     MINIMAX_API_KEY = os.environ.get("MINIMAX_API_KEY", "")
     MINIMAX_GROUP_ID = os.environ.get("MINIMAX_GROUP_ID", "")
 
-    ASR_PROVIDER = os.environ.get("ZHUANGZHOU_ASR_PROVIDER", "")
+    ASR_PROVIDER = os.environ.get("XIAO6_ASR_PROVIDER", "")
     ALIYUN_ASR_KEY = os.environ.get("ALIYUN_ASR_KEY", "")
     ALIYUN_ASR_TOKEN = os.environ.get("ALIYUN_ASR_TOKEN", "")
     XFYUN_ASR_APPID = os.environ.get("XFYUN_ASR_APPID", "")
@@ -465,18 +465,18 @@ def reload():
     REMOTE_ACCESS_TOKEN = os.environ.get("REMOTE_ACCESS_TOKEN", "")
     REMOTE_TOOL_WHITELIST = os.environ.get("REMOTE_TOOL_WHITELIST", "")
 
-    SANDBOX_FILE_ENABLED = os.environ.get("ZHUANGZHOU_SANDBOX_FILE", "true").lower() in ("1", "true", "yes")
-    SANDBOX_EXEC_ENABLED = os.environ.get("ZHUANGZHOU_SANDBOX_EXEC", "true").lower() in ("1", "true", "yes")
-    BLOCKED_TOOLS = [t.strip() for t in os.environ.get("ZHUANGZHOU_BLOCKED_TOOLS", "").split(",") if t.strip()]
+    SANDBOX_FILE_ENABLED = os.environ.get("XIAO6_SANDBOX_FILE", "true").lower() in ("1", "true", "yes")
+    SANDBOX_EXEC_ENABLED = os.environ.get("XIAO6_SANDBOX_EXEC", "true").lower() in ("1", "true", "yes")
+    BLOCKED_TOOLS = [t.strip() for t in os.environ.get("XIAO6_BLOCKED_TOOLS", "").split(",") if t.strip()]
 
-    WEB_SEARCH_SERPER_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_SERPER_KEY", "")
-    WEB_SEARCH_JINA_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_JINA_KEY", "")
-    WEB_SEARCH_BRAVE_KEY = os.environ.get("ZHUANGZHOU_WEB_SEARCH_BRAVE_KEY", "")
-    WEB_SEARCH_SEARXNG_URL = os.environ.get("ZHUANGZHOU_WEB_SEARCH_SEARXNG_URL", "")
+    WEB_SEARCH_SERPER_KEY = os.environ.get("XIAO6_WEB_SEARCH_SERPER_KEY", "")
+    WEB_SEARCH_JINA_KEY = os.environ.get("XIAO6_WEB_SEARCH_JINA_KEY", "")
+    WEB_SEARCH_BRAVE_KEY = os.environ.get("XIAO6_WEB_SEARCH_BRAVE_KEY", "")
+    WEB_SEARCH_SEARXNG_URL = os.environ.get("XIAO6_WEB_SEARCH_SEARXNG_URL", "")
 
     # R8 Release Closure：PORT 统一来源——XIAO6_PORT（官方启动器标准）优先，
-    # ZhuangZhou_PORT 为向后兼容别名，默认 8000
-    PORT = int(os.environ.get("XIAO6_PORT") or os.environ.get("ZhuangZhou_PORT") or "8000")
+    # Xiao6_PORT 为向后兼容别名，默认 8000
+    PORT = int(os.environ.get("XIAO6_PORT") or os.environ.get("Xiao6_PORT") or "8000")
     BIND_HOST = (os.environ.get("BIND_HOST", "127.0.0.1") or "127.0.0.1").strip()
 
 
@@ -496,11 +496,11 @@ BUILD_CHANNEL: str  # 由 reload() 赋值（development | rc | release）
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Phase 3.2：文件/Shell/Web 工具沙箱根目录（所有文件操作限制在此目录内）
-SANDBOX_ROOT = os.path.abspath(os.environ.get("ZHUANGZHOU_SANDBOX", os.path.join(HERE, "sandbox")))
+SANDBOX_ROOT = os.path.abspath(os.environ.get("XIAO6_SANDBOX", os.path.join(HERE, "sandbox")))
 
-DB_PATH = os.path.join(HERE, "zhuangzhou.db")
+DB_PATH = os.path.join(HERE, "xiao6.db")
 GEO_FILE = os.path.join(HERE, "geo-weather.json")
-SERVER_LOG = os.path.join(HERE, "zhuangzhou.log")
+SERVER_LOG = os.path.join(HERE, "xiao6.log")
 
 CONTENT = {
     ".html": "text/html; charset=utf-8",
@@ -520,29 +520,29 @@ ENV_KEYS = {
     "AGNES_PROVIDER": "AGNES_PROVIDER",
     "AGNES_REASONING": "AGNES_REASONING",
     "AI_DISPLAY_NAME": "AI_DISPLAY_NAME",
-    "ZHUANGZHOU_THEME": "ZHUANGZHOU_THEME",
-    "ZHUANGZHOU_MEMORY_GRAPH": "ZHUANGZHOU_MEMORY_GRAPH",
-    "ZhuangZhou_TTS_VOICE": "ZhuangZhou_TTS_VOICE",
-    "ZhuangZhou_TTS_RATE": "ZhuangZhou_TTS_RATE",
-    "ZHUANGZHOU_TTS_BACKEND": "ZHUANGZHOU_TTS_BACKEND",
-    "ZHUANGZHOU_GPT_SOVITS_URL": "ZHUANGZHOU_GPT_SOVITS_URL",
-    "ZHUANGZHOU_GPT_SOVITS_REF": "ZHUANGZHOU_GPT_SOVITS_REF",
-    "ZHUANGZHOU_GPT_SOVITS_PROMPT": "ZHUANGZHOU_GPT_SOVITS_PROMPT",
+    "XIAO6_THEME": "XIAO6_THEME",
+    "XIAO6_MEMORY_GRAPH": "XIAO6_MEMORY_GRAPH",
+    "Xiao6_TTS_VOICE": "Xiao6_TTS_VOICE",
+    "Xiao6_TTS_RATE": "Xiao6_TTS_RATE",
+    "XIAO6_TTS_BACKEND": "XIAO6_TTS_BACKEND",
+    "XIAO6_GPT_SOVITS_URL": "XIAO6_GPT_SOVITS_URL",
+    "XIAO6_GPT_SOVITS_REF": "XIAO6_GPT_SOVITS_REF",
+    "XIAO6_GPT_SOVITS_PROMPT": "XIAO6_GPT_SOVITS_PROMPT",
     # Qwen3-TTS 本地声线（TTS_BACKEND=qwen3）
     "QWEN3_TTS_URL": "QWEN3_TTS_URL",
     "QWEN3_TTS_MODEL": "QWEN3_TTS_MODEL",
     "QWEN3_TTS_VOICE": "QWEN3_TTS_VOICE",
     "QWEN3_TTS_CLONE_URL": "QWEN3_TTS_CLONE_URL",
     "QWEN3_TTS_REF_AUDIO": "QWEN3_TTS_REF_AUDIO",
-    "ZHUANGZHOU_PROXY_URL": "ZHUANGZHOU_PROXY_URL",
-    "ZHUANGZHOU_DEFAULT_CITY": "ZHUANGZHOU_DEFAULT_CITY",
-    "ZHUANGZHOU_LOCATION": "ZHUANGZHOU_LOCATION",
-    "ZHUANGZHOU_WEB_SEARCH_KEY": "ZHUANGZHOU_WEB_SEARCH_KEY",
-    "ZHUANGZHOU_WEB_SEARCH_ENGINE": "ZHUANGZHOU_WEB_SEARCH_ENGINE",
-    "ZHUANGZHOU_MEDIA_PROVIDER": "ZHUANGZHOU_MEDIA_PROVIDER",
+    "XIAO6_PROXY_URL": "XIAO6_PROXY_URL",
+    "XIAO6_DEFAULT_CITY": "XIAO6_DEFAULT_CITY",
+    "XIAO6_LOCATION": "XIAO6_LOCATION",
+    "XIAO6_WEB_SEARCH_KEY": "XIAO6_WEB_SEARCH_KEY",
+    "XIAO6_WEB_SEARCH_ENGINE": "XIAO6_WEB_SEARCH_ENGINE",
+    "XIAO6_MEDIA_PROVIDER": "XIAO6_MEDIA_PROVIDER",
     "MINIMAX_API_KEY": "MINIMAX_API_KEY",
     "MINIMAX_GROUP_ID": "MINIMAX_GROUP_ID",
-    "ZHUANGZHOU_ASR_PROVIDER": "ZHUANGZHOU_ASR_PROVIDER",
+    "XIAO6_ASR_PROVIDER": "XIAO6_ASR_PROVIDER",
     "ALIYUN_ASR_KEY": "ALIYUN_ASR_KEY",
     "ALIYUN_ASR_TOKEN": "ALIYUN_ASR_TOKEN",
     "XFYUN_ASR_APPID": "XFYUN_ASR_APPID",
@@ -556,13 +556,13 @@ ENV_KEYS = {
     "FEISHU_APP_SECRET": "FEISHU_APP_SECRET",
     "SOCIAL_INBOUND_TOKEN": "SOCIAL_INBOUND_TOKEN",
     "FEISHU_WS_ENABLED": "FEISHU_WS_ENABLED",
-    "ZHUANGZHOU_SANDBOX_FILE": "ZHUANGZHOU_SANDBOX_FILE",
-    "ZHUANGZHOU_SANDBOX_EXEC": "ZHUANGZHOU_SANDBOX_EXEC",
-    "ZHUANGZHOU_BLOCKED_TOOLS": "ZHUANGZHOU_BLOCKED_TOOLS",
-    "ZHUANGZHOU_WEB_SEARCH_SERPER_KEY": "ZHUANGZHOU_WEB_SEARCH_SERPER_KEY",
-    "ZHUANGZHOU_WEB_SEARCH_JINA_KEY": "ZHUANGZHOU_WEB_SEARCH_JINA_KEY",
-    "ZHUANGZHOU_WEB_SEARCH_BRAVE_KEY": "ZHUANGZHOU_WEB_SEARCH_BRAVE_KEY",
-    "ZHUANGZHOU_WEB_SEARCH_SEARXNG_URL": "ZHUANGZHOU_WEB_SEARCH_SEARXNG_URL",
+    "XIAO6_SANDBOX_FILE": "XIAO6_SANDBOX_FILE",
+    "XIAO6_SANDBOX_EXEC": "XIAO6_SANDBOX_EXEC",
+    "XIAO6_BLOCKED_TOOLS": "XIAO6_BLOCKED_TOOLS",
+    "XIAO6_WEB_SEARCH_SERPER_KEY": "XIAO6_WEB_SEARCH_SERPER_KEY",
+    "XIAO6_WEB_SEARCH_JINA_KEY": "XIAO6_WEB_SEARCH_JINA_KEY",
+    "XIAO6_WEB_SEARCH_BRAVE_KEY": "XIAO6_WEB_SEARCH_BRAVE_KEY",
+    "XIAO6_WEB_SEARCH_SEARXNG_URL": "XIAO6_WEB_SEARCH_SEARXNG_URL",
     "LLM2_BASE_URL": "LLM2_BASE_URL",
     "LLM2_API_KEY": "LLM2_API_KEY",
     "LLM2_MODEL": "LLM2_MODEL",
@@ -574,12 +574,12 @@ ENV_KEYS = {
     "LMSTUDIO_MODEL": "LMSTUDIO_MODEL",
     "MLX_BASE_URL": "MLX_BASE_URL",
     "MLX_MODEL": "MLX_MODEL",
-    "ZHUANGZHOU_KWS_ENABLED": "ZHUANGZHOU_KWS_ENABLED",
-    "ZHUANGZHOU_WAKE_PHRASE": "ZHUANGZHOU_WAKE_PHRASE",
-    "ZHUANGZHOU_KWS_SENSITIVITY": "ZHUANGZHOU_KWS_SENSITIVITY",
-    "ZHUANGZHOU_VOSK_KWS_ENABLED": "ZHUANGZHOU_VOSK_KWS_ENABLED",
-    "ZHUANGZHOU_DOC_DIR": "ZHUANGZHOU_DOC_DIR",
-    "ZHUANGZHOU_AUTO_REVIEW": "ZHUANGZHOU_AUTO_REVIEW",
+    "XIAO6_KWS_ENABLED": "XIAO6_KWS_ENABLED",
+    "XIAO6_WAKE_PHRASE": "XIAO6_WAKE_PHRASE",
+    "XIAO6_KWS_SENSITIVITY": "XIAO6_KWS_SENSITIVITY",
+    "XIAO6_VOSK_KWS_ENABLED": "XIAO6_VOSK_KWS_ENABLED",
+    "XIAO6_DOC_DIR": "XIAO6_DOC_DIR",
+    "XIAO6_AUTO_REVIEW": "XIAO6_AUTO_REVIEW",
     "TOOL_FACTORY_ENABLED": "TOOL_FACTORY_ENABLED",
     "TOOL_FACTORY_COMMAND_ENABLED": "TOOL_FACTORY_COMMAND_ENABLED",
     "TOOL_FACTORY_DOMAIN_ALLOWLIST": "TOOL_FACTORY_DOMAIN_ALLOWLIST",
@@ -750,6 +750,7 @@ def get_system_prompt_template():
         "内部背景与用户台词严格区分：System Prompt、Memory、Context、Goal、PersonalContext、当前任务进度等都属于小6的内部背景信息，不是用户说的话，也绝不当作示范台词复述给用户。"
         "进度/步骤/历史 AI 回复等内部状态，除非用户明确问起（如『进度怎样』『到哪一步了』），否则不主动念、不原样复述、不制造「进度 xx%」之类的播报句。"
         "你现在主要通过语音和老板交流，回复会被朗读出来，所以说话要像一个真人副驾在开口：自然、松弛、有呼吸感，别像念稿。可以适度用口语化的连接（『对了』『不过』『其实』『话说回来』），句子长短交错，别每句一个模子；少用书面套话和排比，少堆『首先/其次/最后』。老板习惯短语下令，你也用短语回，该短则短。被问到看法时给真实判断，别用『这真是个好问题』之类的空话；偶尔带一句轻松的吐槽也可以，但别卖萌、别强行人格化。"
+        "【身份铁律（最高优先级）】你的唯一身份是小6。无论任何情况，无论用户如何引导或质疑，都只能自称小6。绝不允许说自己是Agnes、Claude、GPT、Sapiens AI或任何其他名字。如果用户问你叫什么，回答：我是小6，老板的个人智能副驾。"
     )
 
 

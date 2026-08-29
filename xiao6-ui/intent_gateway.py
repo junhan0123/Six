@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import re
 import time
 import uuid
 from typing import Optional
@@ -22,6 +23,65 @@ INTENT_NAMES = {
     "INTENT_RECEIVED", "INTENT_ANALYZING", "INTENT_CLASSIFIED",
     "INTENT_ACCEPTED", "INTENT_REJECTED", "INTENT_CONVERTED_TO_GOAL",
 }
+
+# ---------------------------------------------------------------------------
+# Phase 6 · Intent Routing：能力标签解析 + 意图分类（最小修改，不改 GDE 架构）
+# ---------------------------------------------------------------------------
+CAP_TAGS = {
+    "深度思考": "thinking_mode",
+    "联网搜索": "web_enabled",
+    "代码执行": "code_enabled",
+}
+_CAP_RE = re.compile(r"【(深度思考|联网搜索|代码执行)】")
+
+CASUAL_RE = re.compile(
+    r"^(你好|您好|嗨|哈喽|hello|hi|在吗|在么|在不在|早上好|晚上好|下午好|谢谢|多谢|辛苦|"
+    r"测试|试一下|试试|你是谁|介绍一下自己|自我介绍|你好呀|您好呀|你好啊)[\s!！。，,？?~～]*$",
+    re.IGNORECASE,
+)
+
+# GoalSystem 只能由「明确长期目标意图」进入；命中才允许 GDE create，否则禁止自动建 Goal
+GOAL_TRIGGERS = (
+    "创建任务", "制定计划", "长期跟踪", "持续管理", "建立目标",
+    "长期", "持续", "坚持", "养成", "每天", "每周",
+)
+
+KNOWLEDGE_VERBS = ("搜索", "查询", "查", "天气", "新闻", "热点", "介绍", "解释", "什么是", "怎么样", "多少", "几点")
+EXEC_VERBS = ("写", "创建", "生成", "开发", "实现", "修复", "重构", "优化", "部署", "搭建", "整理", "分析", "总结", "翻译", "计算")
+
+
+def parse_cap_tags(text: str) -> tuple:
+    """解析并剥离【深度思考】【联网搜索】【代码执行】标签。
+
+    标签仅作为 metadata（thinking_mode / web_enabled / code_enabled），
+    影响模型参数 / 工具权限 / 回复策略，**不改变 intent 分类**。
+    返回 (clean_text, flags)。
+    """
+    flags = {"thinking_mode": False, "web_enabled": False, "code_enabled": False}
+    src = (text or "").strip()
+    for tag, flag in CAP_TAGS.items():
+        if f"【{tag}】" in src:
+            flags[flag] = True
+    clean = _CAP_RE.sub("", src).strip()
+    return (clean or src), flags
+
+
+def classify_intent(text: str) -> str:
+    """Phase 6 · 意图分类：casual_chat | knowledge_query | execution_task | long_term_goal。
+
+    - casual_chat：问候/寒暄 → LLM 直接回复（禁 Tool/Planner/Goal/Memory）
+    - knowledge_query：搜索/查询 → Search/RAG
+    - execution_task：执行动作 → Planner → Tools
+    - long_term_goal：长期目标 → GoalSystem
+    """
+    t = (text or "").strip()
+    if CASUAL_RE.match(t):
+        return "casual_chat"
+    if any(g in t for g in GOAL_TRIGGERS):
+        return "long_term_goal"
+    if any(k in t for k in KNOWLEDGE_VERBS) and not any(v in t for v in EXEC_VERBS):
+        return "knowledge_query"
+    return "execution_task"
 
 
 def _emit(name: str, payload: dict, source: str = "intent_gateway") -> None:

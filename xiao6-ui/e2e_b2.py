@@ -30,7 +30,7 @@ def chat(text, session="s1"):
             obj = json.loads(payload)
         except Exception:
             continue
-        if obj.get("zhuangzhou_event"):
+        if obj.get("xiao6_event"):
             events.append(obj)
         elif obj.get("choices"):
             d = obj["choices"][0].get("delta", {}).get("content", "")
@@ -48,12 +48,12 @@ def check(name, cond, extra=""):
     print(("PASS " if cond else "FAIL ") + name + ("  " + extra if extra else ""))
 
 
-print("=== ZhuangZhou B2 长期记忆 端到端测试 ===")
+print("=== Xiao6 B2 长期记忆 端到端测试 ===")
 t0 = time.time()
 
 # 1) 记住称呼
 ev, rep = chat("叫我老板")
-tool = next((e for e in ev if e.get("zhuangzhou_event") == "tool_end"), None)
+tool = next((e for e in ev if e.get("xiao6_event") == "tool_end"), None)
 check("profile_set(称呼) 触发", tool and tool.get("tool") == "profile_set", "reply=" + rep[:40].replace("\n", " "))
 mem = get_memory()
 prof = {p["key"]: p["value"] for p in mem.get("profile", [])}
@@ -61,7 +61,7 @@ check("记忆画像含 称呼=老板", prof.get("称呼") == "老板", "profile=
 
 # 2) 记住偏好
 ev, rep = chat("我喜欢用一句话回答，别啰嗦")
-tool = next((e for e in ev if e.get("zhuangzhou_event") == "tool_end"), None)
+tool = next((e for e in ev if e.get("xiao6_event") == "tool_end"), None)
 check(
     "profile_set(偏好) 触发",
     tool and tool.get("tool") == "profile_get" or (tool and tool.get("tool") == "profile_set"),
