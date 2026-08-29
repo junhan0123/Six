@@ -82,6 +82,8 @@
     var title = state.CORE_TEXT[st] || '小6在线';
     var sub;
     var mode = 'idle';
+    var textEl = $('nowText');
+    var dot = bar.querySelector('.x6-nowbar-dot');
 
     var curAction = state.derive.currentAction();
     if (curAction) {
@@ -95,16 +97,16 @@
     }
 
     if (pendingApprovalCount() > 0) {
-      stateMode = 'waiting';
+      mode = 'waiting';
       sub = '等待你的确认';
     } else if (state.busy) {
-      stateMode = 'busy';
+      mode = 'busy';
       sub = state.busyDetail || (sub || '正在处理你的指令…');
     } else if (st === 'ERROR' || st === 'FAILED') {
-      stateMode = 'error';
+      mode = 'error';
       sub = '执行失败';
     } else if (st === 'COMPLETED' || st === 'STOPPED') {
-      stateMode = 'done';
+      mode = 'done';
       sub = '任务完成';
     } else {
       var active = state.snap.goals.filter(function (g) { return String(g.status || '').toLowerCase() === 'active'; });
@@ -112,16 +114,16 @@
         var g = active[0];
         var prog = Number(g.progress || 0);
         sub = (g.title || ('目标 #' + g.id)) + ' · ' + prog + '%';
-        if (st.match(/EXECUTING|RUNNING|THINKING|PLANNING/)) stateMode = 'busy';
+        if (st.match(/EXECUTING|RUNNING|THINKING|PLANNING/)) mode = 'busy';
       } else {
         sub = '没有正在进行的工作';
       }
     }
 
-    bar.dataset.state = stateMode;
+    bar.dataset.state = mode;
     textEl.textContent = title + (sub ? ' · ' + sub : '');
     if (dot) {
-      dot.style.background = stateMode === 'busy' ? 'var(--x6-brand)' : stateMode === 'waiting' ? '#f59e0b' : stateMode === 'error' ? 'var(--x6-voice)' : '#22c55e';
+      dot.style.background = mode === 'busy' ? 'var(--x6-brand)' : mode === 'waiting' ? '#f59e0b' : mode === 'error' ? 'var(--x6-voice)' : '#22c55e';
     }
 
     // Drawer trigger: show when running tool or approval pending
