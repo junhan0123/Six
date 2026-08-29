@@ -1,5 +1,5 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · workspace.css — Conversation Timeline 组件细节（Phase 2）
+   Xiao6 UI-R1 · workspace.css — Conversation Timeline 组件细节（Phase 2 + R1-C）
    迁移自 xiao6-workspace.css：typed ChatNode / tool·approval·result /
    file chips / WS·Results·Agent
    保持所有 xiao6-* class 名
@@ -129,3 +129,30 @@
 .risk-tag.risk-safe { color: var(--xiao6-success); background: var(--xiao6-success-soft); }
 .risk-tag.risk-confirm { color: var(--xiao6-warning); background: var(--xiao6-warning-soft); }
 .risk-tag.risk-block { color: var(--xiao6-danger); background: var(--xiao6-danger-soft); }
+
+/* ═══════════ Timeline 辅助元素 ═══════════ */
+/* 详情展开按钮 */
+.xiao6-tl-toggle {
+  display: block; margin-top: 6px; padding: 4px 10px;
+  border: none; background: none; color: var(--xiao6-text-muted);
+  font-size: 11.5px; cursor: pointer; text-decoration: underline;
+}
+.xiao6-tl-toggle:hover { color: var(--xiao6-accent); }
+/* 详情折叠区 */
+.xiao6-tl-detail { margin-top: 6px; padding: 8px 10px; background: var(--xiao6-surface-elevated); border-radius: 6px; }
+.xiao6-tl-kv { display: flex; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.xiao6-tl-kv .k { color: var(--xiao6-text-faint); min-width: 32px; flex: none; }
+.xiao6-tl-kv pre { margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--xiao6-text-muted); font-family: var(--xiao6-font-mono); font-size: 11.5px; }
+/* 状态徽章 */
+.xiao6-st { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--xiao6-surface-elevated); color: var(--xiao6-text-muted); margin-right: 6px; }
+.xiao6-st i { font-style: normal; }
+/* 错误提示 */
+.xiao6-tl-err { color: var(--xiao6-danger); font-size: 12px; margin-top: 4px; }
+/* 错误卡片 */
+.xiao6-tl-errcard { border: 1px solid rgba(248,113,113,0.3); border-left: 3px solid var(--xiao6-danger); background: var(--xiao6-danger-soft); border-radius: var(--xiao6-radius-sm); padding: 10px 12px; }
+/* 子文本 */
+.xiao6-tl-sub { font-size: 12px; color: var(--xiao6-text-muted); margin-left: 6px; font-family: var(--xiao6-font); font-weight: 400; }
+/* 元信息行 */
+.xiao6-tl-meta { font-size: 12px; color: var(--xiao6-text-muted); margin-top: 3px; }
+/* 目标卡片 */
+.xiao6-tl-card { border: 1px solid var(--xiao6-border); border-radius: var(--xiao6-radius-sm); padding: 10px 12px; background: var(--xiao6-surface); }

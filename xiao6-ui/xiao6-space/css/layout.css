@@ -217,6 +217,47 @@
 /* 空态 */
 .xiao6-empty { color: var(--xiao6-text-faint); font-size: 13px; padding: var(--xiao6-spacing-5); }
 
+/* 空态 Hero */
+.xiao6-empty-hero {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; text-align: center; gap: 12px;
+}
+.xiao6-empty-orb {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--xiao6-accent), var(--xiao6-accent-deep) 70%);
+  box-shadow: 0 0 24px -4px rgba(34,211,238,0.5);
+  animation: xiao6Pulse 2s ease-in-out infinite;
+}
+.xiao6-empty-title { font-size: 22px; font-weight: 650; letter-spacing: 0.5px; }
+.xiao6-empty-sub { font-size: 14px; color: var(--xiao6-text-muted); margin-top: -4px; }
+
+/* 快捷建议 */
+.xiao6-suggestions {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  padding: 12px var(--xiao6-spacing-6) var(--xiao6-spacing-4);
+  max-width: 980px; margin: 0 auto;
+}
+.xiao6-sug {
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--xiao6-border); background: var(--xiao6-surface);
+  color: var(--xiao6-text-muted); font-size: 12.5px; cursor: pointer;
+  transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease),
+              color var(--xiao6-dur-fast) var(--xiao6-ease),
+              background var(--xiao6-dur-fast) var(--xiao6-ease);
+}
+.xiao6-sug:hover {
+  color: var(--xiao6-accent); border-color: rgba(34,211,238,0.4);
+  background: var(--xiao6-accent-soft);
+}
+
+/* 阶段分隔标签 */
+.xiao6-phase-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--xiao6-text-faint); padding: 4px 0 2px;
+  border-left: 2px solid var(--xiao6-border-strong);
+  margin: 4px 0 2px;
+}
+
 /* ═══════════ RIGHT INSPECTOR ═══════════ */
 .xiao6-inspector { background: var(--xiao6-bg-2); border-left: 1px solid var(--xiao6-border); display: flex; flex-direction: column; overflow: hidden; }
 .xiao6-insp-head {
@@ -254,9 +295,6 @@
   .xiao6-inspector { display: none; }
   .xiao6-sidebar-label, .xiao6-nav-btn span, .xiao6-nav-badge, .xiao6-sidebar-brand .xiao6-brand { display: none; }
   .xiao6-nav-btn { justify-content: center; padding: 9px 0; }
-}
-@media (max-width: 900px) {
-  .xiao6-hist { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 720px) {
   .xiao6-shell { grid-template-columns: 0 1fr 0; }

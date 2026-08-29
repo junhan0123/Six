@@ -276,18 +276,39 @@
     rec.ver = n._ver || 0;
   }
 
-  var EMPTY_HTML = '<div class="xiao6-tl-empty">还没有活动 · 下达一个任务，这里会实时显示小6正在做什么</div>';
+  var EMPTY_HTML = '<div class="xiao6-empty-hero"><div class="xiao6-empty-orb"></div><div class="xiao6-empty-title">小6</div><div class="xiao6-empty-sub">今天想让我做什么？</div></div>';
   function renderTimeline() {
     var list = $('chatList'); if (!list) return;
     var tl = state.timeline;
+    var sugg = $('suggestions');
     if (!tl.length) {
-      if (list.dataset.empty !== '1') { list.innerHTML = EMPTY_HTML; list.dataset.empty = '1'; domById = Object.create(null); }
+      if (list.dataset.empty !== '1') {
+        list.innerHTML = EMPTY_HTML;
+        list.dataset.empty = '1';
+        domById = Object.create(null);
+      }
+      if (sugg) sugg.hidden = false;
       return;
     }
-    if (list.dataset.empty === '1') { list.innerHTML = ''; list.dataset.empty = '0'; domById = Object.create(null); }
+    if (list.dataset.empty === '1') {
+      list.innerHTML = '';
+      list.dataset.empty = '0';
+      domById = Object.create(null);
+    }
+    if (sugg) sugg.hidden = true;
     var atBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 100;
+    // 插入阶段分隔符（不持久化到 timeline，仅渲染时计算）
+    var phaseMarker = null;
     for (var i = 0; i < tl.length; i++) {
       var n = tl[i];
+      // 阶段标记：在 goal/task 节点前插入阶段标签
+      if ((n.type === 'goal' || n.type === 'task') && phaseMarker !== n.type) {
+        phaseMarker = n.type;
+        var plabel = n.type === 'goal' ? 'PLAN' : 'EXECUTE';
+        var pe = el('div', 'xiao6-phase-label');
+        pe.textContent = plabel;
+        list.appendChild(pe);
+      }
       var rec = domById[n.id];
       if (!rec) {
         rec = buildNodeDom(n);
@@ -662,6 +683,15 @@
     });
     var ci = $('cmdInput');
     if (ci) ci.addEventListener('input', function (e) { if (window.Xiao6.palette) window.Xiao6.palette.handleTrigger(e.target.value); });
+
+    // 快捷建议按钮绑定
+    var sugg = $('suggestions');
+    if (sugg) {
+      sugg.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('.xiao6-sug') : null;
+        if (btn) { var task = btn.dataset.task; if (task) { $('cmdInput').value = task; window.Xiao6.timeline.submitCmd(task); } }
+      });
+    }
 
     var jb = $('jumpbar'); if (jb) jb.hidden = false;
     if (chatList) {

@@ -102,6 +102,13 @@
       </div>
       <!-- Timeline 主体：真实事件流（user / assistant / tool / approval / intent / risk） -->
       <div class="xiao6-tl-body" id="chatList"></div>
+      <!-- 底部快捷建议（空态时显示，点击后进入真实 chat） -->
+      <div class="xiao6-suggestions" id="suggestions" hidden>
+        <button class="xiao6-sug" data-task="检查当前项目结构" type="button">检查项目结构</button>
+        <button class="xiao6-sug" data-task="整理桌面文件" type="button">整理桌面</button>
+        <button class="xiao6-sug" data-task="查一下今天的天气" type="button">查天气</button>
+        <button class="xiao6-sug" data-task="搜索最近的 AI 新闻" type="button">搜新闻</button>
+      </div>
       <!-- 右侧消息跳转条（minimap / scroll-spy） -->
       <div class="xiao6-jumpbar" id="jumpbar" hidden>
         <div class="xiao6-jump-track" id="jumpTrack"></div>
@@ -157,7 +164,7 @@
       <div class="xiao6-trigger-hint" id="triggerHint" hidden></div>
       <form class="xiao6-cmd-form" id="cmdForm" autocomplete="off">
         <span class="xiao6-input-prefix">›</span>
-        <input class="xiao6-cmd-input" id="cmdInput" type="text" placeholder="对小6说点什么，或输入 / 唤起命令…" autocomplete="off" spellcheck="false" aria-label="指令输入" />
+        <input class="xiao6-cmd-input" id="cmdInput" type="text" placeholder="给小6一个任务……" autocomplete="off" spellcheck="false" aria-label="指令输入" />
         <button class="xiao6-send" type="submit" aria-label="执行" id="sendBtn">执行</button>
       </form>
       <div class="xiao6-composer-modes">

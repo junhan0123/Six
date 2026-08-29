@@ -47,22 +47,59 @@
 
     var html = '';
     var title = $('ctxTitle'); if (title) title.textContent = '概览';
-    // 状态
-    html += ctxCard('运行时', stateDotHtml(st, state.CORE_TEXT[st] || '在线待命'));
-    // 当前 Goal
-    var cur = state.snap.agent.current_goal;
-    var activeGoals = state.snap.goals.filter(function (g) { return String(g.status || '').toLowerCase() === 'active'; });
-    var goalTxt = cur && cur.title ? ('#' + (cur.id || '') + ' ' + cur.title)
-      : (activeGoals.length ? activeGoals.slice(0, 3).map(function (g) { return g.title || ('目标 #' + g.id); }).join(' · ') : '无进行中的目标');
-    html += ctxCard('当前 Goal', ctxItem(goalTxt));
-    // 任务状态
-    var open = state.snap.tasks.filter(isOpen).slice(0, 6);
+
+    // 当前状态（最高优先级）
+    var curAction = state.derive.currentAction();
+    var curGoal = state.derive.currentGoal();
+    var curTask = state.derive.currentTask();
+
+    // 状态卡片
+    html += ctxCard('Agent 状态', stateDotHtml(st, state.CORE_TEXT[st] || '在线待命'));
+
+    // 当前任务
+    if (curAction) {
+      var actionHtml = '';
+      if (curAction.kind === 'tool') {
+        actionHtml = '正在执行：' + esc(curAction.label);
+      } else if (curAction.kind === 'task') {
+        actionHtml = '正在分析：' + esc(curAction.label);
+      } else if (curAction.kind === 'goal') {
+        actionHtml = '正在规划：' + esc(curAction.label);
+      }
+      html += ctxCard('当前动作', ctxItem(actionHtml));
+    }
+
+    // 当前目标
+    if (curGoal) {
+      var prog = Number(curGoal.progress || 0);
+      html += ctxCard('当前目标',
+        ctxItem((curGoal.title || ('目标 #' + curGoal.id))) +
+        '<div style="margin-top:6px"><div class="xiao6-prog"><i style="width:' + Math.max(0, Math.min(100, prog)) + '%"></i></div><div style="font-size:11px;color:var(--xiao6-text-faint);margin-top:2px">进度 ' + prog + '%</div></div>'
+      );
+    }
+
+    // 当前任务列表
+    var open = state.snap.tasks.filter(isOpen).slice(0, 4);
     var running = Number((state.snap.agent || {}).running || 0);
-    html += ctxCard('任务状态', open.length ? open.map(function (t) { return ctxItem(t.title || '任务'); }).join('') : (running ? ctxItem('小6核心执行中（' + running + ' 项）') : '<span class="xiao6-empty">无</span>'));
-    // 记忆洞察（Phase 9-A · 最近记住 + 来源 + 时间 + 点击进入 Memory 视图）
-    html += memoryInsightCard();
-    // 小6主动观察（Phase 9-B · 目标/任务/提醒，仅展示后端已有数据）
-    html += proactiveCard();
+    var taskHtml = '';
+    if (open.length) {
+      taskHtml = open.map(function (t) { return ctxItem((t.title || '任务') + ' · ' + (t.status || '')); }).join('');
+    } else if (running) {
+      taskHtml = ctxItem('小6核心执行中（' + running + ' 项）');
+    } else {
+      taskHtml = '<span class="xiao6-empty">无</span>';
+    }
+    html += ctxCard('任务列表', taskHtml);
+
+    // 审批状态
+    var pendingApprovals = state.derive.pendingApprovals();
+    if (pendingApprovals.length) {
+      html += ctxCard('待确认',
+        '<div class="xiao6-ctx-state"><span class="xiao6-statedot warning"><span class="sd"></span></span><span>' +
+        pendingApprovals.length + ' 项操作等待确认</span></div>'
+      );
+    }
+
     // Tools
     var tools = (h.tools || []);
     html += ctxCard('Tools', tools.length ? ctxItem(tools.length + ' 项可用 · ' + tools.slice(0, 6).join(' · ')) : '<span class="xiao6-empty">无</span>');
