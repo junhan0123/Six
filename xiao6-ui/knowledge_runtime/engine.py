@@ -175,8 +175,10 @@ class KnowledgeRuntime:
             "links": [t for t, _ in (doc.wikilinks or [])],
             "domain": doc.domain,
             "source": doc.source,
-            "updated": doc.updated,
-            "created": doc.created,
+            # frontmatter 的 created/updated 经 PyYAML 可能解析为 datetime.date，
+            # 直接返回会让 /api/knowledge 的 json.dumps 抛错 → 必须规范成字符串。
+            "updated": _scalar(doc.updated),
+            "created": _scalar(doc.created),
             "parse_error": doc.parse_error,
         }
 
@@ -382,3 +384,19 @@ def _rel(path: str, root: Path) -> str:
         return str(Path(path).relative_to(root)).replace("\\", "/")
     except ValueError:
         return path
+
+
+def _scalar(value):
+    """把 frontmatter 值规范为 JSON 可序列化的标量。
+
+    PyYAML 会把 `created: 2026-08-01` 解析成 datetime.date；这类对象无法被
+    json.dumps 序列化，会让 /api/knowledge 整体退化成空列表。
+    """
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    iso = getattr(value, "isoformat", None)
+    if callable(iso):
+        return iso()
+    return str(value)
