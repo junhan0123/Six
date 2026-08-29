@@ -72,6 +72,82 @@
     }).join('') : '<span class="xiao6-empty">暂无工具数据</span>';
   }
 
+  // ───────────────────── 历史（GET /api/chat/history，只读真实会话记录）─────────────────────
+  function renderHistory() {
+    var list = $('historyList'); if (!list) return;
+    list.innerHTML = '<span class="xiao6-empty">读取中…</span>';
+    window.Xiao6.api.getJSON('/api/chat/history?limit=60').then(function (d) {
+      var sessions = (d && d.sessions) || [];
+      if (!sessions.length) { list.innerHTML = '<span class="xiao6-empty">暂无会话记录</span>'; return; }
+      // 会话按最近一轮时间倒序（后端返回顺序不保证，前端按 turns 末尾 ts 排序）
+      sessions.sort(function (a, b) {
+        var ta = (a.turns && a.turns.length ? a.turns[a.turns.length - 1].ts : '') || '';
+        var tb = (b.turns && b.turns.length ? b.turns[b.turns.length - 1].ts : '') || '';
+        return String(tb).localeCompare(String(ta));
+      });
+      list.innerHTML = sessions.slice(0, 30).map(function (s) {
+        var turns = s.turns || [];
+        var first = '';
+        for (var i = 0; i < turns.length; i++) { if (turns[i].role === 'user') { first = turns[i].content || ''; break; } }
+        var last = turns.length ? turns[turns.length - 1].ts : '';
+        return row('◷', first.slice(0, 60) || '（无用户输入）',
+          turns.length + ' 条消息 · ' + (relTime(last) || last), '', '');
+      }).join('');
+    });
+  }
+
+  // ───────────────────── 当前项目（活跃目标 + 其任务，真实数据）─────────────────────
+  // 任务归属：解析 task.note 中后端写入的「来自目标 #N 拆解」。
+  // 匹配不到即视为无归属，绝不按标题相似度猜。
+  function goalTasks(goalId) {
+    var re = new RegExp('来自目标\\s*#' + Number(goalId) + '\\b');
+    return state.snap.tasks.filter(function (t) { return re.test(String(t.note || '')); });
+  }
+  function renderCurrent() {
+    var body = $('currentBody'); if (!body) return;
+    var active = state.snap.goals.filter(function (g) { return String(g.status || '').toLowerCase() === 'active'; });
+    if (!active.length) {
+      body.innerHTML = '<span class="xiao6-empty">当前没有活跃的目标 · 让小6帮你推进一件事</span>';
+      return;
+    }
+    body.innerHTML = active.map(function (g) {
+      var prog = Number(g.progress || 0);
+      // /api/tasks 不下发 goal_id（API 契约冻结，不改后端）；改用后端真实写入的
+      // note 元数据「来自目标 #N 拆解」做归属，无法归属的任务不硬塞进任何目标。
+      var gt = goalTasks(g.id);
+      var done = gt.filter(isDone).length;
+      var html = '<div class="xiao6-cur-card">' +
+        '<div class="xiao6-cur-title">◆ #' + g.id + ' ' + esc(g.title || ('目标 #' + g.id)) + '</div>' +
+        '<div class="xiao6-cur-meta">' + esc(g.status || '') + ' · 进度 ' + prog + '%' +
+          (g.horizon ? ' · ' + esc(g.horizon) : '') + (g.due_date ? ' · 截止 ' + esc(g.due_date) : '') +
+          (gt.length ? ' · 任务 ' + done + '/' + gt.length : '') + '</div>' +
+        '<div class="xiao6-prog"><i style="width:' + Math.max(0, Math.min(100, prog)) + '%"></i></div>';
+      if (g.description) html += '<div class="xiao6-cur-meta" style="margin-top:10px">' + esc(g.description) + '</div>';
+      if (gt.length) {
+        html += '<div class="xiao6-list" style="margin-top:12px">' + gt.map(function (t) {
+          return row(isOpen(t) ? '◌' : '✓', t.title || ('任务 #' + t.id),
+            (t.total_steps ? '步骤 ' + (t.current_step || 0) + '/' + t.total_steps + ' · ' : '') + (t.status || ''),
+            isOpen(t) ? 'run' : 'done', isOpen(t) ? '进行中' : '已完成');
+        }).join('') + '</div>';
+      }
+      return html + '</div>';
+    }).join('');
+
+    // 未归属到任何活跃目标、但仍在进行中的任务（如实列出，不归入任何目标）
+    var linked = {};
+    active.forEach(function (g) { goalTasks(g.id).forEach(function (t) { linked[t.id] = 1; }); });
+    var loose = state.snap.tasks.filter(function (t) { return isOpen(t) && !linked[t.id]; });
+    if (loose.length) {
+      body.innerHTML += '<div class="xiao6-cur-card"><div class="xiao6-cur-title">进行中的任务</div>' +
+        '<div class="xiao6-cur-meta">未关联到当前活跃目标 · 共 ' + loose.length + ' 项</div>' +
+        '<div class="xiao6-list" style="margin-top:12px">' + loose.slice(0, 12).map(function (t) {
+          return row('◌', t.title || ('任务 #' + t.id),
+            (t.total_steps ? '步骤 ' + (t.current_step || 0) + '/' + t.total_steps + ' · ' : '') + (t.status || ''),
+            'run', '进行中');
+        }).join('') + '</div></div>';
+    }
+  }
+
   // ───────────────────── SETTINGS ─────────────────────
   function renderSettings() {
     var body = $('settingsBody'); if (!body) return;
@@ -160,6 +236,8 @@
   function renderView(name) {
     if (name === 'projects') renderProjects();
     else if (name === 'tasks') renderTasks();
+    else if (name === 'history') { renderHistory(); window.Xiao6.inspector.renderAgent(); window.Xiao6.timeline.renderResults(); }
+    else if (name === 'current') renderCurrent();
     else if (name === 'memory') renderMemory();
     else if (name === 'knowledge') renderKnowledge();
     else if (name === 'capabilities') renderCapabilities();
@@ -170,6 +248,7 @@
     var v = document.body.dataset.view;
     if (v === 'projects') renderProjects();
     else if (v === 'tasks') renderTasks();
+    else if (v === 'current') renderCurrent();
     else if (v === 'memory') renderMemory();
     else if (v === 'knowledge') renderKnowledge();
     else if (v === 'capabilities') renderCapabilities();
@@ -185,6 +264,8 @@
     renderView: renderView,
     renderProjects: renderProjects,
     renderTasks: renderTasks,
+    renderHistory: renderHistory,
+    renderCurrent: renderCurrent,
     renderMemory: renderMemory,
     renderKnowledge: renderKnowledge,
     renderCapabilities: renderCapabilities,

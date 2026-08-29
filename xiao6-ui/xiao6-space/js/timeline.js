@@ -2,7 +2,7 @@
    Xiao6 UI-R1 · timeline.js — Conversation Timeline 核心（Phase 2）
    迁移自 xiao6-workspace.js：StreamingMarkdown / addNode / scrollChat /
    sendChat（pump·handle·onTool·onApproval·finish 闭包链整体保留）/
-   submitCmd / switchConvTab / renderWorkspace / renderResults / jumpbar
+   submitCmd / renderWorkspace / renderResults / jumpbar
    冻结契约：POST /api/chat（body {messages,session_id}，SSE delta.content /
    tool_start / tool_end / approval / [DONE] 双形态）
    状态统一改 Xiao6.state.xxx
@@ -145,12 +145,18 @@
     opts = opts || {};
     text = String(text || '').trim();
     if (!text || state.busy) return;
+    // 能力标签（【深度思考】【联网搜索】【代码执行】）是发给后端的 metadata，
+    // 不是用户说的话 —— 时间线上必须显示用户原文，请求体仍带标签（契约不变）。
+    var displayText = text;
     var prefix = activePrefix();
     if (prefix && text.indexOf('【') !== 0) text = prefix + text;
 
-    var un = addNode('user'); un.bub.innerHTML = '<div class="xiao6-bubble-body">' + esc(text) + '</div>';
+    var un = addNode('user'); un.bub.innerHTML = '<div class="xiao6-bubble-body">' + esc(displayText) + '</div>';
 
-    state.busy = true; state.setState(state.snap.agent.state && String(state.snap.agent.state).toUpperCase() === 'IDLE' ? 'THINKING' : state.snap.agent.state);
+    state.busy = true;
+    state.busyDetail = '正在理解你的指令…';
+    state.setState(state.snap.agent.state && String(state.snap.agent.state).toUpperCase() === 'IDLE' ? 'THINKING' : state.snap.agent.state);
+    state.notify();
     var an = addNode('assistant'); an.node.classList.add('streaming');
     var meta = el('div', 'xiao6-bubble-meta'); meta.innerHTML = '<span>小6</span><span>' + fmtTime() + '</span>';
     var body = el('div', 'xiao6-bubble-body');
@@ -191,61 +197,51 @@
         function onTool(phase, tool, arg, ok) {
           if (phase === 'start') {
             state.agentLog.unshift({ kind: 'tool', t: Date.now(), tool: tool, arg: arg, ongoing: true });
+            state.busyDetail = '正在调用工具 ' + (tool || '') + '…';
             var tn = addNode('tool'); tn.bub.innerHTML = '<div class="xiao6-tool-summary">调用工具 <b>' + esc(tool || '') + '</b> …</div>';
             tn.node.dataset.toolnode = '1';
             tn.node.classList.add('tool-running');
           } else {
             state.agentLog.forEach(function (x) { if (x.tool === tool && x.ongoing) { x.ongoing = false; x.ok = ok; } });
             qsa('.xiao6-node.tool').forEach(function (n) { if (n.dataset.toolnode) { n.querySelector('.xiao6-tool-summary').innerHTML = '工具 <b>' + esc(tool || '') + '</b> ' + (ok === false ? '失败' : '完成'); n.classList.remove('tool-running'); n.classList.add('tool-done'); } });
-            window.Xiao6.agentPanel.renderAgent();
+            window.Xiao6.inspector.renderAgent();
           }
-          window.Xiao6.agentPanel.renderAgent();
+          window.Xiao6.inspector.renderAgent();
         }
         function onApproval(m) { window.Xiao6.approval.renderApprovalCard(m); }
         function finish() {
-          state.busy = false; stream.finalize(); an.node.classList.remove('streaming');
+          state.busy = false; state.busyDetail = null; stream.finalize(); an.node.classList.remove('streaming');
           state.resultLog.unshift({ t: Date.now(), text: reply });
-          renderResults(); window.Xiao6.agentPanel.renderAgent();
+          renderResults(); window.Xiao6.inspector.renderAgent();
           if (reply && state.autoSpeak) window.Xiao6.voice.speakText(reply);
           state.setState(state.snap.agent.state || 'IDLE');
+          state.notify();
           setTimeout(state.fetchSnapshot, 1200);
         }
         pump();
       })
       .catch(function (err) {
-        state.busy = false; stream.finalize(); an.node.classList.remove('streaming');
+        state.busy = false; state.busyDetail = null; stream.finalize(); an.node.classList.remove('streaming');
         an.bub.appendChild(el('div', 'xiao6-bubble-body')).innerHTML = '<span style="color:var(--xiao6-danger)">请求失败 · 请检查核心服务</span>';
-        state.setState('ERROR'); setTimeout(state.fetchSnapshot, 600);
+        state.setState('ERROR'); state.notify(); setTimeout(state.fetchSnapshot, 600);
       });
   }
 
   function submitCmd(text) {
     var view = document.body.dataset.view;
-    if (view !== 'conversation') window.Xiao6.main.switchView('conversation');
+    if (view !== 'home') window.Xiao6.main.switchView('home');
     sendChat(text);
   }
 
-  // ───────────────────── CENTER TABS（conversation / workspace / results）─────────────────────
-  function switchConvTab(tab) {
-    qsa('.xiao6-tab').forEach(function (b) { b.classList.toggle('is-active', b.dataset.tab === tab); });
-    var cv = $('convBody'); if (cv) cv.hidden = tab !== 'conversation';
-    var ws = $('wsBody'); if (ws) ws.hidden = tab !== 'workspace';
-    var rb = $('resBody'); if (rb) rb.hidden = tab !== 'results';
-    var ab = $('agentBody'); if (ab) ab.hidden = tab !== 'agent';
-    if (tab === 'workspace') renderWorkspace();
-    if (tab === 'results') renderResults();
-    if (tab === 'agent') window.Xiao6.agentPanel.renderAgent();
-  }
-  function renderWorkspace() {
-    var list = $('wsList'); if (!list) return;
+  // 进行中的任务卡片（供「当前项目」视图复用；数据源 /api/tasks）
+  function renderWorkspace(container) {
+    var list = container || $('wsList'); if (!list) return;
     var open = state.snap.tasks.filter(function (t) {
       var s = String(t.status || '').toLowerCase();
       return s !== 'done' && s !== 'completed' && s !== 'closed' && t.current_step != null && t.total_steps;
     }).slice(0, 8);
     var running = Number((state.snap.agent || {}).running || 0);
-    var we = $('wsEmpty');
-    if (!open.length && !running) { if (we) we.hidden = false; list.innerHTML = ''; return; }
-    if (we) we.hidden = true;
+    if (!open.length && !running) { list.innerHTML = '<span class="xiao6-empty">没有进行中的任务</span>'; return; }
     var html = '';
     open.forEach(function (t) { var p = t.total_steps ? Math.round(t.current_step / t.total_steps * 100) : 0;
       html += '<div class="xiao6-ws-card"><div class="ttl">⚙ ' + esc(t.title || '任务') + '</div><div class="meta">步骤 ' + t.current_step + '/' + t.total_steps + '</div><div class="xiao6-prog"><i style="width:' + p + '%"></i></div></div>'; });
@@ -300,8 +296,8 @@
 
   // ───────────────────── WIRING ─────────────────────
   function init() {
-    qsa('.xiao6-tab').forEach(function (b) { b.addEventListener('click', function () { switchConvTab(b.dataset.tab); }); });
-    qsa('.xiao6-tool').forEach(function (b) {
+    // Composer 模式开关（思考 / 联网 / 语音输入 / 语音播报）
+    qsa('.xiao6-mode').forEach(function (b) {
       b.addEventListener('click', function () {
         var t = b.dataset.tool;
         if (t === 'think') { state.toolModes.think = !state.toolModes.think; }
@@ -311,7 +307,8 @@
         b.classList.toggle('is-on', (t === 'speak' ? state.autoSpeak : state.toolModes[t]));
       });
     });
-    var speakBtn = qs('.xiao6-tool[data-tool="speak"]'); if (speakBtn) speakBtn.classList.toggle('is-on', state.autoSpeak);
+    var speakBtn = qs('.xiao6-mode[data-tool="speak"]'); if (speakBtn) speakBtn.classList.toggle('is-on', state.autoSpeak);
+    var webBtn = qs('.xiao6-mode[data-tool="web"]'); if (webBtn) webBtn.classList.toggle('is-on', !!state.toolModes.web);
 
     var cf = $('cmdForm');
     if (cf) cf.addEventListener('submit', function (e) {
@@ -341,7 +338,6 @@
     addRiskNode: addRiskNode,
     sendChat: sendChat,
     submitCmd: submitCmd,
-    switchConvTab: switchConvTab,
     renderWorkspace: renderWorkspace,
     renderResults: renderResults,
     buildJumpbar: buildJumpbar,

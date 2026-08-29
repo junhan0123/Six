@@ -24,7 +24,8 @@
     var desc = m.prompt || (m.approval && m.approval.prompt) || m.summary || ('有一项操作需要确认' + (m.tool ? '（' + m.tool + '）' : ''));
 
     var state = window.Xiao6.state;
-    state.agentLog.unshift({ kind: 'approval', t: Date.now(), text: '等待确认：' + (m.tool || '') + ' · ' + desc });
+    var entry = { kind: 'approval', t: Date.now(), ticket: ticket || '', text: '等待确认：' + (m.tool || '') + ' · ' + desc, pending: true };
+    state.agentLog.unshift(entry);
     state.notify();
 
     var cn = window.Xiao6.timeline.addNode('approval');
@@ -43,6 +44,7 @@
 
   // ───────────────────── 审批提交（query 参数冻结；truthful 判定）─────────────────────
   function postApproval(ticket, decision, card) {
+    var state = window.Xiao6.state;
     if (!ticket) { renderApprovalError(card, ticket); return; }
     fetch('/api/agent/approval?ticket=' + encodeURIComponent(ticket) + '&decision=' + decision, { method: 'POST' })
       .then(function (r) {
@@ -52,8 +54,11 @@
       })
       .then(function (res) {
         if (res.ok && res.data && res.data.ok === true) {
+          // 只有后端确认 {ok:true} 才清除 pending（truthful：不假成功）
+          state.agentLog.forEach(function (x) { if (x.kind === 'approval' && x.ticket === ticket) x.pending = false; });
           if (card) card.innerHTML = '<div>已' + (decision === 'approve' ? '批准' : '拒绝') + '</div>';
           window.Xiao6.main.toast(decision === 'approve' ? '已批准' : '已拒绝');
+          state.notify();
         } else {
           renderApprovalError(card, ticket);
         }

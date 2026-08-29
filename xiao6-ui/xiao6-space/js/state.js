@@ -58,31 +58,36 @@
   // ───────────────────── 快照拉取（11 接口 → snap → notify）─────────────────────
   function asList(v, key) { if (Array.isArray(v)) return v; if (v && Array.isArray(v[key])) return v[key]; return []; }
 
+  // 快照端点登记表（显式列出，禁止拼接）。apply 只做「真实响应 → snap」的赋值；
+  // 请求失败（null）一律保留旧值，不写占位数据。
+  var SNAPSHOT_ENDPOINTS = [
+    { url: '/api/agent/state', apply: function (d) { if (d) snap.agent = d; } },
+    { url: '/api/goals', apply: function (d) { snap.goals = asList(d, 'goals'); } },
+    { url: '/api/memories', apply: function (d) { snap.memories = asList(d, 'memories'); } },
+    { url: '/api/knowledge', apply: function (d) { if (d) snap.knowledge = d; } },
+    { url: '/api/capabilities', apply: function (d) { snap.capabilities = (d && Array.isArray(d.items)) ? d.items : asList(d, 'capabilities'); } },
+    { url: '/api/tasks', apply: function (d) { snap.tasks = asList(d, 'tasks'); } },
+    { url: '/api/health', apply: function (d) { if (d) snap.health = d; } },
+    { url: '/api/memory', apply: function (d) { if (d) snap.memory = d; } },
+    { url: '/api/briefing', apply: function (d) { if (d) snap.briefing = d; } },
+    { url: '/api/calendar/events', apply: function (d) { if (d) snap.calendar = d; } },
+    { url: '/api/notes', apply: function (d) { snap.notes = asList(d, 'notes'); } }
+  ];
+  // 逐项落地：慢端点（如 /api/briefing ~2s、知识库冷启动更久）不再拖住快端点，
+  // 首屏「小6现在正在做什么」与项目/任务列表立即有真实数据。
   function fetchSnapshot() {
-    return Promise.all([
-      api.getJSON('/api/agent/state'), api.getJSON('/api/goals'), api.getJSON('/api/memories'),
-      api.getJSON('/api/knowledge'), api.getJSON('/api/capabilities'), api.getJSON('/api/tasks'),
-      api.getJSON('/api/health'), api.getJSON('/api/memory'), api.getJSON('/api/briefing'),
-      api.getJSON('/api/calendar/events'), api.getJSON('/api/notes')
-    ]).then(function (r) {
-      snap.agent = r[0] || snap.agent;
-      snap.goals = asList(r[1], 'goals');
-      snap.memories = asList(r[2], 'memories');
-      snap.knowledge = r[3] || {};
-      snap.capabilities = (r[4] && Array.isArray(r[4].items)) ? r[4].items : asList(r[4], 'capabilities');
-      snap.tasks = asList(r[5], 'tasks');
-      snap.health = r[6] || {};
-      snap.memory = r[7] || {};
-      snap.briefing = r[8] || {};
-      snap.calendar = r[9] || {};
-      snap.notes = asList(r[10], 'notes');
-      notify();
-    });
+    return Promise.all(SNAPSHOT_ENDPOINTS.map(function (ep) {
+      return api.getJSON(ep.url).then(function (d) {
+        try { ep.apply(d); } catch (e) { console.error('[Xiao6.state] snapshot apply error', ep.url, e); }
+        notify();
+      });
+    }));
   }
 
   window.Xiao6.state = {
     snap: snap,
     busy: busy,
+    busyDetail: null,   // 「小6现在正在做什么」的当前动作描述（真实事件驱动，无默认值伪装）
     toolModes: toolModes,
     autoSpeak: autoSpeak,
     sessionId: sessionId,

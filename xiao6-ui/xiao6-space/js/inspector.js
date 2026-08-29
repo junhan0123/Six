@@ -1,9 +1,11 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · agent-panel.js — 右侧 Agent Panel + Agent 活动 + 实时事件（Phase 2）
-   迁移自 xiao6-workspace.js：renderAgent / renderContextAuto / renderContext /
-   ctxCard / ctxItem + startStream 事件处理（tool_started / tool_finished /
-   execution_* / GOAL_* / TASK_* / INTENT_* / AGENT_*）
-   使用 Xiao6.state.subscribe() 自动刷新
+   Xiao6 UI-R1 · inspector.js — 右侧 Inspector（检视器）+ Agent 活动 + 实时事件
+   由 agent-panel.js 更名而来：职责从「上下文面板」升级为「检视器」，
+   承载 5 个分区：概览 / 记忆 / 知识 / 技能 / 工具。
+   完整保留原有能力：renderAgent / renderContextAuto / renderContext / ctxCard /
+   ctxItem / 记忆洞察 / 主动观察 / 信任分析 + /api/stream 事件处理
+   （tool_started / tool_finished / execution_* / GOAL_* / TASK_* / INTENT_* / AGENT_*）
+   所有数据来自 state.snap（真实 API）与 SSE 真实事件，无任何伪造条目。
    ═════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -39,10 +41,10 @@
   function renderContextAuto() {
     var body = $('ctxBody'); if (!body) return;
     var st = String(state.snap.agent.state || 'IDLE').toUpperCase();
-    var title = $('ctxTitle'); if (title) title.textContent = 'Agent 面板';
     var h = state.snap.health || {};
 
     var html = '';
+    var title = $('ctxTitle'); if (title) title.textContent = '概览';
     // 状态
     html += ctxCard('运行时', stateDotHtml(st, state.CORE_TEXT[st] || '在线待命'));
     // 当前 Goal
@@ -68,6 +70,58 @@
     html += trustCard(state.trust);
     body.innerHTML = html;
   }
+
+  // ───────────────────── Inspector 分区调度 ─────────────────────
+  // 5 个分区：概览 / 记忆 / 知识 / 技能 / 工具。
+  // 每个分区只展示真实数据快照的前若干条，底部「查看全部」跳到对应的全量视图
+  // （视图本身仍在，功能未删除，只是不再占用一级导航）。
+  var inspTab = 'overview';
+  function asList(v, key) { if (Array.isArray(v)) return v; if (v && Array.isArray(v[key])) return v[key]; return []; }
+  function moreBtn(view) {
+    return '<button class="xiao6-insp-more" data-goto="' + view + '" type="button">查看全部 →</button>';
+  }
+  function renderInspector() {
+    var body = $('ctxBody'); if (!body) return;
+    var title = $('ctxTitle');
+    if (inspTab === 'overview') { if (title) title.textContent = '概览'; renderContextAuto(); return; }
+
+    var html = '';
+    if (inspTab === 'memory') {
+      if (title) title.textContent = '记忆';
+      var mems = state.snap.memories.slice().sort(function (a, b) { return Number(b.id) - Number(a.id); }).slice(0, 5);
+      html = mems.length
+        ? mems.map(function (m) { return ctxItem(String(m.title || m.content || '记忆').replace(/^Hotspot event:\s*/, '').slice(0, 46)); }).join('') + moreBtn('memory')
+        : '<span class="xiao6-empty">暂无记忆 · 与小6对话后自动沉淀</span>';
+    } else if (inspTab === 'knowledge') {
+      if (title) title.textContent = '知识';
+      var docs = asList(state.snap.knowledge, 'docs').slice(0, 5);
+      var total = Number((state.snap.knowledge && (state.snap.knowledge.count || (state.snap.knowledge.stats && state.snap.knowledge.stats.total))) || docs.length);
+      html = docs.length
+        ? ctxItem('共 ' + total + ' 篇') + docs.map(function (d) { return ctxItem((d.title || '文档') + (d.domain ? ' · ' + d.domain : '')); }).join('') + moreBtn('knowledge')
+        : '<span class="xiao6-empty">知识库为空</span>';
+    } else if (inspTab === 'capability') {
+      if (title) title.textContent = '技能';
+      var caps = state.snap.capabilities.slice(0, 6);
+      html = caps.length
+        ? caps.map(function (c) { return ctxItem((c.icon || '') + ' ' + (c.label || c.id)); }).join('') + moreBtn('capabilities')
+        : '<span class="xiao6-empty">暂无能力数据</span>';
+    } else if (inspTab === 'tools') {
+      if (title) title.textContent = '工具';
+      var tools = (state.snap.health && state.snap.health.tools) || [];
+      html = tools.length
+        ? ctxItem(tools.length + ' 项可用') + tools.slice(0, 6).map(function (t) { return ctxItem(t); }).join('') + moreBtn('tools')
+        : '<span class="xiao6-empty">暂无工具数据</span>';
+    }
+    body.innerHTML = html;
+  }
+  function setInspTab(tab) {
+    inspTab = tab || 'overview';
+    Array.prototype.forEach.call(document.querySelectorAll('.xiao6-insp-tab'), function (b) {
+      b.classList.toggle('is-active', b.dataset.insp === inspTab);
+    });
+    renderInspector();
+  }
+
   function renderContext(kind) {
     var body = $('ctxBody'); if (!body) return;
     var title = $('ctxTitle'); if (title) title.textContent = { context: '上下文', tasks: '任务进度', memory: '记忆', capability: '能力', result: '最新结果', approval: '待确认' }[kind] || '上下文';
@@ -221,22 +275,36 @@
 
   function init() {
     state.subscribe(function () {
-      renderContextAuto();
+      renderInspector();
       renderAgent();
     });
-    // Phase 9-A：记忆洞察条目点击 → 进入 Memory 视图
+    // 分区切换
+    var tabs = $('inspTabs');
+    if (tabs) tabs.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.xiao6-insp-tab') : null;
+      if (b) setInspTab(b.dataset.insp);
+    });
     var ctxBody = $('ctxBody');
     if (ctxBody) ctxBody.addEventListener('click', function (e) {
+      // 记忆洞察条目 / 「查看全部」→ 进入对应全量视图
+      var more = e.target.closest ? e.target.closest('.xiao6-insp-more') : null;
+      if (more && more.dataset.goto) { window.Xiao6.main.switchView(more.dataset.goto); return; }
       var t = e.target.closest ? e.target.closest('.xiao6-mem-insight') : null;
       if (t) window.Xiao6.main.switchView('memory');
     });
+    setInspTab('overview');
   }
 
-  window.Xiao6.agentPanel = {
+  var inspectorApi = {
     renderAgent: renderAgent,
     renderContext: renderContext,
     renderContextAuto: renderContextAuto,
+    renderInspector: renderInspector,
+    setInspTab: setInspTab,
     onStreamEvent: onStreamEvent,
     init: init
   };
+  window.Xiao6.inspector = inspectorApi;
+  // 兼容别名：历史调用点（timeline / 外部脚本）仍可按 agentPanel 取用
+  window.Xiao6.agentPanel = inspectorApi;
 })();

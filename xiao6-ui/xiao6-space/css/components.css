@@ -126,7 +126,7 @@
   position: absolute; top: 64px; bottom: 120px; right: 10px; width: 16px; z-index: 30;
   display: flex; justify-content: center; opacity: 0; transition: opacity .18s ease; pointer-events: none;
 }
-.xiao6-conv:hover .xiao6-jumpbar { opacity: 1; pointer-events: auto; }
+.xiao6-timeline:hover .xiao6-jumpbar { opacity: 1; pointer-events: auto; }
 .xiao6-jumpbar[hidden] { display: none; }
 .xiao6-jump-track { position: relative; width: 3px; height: 100%; background: var(--xiao6-border); border-radius: 2px; }
 .xiao6-jump-thumb {

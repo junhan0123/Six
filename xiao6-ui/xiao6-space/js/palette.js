@@ -81,19 +81,33 @@
   }
 
   // ───────────────────── COMMAND PALETTE ─────────────────────
+  // 端点登记表（禁止字符串拼接构造 /api 路径；每个命令显式声明目标）
+  var NAV_VIEWS = [
+    { view: 'home', name: '回到首页', desc: 'Agent Timeline · 小6现在正在做什么' },
+    { view: 'projects', name: '打开项目', desc: '查看目标与项目' },
+    { view: 'tasks', name: '打开任务', desc: '查看任务清单' },
+    { view: 'history', name: '打开历史', desc: '会话记录 · Agent 活动 · 执行结果' },
+    { view: 'current', name: '打开当前项目', desc: '活跃目标及其任务' },
+    { view: 'memory', name: '打开记忆', desc: '查看小6记住的内容' },
+    { view: 'knowledge', name: '打开知识', desc: '查看知识库' },
+    { view: 'capabilities', name: '打开技能', desc: '查看已登记能力' },
+    { view: 'tools', name: '打开工具', desc: '查看可用工具清单' },
+    { view: 'settings', name: '设置', desc: '偏好与系统概览' }
+  ];
   var COMMANDS = [
-    { id: 'ask', name: '问小6', desc: '直接对小6说话', group: '命令', run: function () { window.Xiao6.main.switchView('conversation'); var ci = $('cmdInput'); if (ci) ci.focus(); } },
+    { id: 'ask', name: '问小6', desc: '直接对小6说话', group: '命令', run: function () { window.Xiao6.main.switchView('home'); var ci = $('cmdInput'); if (ci) ci.focus(); } },
     { id: 'search', name: '联网搜索', desc: '搜索资料', group: '命令', run: function () { window.Xiao6.timeline.submitCmd('帮我联网搜索相关资料'); } },
-    { id: 'task', name: '运行任务', desc: '让小6完成一件事', group: '命令', run: function () { window.Xiao6.main.switchView('conversation'); var ci = $('cmdInput'); if (ci) { ci.value = '帮我完成一个任务：'; ci.focus(); } } },
+    { id: 'task', name: '运行任务', desc: '让小6完成一件事', group: '命令', run: function () { window.Xiao6.main.switchView('home'); var ci = $('cmdInput'); if (ci) { ci.value = '帮我完成一个任务：'; ci.focus(); } } },
     { id: 'goal', name: '新建目标', desc: '创建目标并交给 Agent 执行（POST /api/agent/goal）', group: '命令', run: function () { window.Xiao6.sidebar.openGoalForm(); } },
     { id: 'intent', name: '意图识别', desc: '提交意图 → GDE 决策（POST /api/agent/intent）', group: '命令', run: function () { window.Xiao6.sidebar.openIntentForm(); } },
-    { id: 'memory', name: '打开记忆', desc: '查看小6记住的内容', group: '导航', run: function () { window.Xiao6.main.switchView('memory'); } },
-    { id: 'capabilities', name: '打开能力', desc: '查看已登记能力', group: '导航', run: function () { window.Xiao6.main.switchView('capabilities'); } },
-    { id: 'projects', name: '打开项目', desc: '查看目标与项目', group: '导航', run: function () { window.Xiao6.main.switchView('projects'); } },
-    { id: 'tasks', name: '打开任务', desc: '查看任务清单', group: '导航', run: function () { window.Xiao6.main.switchView('tasks'); } },
-    { id: 'settings', name: '设置', desc: '偏好与系统概览', group: '导航', run: function () { window.Xiao6.main.switchView('settings'); } },
     { id: 'voice', name: '语音输入', desc: '用语音对小6说话', group: '命令', run: function () { window.Xiao6.voice.startVoice(); } }
   ];
+  NAV_VIEWS.forEach(function (v) {
+    COMMANDS.push({
+      id: 'nav:' + v.view, name: v.name, desc: v.desc, group: '导航',
+      run: function () { window.Xiao6.main.switchView(v.view); }
+    });
+  });
   FEATURE_REGISTRY.forEach(function (f) {
     if (f.vis === 'advanced' || f.vis === 'conditional') {
       COMMANDS.push({ id: 'feat:' + f.id, name: f.name, desc: '能力 · ' + f.id, group: '能力', feat: f.id, run: function () { openFeature(f.id); } });
