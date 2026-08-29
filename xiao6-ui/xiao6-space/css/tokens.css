@@ -1,44 +1,61 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · tokens.css — 设计令牌（迁移自 xiao6-workspace.css §5）
-   Deep Black / Graphite · Muted Teal · Soft Glass
-   Phase 1 地基：仅 :root 变量 + light theme + 基础 reset，不改任何业务样式
+   Xiao6 UI-R1 · tokens.css — Monochrome design tokens + Voice Red
+   仅允许一种强色：语音红色 (#d93636)
+   其余所有状态：灰阶表达（字体 / 图标 / 边框 / 粗细 / 动画 / 明暗）
    ═════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Surfaces ── */
-  --xiao6-bg: #07090d;
-  --xiao6-bg-2: #0a0d13;
-  --xiao6-surface: #0e1219;
-  --xiao6-surface-elevated: #131823;
-  --xiao6-surface-hover: #19202d;
-  --xiao6-glass: rgba(20, 26, 36, 0.62);
-  --xiao6-glass-strong: rgba(16, 21, 30, 0.88);
-  --xiao6-border: rgba(140, 165, 200, 0.12);
-  --xiao6-border-strong: rgba(140, 165, 200, 0.22);
+  --xiao6-bg:         #fafafa;
+  --xiao6-bg-2:       #f0f0ee;
+  --xiao6-surface:    #ffffff;
+  --xiao6-surface-elevated: #f7f7f5;
+  --xiao6-surface-hover: #eeeeec;
 
   /* ── Text ── */
-  --xiao6-text: #e6edf6;
-  --xiao6-text-muted: #8a98ad;
-  --xiao6-text-faint: #5b6678;
+  --xiao6-text:       #181818;
+  --xiao6-text-muted: #666666;
+  --xiao6-text-faint: #999999;
 
-  /* ── Accent (muted teal / cyan) ── */
-  --xiao6-accent: #22d3ee;
-  --xiao6-accent-soft: rgba(34, 211, 238, 0.14);
-  --xiao6-accent-2: #a78bfa;
-  --xiao6-accent-2-soft: rgba(167, 139, 250, 0.14);
-  --xiao6-success: #34d399;
-  --xiao6-warning: #fbbf24;
-  --xiao6-danger: #f87171;
-  --xiao6-info: #7aa2f7;
+  /* ── Border ── */
+  --xiao6-border:     #e0e0dd;
+  --xiao6-border-strong: #c8c8c4;
 
-  /* ── Radius / shadow / spacing ── */
-  --xiao6-radius: 14px;
-  --xiao6-radius-sm: 9px;
-  --xiao6-radius-lg: 20px;
-  --xiao6-shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.7);
-  --xiao6-shadow-soft: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-  --xiao6-glow: 0 0 0 1px rgba(34, 211, 238, 0.18), 0 0 28px -6px rgba(34, 211, 238, 0.22);
+  /* ── Accent (brand) — 灰阶，无彩色 ── */
+  --xiao6-accent:     #181818;
+  --xiao6-accent-2:   #555555;
+  --xiao6-on-accent:  #fafafa;
 
+  /* ── Semantic (灰阶化，非语音不使用彩色) ── */
+  /* success → 深灰（完成态，用于状态符号 ✓ 和边框） */
+  --xiao6-success:        #2a2a2a;
+  --xiao6-success-soft:   rgba(42, 42, 42, 0.06);
+  /* warning → 中灰（待确认态，用于状态 ● 和边框） */
+  --xiao6-warning:        #555555;
+  --xiao6-warning-soft:   rgba(85, 85, 85, 0.07);
+  /* danger → 深灰偏暖（错误态，不鲜艳） */
+  --xiao6-danger:         #3a3a3a;
+  --xiao6-danger-soft:    rgba(58, 58, 58, 0.06);
+  /* info → 次级灰（仅用于占位，已废弃） */
+  --xiao6-info:           #888888;
+  --xiao6-info-soft:      rgba(136, 136, 136, 0.07);
+
+  /* ── Voice Red — 唯一允许的强色 ── */
+  --xiao6-voice:        #d93636;
+  --xiao6-voice-soft:   rgba(217, 54, 54, 0.07);
+
+  /* ── Glass ── */
+  --xiao6-glass:      rgba(255, 255, 255, 0.82);
+  --xiao6-glass-strong: rgba(252, 252, 250, 0.95);
+
+  /* ── Radius / shadow ── */
+  --xiao6-radius:     10px;
+  --xiao6-radius-sm:  7px;
+  --xiao6-radius-lg:  16px;
+  --xiao6-shadow:     0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --xiao6-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* ── Spacing ── */
   --xiao6-spacing-1: 4px;
   --xiao6-spacing-2: 8px;
   --xiao6-spacing-3: 12px;
@@ -46,48 +63,25 @@
   --xiao6-spacing-5: 24px;
   --xiao6-spacing-6: 32px;
 
-  --xiao6-font: "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --xiao6-font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
+  /* ── Font ── */
+  --xiao6-font:        "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --xiao6-font-mono:   "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
 
-  /* ── 强调色深变体 / on-accent（orb 渐变、代码背景）── */
-  --xiao6-accent-deep: #0e7490;
-  --xiao6-accent-2-deep: #6d28d9;
-  --xiao6-on-accent: #04141a;
-  --xiao6-code-bg: #05070b;
+  /* ── Code ── */
+  --xiao6-code-bg: #f4f4f1;
+
+  /* ── Switch ── */
   --xiao6-switch-knob: #ffffff;
 
-  /* ── 状态色软背景（卡片层级）── */
-  --xiao6-success-soft: rgba(52, 211, 153, 0.12);
-  --xiao6-warning-soft: rgba(251, 191, 36, 0.12);
-  --xiao6-danger-soft: rgba(248, 113, 113, 0.12);
-  --xiao6-info-soft: rgba(122, 162, 247, 0.12);
-
-  /* ── 动效 ── */
+  /* ── Animation ── */
   --xiao6-dur-fast: 0.12s;
   --xiao6-dur-base: 0.18s;
   --xiao6-dur-slow: 0.28s;
-  --xiao6-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --xiao6-ease:     cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Light theme (default) ── */
-[data-theme="light"] {
-  --xiao6-bg: #f4f6fa;
-  --xiao6-bg-2: #eef1f6;
-  --xiao6-surface: #ffffff;
-  --xiao6-surface-elevated: #ffffff;
-  --xiao6-surface-hover: #eef1f6;
-  --xiao6-glass: rgba(255, 255, 255, 0.74);
-  --xiao6-glass-strong: rgba(255, 255, 255, 0.92);
-  --xiao6-border: rgba(20, 30, 50, 0.1);
-  --xiao6-border-strong: rgba(20, 30, 50, 0.16);
-  --xiao6-text: #1a2230;
-  --xiao6-text-muted: #5b6678;
-  --xiao6-text-faint: #8a98ad;
-  --xiao6-shadow: 0 18px 50px -22px rgba(20, 30, 50, 0.2);
-  --xiao6-shadow-soft: 0 8px 24px -12px rgba(20, 30, 50, 0.16);
-  --xiao6-glow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 0 28px -6px rgba(34, 211, 238, 0.16);
-  --xiao6-code-bg: #f0f3f8;
-}
+/* Light theme defaults are the monochrome base above.
+   Keep explicit overrides only for dark mode if needed. */
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -101,13 +95,4 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 button { font-family: inherit; cursor: pointer; color: inherit; }
-::selection { background: var(--xiao6-accent-soft); }
-
-/* subtle ambient gradient — 高级感而非炫技 */
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(900px 600px at 18% -8%, rgba(34, 211, 238, 0.06), transparent 60%),
-    radial-gradient(800px 600px at 96% 4%, rgba(167, 139, 250, 0.05), transparent 60%);
-}
+::selection { background: var(--xiao6-border); }

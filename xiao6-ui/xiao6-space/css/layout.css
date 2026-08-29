@@ -1,83 +1,134 @@
 /* ═════════════════════════════════════════════════════════════════
-   Xiao6 UI-R1 · layout.css — Agent Workbench 三栏壳布局
+   Xiao6 UI-R1 · layout.css — Agent Workbench 三栏壳布局（monochrome）
    240px 主导航 / 1fr Agent Timeline / 340px Inspector
-   核心问题置于中栏顶部：小6现在正在做什么
    ═════════════════════════════════════════════════════════════════ */
 
-/* ═══════════ TOP BAR（极简）═══════════ */
+/* ═══════════ TOP BAR ═══════════ */
 .xiao6-top {
   position: relative; z-index: 5;
-  height: 56px; display: flex; align-items: center; gap: var(--xiao6-spacing-4);
+  height: 52px; display: flex; align-items: center; gap: var(--xiao6-spacing-4);
   padding: 0 var(--xiao6-spacing-5);
-  background: linear-gradient(180deg, rgba(14,18,25,0.92), rgba(10,13,19,0.72));
+  background: var(--xiao6-surface);
   border-bottom: 1px solid var(--xiao6-border);
-  backdrop-filter: blur(14px);
 }
 .xiao6-top-left { display: flex; align-items: center; gap: var(--xiao6-spacing-3); }
+
+/* 品牌 orb — 纯黑圆点，无渐变无发光 */
 .xiao6-brand-orb {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--xiao6-accent), var(--xiao6-accent-deep) 70%);
-  box-shadow: 0 0 14px -2px rgba(34,211,238,0.6);
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--xiao6-text);
 }
-.xiao6-brand { font-weight: 650; font-size: 16px; letter-spacing: .5px; }
-.xiao6-brand-sub { font-size: 11px; color: var(--xiao6-text-faint); letter-spacing: 1.5px; text-transform: uppercase; }
+
+.xiao6-brand { font-weight: 650; font-size: 15px; letter-spacing: 0.3px; }
+.xiao6-brand-sub { font-size: 11px; color: var(--xiao6-text-faint); letter-spacing: 1px; text-transform: uppercase; }
 
 .xiao6-top-center { flex: 1; display: flex; justify-content: center; }
+
+/* 搜索框 — 灰框 */
 .xiao6-cmdk {
   display: flex; align-items: center; gap: var(--xiao6-spacing-2);
-  width: min(540px, 52vw); height: 36px; padding: 0 var(--xiao6-spacing-3);
-  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border);
+  width: min(540px, 52vw); height: 34px; padding: 0 var(--xiao6-spacing-3);
+  background: var(--xiao6-bg-2); border: 1px solid var(--xiao6-border);
   border-radius: 999px; color: var(--xiao6-text-muted);
-  transition: border-color .15s, background .15s;
+  transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease),
+              background var(--xiao6-dur-fast) var(--xiao6-ease);
 }
 .xiao6-cmdk:hover { border-color: var(--xiao6-border-strong); background: var(--xiao6-surface-hover); }
-.xiao6-cmdk-ic { font-size: 13px; opacity: .8; }
+.xiao6-cmdk-ic { font-size: 13px; opacity: 0.7; }
 .xiao6-cmdk-text { flex: 1; text-align: left; font-size: 13px; }
 .xiao6-cmdk-kbd {
-  font-size: 11px; padding: 2px 7px; border-radius: 6px;
-  background: var(--xiao6-surface-elevated); border: 1px solid var(--xiao6-border); color: var(--xiao6-text-faint);
+  font-size: 11px; padding: 2px 7px; border-radius: 5px;
+  background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); color: var(--xiao6-text-faint);
 }
 
 .xiao6-top-right { display: flex; align-items: center; gap: var(--xiao6-spacing-2); }
-.xiao6-runtime { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--xiao6-text-muted); }
-.xiao6-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--xiao6-success); box-shadow: 0 0 8px -1px var(--xiao6-success); }
-.xiao6-runtime[data-mode="busy"] .xiao6-dot,
-.xiao6-runtime[data-mode="waiting"] .xiao6-dot { background: var(--xiao6-warning); box-shadow: 0 0 8px -1px var(--xiao6-warning); animation: xiao6Pulse 1.2s ease-in-out infinite; }
-.xiao6-runtime[data-mode="off"] .xiao6-dot,
-.xiao6-runtime[data-mode="error"] .xiao6-dot { background: var(--xiao6-danger); box-shadow: 0 0 8px -1px var(--xiao6-danger); }
-.xiao6-ctx-chip {
-  font-size: 12px; padding: 4px 10px; border-radius: 999px;
-  background: var(--xiao6-accent-soft); color: var(--xiao6-accent); border: 1px solid rgba(34,211,238,0.2);
+
+/* 运行时状态点 — 灰阶 */
+.xiao6-runtime {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--xiao6-text-muted);
 }
+.xiao6-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--xiao6-text-muted);
+  transition: background var(--xiao6-dur-base) var(--xiao6-ease);
+}
+.xiao6-runtime[data-mode="busy"] .xiao6-dot,
+.xiao6-runtime[data-mode="waiting"] .xiao6-dot {
+  background: var(--xiao6-text);
+  animation: xiao6Pulse 1.2s ease-in-out infinite;
+}
+.xiao6-runtime[data-mode="off"] .xiao6-dot,
+.xiao6-runtime[data-mode="error"] .xiao6-dot {
+  background: var(--xiao6-danger);
+}
+
+/* 当前任务 chip — 灰框 */
+.xiao6-ctx-chip {
+  font-size: 12px; padding: 3px 10px; border-radius: 999px;
+  background: var(--xiao6-bg-2); color: var(--xiao6-text-muted);
+  border: 1px solid var(--xiao6-border);
+}
+
 .xiao6-icon-btn {
-  width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--xiao6-border);
-  background: var(--xiao6-surface); display: grid; place-items: center; transition: .15s;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--xiao6-border); background: var(--xiao6-surface);
+  display: grid; place-items: center; transition: var(--xiao6-dur-fast) var(--xiao6-ease);
 }
 .xiao6-icon-btn:hover { background: var(--xiao6-surface-hover); border-color: var(--xiao6-border-strong); }
-.xiao6-mini-orb { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--xiao6-accent), var(--xiao6-accent-deep) 70%); transition: .2s; }
-.xiao6-mini-orb[data-state="thinking"], .xiao6-mini-orb[data-state="listening"] { animation: xiao6Pulse 1.1s ease-in-out infinite; }
-.xiao6-mini-orb[data-state="speaking"] { background: radial-gradient(circle at 35% 30%, var(--xiao6-accent-2), var(--xiao6-accent-2-deep) 70%); animation: xiao6Pulse .8s ease-in-out infinite; }
-.xiao6-mini-orb[data-state="error"] { background: var(--xiao6-danger); }
-@keyframes xiao6Pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .7; } }
 
-/* 顶栏内联控件（模型 / 权限 / 通用工具按钮） */
+/* 迷你 orb — 灰圆点 */
+.xiao6-mini-orb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--xiao6-text-muted);
+  transition: background var(--xiao6-dur-fast) var(--xiao6-ease);
+}
+.xiao6-mini-orb[data-state="thinking"],
+.xiao6-mini-orb[data-state="listening"] {
+  background: var(--xiao6-text);
+  animation: xiao6Pulse 1.1s ease-in-out infinite;
+}
+.xiao6-mini-orb[data-state="speaking"] {
+  background: var(--xiao6-text);
+  animation: xiao6Pulse 0.9s ease-in-out infinite;
+}
+.xiao6-mini-orb[data-state="error"] {
+  background: var(--xiao6-danger);
+}
+
+@keyframes xiao6Pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.65; }
+}
+
+/* 工具按钮 — 灰 */
 .xiao6-tool {
-  padding: 6px 11px; border-radius: 9px; border: 1px solid var(--xiao6-border);
-  background: var(--xiao6-surface); color: var(--xiao6-text-muted); font-size: 12.5px; transition: .15s;
+  padding: 5px 10px; border-radius: 7px;
+  border: 1px solid var(--xiao6-border); background: var(--xiao6-surface);
+  color: var(--xiao6-text-muted); font-size: 12.5px; transition: var(--xiao6-dur-fast) var(--xiao6-ease);
   white-space: nowrap;
 }
 .xiao6-tool:hover { color: var(--xiao6-text); border-color: var(--xiao6-border-strong); }
-.xiao6-tool.is-active, .xiao6-tool.is-on { color: var(--xiao6-accent); border-color: rgba(34,211,238,0.35); background: var(--xiao6-accent-soft); }
-.xiao6-model-btn, .xiao6-perm-btn { position: relative; display: flex; align-items: center; gap: 6px; }
-.xiao6-model-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--xiao6-accent-2); }
-.xiao6-caret { font-size: 9px; opacity: .7; }
-.xiao6-perm-btn.is-auto { color: var(--xiao6-warning); border-color: rgba(251,191,36,0.35); background: var(--xiao6-warning-soft); }
+.xiao6-tool.is-active,
+.xiao6-tool.is-on {
+  color: var(--xiao6-text); border-color: var(--xiao6-border-strong);
+  background: var(--xiao6-bg-2);
+}
+.xiao6-model-btn, .xiao6-perm-btn {
+  position: relative; display: flex; align-items: center; gap: 6px;
+}
+.xiao6-model-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--xiao6-text-muted);
+}
+.xiao6-caret { font-size: 9px; opacity: 0.6; }
+.xiao6-perm-btn.is-auto .xiao6-perm-dot { background: var(--xiao6-text-muted); }
 
-/* ═══════════ SHELL（三栏 grid）═══════════ */
+/* ═══════════ SHELL ═══════════ */
 .xiao6-shell {
   position: relative; z-index: 1;
   display: grid; grid-template-columns: 240px 1fr 340px;
-  height: calc(100vh - 56px);
+  height: calc(100vh - 52px);
 }
 .xiao6-shell.inspector-collapsed { grid-template-columns: 240px 1fr 0; }
 .xiao6-shell.inspector-collapsed .xiao6-inspector { display: none; }
@@ -89,7 +140,7 @@
 .xiao6-shell.sidebar-collapsed .xiao6-nav-badge,
 .xiao6-shell.sidebar-collapsed .xiao6-sidebar-brand .xiao6-brand { display: none; }
 
-/* ═══════════ LEFT SIDEBAR（主导航）═══════════ */
+/* ═══════════ LEFT SIDEBAR ═══════════ */
 .xiao6-sidebar {
   display: flex; flex-direction: column; overflow: hidden;
   background: var(--xiao6-bg-2); border-right: 1px solid var(--xiao6-border);
@@ -99,146 +150,155 @@
   padding: var(--xiao6-spacing-4) var(--xiao6-spacing-4) var(--xiao6-spacing-3);
   border-bottom: 1px solid var(--xiao6-border);
 }
-.xiao6-sidebar-scroll { flex: 1; overflow-y: auto; padding: var(--xiao6-spacing-3) var(--xiao6-spacing-2); display: flex; flex-direction: column; gap: 3px; }
-.xiao6-sidebar-group { display: flex; flex-direction: column; gap: 3px; margin-bottom: var(--xiao6-spacing-3); }
+.xiao6-sidebar-scroll {
+  flex: 1; overflow-y: auto; padding: var(--xiao6-spacing-3) var(--xiao6-spacing-2);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.xiao6-sidebar-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--xiao6-spacing-3); }
 .xiao6-sidebar-label {
-  font-size: 11px; color: var(--xiao6-text-faint); text-transform: uppercase; letter-spacing: 1px;
-  padding: 0 var(--xiao6-spacing-3); margin: var(--xiao6-spacing-2) 0 var(--xiao6-spacing-1);
+  font-size: 10.5px; color: var(--xiao6-text-faint); text-transform: uppercase;
+  letter-spacing: 0.8px; padding: var(--xiao6-spacing-2) 0 var(--xiao6-spacing-1);
 }
 .xiao6-sidebar-foot { border-top: 1px solid var(--xiao6-border); padding: var(--xiao6-spacing-2); }
 
-/* nav-btn：Claude Desktop 风格导航项（icon + hover + active 竖条） */
+/* nav-btn — 灰底深字，hover 变深灰，active 黑色 */
 .xiao6-nav-btn {
-  position: relative;
-  display: flex; align-items: center; gap: 11px;
-  padding: 8px 12px; border: none; background: transparent; border-radius: 8px;
+  position: relative; display: flex; align-items: center; gap: 11px;
+  padding: 7px 12px; border: none; background: transparent; border-radius: 7px;
   color: var(--xiao6-text-muted); font-size: 13px; text-align: left;
-  transition: background var(--xiao6-dur-fast) var(--xiao6-ease), color var(--xiao6-dur-fast) var(--xiao6-ease);
+  transition: background var(--xiao6-dur-fast) var(--xiao6-ease),
+              color var(--xiao6-dur-fast) var(--xiao6-ease);
   width: 100%;
 }
-.xiao6-nav-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; opacity: 0.85; transition: opacity var(--xiao6-dur-fast) var(--xiao6-ease); }
+.xiao6-nav-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; opacity: 0.8; transition: opacity var(--xiao6-dur-fast) var(--xiao6-ease); }
 .xiao6-nav-btn:hover { color: var(--xiao6-text); background: var(--xiao6-surface-hover); }
 .xiao6-nav-btn:hover svg { opacity: 1; }
-.xiao6-nav-btn.is-active { color: var(--xiao6-accent); background: var(--xiao6-accent-soft); }
+.xiao6-nav-btn.is-active { color: var(--xiao6-text); background: var(--xiao6-bg); }
 .xiao6-nav-btn.is-active svg { opacity: 1; }
 .xiao6-nav-btn.is-active::before {
-  content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 2px;
-  border-radius: 1px; background: var(--xiao6-accent);
+  content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px;
+  border-radius: 1px; background: var(--xiao6-text);
 }
 .xiao6-nav-badge {
   margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 9px; background: var(--xiao6-accent); color: var(--xiao6-on-accent);
-  font-size: 11px; font-style: normal; font-weight: 700; line-height: 18px; text-align: center;
+  border-radius: 9px; background: var(--xiao6-border-strong); color: var(--xiao6-text-muted);
+  font-size: 11px; font-weight: 600; line-height: 18px; text-align: center;
 }
 
 /* ═══════════ CENTER ═══════════ */
 .xiao6-center { position: relative; overflow: hidden; display: flex; flex-direction: column; }
-.xiao6-view { flex: 1; overflow-y: auto; min-height: 0; padding: var(--xiao6-spacing-6); }
+.xiao6-view { flex: 1; overflow-y: auto; min-height: 0; padding: var(--xiao6-spacing-5); }
 .xiao6-view[hidden] { display: none; }
 .xiao6-view-head { margin-bottom: var(--xiao6-spacing-5); }
-.xiao6-view-head h2 { font-size: 20px; font-weight: 650; margin: 0 0 4px; letter-spacing: .3px; }
+.xiao6-view-head h2 { font-size: 18px; font-weight: 620; margin: 0 0 4px; letter-spacing: -0.1px; }
 .xiao6-view-head p { margin: 0; font-size: 13px; color: var(--xiao6-text-muted); }
-.xiao6-list { display: flex; flex-direction: column; gap: 8px; max-width: 980px; }
+.xiao6-list { display: flex; flex-direction: column; gap: 8px; max-width: 960px; }
 
-/* ── Agent Timeline（首页视图）── */
+/* ── Agent Timeline ── */
 .xiao6-timeline { display: flex; flex-direction: column; padding: 0; overflow: hidden; position: relative; }
 .xiao6-tl-body {
   flex: 1; overflow-y: auto; min-height: 0;
-  padding: var(--xiao6-spacing-5) var(--xiao6-spacing-6);
-  display: flex; flex-direction: column; gap: 14px;
-  max-width: 980px; width: 100%; margin: 0 auto;
+  padding: var(--xiao6-spacing-4) var(--xiao6-spacing-5);
+  display: flex; flex-direction: column; gap: 10px;
+  max-width: 960px; width: 100%; margin: 0 auto;
 }
 
-/* ── 「小6现在正在做什么」状态条 ── */
+/* ── Now Bar（小6现在正在做什么）─ */
 .xiao6-now {
-  display: flex; align-items: center; gap: var(--xiao6-spacing-3);
-  padding: 14px var(--xiao6-spacing-6);
+  display: flex; align-items: flex-start; gap: var(--xiao6-spacing-3);
+  padding: 12px var(--xiao6-spacing-5);
   border-bottom: 1px solid var(--xiao6-border);
-  background: var(--xiao6-bg-2); flex: none;
+  background: var(--xiao6-bg); flex: none;
 }
 .xiao6-now-dot {
-  width: 10px; height: 10px; border-radius: 50%; flex: none;
-  background: var(--xiao6-success); box-shadow: 0 0 10px -1px var(--xiao6-success);
+  width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 5px;
+  background: var(--xiao6-text-muted);
   transition: background var(--xiao6-dur-base) var(--xiao6-ease);
 }
-.xiao6-now[data-state="busy"] .xiao6-now-dot { background: var(--xiao6-accent); box-shadow: 0 0 10px -1px var(--xiao6-accent); animation: xiao6Pulse 1.2s ease-in-out infinite; }
-.xiao6-now[data-state="waiting"] .xiao6-now-dot { background: var(--xiao6-warning); box-shadow: 0 0 10px -1px var(--xiao6-warning); animation: xiao6Pulse 1.2s ease-in-out infinite; }
-.xiao6-now[data-state="error"] .xiao6-now-dot { background: var(--xiao6-danger); box-shadow: 0 0 10px -1px var(--xiao6-danger); }
+.xiao6-now[data-state="busy"] .xiao6-now-dot,
+.xiao6-now[data-state="waiting"] .xiao6-now-dot {
+  background: var(--xiao6-text);
+  animation: xiao6Pulse 1.2s ease-in-out infinite;
+}
+.xiao6-now[data-state="error"] .xiao6-now-dot { background: var(--xiao6-danger); }
 .xiao6-now-text { flex: 1; min-width: 0; }
-.xiao6-now-title { font-size: 15px; font-weight: 620; letter-spacing: .2px; }
+.xiao6-now-title { font-size: 14px; font-weight: 620; letter-spacing: 0px; }
 .xiao6-now-sub {
-  font-size: 12.5px; color: var(--xiao6-text-muted); margin-top: 2px;
+  font-size: 12px; color: var(--xiao6-text-muted); margin-top: 2px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .xiao6-now-acts { display: flex; gap: 6px; flex: none; }
 
-/* ── 历史视图（三列）── */
+/* ── 历史视图 ── */
 .xiao6-hist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--xiao6-spacing-5); align-items: start; }
 .xiao6-hist-col h3 {
-  font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--xiao6-text-faint);
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--xiao6-text-faint);
   margin: 0 0 var(--xiao6-spacing-3); font-weight: 600;
 }
-.xiao6-hist-col .xiao6-list { max-width: none; max-height: calc(100vh - 260px); overflow-y: auto; }
+.xiao6-hist-col .xiao6-list { max-width: none; max-height: calc(100vh - 240px); overflow-y: auto; }
 
-/* ── 当前项目视图 ── */
-.xiao6-current { max-width: 980px; display: flex; flex-direction: column; gap: var(--xiao6-spacing-4); }
-.xiao6-cur-card { background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: var(--xiao6-radius); padding: var(--xiao6-spacing-4); }
-.xiao6-cur-title { font-size: 16px; font-weight: 620; margin-bottom: 4px; }
-.xiao6-cur-meta { font-size: 12.5px; color: var(--xiao6-text-muted); margin-bottom: var(--xiao6-spacing-3); }
+/* ── 当前项目 ── */
+.xiao6-current { max-width: 960px; display: flex; flex-direction: column; gap: var(--xiao6-spacing-4); }
+.xiao6-cur-card { background: var(--xiao6-surface); border: 1px solid var(--xiao6-border); border-radius: var(--xiao6-radius-sm); padding: var(--xiao6-spacing-4); }
+.xiao6-cur-title { font-size: 15px; font-weight: 620; margin-bottom: 4px; }
+.xiao6-cur-meta { font-size: 12px; color: var(--xiao6-text-muted); margin-bottom: var(--xiao6-spacing-3); }
 
 /* ═══════════ BOTTOM COMPOSER ═══════════ */
-.xiao6-composer {
-  flex: none; padding: var(--xiao6-spacing-3) var(--xiao6-spacing-6) var(--xiao6-spacing-4);
-  border-top: 1px solid var(--xiao6-border); background: var(--xiao6-bg-2);
-}
+.xiao6-composer { flex: none; padding: var(--xiao6-spacing-3) var(--xiao6-spacing-5) var(--xiao6-spacing-4); border-top: 1px solid var(--xiao6-border); background: var(--xiao6-bg-2); }
 .xiao6-composer[hidden] { display: none; }
-.xiao6-trigger-hint { font-size: 12px; color: var(--xiao6-accent); margin-bottom: 6px; min-height: 16px; }
+.xiao6-trigger-hint { font-size: 12px; color: var(--xiao6-text-faint); margin-bottom: 6px; min-height: 16px; }
 .xiao6-cmd-form {
   display: flex; align-items: center; gap: var(--xiao6-spacing-3);
   background: var(--xiao6-surface); border: 1px solid var(--xiao6-border);
-  border-radius: 12px; padding: 4px 4px 4px var(--xiao6-spacing-4);
-  max-width: 980px; margin: 0 auto;
+  border-radius: var(--xiao6-radius); padding: 4px 4px 4px var(--xiao6-spacing-4);
+  max-width: 960px; margin: 0 auto; transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease);
 }
-.xiao6-cmd-form:focus-within { border-color: var(--xiao6-accent); box-shadow: var(--xiao6-glow); }
-.xiao6-input-prefix { color: var(--xiao6-accent); font-weight: 700; }
-.xiao6-cmd-input { flex: 1; border: none; background: transparent; color: var(--xiao6-text); font-size: 14px; outline: none; padding: 9px 0; }
-.xiao6-send { padding: 9px 18px; border: none; border-radius: 9px; background: var(--xiao6-accent); color: var(--xiao6-on-accent); font-weight: 600; font-size: 13px; transition: var(--xiao6-dur-fast) var(--xiao6-ease); }
-.xiao6-send:hover { filter: brightness(1.08); }
-.xiao6-send:disabled { opacity: .55; cursor: not-allowed; filter: none; }
-.xiao6-composer-modes { display: flex; gap: 6px; max-width: 980px; margin: 8px auto 0; }
+.xiao6-cmd-form:focus-within { border-color: var(--xiao6-border-strong); }
+.xiao6-input-prefix { color: var(--xiao6-text-muted); font-weight: 600; }
+.xiao6-cmd-input {
+  flex: 1; border: none; background: transparent; color: var(--xiao6-text);
+  font-size: 14px; outline: none; padding: 8px 0;
+}
+.xiao6-send {
+  padding: 8px 16px; border: none; border-radius: 7px;
+  background: var(--xiao6-text); color: var(--xiao6-on-accent);
+  font-weight: 600; font-size: 13px; transition: var(--xiao6-dur-fast) var(--xiao6-ease);
+}
+.xiao6-send:hover { opacity: 0.85; }
+.xiao6-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.xiao6-composer-modes { display: flex; gap: 6px; max-width: 960px; margin: 8px auto 0; }
 .xiao6-mode {
   padding: 4px 10px; border-radius: 999px; font-size: 11.5px;
   border: 1px solid var(--xiao6-border); background: transparent; color: var(--xiao6-text-faint);
   transition: var(--xiao6-dur-fast) var(--xiao6-ease);
 }
 .xiao6-mode:hover { color: var(--xiao6-text); border-color: var(--xiao6-border-strong); }
-.xiao6-mode.is-on { color: var(--xiao6-accent); border-color: rgba(34,211,238,0.35); background: var(--xiao6-accent-soft); }
+.xiao6-mode.is-on { color: var(--xiao6-text); border-color: var(--xiao6-border-strong); background: var(--xiao6-surface-hover); }
 
 /* 空态 */
 .xiao6-empty { color: var(--xiao6-text-faint); font-size: 13px; padding: var(--xiao6-spacing-5); }
 
-/* 空态 Hero */
+/* 空态 Hero — 极简，无渐变无发光 */
 .xiao6-empty-hero {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 60px 20px; text-align: center; gap: 12px;
+  padding: 80px 20px 40px; text-align: center; gap: 8px;
 }
 .xiao6-empty-orb {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--xiao6-accent), var(--xiao6-accent-deep) 70%);
-  box-shadow: 0 0 24px -4px rgba(34,211,238,0.5);
-  animation: xiao6Pulse 2s ease-in-out infinite;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--xiao6-text);
+  margin-bottom: 4px;
 }
-.xiao6-empty-title { font-size: 22px; font-weight: 650; letter-spacing: 0.5px; }
-.xiao6-empty-sub { font-size: 14px; color: var(--xiao6-text-muted); margin-top: -4px; }
+.xiao6-empty-title { font-size: 20px; font-weight: 650; letter-spacing: -0.3px; color: var(--xiao6-text); }
+.xiao6-empty-sub { font-size: 13.5px; color: var(--xiao6-text-muted); margin-top: 2px; }
 
 /* 快捷建议 */
 .xiao6-suggestions {
   display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-  padding: 12px var(--xiao6-spacing-6) var(--xiao6-spacing-4);
-  max-width: 980px; margin: 0 auto;
+  padding: 12px var(--xiao6-spacing-5) var(--xiao6-spacing-4);
+  max-width: 960px; margin: 0 auto;
 }
 .xiao6-sug {
-  padding: 6px 14px; border-radius: 999px;
+  padding: 5px 14px; border-radius: 999px;
   border: 1px solid var(--xiao6-border); background: var(--xiao6-surface);
   color: var(--xiao6-text-muted); font-size: 12.5px; cursor: pointer;
   transition: border-color var(--xiao6-dur-fast) var(--xiao6-ease),
@@ -246,16 +306,15 @@
               background var(--xiao6-dur-fast) var(--xiao6-ease);
 }
 .xiao6-sug:hover {
-  color: var(--xiao6-accent); border-color: rgba(34,211,238,0.4);
-  background: var(--xiao6-accent-soft);
+  color: var(--xiao6-text); border-color: var(--xiao6-border-strong);
+  background: var(--xiao6-bg-2);
 }
 
 /* 阶段分隔标签 */
 .xiao6-phase-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--xiao6-text-faint); padding: 4px 0 2px;
-  border-left: 2px solid var(--xiao6-border-strong);
-  margin: 4px 0 2px;
+  border-left: 2px solid var(--xiao6-border-strong); margin: 4px 0 2px;
 }
 
 /* ═══════════ RIGHT INSPECTOR ═══════════ */
@@ -264,24 +323,24 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: var(--xiao6-spacing-4) var(--xiao6-spacing-4) var(--xiao6-spacing-3);
   border-bottom: 1px solid var(--xiao6-border);
-  font-size: 12px; color: var(--xiao6-text-faint); text-transform: uppercase; letter-spacing: 1px;
+  font-size: 11px; color: var(--xiao6-text-faint); text-transform: uppercase; letter-spacing: 0.8px;
 }
 .xiao6-insp-close { background: none; border: none; color: var(--xiao6-text-faint); font-size: 18px; line-height: 1; }
 .xiao6-insp-close:hover { color: var(--xiao6-text); }
 .xiao6-insp-tabs { display: flex; gap: 2px; padding: var(--xiao6-spacing-2) var(--xiao6-spacing-3) 0; border-bottom: 1px solid var(--xiao6-border); }
 .xiao6-insp-tab {
-  padding: 7px 10px; border: none; background: transparent; border-radius: 8px 8px 0 0;
-  color: var(--xiao6-text-faint); font-size: 12.5px; transition: .15s; white-space: nowrap;
+  padding: 6px 10px; border: none; background: transparent; border-radius: 7px 7px 0 0;
+  color: var(--xiao6-text-faint); font-size: 12px; transition: var(--xiao6-dur-fast) var(--xiao6-ease); white-space: nowrap;
 }
 .xiao6-insp-tab:hover { color: var(--xiao6-text); background: var(--xiao6-surface); }
-.xiao6-insp-tab.is-active { color: var(--xiao6-accent); background: var(--xiao6-accent-soft); }
+.xiao6-insp-tab.is-active { color: var(--xiao6-text); background: var(--xiao6-surface); font-weight: 600; }
 .xiao6-insp-body { flex: 1; overflow-y: auto; padding: var(--xiao6-spacing-4); display: flex; flex-direction: column; gap: 12px; }
 .xiao6-insp-more {
   display: block; width: 100%; margin-top: 4px; padding: 7px 10px;
-  border: 1px dashed var(--xiao6-border-strong); border-radius: 8px;
-  background: transparent; color: var(--xiao6-text-muted); font-size: 12px; transition: .15s;
+  border: 1px dashed var(--xiao6-border-strong); border-radius: 7px;
+  background: transparent; color: var(--xiao6-text-muted); font-size: 12px; transition: var(--xiao6-dur-fast) var(--xiao6-ease);
 }
-.xiao6-insp-more:hover { color: var(--xiao6-accent); border-color: rgba(34,211,238,0.4); background: var(--xiao6-accent-soft); }
+.xiao6-insp-more:hover { color: var(--xiao6-text); border-color: var(--xiao6-text-muted); background: var(--xiao6-bg); }
 
 /* ═══════════ RESPONSIVE ═══════════ */
 @media (max-width: 1440px) {
@@ -298,7 +357,11 @@
 }
 @media (max-width: 720px) {
   .xiao6-shell { grid-template-columns: 0 1fr 0; }
-  .xiao6-sidebar { position: absolute; z-index: 20; bottom: 0; left: 0; right: 0; flex-direction: row; height: 56px; border-right: none; border-top: 1px solid var(--xiao6-border); justify-content: space-around; padding: 6px; }
+  .xiao6-sidebar {
+    position: absolute; z-index: 20; bottom: 0; left: 0; right: 0;
+    flex-direction: row; height: 52px; border-right: none;
+    border-top: 1px solid var(--xiao6-border); justify-content: space-around; padding: 6px;
+  }
   .xiao6-sidebar-brand, .xiao6-sidebar-foot, .xiao6-sidebar-label { display: none; }
   .xiao6-sidebar-scroll { display: flex; flex-direction: row; gap: 4px; padding: 0; width: 100%; }
   .xiao6-sidebar-group { flex-direction: row; gap: 4px; margin: 0; flex: 1; justify-content: space-around; }
