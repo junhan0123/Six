@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 数据库层（SQLite，WAL 并发加固）"""
+"""小6 · 数据库层（SQLite，WAL 并发加固）"""
 
 import json
 import sqlite3
@@ -86,7 +86,7 @@ def db_conn():
         date TEXT, type TEXT, description TEXT,
         reminder_days INTEGER DEFAULT 3,
         created TEXT, updated TEXT)""")
-    # Phase 12 · P12-3：对话沉淀摘要，让庄周「记得你上周说的事」
+    # Phase 12 · P12-3：对话沉淀摘要，让小6「记得你上周说的事」
     conn.execute("""CREATE TABLE IF NOT EXISTS conversation_memories(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT, topic TEXT, key_points TEXT, sentiment TEXT,

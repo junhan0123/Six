@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 认知层 · 自动抽取（Extractor）
+"""小6 · 认知层 · 自动抽取（Extractor）
 
 一次 LLM pass 同时产出「用户模型增量 + 新 episodes」，落库到各自表。
 历史对话压缩（memory_summary 写入 + chat_log 旧轮次删除）仍由 memory.compress_memory 负责，
@@ -23,7 +23,7 @@ EXTRACT_STEP = 20
 _CONVO_CAP = 6000
 
 _SYS = (
-    "你是庄周（个人 AI 副驾）的认知抽取器。阅读下方历史对话片段，"
+    "你是小6（个人 AI 副驾）的认知抽取器。阅读下方历史对话片段，"
     "抽取对长期服务该用户有价值的认知，只输出一个 JSON 对象，不要任何解释或 Markdown 代码块。\n"
     "JSON 结构：\n"
     "{\n"
@@ -113,7 +113,7 @@ def maybe_extract():
         eps = conn.execute("SELECT summary FROM episodes ORDER BY id DESC LIMIT 15").fetchall()
         conn.close()
 
-        convo = "\n".join(((("用户" if r == "user" else "庄周") + "：" + c) for r, c in old))
+        convo = "\n".join(((("用户" if r == "user" else "小6") + "：" + c) for r, c in old))
         if len(convo) > _CONVO_CAP:
             convo = convo[-_CONVO_CAP:]
         um = load_user_model()

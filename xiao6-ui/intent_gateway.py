@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Command Intent Gateway（Phase 6 Order 5）—— 统一意图入口
+"""小6 · Command Intent Gateway（Phase 6 Order 5）—— 统一意图入口
 
 职责（极瘦红线，违反即实现失败）：
 - 把「用户 Command 输入」升级为真正的 Intent Gateway，而非聊天框 / UI 美化 / Prompt 增加。

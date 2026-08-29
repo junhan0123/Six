@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 认知层 · Canonical Memory 适配器（P5.2 · FACADE ONLY）
+"""小6 · 认知层 · Canonical Memory 适配器（P5.2 · FACADE ONLY）
 
 唯一职责：把 Cognitive / Agent Runtime 的 legacy 记忆写入语义，**翻译**成既有
 Canonical Memory API（`memory.py`）调用，使 Canonical Memory 成为认知侧

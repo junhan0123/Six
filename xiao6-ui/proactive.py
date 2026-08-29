@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 主动智能（D 期）：TICK 心跳 + 预判注入 + 主动推送（SSE）
+"""小6 · 主动智能（D 期）：TICK 心跳 + 预判注入 + 主动推送（SSE）
 
 Phase 3：心跳由固定 15s 升级为动态间隔（对齐参考实现 consciousness-loop 简化版）：
 - 有到期提醒 → 立即（0s）

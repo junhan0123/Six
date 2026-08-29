@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 通用 HTTP JSON 客户端（TLS 自签降级，无第三方依赖）"""
+"""小6 · 通用 HTTP JSON 客户端（TLS 自签降级，无第三方依赖）"""
 
 import json
 import ssl

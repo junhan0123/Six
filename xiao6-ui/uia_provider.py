@@ -110,7 +110,7 @@ class MockUiProvider(UiProvider):
                          parent_id="WINDOW-NOTEPAD", window_id="WINDOW-NOTEPAD",
                          bbox=(0, 0, 1920, 30))
         edit = UiElement("ELEM-NOTEPAD-EDIT", "edit", name="文本编辑区",
-                         automation_id="15", value="庄周正在记录", state="enabled",
+                         automation_id="15", value="小6正在记录", state="enabled",
                          parent_id="WINDOW-NOTEPAD", window_id="WINDOW-NOTEPAD",
                          bbox=(10, 40, 1900, 1000))
         notepad.children = [menu, edit]

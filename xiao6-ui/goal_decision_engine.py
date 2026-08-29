@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Goal Decision Engine（GDE）v1.0 —— Runtime 前置决策门（Phase 9 Step 1）。
+"""小6 · Goal Decision Engine（GDE）v1.0 —— Runtime 前置决策门（Phase 9 Step 1）。
 
 极瘦红线（违反即实现失败）：只决定「要不要创建 Goal」。绝不拆任务 / 调工具 / 审批 / 写记忆。
 唯一写出口 Runtime.submit_goal()；唯一读出口 goals.list_active_goals()（只读）。

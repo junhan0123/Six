@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 能力操作系统 · 能力运行时状态（Capability State）—— Phase 23.1
+"""小6 · 能力操作系统 · 能力运行时状态（Capability State）—— Phase 23.1
 
 职责：
 1. 跟踪「当前正在使用的能力」（active set），由外部事件（tool_started /

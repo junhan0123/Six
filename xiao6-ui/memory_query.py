@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 长期记忆查询（Phase 12 · P12-4）
+"""小6 · 长期记忆查询（Phase 12 · P12-4）
 
 入口：query_memory(query, limit=5) -> list[dict]
   - 模糊搜索：标题/内容/标签（memories 表）+ 主题/关键点（conversation_memories 表）

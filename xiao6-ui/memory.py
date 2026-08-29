@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 记忆压缩与上下文注入（ACI 预判注入）"""
+"""小6 · 记忆压缩与上下文注入（ACI 预判注入）"""
 
 from db import db_conn
 from focus import recent_foci

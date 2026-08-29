@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 能力注册表（参考实现 capability-registry 轻量对齐，Phase 5）
+"""小6 · 能力注册表（参考实现 capability-registry 轻量对齐，Phase 5）
 
 ⚠️ DEPRECATED 兼容层（Phase 40）：本文件为「上下文注入能力」来源，仍被
    capability_os.registry._build() 合并进单一声明真相源，也被 server.py
@@ -8,7 +8,7 @@
 
 只搬「声明式注册表的壳」：把每个领域能力收敛为一个单元（触发词 + 上下文块 + 可选预喂），
 未来新增能力只需注册一行，无需散落多处。不搬 api-slot / tool-factory 重型机制
-（探索结论：那是为解决参考实现历史碎片化才做的，庄周范围不需要）。
+（探索结论：那是为解决参考实现历史碎片化才做的，小6范围不需要）。
 
 当前注册：hotspot（热点上下文）、prefetch（天气/新闻预取背景）、computer_action（手）。
 这都是对已验证注入链路的「统一视图」，不改动 build_context_prefix 的既有调用。
@@ -69,7 +69,7 @@ _register(
 )
 
 
-# ---- 电脑操作能力（Phase 21 "Hand"）—— 让庄周自知拥有「手」----
+# ---- 电脑操作能力（Phase 21 "Hand"）—— 让小6自知拥有「手」----
 def _computer_action_block(message):
     # 仅在对话涉及操作电脑/打开/文件/屏幕时给出能力说明；关闭开关则零注入
     try:

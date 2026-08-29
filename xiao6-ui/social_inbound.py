@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 社交接收端（入站消息 → 跑一轮 agent → 自动回发）
+"""小6 · 社交接收端（入站消息 → 跑一轮 agent → 自动回发）
 
 设计要点：
 - 微信/飞书/Discord 入站消息统一经 POST /api/social/inbound（token 门控）进入；

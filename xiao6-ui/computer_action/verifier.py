@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 电脑动作验证层（verifier.py）—— Phase 21.1
+"""小6 · 电脑动作验证层（verifier.py）—— Phase 21.1
 
 复用 verification.VerificationLayer（Action → Observe → Verify 闭环），补充白名单
 算子的 _verify_* 规则。

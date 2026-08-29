@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Permission Guard（Phase 7 Order 2 · 电脑动作权限闸门）
+"""小6 · Permission Guard（Phase 7 Order 2 · 电脑动作权限闸门）
 
 流程（严格）：
     Task

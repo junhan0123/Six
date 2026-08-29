@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 电脑动作观察层（observer.py）—— Phase 21.1
+"""小6 · 电脑动作观察层（observer.py）—— Phase 21.1
 
 包装 Phase 20 perception，作为动作闭环的「观察」环节；同时提供兼容
 VerificationLayer 的 Observer 可调用对象（统一观察源，消除 RealObserver 重复实现，修复 R3）。

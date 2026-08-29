@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 默认 Chat 统一 Capability Execution 适配器（P1 · Phase 47.4）
+"""小6 · 默认 Chat 统一 Capability Execution 适配器（P1 · Phase 47.4）
 
 职责（最小侵入，严格不新建第二套执行/权限/注册表）：
 - 这是「默认 Chat」能力的**唯一收敛点**：普通聊天里需要执行的能力，统一经本模块，

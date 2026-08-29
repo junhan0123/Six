@@ -1,4 +1,4 @@
-"""庄周 · 中文短语唤醒词检测（P8-2，Vosk KWS）。
+"""小6 · 中文短语唤醒词检测（P8-2，Vosk KWS）。
 
 复用 asr.py 已落地的 Vosk 中文模型目录（models/vosk/vosk-model-small-cn-0.22），
 仅做关键词检测：把实时麦克风流喂给 Vosk KaldiRecognizer，取 partial/final 文本，
@@ -24,12 +24,12 @@ _HOMOPHONES = {
     "庄": ["庄", "装", "状"],
 }
 
-DEFAULT_PHRASES = ["庄周", "小周"]
+DEFAULT_PHRASES = ["小6", "小周"]
 
 
 def load_phrases():
     """读取 XIAO6_WAKE_PHRASE（逗号分隔），空则回退默认。"""
-    raw = os.environ.get("XIAO6_WAKE_PHRASE", "庄周,小周") or "庄周,小周"
+    raw = os.environ.get("XIAO6_WAKE_PHRASE", "小6,小周") or "小6,小周"
     out = [p.strip() for p in raw.split(",") if p.strip()]
     return out or list(DEFAULT_PHRASES)
 
@@ -68,7 +68,7 @@ def is_wake(transcript, phrases=None):
     """判断转写文本是否命中任一唤醒短语（容错 ±1 字符）。
 
     transcript: Vosk 输出的中文文本（可含 partial）。
-    返回命中的原始短语（如 "庄周"，真值可当 bool 用）或 None（未命中）。
+    返回命中的原始短语（如 "小6"，真值可当 bool 用）或 None（未命中）。
     """
     if not transcript:
         return None
@@ -95,10 +95,10 @@ if __name__ == "__main__":
 
     # test_vosk_wake_detection
     _assert(is_wake("小周现在几点了") == "小周", "小周 精确触发")
-    _assert(is_wake("庄周帮我记一下") == "庄周", "庄周 精确触发")
+    _assert(is_wake("小6帮我记一下") == "小6", "小6 精确触发")
     _assert(is_wake("今天天气怎么样") is None, "无关词不触发")
     # test_wake_phrase_recognition（同音/漏字容错）
     _assert(is_wake("小洲在吗") == "小周", "同音 小洲→小周")
     _assert(is_wake("晓周打开灯") == "小周", "同音 晓周→小周")
-    _assert(is_wake("庄洲设置一个提醒") == "庄周", "同音 庄洲→庄周")
+    _assert(is_wake("庄洲设置一个提醒") == "小6", "同音 庄洲→小6")
     print("ALL WAKE TESTS PASSED")

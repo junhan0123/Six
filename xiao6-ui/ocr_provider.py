@@ -64,7 +64,7 @@ class MockOcrProvider(OcrProvider):
         self._spans = spans or [
             OcrSpan("OCR-1", "文件", bbox=(12, 4, 40, 20), confidence=0.98),
             OcrSpan("OCR-2", "编辑", bbox=(60, 4, 40, 20), confidence=0.97),
-            OcrSpan("OCR-3", "庄周正在记录", bbox=(12, 44, 200, 24), confidence=0.95),
+            OcrSpan("OCR-3", "小6正在记录", bbox=(12, 44, 200, 24), confidence=0.95),
         ]
 
     def recognize(self, frame, region=None):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 持久 shell 会话（移植自参考实现 persistent-shell）
+"""小6 · 持久 shell 会话（移植自参考实现 persistent-shell）
 
 价值：维护一个长驻 shell 子进程，跨命令保持工作目录与环境变量，
 避免每条命令冷启动 powershell 的 ~550ms 开销；同时让 `cd` / `$env:FOO=`

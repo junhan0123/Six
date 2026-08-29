@@ -1,6 +1,4 @@
-/* 小6桌宠 · 渲染控制 */
-const { ipcRenderer } = require('electron');
-
+/* 小6桌宠 · 渲染控制（contextIsolation 安全模式，经 preload bridge 访问 IPC） */
 const HOST = document.getElementById('lottieHost');
 const WRAP = document.getElementById('petWrap');
 const BUBBLE = document.getElementById('bubble');
@@ -19,8 +17,8 @@ try {
   console.error('Lottie load failed:', e);
 }
 
-/* 对外暴露的桌宠 API（可在主进程 preload 或 IPC 中桥接） */
-window.ZZPet = {
+/* 对外暴露的桌宠 API（IPC 经 preload bridge，无 Node 权限） */
+window.Pet = {
   say(text, ms = 3200) {
     BUBBLE.textContent = text;
     BUBBLE.classList.add('show');
@@ -30,14 +28,14 @@ window.ZZPet = {
       WRAP.classList.remove('bounce');
     }, ms);
   },
-  hide() { ipcRenderer.send('pet-hide'); },
-  show() { ipcRenderer.send('pet-show'); },
+  hide() { if (window.petAPI) window.petAPI.hide(); },
+  show() { if (window.petAPI) window.petAPI.show(); },
   bounce() { WRAP.classList.add('bounce'); setTimeout(() => WRAP.classList.remove('bounce'), 500); }
 };
 
 /* 演示：桌宠加载后自我介绍 */
 setTimeout(() => {
-  window.ZZPet.say('老板，我在桌面上。有事随时叫我。', 4200);
+  window.Pet.say('老板，我在桌面上。有事随时叫我。', 4200);
 }, 1200);
 
 /* 右键菜单占位 */

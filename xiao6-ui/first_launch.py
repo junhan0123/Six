@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-庄周 · 首次启动初始化（配置初始化 / 目录创建 / Key 检查 / 可选依赖引导）
+小6 · 首次启动初始化（配置初始化 / 目录创建 / Key 检查 / 可选依赖引导）
 
 设计原则（零侵入，不改任何业务逻辑）：
   - 仅准备运行环境：生成 .env、创建运行时目录、检测 Key、可选安装增强依赖。
@@ -57,7 +57,7 @@ def ensure_env_file():
     # 兜底：写一个最小占位 .env
     try:
         with open(env_path, "w", encoding="utf-8") as f:
-            f.write("# 庄周运行时配置（由首次启动自动生成）\nAGNES_API_KEY=\n")
+            f.write("# 小6运行时配置（由首次启动自动生成）\nAGNES_API_KEY=\n")
         return True
     except OSError:
         return False

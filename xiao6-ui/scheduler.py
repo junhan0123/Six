@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""庄周 · Scheduler（Phase 9 Order 1）—— 周期任务调度基础层
+"""小6 · Scheduler（Phase 9 Order 1）—— 周期任务调度基础层
 
 职责：
   - 注册/取消/调度任务

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 本地向量语义嵌入（对齐参考实现 bge ONNX 本地向量 RAG）
+"""小6 · 本地向量语义嵌入（对齐参考实现 bge ONNX 本地向量 RAG）
 
 模型：BAAI/bge-small-zh-v1.5 的 ONNX 量化版（Xenova 移植，dim=512，~24MB，纯 CPU 推理）。
 - 依赖：onnxruntime + tokenizers（均已安装），无需 transformers。

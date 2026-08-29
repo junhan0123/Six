@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Phase 9 主动智能配置 + 通知策略（NotificationPolicy）
+"""小6 · Phase 9 主动智能配置 + 通知策略（NotificationPolicy）
 
 B1/B2 单一配置与通知裁决中心。
 - 纯标准库，无新依赖。

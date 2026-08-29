@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 工具系统：声明 / 执行 / function-calling 闭环 / 意图兜底"""
+"""小6 · 工具系统：声明 / 执行 / function-calling 闭环 / 意图兜底"""
 
 import ast
 import concurrent.futures
@@ -370,7 +370,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "kill_process",
-            "description": "终止本机进程。可传 pid（精确）或 name（按名，会终止所有同名进程）。关键系统进程与庄周自身会被拒绝。",
+            "description": "终止本机进程。可传 pid（精确）或 name（按名，会终止所有同名进程）。关键系统进程与小6自身会被拒绝。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -494,7 +494,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "manage_prefetch_task",
-            "description": "管理通用预取任务（对齐参考实现 manage_prefetch_task）：让庄周按间隔自动取数并缓存或推送。source 可为 weather/hotspot/web；task_action 为 cache(落盘预热) 或 notify(推主动消息)；interval 为秒。TICK 心跳会自动执行到期的启用任务。",
+            "description": "管理通用预取任务（对齐参考实现 manage_prefetch_task）：让小6按间隔自动取数并缓存或推送。source 可为 weather/hotspot/web；task_action 为 cache(落盘预热) 或 notify(推主动消息)；interval 为秒。TICK 心跳会自动执行到期的启用任务。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -698,7 +698,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "open_memory_audit",
-            "description": "打开记忆审计面板：查看庄周各类记忆存储（对话历史、笔记、人物卡等）的统计与抽样，并可按保留天数清理。当用户说「记忆审计」「记忆管理」「看看你记了什么」「清理记忆」时调用。",
+            "description": "打开记忆审计面板：查看小6各类记忆存储（对话历史、笔记、人物卡等）的统计与抽样，并可按保留天数清理。当用户说「记忆审计」「记忆管理」「看看你记了什么」「清理记忆」时调用。",
             "parameters": {
                 "type": "object",
                 "properties": {},
@@ -710,11 +710,11 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "review_output",
-            "description": "成果审视分身：以批判性视角审视一段回答（事实错误 / 逻辑漏洞 / 表达问题 / 改进点）。当用户说「审视一下」「检查这段回答」「复核」「分身点评」或要求审视上一条回复时调用。text 不传则自动审视最近一条庄周回复。",
+            "description": "成果审视分身：以批判性视角审视一段回答（事实错误 / 逻辑漏洞 / 表达问题 / 改进点）。当用户说「审视一下」「检查这段回答」「复核」「分身点评」或要求审视上一条回复时调用。text 不传则自动审视最近一条小6回复。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "text": {"type": "string", "description": "要审视的原文；留空则自动取最近一条庄周回复"},
+                    "text": {"type": "string", "description": "要审视的原文；留空则自动取最近一条小6回复"},
                 },
                 "required": [],
             },
@@ -724,7 +724,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "play_video",
-            "description": "搜索并打开视频播放。当用户想看视频、看剧、看番、看电影、看 B 站/YouTube 视频时调用。可传 url 直接播，或传 query 关键词（如「猫片」「谍战剧」）由庄周自动搜 bilibili 并打开全屏播放器。不要用于 AI 生成视频（那是 media_generate）。",
+            "description": "搜索并打开视频播放。当用户想看视频、看剧、看番、看电影、看 B 站/YouTube 视频时调用。可传 url 直接播，或传 query 关键词（如「猫片」「谍战剧」）由小6自动搜 bilibili 并打开全屏播放器。不要用于 AI 生成视频（那是 media_generate）。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1359,7 +1359,7 @@ def tool_file_rename(args):
 
 
 def _safe_to_kill(name, pid):
-    """拒绝杀死关键系统进程与庄周自身后端，避免把系统或自己搞挂。"""
+    """拒绝杀死关键系统进程与小6自身后端，避免把系统或自己搞挂。"""
     if pid in (0, 4):
         return False, "系统保留进程（PID %s），拒绝操作" % pid
     critical = {
@@ -1371,7 +1371,7 @@ def _safe_to_kill(name, pid):
         return False, "关键系统进程（%s），拒绝终止以防系统崩溃" % name
     try:
         if pid == os.getpid():
-            return False, "不能终止庄周后端自身进程"
+            return False, "不能终止小6后端自身进程"
     except Exception:
         pass
     return True, ""
@@ -1467,7 +1467,7 @@ def tool_kill_process(args):
             # 按名终止风险高：拒绝解释器/壳类名，避免误杀自身或系统
             nm = name.lower()
             if nm in ("python.exe", "python3.exe", "py.exe", "node.exe", "cmd.exe", "powershell.exe", "explorer.exe"):
-                msg = f"拒绝按名终止「{name}」：过于宽泛，可能误杀庄周后端或系统。请改用 pid 精确终止。"
+                msg = f"拒绝按名终止「{name}」：过于宽泛，可能误杀小6后端或系统。请改用 pid 精确终止。"
                 audit_tool("kill_process", args, "blocked", msg, started_at=t0)
                 return msg
             ok, why = _safe_to_kill(name, -1)
@@ -1583,7 +1583,7 @@ def tool_reset_session(args):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 本地软件安装（移植自参考实现 software-install，用庄周架构重写）
+# 本地软件安装（移植自参考实现 software-install，用小6架构重写）
 # 流程：探测 winget → 解析候选（中文别名 / 明确 id / 搜索）→ 后台线程跑安装 →
 #       用 scene 进度卡实时推给前端（push_scene_event + flush_scene_events）。
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2179,7 +2179,7 @@ def tool_tick_now(args):
             "reminders": "到期提醒",
             "all": "全部主动扫描",
         }.get(kind, kind)
-        return "已插队，庄周将立即执行%s（通常几秒内完成）。" % label
+        return "已插队，小6将立即执行%s（通常几秒内完成）。" % label
     except Exception as e:
         audit_tool("tick_now", args, "error", error=str(e), started_at=t0)
         return f"立即扫描触发失败：{e}"
@@ -2680,7 +2680,7 @@ def clear_pending_review():
 
 
 def _last_assistant_turn(limit=1):
-    """取最近一条庄周(xiao6)回复文本，供审视分身默认审视。"""
+    """取最近一条小6(xiao6)回复文本，供审视分身默认审视。"""
     try:
         from db import db_conn
         conn = db_conn()
@@ -2779,7 +2779,7 @@ def tool_use_skill(args):
 
 
 def tool_review_output(args):
-    """成果审视分身：审视指定文本（或最近一条庄周回复），返回提示并暂存面板数据。"""
+    """成果审视分身：审视指定文本（或最近一条小6回复），返回提示并暂存面板数据。"""
     from review_clone import review_text
     text = (args.get("text") or "").strip()
     if not text:
@@ -3767,7 +3767,7 @@ def detect_intents(text):
             kind = "selfcheck"
         elif re.search(r"唤醒|苏醒|早安|开机|上线|启动", t):
             kind = "awakening"
-        args = {"action": "set", "kind": kind, "id": "declared-" + kind, "title": "庄周卡片", "body": t}
+        args = {"action": "set", "kind": kind, "id": "declared-" + kind, "title": "小6卡片", "body": t}
         # choice：从「」或【】里抓选项
         if kind == "choice":
             opts = re.findall(r"[「【]([^」】]+)[」】]", t)

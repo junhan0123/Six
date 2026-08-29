@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 系统资源监控 + 服务端运行日志
+"""小6 · 系统资源监控 + 服务端运行日志
 
 优先使用 psutil（信息最全）。在未安装 psutil 的 Windows 环境中，
 回退到 ctypes 调用原生 API：PDH 取 CPU、GlobalMemoryStatusEx 取内存、

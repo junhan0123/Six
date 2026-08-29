@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Xiao6 · MCP Host / External Tool Bridge（Phase 41）
 
-庄周第一次真正进入「外部世界可执行 AI OS」的桥：
+小6第一次真正进入「外部世界可执行 AI OS」的桥：
   MCP Host（服务器管理 / stdio 传输 / 工具发现 / 调用 / 审计）
   + Browser Automation（第一个真实外部能力，经 Playwright MCP）。
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""庄周 · 人格一致性引擎（Phase 12 · P12-2）
+"""小6 · 人格一致性引擎（Phase 12 · P12-2）
 
-目标：让庄周的语气/风格/边界/小习惯跨会话稳定不变。
+目标：让小6的语气/风格/边界/小习惯跨会话稳定不变。
 设计：
   - 读 config 的 PERSONA_TONE / PERSONA_STYLE / PERSONA_BOUNDARIES / PERSONA_QUIRKS；
   - 支持 user_model 覆盖（user_model["tone"] / user_model["style"] 等）；

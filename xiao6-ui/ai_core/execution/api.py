@@ -15,6 +15,15 @@ from typing import Any, Dict, Optional
 
 from ai_core.execution.events import ExecutionEvent, ExecutionSession
 
+# execute_tool 返回字符串契约下的结构化失败信号（fail-closed：命中任一即判失败）。
+# 工具真实返回为字符串（str(result)），故用失败前缀集合判定，而非自然语言「成功/完成」。
+_TOOL_FAILURE_MARKERS = (
+    "工具执行失败", "未知工具", "未知技能", "外部 MCP 能力执行失败",
+    "无执行体映射", "在远程会话中不可用", "被权限策略阻止",
+    "被安全策略阻止", "用户拒绝执行", "为永久拒绝占位",
+    "自定义工具执行失败",
+)
+
 
 def run(task: str, context: dict = None, **kwargs) -> dict:
     """Unified execution entry point with policy gate.
@@ -148,11 +157,7 @@ def run(task: str, context: dict = None, **kwargs) -> dict:
         # Step 4: Publish completion
         # R8-P0：失败判定复用 execute_tool 的失败前缀/中部标记（与 CapabilityResult 同词汇），
         # 确保 Policy 拒绝 / 工具失败 / 未知工具或技能如实上报 success=False，不被误判为成功。
-        ok = not exec_error and not any(m in result_str for m in (
-            "工具执行失败", "未知工具", "未知技能", "外部 MCP 能力执行失败",
-            "无执行体映射", "在远程会话中不可用", "被权限策略阻止",
-            "被安全策略阻止", "用户拒绝执行", "为永久拒绝占位",
-        ))
+        ok = not exec_error and not any(m in result_str for m in _TOOL_FAILURE_MARKERS)
         exec_session.set_state("completed" if ok else "failed")
         ExecutionEvent.get().tool_finished(exec_session, ok=ok)
         ExecutionEvent.get().execution_completed(exec_session)

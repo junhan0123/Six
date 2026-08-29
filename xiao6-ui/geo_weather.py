@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 定位 & 天气（全部免 key）"""
+"""小6 · 定位 & 天气（全部免 key）"""
 
 import json
 import os

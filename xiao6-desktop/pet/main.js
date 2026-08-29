@@ -24,8 +24,9 @@ function createPetWindow() {
     titleBarStyle: 'hidden',
     type: 'toolbar', // Linux/Win 帮助系统把它当作工具窗，部分桌面环境可使其更浮窗化
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: false
     }
   });

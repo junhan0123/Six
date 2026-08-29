@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-庄周 · 本地指挥核心 · server.py（薄入口）
+小6 · 本地指挥核心 · server.py（薄入口）
 - 纯标准库（仅 TTS 用 edge-tts，lazy import）
 - 托管界面 (index.html / styles.css / app.js)
 - POST /api/chat  ->  function calling 闭环：调 Agnes -> 本地执行工具 -> 回填 -> 流式输出
@@ -732,10 +732,12 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
         self._send(404, json.dumps({"error": "not found"}))
 
     def _resolve_static(self, name):
-        """R8 Release Closure · 静态文件安全解析（realpath 校验）：
+        """R8 Release Closure · 静态文件安全解析（canonical path 校验）：
         - 禁止任何 ".." 路径分量 / 绝对路径 / NUL（防路径穿越）
         - 禁止 .env / .git（凭证与仓库元数据）
         - 禁止服务目录外文件（realpath 归一符号链接/大小写）
+        - RC2：改用 os.path.commonpath 做 canonical 边界校验（等价更严格），
+          symlink 经 realpath 归一后越界同样被拒。
         返回绝对路径；非法返回 None（调用方回 404）。"""
         name = (name or "").replace("\\", "/").lstrip("/")
         if not name or name.startswith("/") or "\x00" in name:
@@ -744,7 +746,10 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return None
         base = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
         fp = os.path.realpath(os.path.join(base, name))
-        if not (fp == base or fp.startswith(base + os.sep)):
+        try:
+            if os.path.commonpath([base, fp]) != base:
+                return None
+        except ValueError:
             return None
         bn = os.path.basename(fp)
         if bn == ".env" or ".env" in bn or ".git" in bn:
@@ -992,7 +997,7 @@ def main():
 
         _urllib.install_opener(_urllib.build_opener(_urllib.ProxyHandler({"http": _proxy, "https": _proxy})))
         print(f"[代理] 已启用全局代理 -> {_proxy}")
-    print(f"庄周 指挥核心启动中 ->  http://localhost:{port}")
+    print(f"小6 指挥核心启动中 ->  http://localhost:{port}")
     print(f"模型: {config.AGNES_MODEL}  |  提供商: {config.AGNES_PROVIDER}  |  工具: {', '.join(TOOL_FUNCS.keys())}")
     # 知识库：启动即扫描 + 建索引 + 启用文件 watcher（修复：此前仅在请求时懒加载，watcher 从未激活）
     try:

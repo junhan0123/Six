@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 实时热点热榜"""
+"""小6 · 实时热点热榜"""
 
 import concurrent.futures
 import os

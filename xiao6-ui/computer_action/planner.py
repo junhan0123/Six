@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 电脑动作规划层（planner.py）—— Phase 21.1
+"""小6 · 电脑动作规划层（planner.py）—— Phase 21.1
 
 意图/目标 → 白名单动作计划。裁决 100% 委托 os_bridge.action_plan
 （→ permission_guard → policy_engine）。本模块只做：

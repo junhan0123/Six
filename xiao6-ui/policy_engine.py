@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 授权内核（Policy Engine）—— Agent 级 human-in-the-loop 闸门。
+"""小6 · 授权内核（Policy Engine）—— Agent 级 human-in-the-loop 闸门。
 
 取代「执行侧护栏」之外的空缺：执行侧（sandbox / tool_factory）已负责
 「能不能安全运行」（危险命令 / 内网 / 云元数据硬阻断），本模块负责
@@ -270,7 +270,7 @@ def request_approval(tool: str, args: dict, summary: str = "", timeout: float = 
             "ticket": ticket,
             "tool": tool,
             "args_preview": _preview(tool, args),
-            "summary": summary or f"庄周请求执行工具 {tool}",
+            "summary": summary or f"小6请求执行工具 {tool}",
         }, source="policy_engine")
     except Exception as e:
         print(f"[policy] 审批弹窗发布失败（按拒绝处理）: {e}")

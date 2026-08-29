@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Verification Layer（Phase 7 Order 3 · 执行后复核基础层）
+"""小6 · Verification Layer（Phase 7 Order 3 · 执行后复核基础层）
 
 职责：Computer Action 执行成功后，重新观察世界状态并验证「预期效果」是否真实达成。
 这是 Observation → Action → Verification 闭环的最后一环。

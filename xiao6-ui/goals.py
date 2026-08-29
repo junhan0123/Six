@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 目标系统核心服务（Phase 3）
+"""小6 · 目标系统核心服务（Phase 3）
 
 Goal = 用户意图 / 项目 / 长期方向；可拆解为多个 Task（经 tasks.goal_id 软外键归属）。
 目标进度优先由子 Task 完成比例自动聚合，也允许手动覆盖。
@@ -447,7 +447,7 @@ def active_goals_snapshot(limit=3) -> str:
     Phase 39-B（修复 38J-R 进度泄漏）：仅输出目标标题，剥离「进度 xx% / 第 X/Y 步」
     等自然语言状态——内部 Goal.progress 与子任务结构化数据保持不变，需时由工具精确返回
     （与 #581 对 personal_context_source 的「进度脱敏」处理保持一致）。
-    这样庄周在「好了吗？」类问询中不会把进度百分比原样念出，
+    这样小6在「好了吗？」类问询中不会把进度百分比原样念出，
     而用户明确问「做到多少了？」时仍可由能力精确返回真实进度。
     """
     goals = list_active_goals(limit=limit)

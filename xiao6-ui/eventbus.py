@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 事件总线（EventBus）—— 模块间唯一通信脊柱
+"""小6 · 事件总线（EventBus）—— 模块间唯一通信脊柱
 
 宪法 §15 铁律：取代 proactive.SUBSCRIBERS 全局可变队列与跨模块直发。
 纯标准库实现，无新依赖。所有状态变更经本总线发布，订阅者按 topic 解耦接收。

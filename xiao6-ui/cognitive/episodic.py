@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 认知层 · 情节记忆（Episodic Memory）
+"""小6 · 认知层 · 情节记忆（Episodic Memory）
 
 过去重要事件/决定/承诺/偏好的结构化条目，按与当前输入的**语义相关度**召回。
 复用现有 embed.py 本地 ONNX 向量检索（零新依赖、本地优先），叠加

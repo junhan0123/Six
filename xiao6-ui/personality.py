@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 人格引擎（Personality）—— 五维动态人格参数
+"""小6 · 人格引擎（Personality）—— 五维动态人格参数
 
 宪法 §19：人格须动态生成、不得写死；§4.1 将 Personality 列为 Context 来源。
 本模块：PersonalityParams（五维 0~1）+ generate（默认 = 当前行为等价）+ render_prompt + 发布 PersonalityChanged。

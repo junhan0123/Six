@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 媒体生成 Provider（Phase 4 脚手架，env 门控 + 优雅降级）
+"""小6 · 媒体生成 Provider（Phase 4 脚手架，env 门控 + 优雅降级）
 
 能力：文生图 / 文生视频 / 文生音乐。
 默认：零密钥优先，未配置即返回「未启用」文案，绝不消耗任何积分。
@@ -69,7 +69,7 @@ def _minimax_generate(kind, prompt, opts):
             payload = {
                 "model": model,
                 "lyrics": prompt,
-                "title": opts.get("title", "庄周生成曲"),
+                "title": opts.get("title", "小6生成曲"),
             }
             url = "https://api.minimax.chat/v1/music_generation"
         else:

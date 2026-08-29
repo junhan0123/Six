@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 认知层 · 用户模型（User Model）—— Phase 20.5 Bootstrap + 可信治理
+"""小6 · 认知层 · 用户模型（User Model）—— Phase 20.5 Bootstrap + 可信治理
 
 结构化、本地优先、带来源(source)与置信度(confidence)的长期用户认知。
 - 既支持 LLM 自动演化（upsert_user_model），也支持**可信引导播种**（bootstrap_user_model）；

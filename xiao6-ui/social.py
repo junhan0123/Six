@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 社交扩展 Provider（Phase 4 脚手架，env 门控 + 优雅降级）
+"""小6 · 社交扩展 Provider（Phase 4 脚手架，env 门控 + 优雅降级）
 
 能力：Discord / 飞书 消息推送。
 默认：零密钥优先，未配置即返回「未启用」文案，绝不消耗任何积分/触发外部请求。

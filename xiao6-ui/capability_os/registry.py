@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 能力操作系统 · 统一能力注册表（Capability Registry）—— Phase 23.1
+"""小6 · 能力操作系统 · 统一能力注册表（Capability Registry）—— Phase 23.1
 
 职责：把散落在 4 处的「能力真相」收口为单一 Capability 模型：
   A. capability_os.registry（本文件）自持电脑能力目录（COND-A4 / CAP-08 D-CAP08-2 内化；原 capability_registry.py 废弃垫片已于 COND-A8 删除）
@@ -8,7 +8,7 @@
   D. capability-exposure.js    —— UI 分类（仅参考，不在运行时依赖）
 
 纪律（严格复用，禁新建）：
-- 本文件【不执行任何能力】。它只描述「庄周拥有哪些能力、各自用途、风险、权限、
+- 本文件【不执行任何能力】。它只描述「小6拥有哪些能力、各自用途、风险、权限、
   真实入口在哪」。执行一律委托既有入口（os_bridge / tools.execute_tool / 上下文源 /
   self_diagnosis），绝不复制或绕过。
 - 不新建权限系统：permission 字段只是对既有 policy_engine / permission_guard 词汇的
@@ -107,7 +107,7 @@ def _product_catalog() -> List[Capability]:
     return [
         Capability(
             id="voice", name="语音", group=GROUP_VOICE, icon="🎙️",
-            description="语音识别（ASR）与语音合成（TTS），让庄周能听能说。",
+            description="语音识别（ASR）与语音合成（TTS），让小6能听能说。",
             risk=Risk.LOW, permission=Permission.AUTO,
             input="音频 / 文本", output="文本 / 语音",
             entry="asr.transcribe / server._tts_sovits(GPT_SOVITS_URL)",
@@ -117,7 +117,7 @@ def _product_catalog() -> List[Capability]:
         ),
         Capability(
             id="memory", name="记忆", group=GROUP_MEMORY, icon="🧠",
-            description="短期对话记忆、长期记忆沉淀与重要性召回，让庄周记得你。",
+            description="短期对话记忆、长期记忆沉淀与重要性召回，让小6记得你。",
             risk=Risk.LOW, permission=Permission.AUTO,
             input="查询 / 新内容", output="记忆块 / 回忆",
             entry="memory.build_memory_block / memory_intelligence.recall",
@@ -137,7 +137,7 @@ def _product_catalog() -> List[Capability]:
         ),
         Capability(
             id="goals", name="目标", group=GROUP_GOALS, icon="🎯",
-            description="目标与任务管理，庄周据此自主拆解并执行多步任务。",
+            description="目标与任务管理，小6据此自主拆解并执行多步任务。",
             risk=Risk.LOW, permission=Permission.AUTO,
             input="目标描述", output="目标/任务树",
             entry="goals.create_goal / goals.plan_goal",
@@ -178,7 +178,7 @@ def _product_catalog() -> List[Capability]:
         ),
         Capability(
             id="world_pulse", name="世界脉动", group=GROUP_WORLD_PULSE, icon="🌐",
-            description="实时热点、热榜与新闻预取，让庄周紧跟时事。",
+            description="实时热点、热榜与新闻预取，让小6紧跟时事。",
             risk=Risk.LOW, permission=Permission.AUTO,
             input="话题", output="热榜/新闻上下文",
             entry="hotspots.build_hotspot_context / prefetch.get_valid_prefetch",

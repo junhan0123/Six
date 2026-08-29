@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 认知层包（cognitive）
+"""小6 · 认知层包（cognitive）
 
 提供用户模型 + 情节记忆的读写/召回逻辑，以及后台自动抽取入口。
 本包仅依赖 db / llm / embed / config / memory，不依赖 context（保持单向依赖）。

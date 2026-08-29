@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 本地 Agent 委托（借力 Claude Code via agnes-proxy:8090）
+"""小6 · 本地 Agent 委托（借力 Claude Code via agnes-proxy:8090）
 
 安全模型：
 - 默认关闭（AGENT_DELEGATE_ENABLED）。

@@ -49,7 +49,7 @@ class ChatMixin:
         """GET /api/chat/history?limit=N&session=xxx — 只读对话历史。
 
         按 session 分组返回最近若干轮对话，供 Memory Archive 展示
-        「用户输入摘要 / 庄周回应摘要」。只读 chat_log，不写任何数据。
+        「用户输入摘要 / 小6回应摘要」。只读 chat_log，不写任何数据。
         """
         try:
             qs = parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}

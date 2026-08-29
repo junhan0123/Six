@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Memory 层 · Legacy 投影写入器（P5.2 · Canonical Memory Integration）
+"""小6 · Memory 层 · Legacy 投影写入器（P5.2 · Canonical Memory Integration）
 
 **定位（务必读清，避免误判为「第二套记忆系统」）：**
 

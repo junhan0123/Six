@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · OS Bridge —— Phase 15 / 16 / 17 统一接线层
+"""小6 · OS Bridge —— Phase 15 / 16 / 17 统一接线层
 
 定位（严格约束，读之前先读这一段）：
 - 本模块**不是** Runtime，**不持有**业务状态，**不实现**任何能力。
@@ -566,7 +566,7 @@ def _derive_project(git, summary_text, profile_project):
 
     # S3 · memory_summary 项目关键词（权重 0.20）
     s3_hit = None
-    for k in ("AI OS", "AIOS", "Xiao6", "xiao6", "庄周"):
+    for k in ("AI OS", "AIOS", "Xiao6", "xiao6", "小6"):
         if k in (summary_text or ""):
             s3_hit = k
             break

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 离线唤醒词 / 关键词侦测（纯标准库）。
+"""小6 · 离线唤醒词 / 关键词侦测（纯标准库）。
 
 用途：在语音助手的本地链路里做轻量级唤醒词 / 关键词 spotting，
 避免每一次语音都进完整 ASR。特性：
@@ -20,9 +20,9 @@ ENV_ENABLED = "XIAO6_KWS_ENABLED"
 ENV_PHRASES = "XIAO6_WAKE_PHRASE"
 ENV_SENSITIVITY = "XIAO6_KWS_SENSITIVITY"
 
-# 默认值：产品名「庄周」及其口语昵称「小周」均可唤醒；保留旧名「小6」兼容既有用户。
-# 注：产品早期代号小6，后定名庄周；唤醒词需随产品名演进，故默认含庄周/小周。
-DEF_WAKE_PHRASES = "庄周,小周,小6"
+# 默认值：产品名「小6」及其口语昵称「小周」均可唤醒；保留旧名「小6」兼容既有用户。
+# 注：产品早期代号小6，后定名小6；唤醒词需随产品名演进，故默认含小6/小周。
+DEF_WAKE_PHRASES = "小6,小周,小6"
 DEF_SENSITIVITY = 0.6
 
 

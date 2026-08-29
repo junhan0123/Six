@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Computer Action Layer v1.0（独立能力层）—— Phase 21
+"""小6 · Computer Action Layer v1.0（独立能力层）—— Phase 21
 
 门面：observe / plan / execute / get_capabilities / run_loop。
 设计纪律（守红线）：

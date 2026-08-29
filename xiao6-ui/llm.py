@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Agnes / OpenAI 兼容大模型调用（带重试 + 最小间隔，支持动态配置热重载）"""
+"""小6 · Agnes / OpenAI 兼容大模型调用（带重试 + 最小间隔，支持动态配置热重载）"""
 
 import json
 import threading

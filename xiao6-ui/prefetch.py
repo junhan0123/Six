@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · ACI 预热缓存（参考实现 prefetch 对齐，Phase 2）
+"""小6 · ACI 预热缓存（参考实现 prefetch 对齐，Phase 2）
 
 后台定时拉取天气/新闻写入 prefetch_cache 表，build_context_prefix 读取注入 system prompt，
 模型醒来即用。天气复用 weather.get_weather（open-meteo 免 key），新闻用 HackerNews（免 key）。

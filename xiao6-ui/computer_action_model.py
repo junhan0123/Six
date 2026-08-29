@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · ComputerAction 数据模型 —— Phase 7 Order 2
+"""小6 · ComputerAction 数据模型 —— Phase 7 Order 2
 
 纯数据结构：承载一次电脑动作的全部元数据 + 权限裁决结果 + 执行结果。
 不依赖 OS / 网络 / UI。后端 Permission Guard 与前端 permission-guard 共用同一字段契约。

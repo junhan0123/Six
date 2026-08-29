@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 语音 ASR Provider（本地优先 + 云端兜底）
+"""小6 · 语音 ASR Provider（本地优先 + 云端兜底）
 
 能力：音频（文件或内存字节）→ 文本（语音转写）。
 优先级：
@@ -232,7 +232,7 @@ def whisper_available():
 
 # 引导词：whisper 中文默认可能输出繁体，且不认识产品专名。
 # 给一段简体上下文可同时纠正字形与专名，属解码提示，不改变模型与接口。
-_WHISPER_PROMPT = "以下是简体中文普通话对话。庄周是这台电脑上的智能助手。"
+_WHISPER_PROMPT = "以下是简体中文普通话对话。小6是这台电脑上的智能助手。"
 
 
 def _whisper_transcribe(wav_path):

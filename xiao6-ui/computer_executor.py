@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Computer Executor（Phase 7 Order 3 · 真实但安全的电脑执行器）
+"""小6 · Computer Executor（Phase 7 Order 3 · 真实但安全的电脑执行器）
 
 纪律（Order 3 安全约束，最高优先级）：
 - 本执行器是 Computer Action 的**唯一**执行系统；只能经 permission_guard 调用，

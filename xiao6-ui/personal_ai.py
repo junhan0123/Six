@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""庄周 · Personal AI Deepening（Phase 37.2 · Personalization Layer）
+"""小6 · Personal AI Deepening（Phase 37.2 · Personalization Layer）
 
-统一「让庄周更懂我」的个性化学习层。严格增量、零侵入：
+统一「让小6更懂我」的个性化学习层。严格增量、零侵入：
 - 零改 Memory V2 核心 schema / memory_distiller / memory_intelligence 写路径；
 - 零改 Agent Runtime / Planner / Executor / EventBus / Tool Registry；
 - 确认/纠正/忽略 走 **append-only notes 账本**（folder="记忆确认"），绝不写 memories.status；
@@ -355,7 +355,7 @@ def resolve_identity() -> dict:
     """
     um = _load_user_model()
     idn = um.get("identity") or {}
-    name = (idn.get("name") or "").strip() or "庄周"  # 系统事实兜底（AI 名称固定）
+    name = (idn.get("name") or "").strip() or "小6"  # 系统事实兜底（AI 名称固定）
     role_um = (idn.get("role") or "").strip()          # "owner"
 
     pc_role = ""

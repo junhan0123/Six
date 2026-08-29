@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 长期记忆蒸馏器（Phase 12 · P12-1）
+"""小6 · 长期记忆蒸馏器（Phase 12 · P12-1）
 
 目标：定期从对话中提取结构化长期记忆，写入 memories 表，更新用户模型。
 提取类型（spec 定义）：
@@ -102,7 +102,7 @@ def _llm_extract(messages: list) -> list[dict]:
     from llm import agnes_completion
 
     convo = "\n".join(
-        f"{( '用户' if (m.get('role')=='user') else '庄周' )}：{(m.get('content') or '').strip()}"
+        f"{( '用户' if (m.get('role')=='user') else '小6' )}：{(m.get('content') or '').strip()}"
         for m in messages if isinstance(m, dict)
     )
     prompt = (

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Phase 9 B1：薄决策层（ProactiveEngine，纯函数，无副作用）
+"""小6 · Phase 9 B1：薄决策层（ProactiveEngine，纯函数，无副作用）
 
 输入：一个 signal dict（type + 上下文字段）。
 输出：Decision(action, signal_type, importance, title, description, payload)

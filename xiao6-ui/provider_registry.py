@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · Provider Registry（Phase 10-C · 单一元数据真相）
+"""小6 · Provider Registry（Phase 10-C · 单一元数据真相）
 
 职责边界（严格最小）：
 - 本模块**只声明元数据**：Provider 身份、配置键映射、鉴权要求、隐私类、能力矩阵。
