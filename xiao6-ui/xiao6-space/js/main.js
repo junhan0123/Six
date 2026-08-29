@@ -80,13 +80,16 @@
 
     if (pendingApprovalCount() > 0) {
       mode = 'waiting';
-      sub = '有一项操作等你确认';
+      sub = '等待你的确认';
     } else if (state.busy) {
       mode = 'busy';
       sub = state.busyDetail || (sub || '正在处理你的指令…');
     } else if (st === 'ERROR' || st === 'FAILED') {
       mode = 'error';
-      sub = '上一次执行遇到问题';
+      sub = '执行失败';
+    } else if (st === 'COMPLETED' || st === 'STOPPED') {
+      mode = 'idle';
+      sub = '任务完成';
     } else {
       var cur = state.snap.agent.current_goal;
       var active = state.snap.goals.filter(function (g) { return String(g.status || '').toLowerCase() === 'active'; });

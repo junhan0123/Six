@@ -233,8 +233,9 @@
     }
     // RESULT 卡片：AGENT 完成任务后的结果摘要
     if (n.type === 'result') {
+      var isFailed = n.status === 'failed';
       var rh = '<div class="xiao6-res-card">';
-      rh += '<div class="xiao6-tool-summary"><b>✓ 任务完成</b></div>';
+      rh += '<div class="xiao6-tool-summary"><b>' + (isFailed ? '! 任务失败' : '✓ 任务完成') + '</b></div>';
       if (n.title) rh += '<div class="xiao6-tl-meta">' + esc(n.title) + '</div>';
       if (n.summary) rh += '<div class="xiao6-tl-meta">' + esc(n.summary) + '</div>';
       if (n.detail) rh += '<div class="xiao6-tl-meta">' + esc(preview(n.detail, 200)) + '</div>';
@@ -307,42 +308,61 @@
     if (sugg) sugg.hidden = true;
     var atBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 100;
     // 插入阶段分隔符（不持久化到 timeline，仅渲染时计算）
-    var phaseMarker = null;
-    var phaseLabels = [];
-    var toolCount = 0;
+    // 阶段显示规则：
+    //   PLAN  = 有 goal/task 节点
+    //   EXECUTE = 有 tool 节点
+    //   VERIFY = tool 节点之后出现 assistant success（有工具调用才显示）
+    //   RESULT = AGENT_COMPLETED execution 节点或 AGENT 完成 result 节点出现
+    var hasGoal = false;
+    var hasTool = false;
+    var hasExecDone = false;
+    var hasResult = false;
     for (var i = 0; i < tl.length; i++) {
       var n = tl[i];
-      if (n.type === 'tool') toolCount++;
+      if (n.type === 'goal' || n.type === 'task') hasGoal = true;
+      if (n.type === 'tool') hasTool = true;
+      if (n.type === 'execution' && n.status === 'success') hasExecDone = true;
+      if (n.type === 'result') hasResult = true;
     }
-    // 根据工具节点数量推导阶段标签
-    if (toolCount > 0) phaseLabels.push('PLAN');
-    phaseLabels.push('EXECUTE');
-    if (toolCount > 0) phaseLabels.push('VERIFY');
-    phaseLabels.push('RESULT');
-    var phaseIndex = 0;
+    var phaseMarker = null;
+    // 按顺序追踪哪些阶段标签已插入
+    var shownPlan = !hasGoal;       // 如果没有任何 goal/task，PLAN 阶段不存在
+    var shownExecute = !hasTool;    // 如果没有任何 tool，EXECUTE 阶段不存在
+    var shownVerify = !hasTool;     // VERIFY 只在有工具时才显示
+    var shownResult = !hasResult && !hasExecDone; // RESULT 在结果节点或执行完成前不显示
     for (var i = 0; i < tl.length; i++) {
       var n = tl[i];
-      // 阶段标记：在对应阶段首次出现时插入标签
-      if ((n.type === 'goal' || n.type === 'task') && phaseIndex < phaseLabels.length && phaseMarker !== phaseLabels[phaseIndex]) {
-        phaseMarker = phaseLabels[phaseIndex];
-        var pe = el('div', 'xiao6-phase-label');
-        pe.textContent = phaseMarker;
-        list.appendChild(pe);
-        phaseIndex++;
+      // PLAN 阶段：第一个 goal/task 节点前插入（如果没有 goal/task 则不插入）
+      if (n.type === 'goal' || n.type === 'task') {
+        if (!shownPlan) {
+          var pe0 = el('div', 'xiao6-phase-label');
+          pe0.textContent = 'PLAN';
+          list.appendChild(pe0);
+          shownPlan = true;
+        }
       }
-      // VERIFY 阶段：assistant 最终回复出现在 tool 节点之后
-      if (n.type === 'assistant' && n.status === 'success' && toolCount > 0 && phaseMarker !== 'VERIFY') {
+      // EXECUTE 阶段：第一个 tool 节点前插入（如果没有 tool 则不插入）
+      if (n.type === 'tool') {
+        if (!shownExecute) {
+          var pe1 = el('div', 'xiao6-phase-label');
+          pe1.textContent = 'EXECUTE';
+          list.appendChild(pe1);
+          shownExecute = true;
+        }
+      }
+      // VERIFY 阶段：assistant 最终回复出现在 tool 之后
+      if (n.type === 'assistant' && n.status === 'success' && hasTool && !shownVerify) {
         var vpe = el('div', 'xiao6-phase-label');
         vpe.textContent = 'VERIFY';
         list.appendChild(vpe);
-        phaseMarker = 'VERIFY';
+        shownVerify = true;
       }
-      // RESULT 阶段：AGENT_COMPLETED 执行节点后
-      if (n.type === 'execution' && n.title && n.title.indexOf('执行完成') >= 0 && phaseMarker !== 'RESULT') {
+      // RESULT 阶段：result 节点或 execution_completed 节点后
+      if ((n.type === 'result' || (n.type === 'execution' && n.title && n.title.indexOf('执行完成') >= 0)) && !shownResult) {
         var rpe = el('div', 'xiao6-phase-label');
         rpe.textContent = 'RESULT';
         list.appendChild(rpe);
-        phaseMarker = 'RESULT';
+        shownResult = true;
       }
       var rec = domById[n.id];
       if (!rec) {
