@@ -10,174 +10,272 @@
 <link rel="stylesheet" href="css/workspace.css" />
 <link rel="stylesheet" href="css/panel.css" />
 <style>
-/* AgnesCode-style accent: indigo (#6366F1) instead of flat gray */
+/* AgnesCode-style overrides */
 :root {
   --x6-brand: #6366F1;
   --x6-brand-hover: #4F46E5;
   --x6-brand-light: #EEF2FF;
 }
-.x6-nav-btn.is-active { background: var(--x6-brand-light) !important; color: var(--x6-brand) !important; }
-.x6-composer-send { background: var(--x6-brand) !important; }
-.x6-composer-send:hover { background: var(--x6-brand-hover) !important; }
-.x6-model-sel-select { border-color: var(--x6-border); color: var(--x6-text-secondary); font-size: 12px; padding: 2px 6px; border-radius: 4px; background: var(--x6-surface-2); }
+.x6-nav-btn.is-active { background: var(--x6-brand-light); color: var(--x6-brand); }
+.x6-composer-send { background: var(--x6-brand); }
+.x6-composer-send:hover { background: var(--x6-brand-hover); }
+.x6-model-sel-select { border-color: var(--x6-border); color: var(--x6-text-secondary); font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--x6-surface-2); }
 </style>
 </head>
 <body>
 
-<!-- ═══ Sidebar ═══ -->
-<aside class="x6-sidebar" id="sidebar">
-  <!-- Brand -->
-  <div class="x6-sidebar-brand">
-    <div class="x6-logo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--x6-brand)" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="var(--x6-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span class="x6-logo-text">小6</span>
-    </div>
-    <button class="x6-new-task-btn" id="newTaskBtn" title="新任务">＋ 新任务</button>
+<!-- ═══ Top Menu Bar (native desktop style) ═══ -->
+<div class="x6-menubar">
+  <div class="x6-menubar-logo">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--x6-brand)" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="var(--x6-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>小6</span>
   </div>
-
-  <!-- Nav -->
-  <nav class="x6-sidebar-nav">
-    <button class="x6-nav-btn is-active" data-nav="home">💬 新对话</button>
-    <button class="x6-nav-btn" data-nav="timer">⏰ 定时任务</button>
-    <button class="x6-nav-btn" data-nav="plugins">🔌 插件</button>
-  </nav>
-
-  <!-- Projects -->
-  <div class="x6-sidebar-section">
-    <div class="x6-section-header">
-      <span>项目</span>
-      <span class="x6-section-count" id="projectCount">0</span>
-    </div>
-    <div class="x6-project-list" id="projectList">
-      <div class="x6-project-empty">暂无项目</div>
-    </div>
+  <div class="x6-menubar-items">
+    <button class="x6-menubar-btn" data-menu="file">文件</button>
+    <button class="x6-menubar-btn" data-menu="edit">编辑</button>
+    <button class="x6-menubar-btn" data-menu="view">视图</button>
+    <button class="x6-menubar-btn" data-menu="help">帮助</button>
   </div>
-
-  <!-- History -->
-  <div class="x6-sidebar-section">
-    <div class="x6-section-header">
-      <span>最近对话</span>
-    </div>
-    <div class="x6-history-list" id="historyList">
-      <div class="x6-history-empty">暂无对话</div>
-    </div>
+  <div class="x6-menubar-actions">
+    <button class="x6-menubar-search" title="搜索">🔍</button>
+    <button class="x6-menubar-layout" title="折叠侧边栏" id="toggleSidebar">⊞</button>
   </div>
+</div>
 
-  <!-- User -->
-  <div class="x6-sidebar-footer">
-    <div class="x6-user-info">
-      <div class="x6-avatar">6</div>
-      <div class="x6-user-meta">
-        <div class="x6-username">用户</div>
-        <div class="x6-plan">免费版</div>
+<!-- ═══ Dropdown Menus ═══ -->
+<div class="x6-menu-dropdown" id="menu-file" hidden>
+  <div class="x6-menu-item"><span>新建聊天</span><span class="x6-menu-key">Ctrl+T</span></div>
+  <div class="x6-menu-item"><span>新建聊天窗口</span><span class="x6-menu-key">Ctrl+N</span></div>
+  <div class="x6-menu-item"><span>打开目录...</span><span class="x6-menu-key">Ctrl+O</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item"><span>设置</span><span class="x6-menu-key">Ctrl+,</span></div>
+  <div class="x6-menu-item"><span>聚焦小6窗口</span><span class="x6-menu-key">Ctrl+Alt+G</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item"><span>退出</span><span class="x6-menu-key">Ctrl+Q</span></div>
+</div>
+
+<div class="x6-menu-dropdown" id="menu-edit" hidden>
+  <div class="x6-menu-item"><span>撤销</span><span class="x6-menu-key">Ctrl+Z</span></div>
+  <div class="x6-menu-item"><span>重做</span><span class="x6-menu-key">Ctrl+Y</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item"><span>剪切</span><span class="x6-menu-key">Ctrl+X</span></div>
+  <div class="x6-menu-item"><span>复制</span><span class="x6-menu-key">Ctrl+C</span></div>
+  <div class="x6-menu-item"><span>粘贴</span><span class="x6-menu-key">Ctrl+V</span></div>
+  <div class="x6-menu-item"><span>全选</span><span class="x6-menu-key">Ctrl+A</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item"><span>查找</span><span class="x6-menu-arrow">▶</span></div>
+</div>
+
+<div class="x6-menu-dropdown" id="menu-view" hidden>
+  <div class="x6-menu-item"><span>实际大小</span></div>
+  <div class="x6-menu-item"><span>放大</span></div>
+  <div class="x6-menu-item"><span>缩小</span></div>
+  <div class="x6-menu-item"><span>切换全屏</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item"><span>切换导航</span><span class="x6-menu-key">Ctrl+/</span></div>
+  <div class="x6-menu-item"><span>窗口置顶</span><span class="x6-menu-key">Ctrl+Shift+T</span></div>
+</div>
+
+<div class="x6-menu-dropdown" id="menu-help" hidden>
+  <div class="x6-menu-item"><span>关于小6</span></div>
+  <div class="x6-menu-item"><span>使用帮助</span></div>
+  <div class="x6-menu-item"><span>反馈问题</span></div>
+</div>
+
+<!-- ═══ App Container ═══ -->
+<div class="x6-app" id="app">
+
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="x6-sidebar" id="sidebar">
+    <!-- Brand -->
+    <div class="x6-sidebar-brand">
+      <div class="x6-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--x6-brand)" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="var(--x6-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="x6-logo-text">小6</span>
       </div>
     </div>
-    <button class="x6-settings-btn" title="设置">⚙</button>
-  </div>
-</aside>
 
-<!-- ═══ Shell (main area) ═══ -->
-<div class="x6-shell" id="shell">
-  <!-- Top bar -->
-  <header class="x6-topbar">
-    <div class="x6-topbar-left">
-      <span class="x6-topbar-title" id="topbarTitle">小6</span>
-      <span class="x6-topbar-subtitle" id="topbarSubtitle">有什么我可以帮你？</span>
-    </div>
-    <div class="x6-topbar-right">
-      <div class="x6-model-sel" id="modelSelWrap">
-        <select class="x6-model-sel-select" id="modelSel">
-          <option value="agnes-2.5-flash">Agnes 2.5 Flash</option>
-          <option value="deepseek-r1-671b">DeepSeek R1 671B</option>
-        </select>
+    <!-- New Chat Button -->
+    <button class="x6-new-chat-btn" id="newChatBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>新对话</span>
+    </button>
+
+    <!-- Nav -->
+    <nav class="x6-sidebar-nav">
+      <button class="x6-nav-btn" data-nav="timer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>定时任务</span>
+      </button>
+      <button class="x6-nav-btn" data-nav="plugins">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="currentColor" stroke-width="2"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="currentColor" stroke-width="2"/></svg>
+        <span>插件·技能·应用</span>
+      </button>
+    </nav>
+
+    <!-- Projects -->
+    <div class="x6-sidebar-section">
+      <div class="x6-section-header">
+        <span>项目</span>
+        <span class="x6-section-count" id="projectCount">0</span>
       </div>
-      <div class="x6-status-dot-wrap" id="runtimeState" data-mode="online">
-        <span class="x6-status-dot"></span>
-        <span class="x6-status-text">在线</span>
+      <div class="x6-project-list" id="projectList">
+        <div class="x6-project-empty">暂无项目</div>
       </div>
     </div>
-  </header>
 
-  <!-- Views -->
-  <main class="x6-main">
-    <!-- HOME view -->
-    <section class="x6-view x6-view-home" data-view="home">
-      <!-- Hero -->
-      <div class="x6-hero" id="hero">
-        <div class="x6-hero-inner">
-          <h1 class="x6-hero-title">你好，<span class="x6-hero-name">614415</span></h1>
-          <p class="x6-hero-sub">我能为你做什么？</p>
+    <!-- Conversations -->
+    <div class="x6-sidebar-section">
+      <div class="x6-section-header">
+        <span>对话</span>
+      </div>
+      <div class="x6-history-list" id="historyList">
+        <div class="x6-history-empty">暂无对话</div>
+      </div>
+    </div>
 
-          <!-- Composer: AgnesCode style -->
-          <div class="x6-composer-wrap" id="composerWrap">
-            <div class="x6-composer-hint">
-              <span>@ 引用文件 &nbsp;·&nbsp; / 调用指令 &nbsp;·&nbsp; $ 调用技能</span>
-            </div>
-            <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="给小6一个任务……"></textarea>
-            <div class="x6-composer-bar">
-              <div class="x6-composer-left">
-                <button class="x6-composer-attach" title="附件">📎</button>
-                <button class="x6-composer-mode" id="modeSel">智能模式 ▾</button>
-              </div>
-              <div class="x6-composer-right">
-                <button class="x6-composer-voice" id="voiceBtn" title="语音输入">🎤</button>
-                <button class="x6-composer-send" id="sendBtn" title="发送">↑</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick actions -->
-          <div class="x6-quick-actions">
-            <div class="x6-quick-label">快速开始</div>
-            <div class="x6-quick-grid">
-              <button class="x6-quick-card" data-prompt="帮我检查这个项目"><span>🔍</span>检查项目</button>
-              <button class="x6-quick-card" data-prompt="帮我写一个工具"><span>⚡</span>开发工具</button>
-              <button class="x6-quick-card" data-prompt="帮我分析一下代码"><span>📊</span>分析代码</button>
-              <button class="x6-quick-card" data-prompt="帮我生成一个网页"><span>🌐</span>制作网页</button>
-            </div>
-          </div>
-
-          <!-- Timeline (compact) -->
-          <div class="x6-timeline-section" id="timelineSection" style="display:none">
-            <div class="x6-timeline-header">
-              <span>执行过程</span>
-              <button class="x6-timeline-toggle" id="inspTrigger">展开详情 ▸</button>
-            </div>
-            <div class="x6-timeline-body" id="timelineBody"></div>
-          </div>
+    <!-- User -->
+    <div class="x6-sidebar-footer">
+      <div class="x6-user-info">
+        <div class="x6-avatar" id="userAvatar">6</div>
+        <div class="x6-user-meta">
+          <div class="x6-username" id="userName">用户</div>
+          <div class="x6-plan">免费版</div>
         </div>
       </div>
-    </section>
+      <button class="x6-settings-btn" id="settingsBtn" title="设置">⚙</button>
+    </div>
+  </aside>
 
-    <!-- TIMER view -->
-    <section class="x6-view" data-view="timer" hidden>
-      <div class="x6-empty-state">
-        <div class="x6-empty-icon">⏰</div>
-        <div class="x6-empty-title">定时任务</div>
-        <div class="x6-empty-desc">暂未配置定时任务</div>
+  <!-- ═══ Main Shell ═══ -->
+  <div class="x6-shell" id="shell">
+    <!-- Views -->
+    <main class="x6-main">
+      <!-- HOME view -->
+      <section class="x6-view x6-view-home" data-view="home">
+        <div class="x6-hero">
+          <div class="x6-hero-inner">
+            <h1 class="x6-hero-title">你好，<span class="x6-hero-name" id="heroUserName">614415</span></h1>
+            <p class="x6-hero-sub">我能为你做什么？</p>
+
+            <!-- Composer -->
+            <div class="x6-composer-wrap" id="composerWrap">
+              <div class="x6-composer-hint">
+                <span>@ 引用文件 &nbsp;·&nbsp; / 调用指令 &nbsp;·&nbsp; $ 调用技能</span>
+              </div>
+              <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="给小6一个任务……"></textarea>
+              <div class="x6-composer-bar">
+                <div class="x6-composer-left">
+                  <button class="x6-composer-attach" title="附件">📎</button>
+                  <button class="x6-composer-mode" id="modeSel">智能模式 ▾</button>
+                </div>
+                <div class="x6-composer-right">
+                  <button class="x6-composer-voice" id="voiceBtn" title="语音输入">🎤</button>
+                  <button class="x6-composer-send" id="sendBtn" title="发送">↑</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="x6-quick-actions">
+              <div class="x6-quick-label">快速开始</div>
+              <div class="x6-quick-grid">
+                <button class="x6-quick-card" data-prompt="帮我检查这个项目"><span>🔍</span>检查项目</button>
+                <button class="x6-quick-card" data-prompt="帮我写一个工具"><span>⚡</span>开发工具</button>
+                <button class="x6-quick-card" data-prompt="帮我分析一下代码"><span>📊</span>分析代码</button>
+                <button class="x6-quick-card" data-prompt="帮我生成一个网页"><span>🌐</span>制作网页</button>
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="x6-timeline-section" id="timelineSection" style="display:none">
+              <div class="x6-timeline-header">
+                <span>执行过程</span>
+                <button class="x6-timeline-toggle" id="inspTrigger">展开详情 ▸</button>
+              </div>
+              <div class="x6-timeline-body" id="timelineBody"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TIMER view -->
+      <section class="x6-view" data-view="timer" hidden>
+        <div class="x6-empty-state">
+          <div class="x6-empty-icon">⏰</div>
+          <div class="x6-empty-title">定时任务</div>
+          <div class="x6-empty-desc">把提醒、巡检和周期性工作收在同一个队列里。</div>
+          <button class="x6-fab" id="newTimerBtn">+ 新建定时任务</button>
+        </div>
+      </section>
+
+      <!-- PLUGINS view -->
+      <section class="x6-view" data-view="plugins" hidden>
+        <div class="x6-empty-state">
+          <div class="x6-empty-icon">🔌</div>
+          <div class="x6-empty-title">插件市场</div>
+          <div class="x6-empty-desc">暂未安装插件</div>
+        </div>
+      </section>
+
+      <!-- HISTORY view -->
+      <section class="x6-view" data-view="history" hidden>
+        <div class="x6-history-page" id="historyPage"></div>
+      </section>
+
+      <!-- SETTINGS view -->
+      <section class="x6-view" data-view="settings" hidden>
+        <div class="x6-settings-layout">
+          <div class="x6-settings-sidebar">
+            <button class="x6-settings-back" id="settingsBack">← 返回</button>
+            <div class="x6-settings-nav">
+              <button class="x6-settings-nav-btn is-active" data-settings="general">
+                <span class="x6-settings-icon">⚙️</span>
+                <span>常规</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="profile">
+                <span class="x6-settings-icon">👤</span>
+                <span>个人资料</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="memory">
+                <span class="x6-settings-icon">🧠</span>
+                <span>记忆</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="models">
+                <span class="x6-settings-icon">📦</span>
+                <span>模型</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="chat">
+                <span class="x6-settings-icon">💬</span>
+                <span>聊天</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="keyboard">
+                <span class="x6-settings-icon">⌨️</span>
+                <span>键盘</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="archived">
+                <span class="x6-settings-icon">📁</span>
+                <span>已归档</span>
+              </button>
+              <button class="x6-settings-nav-btn" data-settings="system">
+                <span class="x6-settings-icon">🔍</span>
+                <span>系统设置</span>
+              </button>
+            </div>
+          </div>
+          <div class="x6-settings-content" id="settingsContent">
+            <!-- Dynamic content -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Now bar -->
+    <div class="x6-nowbar" id="nowBar" data-state="idle">
+      <div class="x6-nowbar-content">
+        <span class="x6-nowbar-dot"></span>
+        <span class="x6-nowbar-text" id="nowText">小6在线</span>
       </div>
-    </section>
-
-    <!-- PLUGINS view -->
-    <section class="x6-view" data-view="plugins" hidden>
-      <div class="x6-empty-state">
-        <div class="x6-empty-icon">🔌</div>
-        <div class="x6-empty-title">插件市场</div>
-        <div class="x6-empty-desc">暂未安装插件</div>
-      </div>
-    </section>
-
-    <!-- HISTORY view -->
-    <section class="x6-view" data-view="history" hidden>
-      <div class="x6-history-page" id="historyPage"></div>
-    </section>
-  </main>
-
-  <!-- Now bar (bottom of main) -->
-  <div class="x6-nowbar" id="nowBar" data-state="idle">
-    <div class="x6-nowbar-content">
-      <span class="x6-nowbar-dot" id="nowDot"></span>
-      <span class="x6-nowbar-text" id="nowText">小6在线</span>
     </div>
   </div>
 </div>
@@ -216,7 +314,7 @@
 <!-- ═══ Toasts ═══ -->
 <div class="x6-toast-layer" id="toastLayer"></div>
 
-<!-- ═══ Voice orb (fixed, bottom-right) ═══ -->
+<!-- ═══ Voice orb ═══ -->
 <div class="x6-voice-orb" id="orbBtn">
   <div class="x6-orb-presence" id="orbPresence" data-state="idle"></div>
   <div class="x6-mini-orb" data-state="idle"></div>

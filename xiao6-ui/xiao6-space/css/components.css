@@ -1,6 +1,6 @@
 /* Drawer */
 .x6-drawer {
-  position: fixed; top: 0; right: 0; bottom: 0;
+  position: fixed; top: 32px; right: 0; bottom: 0;
   width: 380px; background: var(--x6-surface);
   border-left: 1px solid var(--x6-border);
   z-index: 200; transform: translateX(100%);
@@ -10,16 +10,12 @@
 }
 .x6-shell.drawer-open .x6-drawer { transform: translateX(0); }
 .x6-drawer-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
-  z-index: 199; opacity: 0; pointer-events: none;
-  transition: opacity 0.2s ease;
+  position: fixed; top: 32px; right: 0; bottom: 0; width: 100%;
+  background: rgba(0,0,0,0.3); z-index: 199;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
 }
 .x6-shell.drawer-open .x6-drawer-backdrop { opacity: 1; pointer-events: auto; }
-.x6-drawer-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid var(--x6-border);
-  background: var(--x6-surface-2);
-}
+.x6-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--x6-border); background: var(--x6-surface-2); }
 .x6-drawer-title { font-size: 14px; font-weight: 600; }
 .x6-drawer-close { background: none; border: none; cursor: pointer; color: var(--x6-text-muted); font-size: 16px; padding: 4px; border-radius: 4px; }
 .x6-drawer-close:hover { background: var(--x6-border); }
@@ -27,7 +23,7 @@
 
 /* Command Palette */
 .x6-palette {
-  position: fixed; top: 60px; left: 50%; transform: translateX(-50%) scale(0.95);
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%) scale(0.95);
   width: 560px; max-width: calc(100vw - 32px);
   background: var(--x6-surface); border: 1px solid var(--x6-border);
   border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);

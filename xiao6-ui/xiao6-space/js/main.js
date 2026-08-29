@@ -192,6 +192,90 @@
     }
   }
 
+
+  // ───────────────────── Settings Pages ─────────────────────
+  function renderSettingsPage(page) {
+    var content = $('settingsContent'); if (!content) return;
+    var pages = {
+      general: function() {
+        return '<div class="x6-settings-section"><div class="x6-settings-title">常规</div><div class="x6-settings-desc">管理主题、语言等常规设置。</div>' +
+          '<div style="margin-top:16px"><div style="font-size:13px;font-weight:500;margin-bottom:8px">主题</div><div style="display:flex;gap:8px">' +
+          '<button class="x6-theme-btn is-active" data-theme="light">浅色</button>' +
+          '<button class="x6-theme-btn" data-theme="dark">深色</button>' +
+          '<button class="x6-theme-btn" data-theme="system">跟随系统</button>' +
+          '</div></div>' +
+          '<div style="margin-top:24px"><div style="font-size:13px;font-weight:500;margin-bottom:8px">工作模式</div>' +
+          '<div style="display:flex;gap:12px">' +
+          '<div class="x6-mode-card is-active"><div style="font-size:13px;font-weight:500">智能模式</div><div style="font-size:12px;color:var(--x6-text-muted);margin-top:4px">自动推荐模型、技能与配置，适合日常使用</div></div>' +
+          '<div class="x6-mode-card"><div style="font-size:13px;font-weight:500">专家模式</div><div style="font-size:12px;color:var(--x6-text-muted);margin-top:4px">手动控制模型、技能、应用与权限</div></div>' +
+          '</div></div></div>';
+      },
+      models: function() {
+        return '<div class="x6-settings-section"><div class="x6-settings-title">模型</div><div class="x6-settings-desc">管理自定义模型、本地配置和已保存模型。</div>' +
+          '<div style="margin-top:16px"><div style="font-size:13px;font-weight:500;margin-bottom:8px">添加模型</div>' +
+          '<div style="display:flex;gap:8px"><input type="text" placeholder="输入模型名称或 API 地址..." style="flex:1;padding:8px 12px;border:1px solid var(--x6-border);border-radius:6px;font-size:13px">' +
+          '<button class="x6-add-model-btn">+ 添加</button></div></div>' +
+          '<div style="margin-top:24px"><div style="font-size:13px;font-weight:500;margin-bottom:8px">已保存模型</div>' +
+          '<div class="x6-model-list">' +
+          modelListHTML() +
+          '</div></div></div>';
+      },
+      chat: function() {
+        return '<div class="x6-settings-section"><div class="x6-settings-title">聊天</div><div class="x6-settings-desc">配置对话偏好、回复风格和上下文行为。</div>' +
+          '<div style="margin-top:16px"><div style="font-size:13px;font-weight:500;margin-bottom:8px">模式</div>' +
+          '<div class="x6-mode-options">' +
+          '<div class="x6-mode-option"><span>请求批准</span><span style="font-size:11px;color:var(--x6-text-muted)">所有工具需要手动批准</span></div>' +
+          '<div class="x6-mode-option is-active"><span>替我审批</span><span style="font-size:11px;color:var(--x6-text-muted)">低风险操作自动通过</span></div>' +
+          '<div class="x6-mode-option"><span>完全访问</span><span style="font-size:11px;color:var(--x6-text-muted)">无需确认，自由使用工具</span></div>' +
+          '</div></div>' +
+          '<div style="margin-top:24px"><div style="font-size:13px;font-weight:500;margin-bottom:8px">回复风格</div>' +
+          '<div class="x6-mode-options">' +
+          '<div class="x6-mode-option"><span>详细</span><span style="font-size:11px;color:var(--x6-text-muted)">工具调用默认展开</span></div>' +
+          '<div class="x6-mode-option is-active"><span>精简</span><span style="font-size:11px;color:var(--x6-text-muted)">工具调用默认折叠</span></div>' +
+          '</div></div></div>';
+      }
+    };
+    content.innerHTML = (pages[page] || pages.general)();
+    initThemeButtons();
+  }
+  
+  function modelListHTML() {
+    var models = [
+      { name: 'auto', desc: '自动选择最适合当前任务的模型', default: true },
+      { name: 'agnes-2.5-flash', desc: '速度与能力更均衡，适合复杂任务', mult: '0.00x' },
+      { name: 'agnes-2.5-pro', desc: '面向下一代 AI Agent 的旗舰推理模型', mult: '1.00x' },
+      { name: 'agnes-2.0-flash', desc: '快速稳定，适合日常对话和编程', mult: '0.00x' }
+    ];
+    return models.map(function(m) {
+      return '<div class="x6-model-card' + (m.default ? ' is-default' : '') + '">' +
+        '<div class="x6-model-name">' + m.name + '</div>' +
+        '<div class="x6-model-desc">' + m.desc + '</div>' +
+        (m.mult ? '<div class="x6-model-mult">' + m.mult + '</div>' : '') +
+        '<button class="x6-model-action">' + (m.default ? '默认' : '设为默认') + '</button>' +
+        '</div>';
+    }).join('');
+  }
+  
+  function initThemeButtons() {
+    var btns = document.querySelectorAll('.x6-theme-btn');
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btns.forEach(function(b) { b.classList.remove('is-active'); });
+        this.classList.add('is-active');
+        var theme = this.dataset.theme;
+        document.documentElement.setAttribute('data-theme', theme === 'system' ? '' : theme);
+      });
+    });
+    var modeCards = document.querySelectorAll('.x6-mode-card, .x6-mode-option');
+    modeCards.forEach(function(card) {
+      card.addEventListener('click', function() {
+        var parent = this.parentElement;
+        parent.querySelectorAll('.x6-mode-card, .x6-mode-option').forEach(function(c) { c.classList.remove('is-active'); });
+        this.classList.add('is-active');
+      });
+    });
+  }
+
   // ───────────────────── init ─────────────────────
   function init() {
     initTheme();
@@ -235,12 +319,50 @@
     }, 8000);
     setInterval(state.fetchSnapshot, 30000);
 
+    // Menu bar handling
+    var menubtns = document.querySelectorAll('.x6-menubar-btn');
+    var menus = document.querySelectorAll('.x6-menu-dropdown');
+    menubtns.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var menuId = 'menu-' + this.dataset.menu;
+        var menu = $(menuId);
+        var isOpen = menu && !menu.hidden;
+        menus.forEach(function (m) { if (m) m.hidden = true; });
+        if (menu && !isOpen) menu.hidden = false;
+      });
+    });
+    document.addEventListener('click', function () { menus.forEach(function (m) { if (m) m.hidden = true; }); });
+    
+    // Toggle sidebar
+    var toggleBtn = $('toggleSidebar');
+    if (toggleBtn) toggleBtn.addEventListener('click', function () {
+      var sb = $('sidebar'); if (sb) sb.classList.toggle('collapsed');
+    });
+    
+    // Settings button
+    var settingsBtn = $('settingsBtn');
+    if (settingsBtn) settingsBtn.addEventListener('click', function () { switchView('settings'); });
+    var settingsBack = $('settingsBack');
+    if (settingsBack) settingsBack.addEventListener('click', function () { switchView('home'); });
+    
+    // Settings navigation
+    var settingsNavBtns = document.querySelectorAll('.x6-settings-nav-btn');
+    settingsNavBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        settingsNavBtns.forEach(function (b) { b.classList.remove('is-active'); });
+        this.classList.add('is-active');
+        renderSettingsPage(this.dataset.settings);
+      });
+    });
+
     // Escape 关闭浮层
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         closeOverlay();
         closeDrawer();
         if (window.Xiao6.palette) window.Xiao6.palette.closePalette();
+        menus.forEach(function (m) { if (m) m.hidden = true; });
       }
     });
 
