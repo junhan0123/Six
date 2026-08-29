@@ -20,6 +20,8 @@ import os
 import threading
 import time
 
+import numpy as np
+
 import config
 from config import HERE
 from wakeword_vosk import (
@@ -43,6 +45,67 @@ _state = {
 _lock = threading.Lock()
 _thread = None
 _stop = threading.Event()
+
+# callback 异常只记一次，避免音频线程高频刷日志
+_callback_error_logged = threading.Event()
+
+
+def _log_once(msg):
+    if not _callback_error_logged.is_set():
+        print(f"[KWS] {msg}")
+        _callback_error_logged.set()
+
+
+def _to_pcm16(indata, frames, dtype, channels):
+    """把 sounddevice callback 的 buffer/numpy 数组统一转成 PCM16 little-endian mono bytes。
+
+    不同平台/驱动下，callback 入参可能是 numpy.ndarray 或 _cffi_backend.buffer；
+    本函数显式按 dtype/channels 解析，避免 np.asarray 默认得到 uint8 导致溢出。
+    """
+    if isinstance(indata, np.ndarray):
+        arr = indata
+    else:
+        arr = np.frombuffer(indata, dtype=dtype)
+
+    # 归一化到 (frames, channels)
+    if arr.ndim == 1:
+        arr = arr.reshape(frames, channels)
+    elif arr.ndim == 2 and arr.shape[0] != frames and arr.shape[1] == frames:
+        arr = arr.T
+
+    # 降 mix 到 mono（唤醒词引擎只接受单声道）
+    if channels > 1:
+        arr = arr.mean(axis=1, keepdims=True)
+
+    arr = np.squeeze(arr)
+
+    # 按 dtype 转换到 int16 PCM
+    if np.issubdtype(arr.dtype, np.floating):
+        arr = np.clip(arr, -1.0, 1.0)
+        return (arr * 32767.0).astype("<i2", copy=False).tobytes()
+
+    if arr.dtype == np.int16:
+        return arr.astype("<i2", copy=False).tobytes()
+
+    if arr.dtype == np.uint8:
+        arr = (arr.astype(np.float32) - 128.0) / 128.0
+        arr = np.clip(arr, -1.0, 1.0)
+        return (arr * 32767.0).astype("<i2", copy=False).tobytes()
+
+    if arr.dtype == np.int8:
+        arr = arr.astype(np.float32) / 128.0
+        arr = np.clip(arr, -1.0, 1.0)
+        return (arr * 32767.0).astype("<i2", copy=False).tobytes()
+
+    # 其他整数类型兜底
+    info = np.iinfo(arr.dtype)
+    if info.min < 0:
+        arr = arr.astype(np.float32) / max(abs(info.min), info.max)
+    else:
+        midpoint = (info.max + 1) / 2.0
+        arr = (arr.astype(np.float32) - midpoint) / midpoint
+    arr = np.clip(arr, -1.0, 1.0)
+    return (arr * 32767.0).astype("<i2", copy=False).tobytes()
 
 
 def _ensure_deps():
@@ -82,14 +145,14 @@ def _listen_loop(detect_callback):
     def _callback(indata, frames, _t, _status):
         if _stop.is_set():
             return
-        # indata: float32 一维；转 int16 字节喂给模型
-        import numpy as np
-
-        pcm = (np.clip(indata, -1, 1) * 32767).astype("<i2").tobytes()
-        preds = model.predict(pcm)
-        score = preds.get(DEFAULT_MODEL, 0.0)
-        if score >= THRESHOLD:
-            _on_detect()
+        try:
+            pcm = _to_pcm16(indata, frames, dtype="int16", channels=1)
+            preds = model.predict(pcm)
+            score = preds.get(DEFAULT_MODEL, 0.0)
+            if score >= THRESHOLD:
+                _on_detect()
+        except Exception as exc:  # noqa: BLE001
+            _log_once(f"WakeWord audio callback error: {exc}")
 
     with sd.RawInputStream(
         samplerate=SAMPLE_RATE,
@@ -127,16 +190,19 @@ def _listen_loop_vosk(detect_callback):
     def _callback(indata, frames, _t, _status):
         if _stop.is_set():
             return
-        pcm = (np.clip(indata, -1, 1) * 32767).astype("<i2").tobytes()
-        hit = None
-        if rec.AcceptWaveform(pcm):
-            hit = _vosk_is_wake(json.loads(rec.Result()).get("text", ""), phrases)
-        else:
-            partial = json.loads(rec.PartialResult()).get("partial", "")
-            if partial:
-                hit = _vosk_is_wake(partial, phrases)
-        if hit:
-            _on_detect(hit)
+        try:
+            pcm = _to_pcm16(indata, frames, dtype="int16", channels=1)
+            hit = None
+            if rec.AcceptWaveform(pcm):
+                hit = _vosk_is_wake(json.loads(rec.Result()).get("text", ""), phrases)
+            else:
+                partial = json.loads(rec.PartialResult()).get("partial", "")
+                if partial:
+                    hit = _vosk_is_wake(partial, phrases)
+            if hit:
+                _on_detect(hit)
+        except Exception as exc:  # noqa: BLE001
+            _log_once(f"Vosk KWS audio callback error: {exc}")
 
     try:
         with sd.RawInputStream(
