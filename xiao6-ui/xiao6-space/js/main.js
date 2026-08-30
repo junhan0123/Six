@@ -353,23 +353,75 @@
     // Menu bar handling
     var menubtns = document.querySelectorAll('.x6-menubar-btn');
     var menus = document.querySelectorAll('.x6-menu-dropdown');
+    var activeMenuBtn = null;
+    
     menubtns.forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
+      btn.addEventListener('mouseenter', function (e) {
+        if (activeMenuBtn && activeMenuBtn !== this) {
+          var prevMenu = $( 'menu-' + activeMenuBtn.dataset.menu);
+          if (prevMenu) prevMenu.hidden = true;
+        }
+        activeMenuBtn = this;
         e.stopPropagation();
         var menuId = 'menu-' + this.dataset.menu;
         var menu = $(menuId);
-        var isOpen = menu && !menu.hidden;
-        menus.forEach(function (m) { if (m) m.hidden = true; });
-        if (menu && !isOpen) menu.hidden = false;
+        if (menu) menu.hidden = false;
+      });
+      btn.addEventListener('mouseleave', function () {
+        // Keep open for a moment to allow moving to dropdown
       });
     });
+    
+    // Handle menu item clicks
     document.addEventListener('click', function (e) {
-      menus.forEach(function (m) { if (m) m.hidden = true; });
       var item = e.target.closest('.x6-menu-item');
-      if (!item) return;
-      var action = item.dataset.action;
-      if (action === 'new-chat') { $('newChatBtn')?.click(); }
-      else if (action === 'settings') { switchView('settings'); }
+      if (item && item.dataset.action) {
+        e.stopPropagation();
+        var action = item.dataset.action;
+        
+        // Handle submenu items
+        if (action === 'smart-mode') {
+          state.toolModes.expert = false;
+          var ms = $('modeSel'); if (ms) ms.textContent = '智能模式 ▾';
+          state.lsSet('xiao6_expert', '0');
+          toast('已切换到智能模式');
+        } else if (action === 'expert-mode') {
+          state.toolModes.expert = true;
+          var ms2 = $('modeSel'); if (ms2) ms2.textContent = '专家模式 ▾';
+          state.lsSet('xiao6_expert', '1');
+          toast('已切换到专家模式');
+        } else if (action === 'new-chat') {
+          $('newChatBtn')?.click();
+        } else if (action === 'settings') {
+          switchView('settings');
+        } else if (action === 'toggle-sidebar') {
+          var sb = $('sidebar'); if (sb) sb.classList.toggle('collapsed');
+        } else if (action === 'toggle-palette') {
+          if (window.Xiao6.palette) window.Xiao6.palette.openPalette();
+        } else if (action === 'about') {
+          toast('小6 Agent v1.0.0');
+        } else if (action === 'help') {
+          openOverlay('使用帮助', '<p>快捷键:</p><ul style="margin-left:20px;line-height:2"><li>Ctrl+K: 命令面板</li><li>Ctrl+B: 切换导航栏</li><li>Ctrl+T: 新对话</li></ul>');
+        } else if (action === 'check-updates') {
+          toast('当前已是最新版本');
+        } else if (action === 'focus-app') {
+          window.focus();
+        } else if (action === 'quit') {
+          toast('请使用系统方式关闭应用');
+        } else {
+          toast('功能: ' + action);
+        }
+        
+        // Close all menus
+        menus.forEach(function (m) { if (m) m.hidden = true; });
+        activeMenuBtn = null;
+      }
+      
+      // Close menus when clicking outside
+      if (!e.target.closest('.x6-menubar') && !e.target.closest('.x6-menu-dropdown')) {
+        menus.forEach(function (m) { if (m) m.hidden = true; });
+        activeMenuBtn = null;
+      }
     });
     
     // Toggle sidebar
@@ -401,6 +453,7 @@
         closeDrawer();
         if (window.Xiao6.palette) window.Xiao6.palette.closePalette();
         menus.forEach(function (m) { if (m) m.hidden = true; });
+        activeMenuBtn = null;
       }
     });
 

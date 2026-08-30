@@ -45,42 +45,60 @@
 
 <!-- ═══ Dropdown Menus ═══ -->
 <div class="x6-menu-dropdown" id="menu-file" hidden>
-  <div class="x6-menu-item"><span>新建聊天</span><span class="x6-menu-key">Ctrl+T</span></div>
-  <div class="x6-menu-item"><span>新建聊天窗口</span><span class="x6-menu-key">Ctrl+N</span></div>
-  <div class="x6-menu-item"><span>打开目录...</span><span class="x6-menu-key">Ctrl+O</span></div>
+  <div class="x6-menu-item" data-action="new-chat"><span>新建聊天</span><span class="x6-menu-key">Ctrl+T</span></div>
+  <div class="x6-menu-submenu">
+    <div class="x6-menu-item" data-action="new-window"><span>新建聊天窗口</span><span class="x6-menu-key">Ctrl+N</span></div>
+    <div class="x6-menu-sub">
+      <div class="x6-menu-item" data-action="smart-mode"><span>智能模式</span></div>
+      <div class="x6-menu-item" data-action="expert-mode"><span>专家模式</span></div>
+    </div>
+  </div>
+  <div class="x6-menu-item" data-action="open-dir"><span>打开目录...</span><span class="x6-menu-key">Ctrl+O</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>设置</span><span class="x6-menu-key">Ctrl+,</span></div>
-  <div class="x6-menu-item"><span>聚焦小6窗口</span><span class="x6-menu-key">Ctrl+Alt+G</span></div>
+  <div class="x6-menu-item" data-action="settings"><span>设置</span><span class="x6-menu-key">Ctrl+,</span></div>
+  <div class="x6-menu-item" data-action="focus-app"><span>聚焦小6窗口</span><span class="x6-menu-key">Ctrl+Alt+G</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>退出</span><span class="x6-menu-key">Ctrl+Q</span></div>
+  <div class="x6-menu-item" data-action="quit"><span>退出</span><span class="x6-menu-key">Ctrl+Q</span></div>
 </div>
 
 <div class="x6-menu-dropdown" id="menu-edit" hidden>
-  <div class="x6-menu-item"><span>撤销</span><span class="x6-menu-key">Ctrl+Z</span></div>
-  <div class="x6-menu-item"><span>重做</span><span class="x6-menu-key">Ctrl+Y</span></div>
+  <div class="x6-menu-item" data-action="undo"><span>撤销</span><span class="x6-menu-key">Ctrl+Z</span></div>
+  <div class="x6-menu-item" data-action="redo"><span>重做</span><span class="x6-menu-key">Ctrl+Y</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>剪切</span><span class="x6-menu-key">Ctrl+X</span></div>
-  <div class="x6-menu-item"><span>复制</span><span class="x6-menu-key">Ctrl+C</span></div>
-  <div class="x6-menu-item"><span>粘贴</span><span class="x6-menu-key">Ctrl+V</span></div>
-  <div class="x6-menu-item"><span>全选</span><span class="x6-menu-key">Ctrl+A</span></div>
+  <div class="x6-menu-item" data-action="cut"><span>剪切</span><span class="x6-menu-key">Ctrl+X</span></div>
+  <div class="x6-menu-item" data-action="copy"><span>复制</span><span class="x6-menu-key">Ctrl+C</span></div>
+  <div class="x6-menu-item" data-action="paste"><span>粘贴</span><span class="x6-menu-key">Ctrl+V</span></div>
+  <div class="x6-menu-item" data-action="select-all"><span>全选</span><span class="x6-menu-key">Ctrl+A</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>查找</span><span class="x6-menu-arrow">▶</span></div>
+  <div class="x6-menu-submenu">
+    <div class="x6-menu-item" data-action="find"><span>查找</span><span class="x6-menu-arrow">▸</span></div>
+    <div class="x6-menu-sub">
+      <div class="x6-menu-item" data-action="find-in-chat"><span>在对话中查找</span></div>
+      <div class="x6-menu-item" data-action="find-files"><span>查找文件</span></div>
+    </div>
+  </div>
 </div>
 
 <div class="x6-menu-dropdown" id="menu-view" hidden>
-  <div class="x6-menu-item"><span>实际大小</span></div>
-  <div class="x6-menu-item"><span>放大</span></div>
-  <div class="x6-menu-item"><span>缩小</span></div>
-  <div class="x6-menu-item"><span>切换全屏</span></div>
+  <div class="x6-menu-item" data-action="zoom-in"><span>放大</span><span class="x6-menu-key">Ctrl++</span></div>
+  <div class="x6-menu-item" data-action="zoom-out"><span>缩小</span><span class="x6-menu-key">Ctrl+-</span></div>
+  <div class="x6-menu-item" data-action="zoom-reset"><span>实际大小</span><span class="x6-menu-key">Ctrl+0</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>切换导航</span><span class="x6-menu-key">Ctrl+/</span></div>
-  <div class="x6-menu-item"><span>窗口置顶</span><span class="x6-menu-key">Ctrl+Shift+T</span></div>
+  <div class="x6-menu-item" data-action="toggle-fullscreen"><span>切换全屏</span><span class="x6-menu-key">F11</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item" data-action="toggle-sidebar"><span>切换导航</span><span class="x6-menu-key">Ctrl+B</span></div>
+  <div class="x6-menu-item" data-action="toggle-palette"><span>命令面板</span><span class="x6-menu-key">Ctrl+K</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item" data-action="always-on-top"><span>窗口置顶</span><span class="x6-menu-key">Ctrl+Shift+T</span></div>
 </div>
 
 <div class="x6-menu-dropdown" id="menu-help" hidden>
-  <div class="x6-menu-item"><span>关于小6</span></div>
-  <div class="x6-menu-item"><span>使用帮助</span></div>
-  <div class="x6-menu-item"><span>反馈问题</span></div>
+  <div class="x6-menu-item" data-action="about"><span>关于小6</span></div>
+  <div class="x6-menu-item" data-action="help"><span>使用帮助</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item" data-action="feedback"><span>反馈问题</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item" data-action="check-updates"><span>检查更新</span></div>
 </div>
 
 <!-- ═══ App Container ═══ -->

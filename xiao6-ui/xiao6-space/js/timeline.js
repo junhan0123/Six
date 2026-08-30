@@ -732,14 +732,30 @@
     var speakBtn = qs('.x6-mode[data-tool="speak"]'); if (speakBtn) speakBtn.classList.toggle('is-on', state.autoSpeak);
     var webBtn = qs('.x6-mode[data-tool="web"]'); if (webBtn) webBtn.classList.toggle('is-on', !!state.toolModes.web);
 
-    var cf = $('cmdForm');
-    if (cf) cf.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var v = ($('cmdInput').value || '');
-      if (v.charAt(0) === '/' && window.Xiao6.palette && window.Xiao6.palette.runCommand(v)) { $('cmdInput').value = ''; return; }
-      submitCmd(v);
-      $('cmdInput').value = '';
-    });
+    var cf = $('cmdInput');
+    if (cf) {
+      cf.addEventListener('keydown', function (e) {
+        // Enter sends, Shift+Enter adds newline
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          var v = cf.value.trim();
+          if (!v) return;
+          if (v.charAt(0) === '/' && window.Xiao6.palette && window.Xiao6.palette.runCommand(v)) { cf.value = ''; return; }
+          submitCmd(v);
+          cf.value = '';
+        }
+      });
+      // Also bind send button click
+      var sb = $('sendBtn');
+      if (sb) sb.addEventListener('click', function () {
+        var v = cf.value.trim();
+        if (v) {
+          if (v.charAt(0) === '/' && window.Xiao6.palette && window.Xiao6.palette.runCommand(v)) { cf.value = ''; return; }
+          submitCmd(v);
+          cf.value = '';
+        }
+      });
+    }
     var ci = $('cmdInput');
     if (ci) ci.addEventListener('input', function (e) { if (window.Xiao6.palette) window.Xiao6.palette.handleTrigger(e.target.value); });
 
