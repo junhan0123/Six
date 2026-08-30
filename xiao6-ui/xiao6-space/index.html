@@ -9,9 +9,7 @@
 <link rel="stylesheet" href="css/layout.css" />
 <link rel="stylesheet" href="css/components.css" />
 <link rel="stylesheet" href="css/workspace.css" />
-<link rel="stylesheet" href="css/panel.css" />
 <style>
-/* AgnesCode-style overrides */
 :root {
   --x6-brand: #6366F1;
   --x6-brand-hover: #4F46E5;
@@ -38,49 +36,39 @@
     <button class="x6-menubar-btn" data-menu="help">帮助</button>
   </div>
   <div class="x6-menubar-actions">
-    <button class="x6-menubar-search" title="搜索">🔍</button>
+    <button class="x6-menubar-search" title="搜索" onclick="window.Xiao6&&window.Xiao6.palette&&window.Xiao6.palette.openPalette()">⌘K</button>
     <button class="x6-menubar-layout" title="折叠侧边栏" id="toggleSidebar">⊞</button>
   </div>
 </div>
 
 <!-- ═══ Dropdown Menus ═══ -->
 <div class="x6-menu-dropdown" id="menu-file" hidden>
-  <div class="x6-menu-item"><span>新建聊天</span><span class="x6-menu-key">Ctrl+T</span></div>
-  <div class="x6-menu-item"><span>新建聊天窗口</span><span class="x6-menu-key">Ctrl+N</span></div>
-  <div class="x6-menu-item"><span>打开目录...</span><span class="x6-menu-key">Ctrl+O</span></div>
+  <div class="x6-menu-item" data-action="new-chat"><span>新建聊天</span><span class="x6-menu-key">Ctrl+T</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>设置</span><span class="x6-menu-key">Ctrl+,</span></div>
-  <div class="x6-menu-item"><span>聚焦小6窗口</span><span class="x6-menu-key">Ctrl+Alt+G</span></div>
+  <div class="x6-menu-item" data-action="settings"><span>设置</span><span class="x6-menu-key">Ctrl+,</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>退出</span><span class="x6-menu-key">Ctrl+Q</span></div>
+  <div class="x6-menu-item" data-action="focus-app"><span>聚焦小6窗口</span><span class="x6-menu-key">Ctrl+Alt+G</span></div>
+  <div class="x6-menu-sep"></div>
+  <div class="x6-menu-item" data-action="quit"><span>退出</span><span class="x6-menu-key">Ctrl+Q</span></div>
 </div>
 
 <div class="x6-menu-dropdown" id="menu-edit" hidden>
+  <div class="x6-menu-item" data-action="smart-mode"><span>智能模式</span></div>
+  <div class="x6-menu-item" data-action="expert-mode"><span>专家模式</span></div>
+  <div class="x6-menu-sep"></div>
   <div class="x6-menu-item"><span>撤销</span><span class="x6-menu-key">Ctrl+Z</span></div>
   <div class="x6-menu-item"><span>重做</span><span class="x6-menu-key">Ctrl+Y</span></div>
   <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>剪切</span><span class="x6-menu-key">Ctrl+X</span></div>
-  <div class="x6-menu-item"><span>复制</span><span class="x6-menu-key">Ctrl+C</span></div>
-  <div class="x6-menu-item"><span>粘贴</span><span class="x6-menu-key">Ctrl+V</span></div>
-  <div class="x6-menu-item"><span>全选</span><span class="x6-menu-key">Ctrl+A</span></div>
-  <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>查找</span><span class="x6-menu-arrow">▶</span></div>
+  <div class="x6-menu-item" data-action="toggle-palette"><span>命令面板</span><span class="x6-menu-key">Ctrl+K</span></div>
 </div>
 
 <div class="x6-menu-dropdown" id="menu-view" hidden>
-  <div class="x6-menu-item"><span>实际大小</span></div>
-  <div class="x6-menu-item"><span>放大</span></div>
-  <div class="x6-menu-item"><span>缩小</span></div>
-  <div class="x6-menu-item"><span>切换全屏</span></div>
-  <div class="x6-menu-sep"></div>
-  <div class="x6-menu-item"><span>切换导航</span><span class="x6-menu-key">Ctrl+/</span></div>
-  <div class="x6-menu-item"><span>窗口置顶</span><span class="x6-menu-key">Ctrl+Shift+T</span></div>
+  <div class="x6-menu-item" data-action="toggle-sidebar"><span>切换导航栏</span><span class="x6-menu-key">Ctrl+B</span></div>
 </div>
 
 <div class="x6-menu-dropdown" id="menu-help" hidden>
-  <div class="x6-menu-item"><span>关于小6</span></div>
-  <div class="x6-menu-item"><span>使用帮助</span></div>
-  <div class="x6-menu-item"><span>反馈问题</span></div>
+  <div class="x6-menu-item" data-action="about"><span>关于小6</span></div>
+  <div class="x6-menu-item" data-action="help"><span>使用帮助</span></div>
 </div>
 
 <!-- ═══ App Container ═══ -->
@@ -104,28 +92,31 @@
 
     <!-- Nav -->
     <nav class="x6-sidebar-nav">
-    </nav>
-
-    <!-- Projects -->
-    <div class="x6-sidebar-section">
-      <div class="x6-section-header">
-        <span>项目</span>
-        <span class="x6-section-count" id="projectCount">0</span>
-      </div>
-      <div class="x6-project-list" id="projectList">
-        <div class="x6-project-empty">暂无项目</div>
-      </div>
-    </div>
-
-    <!-- Conversations -->
-    <div class="x6-sidebar-section">
-      <div class="x6-section-header">
+      <button class="x6-nav-btn is-active" data-nav="home">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>对话</span>
-      </div>
-      <div class="x6-history-list" id="historyList">
-        <div class="x6-history-empty">暂无对话</div>
-      </div>
-    </div>
+      </button>
+      <button class="x6-nav-btn" data-nav="projects">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>项目</span>
+      </button>
+      <button class="x6-nav-btn" data-nav="tasks">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>任务</span>
+      </button>
+      <button class="x6-nav-btn" data-nav="knowledge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>知识</span>
+      </button>
+      <button class="x6-nav-btn" data-nav="memory">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>记忆</span>
+      </button>
+      <button class="x6-nav-btn" data-nav="tools">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>工具</span>
+      </button>
+    </nav>
 
     <!-- User -->
     <div class="x6-sidebar-footer">
@@ -136,7 +127,9 @@
           <div class="x6-plan">免费版</div>
         </div>
       </div>
-      <button class="x6-settings-btn" id="settingsBtn" title="设置">⚙</button>
+      <button class="x6-settings-btn" id="settingsBtn" title="设置">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
   </aside>
 
@@ -148,53 +141,27 @@
       <section class="x6-view x6-view-home" data-view="home">
         <div class="x6-hero">
           <div class="x6-hero-inner">
-            <h1 class="x6-hero-title" id="heroTitle">我们要构建什么？</h1>
-
-            <!-- Quick Action Cards (Codex style) -->
-            <div class="x6-quick-cards">
-              <button class="x6-quick-card x6-card-explore" data-prompt="帮我探索并理解这个项目代码">
-                <div class="x6-card-icon x6-card-icon-blue">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                </div>
-                <div class="x6-card-title">探索代码</div>
-                <div class="x6-card-desc">理解项目结构与逻辑</div>
-              </button>
-              <button class="x6-quick-card x6-card-build" data-prompt="帮我开发一个新功能或工具">
-                <div class="x6-card-icon x6-card-icon-purple">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                </div>
-                <div class="x6-card-title">构建功能</div>
-                <div class="x6-card-desc">开发新功能或应用</div>
-              </button>
-              <button class="x6-quick-card x6-card-review" data-prompt="帮我审查代码并提出修改建议">
-                <div class="x6-card-icon x6-card-icon-green">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                </div>
-                <div class="x6-card-title">审查代码</div>
-                <div class="x6-card-desc">代码审查与改进建议</div>
-              </button>
-              <button class="x6-quick-card x6-card-fix" data-prompt="帮我修复问题或失败的任务">
-                <div class="x6-card-icon x6-card-icon-orange">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                </div>
-                <div class="x6-card-title">修复问题</div>
-                <div class="x6-card-desc">解决问题与调试</div>
-              </button>
-            </div>
+            <h1 class="x6-hero-title" id="heroTitle">今天想做什么？</h1>
 
             <!-- Composer -->
             <div class="x6-composer-wrap" id="composerWrap">
               <div class="x6-composer-input-wrap">
-                <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="随心输入..."></textarea>
+                <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="告诉小6你想完成什么…"></textarea>
               </div>
               <div class="x6-composer-bar">
                 <div class="x6-composer-left">
-                  <button class="x6-composer-attach" title="附件">📎</button>
-                  <button class="x6-composer-mode" id="modeSel" title="切换模式">智能模式 ▾</button>
+                  <button class="x6-composer-attach" title="附件" id="attachBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  </button>
+                  <button class="x6-composer-mode" id="modeSel" title="切换模式">智能模式</button>
                 </div>
                 <div class="x6-composer-right">
-                  <button class="x6-composer-voice" id="voiceBtn" title="语音输入">🎤</button>
-                  <button class="x6-composer-send" id="sendBtn" title="发送">↑</button>
+                  <button class="x6-composer-voice" id="voiceBtn" title="语音输入">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  </button>
+                  <button class="x6-composer-send" id="sendBtn" title="发送">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -211,12 +178,65 @@
         </div>
       </section>
 
-      <!-- TIMER view - REMOVED: No backend capability -->
-      <!-- PLUGINS view - REMOVED: No backend capability -->
+      <!-- PROJECTS view -->
+      <section class="x6-view" data-view="projects" hidden>
+        <div class="x6-list-page" id="projectList">
+          <div class="x6-list-header">
+            <h2>项目</h2>
+            <span class="x6-list-count" id="projectCount">0</span>
+          </div>
+          <div class="x6-list-empty">暂无项目</div>
+        </div>
+      </section>
+
+      <!-- TASKS view -->
+      <section class="x6-view" data-view="tasks" hidden>
+        <div class="x6-list-page" id="tasksList">
+          <div class="x6-list-header">
+            <h2>任务</h2>
+          </div>
+          <div class="x6-list-empty">暂无任务</div>
+        </div>
+      </section>
+
+      <!-- KNOWLEDGE view -->
+      <section class="x6-view" data-view="knowledge" hidden>
+        <div class="x6-list-page" id="knowledgeList">
+          <div class="x6-list-header">
+            <h2>知识</h2>
+          </div>
+          <div class="x6-list-empty">知识库为空</div>
+        </div>
+      </section>
+
+      <!-- MEMORY view -->
+      <section class="x6-view" data-view="memory" hidden>
+        <div class="x6-list-page" id="memoryList">
+          <div class="x6-list-header">
+            <h2>记忆</h2>
+          </div>
+          <div class="x6-list-empty">暂无记忆</div>
+        </div>
+      </section>
+
+      <!-- TOOLS view -->
+      <section class="x6-view" data-view="tools" hidden>
+        <div class="x6-list-page" id="toolsList">
+          <div class="x6-list-header">
+            <h2>工具</h2>
+          </div>
+          <div class="x6-list-empty">加载中…</div>
+        </div>
+      </section>
 
       <!-- HISTORY view -->
       <section class="x6-view" data-view="history" hidden>
-        <div class="x6-history-page" id="historyPage"></div>
+        <div class="x6-list-page" id="historyList">
+          <div class="x6-list-header">
+            <h2>历史对话</h2>
+          </div>
+          <div class="x6-list-empty">暂无对话</div>
+        </div>
       </section>
 
       <!-- SETTINGS view -->
@@ -226,36 +246,20 @@
             <button class="x6-settings-back" id="settingsBack">← 返回</button>
             <div class="x6-settings-nav">
               <button class="x6-settings-nav-btn is-active" data-settings="general">
-                <span class="x6-settings-icon">⚙️</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 <span>常规</span>
               </button>
-              <button class="x6-settings-nav-btn" data-settings="profile">
-                <span class="x6-settings-icon">👤</span>
-                <span>个人资料</span>
-              </button>
-              <button class="x6-settings-nav-btn" data-settings="memory">
-                <span class="x6-settings-icon">🧠</span>
-                <span>记忆</span>
-              </button>
               <button class="x6-settings-nav-btn" data-settings="models">
-                <span class="x6-settings-icon">📦</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <span>模型</span>
               </button>
-              <button class="x6-settings-nav-btn" data-settings="chat">
-                <span class="x6-settings-icon">💬</span>
-                <span>聊天</span>
+              <button class="x6-settings-nav-btn" data-settings="voice">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                <span>语音</span>
               </button>
-              <button class="x6-settings-nav-btn" data-settings="keyboard">
-                <span class="x6-settings-icon">⌨️</span>
-                <span>键盘</span>
-              </button>
-              <button class="x6-settings-nav-btn" data-settings="archived">
-                <span class="x6-settings-icon">📁</span>
-                <span>已归档</span>
-              </button>
-              <button class="x6-settings-nav-btn" data-settings="system">
-                <span class="x6-settings-icon">🔍</span>
-                <span>系统设置</span>
+              <button class="x6-settings-nav-btn" data-settings="data">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>数据</span>
               </button>
             </div>
           </div>
@@ -281,7 +285,9 @@
 <aside class="x6-drawer" id="drawer" aria-hidden="true">
   <div class="x6-drawer-header">
     <span class="x6-drawer-title" id="drawerTitle">详情</span>
-    <button class="x6-drawer-close" id="drawerClose">✕</button>
+    <button class="x6-drawer-close" id="drawerClose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>
   <div class="x6-drawer-body" id="drawerBody"></div>
 </aside>
@@ -290,7 +296,7 @@
 <div class="x6-palette-backdrop" id="paletteScrim" aria-hidden="true"></div>
 <div class="x6-palette" id="palette" aria-hidden="true">
   <div class="x6-palette-input-wrap">
-    <span class="x6-palette-icon">🔍</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input class="x6-palette-input" id="paletteInput" placeholder="搜索命令或对话……" autocomplete="off" />
   </div>
   <div class="x6-palette-list" id="paletteList"></div>
@@ -301,7 +307,9 @@
   <div class="x6-overlay-card">
     <div class="x6-overlay-header">
       <span class="x6-overlay-title" id="overlayTitle">提示</span>
-      <button class="x6-overlay-close" onclick="window.Xiao6&&window.Xiao6.main&&window.Xiao6.main.closeOverlay()">✕</button>
+      <button class="x6-overlay-close" onclick="window.Xiao6&&window.Xiao6.main&&window.Xiao6.main.closeOverlay()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="x6-overlay-body" id="overlayBody"></div>
   </div>
