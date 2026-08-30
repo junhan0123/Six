@@ -148,35 +148,54 @@
       <section class="x6-view x6-view-home" data-view="home">
         <div class="x6-hero">
           <div class="x6-hero-inner">
-            <h1 class="x6-hero-title" id="heroTitle">614415 我能为你做什么？</h1>
+            <h1 class="x6-hero-title" id="heroTitle">我们要构建什么？</h1>
+
+            <!-- Quick Action Cards (Codex style) -->
+            <div class="x6-quick-cards">
+              <button class="x6-quick-card x6-card-explore" data-prompt="帮我探索并理解这个项目代码">
+                <div class="x6-card-icon x6-card-icon-blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </div>
+                <div class="x6-card-title">探索代码</div>
+                <div class="x6-card-desc">理解项目结构与逻辑</div>
+              </button>
+              <button class="x6-quick-card x6-card-build" data-prompt="帮我开发一个新功能或工具">
+                <div class="x6-card-icon x6-card-icon-purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="x6-card-title">构建功能</div>
+                <div class="x6-card-desc">开发新功能或应用</div>
+              </button>
+              <button class="x6-quick-card x6-card-review" data-prompt="帮我审查代码并提出修改建议">
+                <div class="x6-card-icon x6-card-icon-green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+                <div class="x6-card-title">审查代码</div>
+                <div class="x6-card-desc">代码审查与改进建议</div>
+              </button>
+              <button class="x6-quick-card x6-card-fix" data-prompt="帮我修复问题或失败的任务">
+                <div class="x6-card-icon x6-card-icon-orange">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div class="x6-card-title">修复问题</div>
+                <div class="x6-card-desc">解决问题与调试</div>
+              </button>
+            </div>
 
             <!-- Composer -->
             <div class="x6-composer-wrap" id="composerWrap">
-              <div class="x6-composer-hint">
-                <span>@ 引用对话文件 · / 调用指令 · $ 调用技能</span>
+              <div class="x6-composer-input-wrap">
+                <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="随心输入..."></textarea>
               </div>
-              <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="今天想让小6帮你做什么？"></textarea>
               <div class="x6-composer-bar">
                 <div class="x6-composer-left">
                   <button class="x6-composer-attach" title="附件">📎</button>
-                  <button class="x6-composer-mode" id="modeSel" title="切换模式">🤖 智能模式 ▾</button>
+                  <button class="x6-composer-mode" id="modeSel" title="切换模式">智能模式 ▾</button>
                 </div>
                 <div class="x6-composer-right">
                   <button class="x6-composer-voice" id="voiceBtn" title="语音输入">🎤</button>
                   <button class="x6-composer-send" id="sendBtn" title="发送">↑</button>
                 </div>
-              </div>
-              <div class="x6-composer-footer">
-                <span>内容由AI生成，请核实重要信息</span>
-              </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="x6-quick-actions">
-              <div class="x6-quick-grid">
-                <button class="x6-quick-card" data-prompt="帮我制作一个网站"><span>🌐</span>制作网站</button>
-                <button class="x6-quick-card" data-prompt="帮我开发一个Skill"><span>⚡</span>开发 Skill</button>
-                <button class="x6-quick-card" data-prompt="帮我进行日常项目开发"><span>📅</span>日常项目开发</button>
               </div>
             </div>
 
