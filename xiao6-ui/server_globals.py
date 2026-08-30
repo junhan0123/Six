@@ -118,7 +118,7 @@ def _resolve_cors_origins(bind_host, port):
     try:
         port = int(port)
     except Exception:
-        port = 8010
+        port = 8000
     origins.add("http://127.0.0.1:%d" % port)
     origins.add("http://localhost:%d" % port)
     if bind_host in ("0.0.0.0", "", None):

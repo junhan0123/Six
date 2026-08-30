@@ -92,6 +92,62 @@
         return row('◷', first.slice(0, 60) || '（无用户输入）',
           turns.length + ' 条消息 · ' + (relTime(last) || last), '', '');
       }).join('');
+      // 绑定点击事件以恢复会话
+      var items = list.querySelectorAll('.x6-row');
+      items.forEach(function (item, idx) {
+        item.addEventListener('click', function () {
+          var sessionId = sessions[idx] && sessions[idx].session;
+          if (sessionId) resumeSession(sessionId);
+        });
+        item.style.cursor = 'pointer';
+        item.title = '点击恢复此会话';
+      });
+    });
+  }
+
+  // ───────────────────── 恢复会话 ──────────────────────
+  function resumeSession(sessionId) {
+    window.Xiao6.main.toast('正在恢复会话…');
+    window.Xiao6.api.postJSON('/api/session/resume', { session_id: sessionId }).then(function (d) {
+      if (d && d.ok && d.resume) {
+        var r = d.resume;
+        // 恢复 session ID
+        state.sessionId = sessionId;
+        state.lsSet('xiao6_sid', sessionId);
+        // 恢复对话历史到 timeline
+        if (r.conversation && r.conversation.length > 0) {
+          if (window.Xiao6.timeline) {
+            window.Xiao6.timeline.resetTimeline();
+            r.conversation.forEach(function (msg) {
+              var type = msg.role === 'user' ? 'task' : 'result';
+              var status = msg.role === 'user' ? 'completed' : 'success';
+              window.Xiao6.timeline.upsertNode({
+                id: 'msg:' + sessionId + ':' + msg.ts,
+                type: type,
+                status: status,
+                title: msg.role === 'user' ? '用户' : '小6',
+                summary: msg.content.slice(0, 100),
+                detail: msg.content,
+                timestamp: new Date(msg.ts).getTime()
+              });
+            });
+            if (window.Xiao6.timeline.renderNow) window.Xiao6.timeline.renderNow();
+          }
+        }
+        // 恢复运行时状态
+        if (r.runtime_state) {
+          runtime.currentGoalId = r.runtime_state.current_goal;
+        }
+        // 刷新快照
+        state.fetchSnapshot().then(function () {
+          window.Xiao6.main.switchView('home');
+          window.Xiao6.main.toast('会话已恢复');
+        });
+      } else {
+        window.Xiao6.main.toast('无法恢复会话: ' + (d && d.resume && d.resume.reason || '未知错误'));
+      }
+    }).catch(function (err) {
+      window.Xiao6.main.toast('恢复失败: ' + err.message);
     });
   }
 
@@ -272,6 +328,7 @@
     renderSettings: renderSettings,
     openGoalForm: openGoalForm,
     openIntentForm: openIntentForm,
+    resumeSession: resumeSession,
     init: init
   };
 })();

@@ -64,7 +64,7 @@ class SessionTraceMixin:
             payload = self._read_json()
             if "_error" in payload:
                 return self._send(400, json.dumps({"error": payload["_error"]}))
-            
+
             session_id = (payload.get("session_id") or uuid.uuid4().hex[:16]).strip()
             s = session.create_session(session_id)
             data = {
@@ -74,6 +74,45 @@ class SessionTraceMixin:
                 "status": s.status,
             }
             self._send(200, json.dumps({"ok": True, "session": data}, ensure_ascii=False))
+        except Exception as e:
+            self._send(500, json.dumps({"error": str(e)}))
+
+    def _handle_session_resume(self):
+        """POST /api/session/resume — 恢复会话到检查点。"""
+        try:
+            payload = self._read_json()
+            if "_error" in payload:
+                return self._send(400, json.dumps({"error": payload["_error"]}))
+
+            session_id = (payload.get("session_id") or "default").strip()
+            checkpoint_id = payload.get("checkpoint_id")
+
+            # 调用 session.resume() 获取恢复结果
+            result = session.resume(session_id, checkpoint_id=checkpoint_id)
+
+            # 如果有效，返回投影数据
+            if result.status == "valid":
+                proj = session.get_projection(session_id)
+                data = {
+                    "status": "valid",
+                    "session_id": proj.session_id,
+                    "conversation": proj.conversation,
+                    "active_goals": proj.active_goals,
+                    "active_tasks": proj.active_tasks,
+                    "runtime_state": proj.runtime_state,
+                    "next_action": result.next_action,
+                    "reason": result.reason,
+                }
+                self._send(200, json.dumps({"ok": True, "resume": data}, ensure_ascii=False))
+            else:
+                # 无效或过时，返回状态
+                data = {
+                    "status": result.status,
+                    "session_id": session_id,
+                    "next_action": result.next_action,
+                    "reason": result.reason,
+                }
+                self._send(200, json.dumps({"ok": False, "resume": data}, ensure_ascii=False))
         except Exception as e:
             self._send(500, json.dumps({"error": str(e)}))
 

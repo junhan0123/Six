@@ -189,7 +189,7 @@ AGENT_TOTAL_CAPABILITY_CALLS: int = 0   # 单目标能力调用总预算（0=无
 # 远程访问 token 认证（非 localhost 须 Bearer；默认空=仅允许本机）
 REMOTE_ACCESS_TOKEN: str = ""
 REMOTE_TOOL_WHITELIST: str = ""               # 远程会话可用工具白名单（逗号分隔）；空=内置安全默认
-PORT: int = 8010
+PORT: int = 8000
 BIND_HOST: str = "127.0.0.1"                  # 监听网口；默认仅本机；设为 0.0.0.0 需同时配置 REMOTE_ACCESS_TOKEN
 ZHUANGZHOU_PROXY_URL: str = ""
 # 与 llm._urlopen_with_proxy 约定的代理键名（兼容 XIAO6_PROXY_URL 环境变量）。

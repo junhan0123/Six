@@ -101,11 +101,11 @@ class TestS68Capabilities(unittest.TestCase):
         config.reload()
         self.assertEqual(config.APP_VERSION, '1.0.0')
     
-    def test_20_port_is_8010(self):
+    def test_20_port_is_8000(self):
         import config
         config.load_env('.env')
         config.reload()
-        self.assertEqual(config.PORT, 8010)
+        self.assertEqual(config.PORT, 8000)
     
     def test_21_tool_serialize(self):
         from tools import serialize_tools

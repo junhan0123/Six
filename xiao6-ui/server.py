@@ -166,7 +166,7 @@ def _resolve_cors_origins(bind_host, port):
     try:
         port = int(port)
     except Exception:
-        port = 8010
+        port = 8000
     origins.add("http://127.0.0.1:%d" % port)
     origins.add("http://localhost:%d" % port)
     if bind_host in ("0.0.0.0", "", None):
@@ -214,7 +214,7 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
         if origin and origin in _CORS_ALLOWED_ORIGINS:
             return origin
         # 安全默认：主回环 Origin（绝不回显任意外部 Origin）
-        return "http://127.0.0.1:%d" % int(getattr(config, "PORT", 8010))
+        return "http://127.0.0.1:%d" % int(getattr(config, "PORT", 8000))
 
     def _remote_gate(self):
         """远程访问门控：非本机请求须经 Bearer Token 校验（REMOTE_ACCESS_TOKEN）。
@@ -471,6 +471,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             elif self.command == "DELETE":
                 return self._handle_session_delete()
             return self._send(405, json.dumps({"error": "method not allowed"}))
+        if path == "/api/session/resume":
+            return self._handle_session_resume()
         if path == "/api/trace":
             return self._handle_trace_get()
         if path == "/api/activity":
@@ -837,6 +839,8 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_sessions_get()
         if ppath == "/api/session":
             return self._handle_session_post()
+        if ppath == "/api/session/resume":
+            return self._handle_session_resume()
         if ppath == "/api/trace":
             return self._handle_trace_get()
         if ppath == "/api/activity":
