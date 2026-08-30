@@ -10,15 +10,11 @@
 <link rel="stylesheet" href="css/components.css" />
 <link rel="stylesheet" href="css/workspace.css" />
 <style>
-:root {
-  --x6-brand: #6366F1;
-  --x6-brand-hover: #4F46E5;
-  --x6-brand-light: #EEF2FF;
-}
+/* Inline overrides for specific components */
 .x6-nav-btn.is-active { background: var(--x6-brand-light); color: var(--x6-brand); }
 .x6-composer-send { background: var(--x6-brand); }
 .x6-composer-send:hover { background: var(--x6-brand-hover); }
-.x6-model-sel-select { border-color: var(--x6-border); color: var(--x6-text-secondary); font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--x6-surface-2); }
+.x6-model-sel-select { border-color: var(--x6-border); color: var(--x6-text-secondary); font-size: 12px; padding: 4px 8px; border-radius: var(--x6-radius-sm); background: var(--x6-surface); }
 </style>
 </head>
 <body>

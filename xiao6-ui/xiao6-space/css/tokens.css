@@ -1,37 +1,83 @@
 :root {
+  /* Brand */
   --x6-brand: #6366F1;
   --x6-brand-hover: #4F46E5;
   --x6-brand-light: #EEF2FF;
+  --x6-brand-subtle: #U8BA1F9;
+
+  /* Backgrounds */
   --x6-bg: #FFFFFF;
-  --x6-sidebar-bg: #F8F9FA;
+  --x6-sidebar-bg: #FAFBFC;
   --x6-surface: #FFFFFF;
-  --x6-surface-2: #F3F4F6;
+  --x6-surface-2: #F8F9FA;
+  --x6-surface-3: #F3F4F6;
+
+  /* Text */
   --x6-text: #111827;
-  --x6-text-secondary: #6B7280;
-  --x6-text-muted: #9CA3AF;
+  --x6-text-secondary: #4B5563;
+  --x6-text-muted: #6B7280;
+  --x6-text-faint: #9CA3AF;
+
+  /* Borders */
   --x6-border: #E5E7EB;
   --x6-border-strong: #D1D5DB;
-  --x6-voice: #C83A3A;
-  --x6-radius-sm: 6px;
-  --x6-radius: 10px;
-  --x6-radius-lg: 14px;
-  --x6-shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --x6-border-focus: var(--x6-brand);
+
+  /* Spacing */
+  --x6-space-xs: 4px;
+  --x6-space-sm: 8px;
+  --x6-space-md: 12px;
+  --x6-space-lg: 16px;
+  --x6-space-xl: 24px;
+  --x6-space-2xl: 32px;
+  --x6-space-3xl: 48px;
+
+  /* Radius */
+  --x6-radius-sm: 4px;
+  --x6-radius: 8px;
+  --x6-radius-md: 10px;
+  --x6-radius-lg: 12px;
+  --x6-radius-xl: 16px;
+
+  /* Shadows */
+  --x6-shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --x6-shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
   --x6-shadow: 0 4px 16px rgba(0,0,0,0.08);
   --x6-shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --x6-shadow-xl: 0 16px 48px rgba(0,0,0,0.16);
+
+  /* Typography */
   --x6-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --x6-font-mono: "SF Mono", "Fira Code", Consolas, monospace;
+  --x6-text-xs: 11px;
+  --x6-text-sm: 13px;
+  --x6-text-md: 14px;
+  --x6-text-lg: 15px;
+  --x6-text-xl: 18px;
+  --x6-text-2xl: 22px;
+  --x6-text-3xl: 28px;
+
+  /* Voice */
+  --x6-voice: #C83A3A;
+  --x6-success: #059669;
+  --x6-warning: #D97706;
+  --x6-error: #DC2626;
 }
+
 [data-theme="dark"] {
   --x6-bg: #0F0F0F;
   --x6-sidebar-bg: #1A1A1A;
   --x6-surface: #1E1E1E;
   --x6-surface-2: #2A2A2A;
+  --x6-surface-3: #374151;
   --x6-text: #F3F4F6;
-  --x6-text-secondary: #9CA3AF;
-  --x6-text-muted: #6B7280;
+  --x6-text-secondary: #D1D5DB;
+  --x6-text-muted: #9CA3AF;
+  --x6-text-faint: #6B7280;
   --x6-border: #374151;
   --x6-border-strong: #4B5563;
-  --x6-shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --x6-brand-light: #1E1B4B;
+  --x6-shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
   --x6-shadow: 0 4px 16px rgba(0,0,0,0.4);
   --x6-shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
 }
