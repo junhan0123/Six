@@ -514,6 +514,10 @@
     var toolSeq = 0;
 
     var payload = { messages: [{ role: 'user', content: text }], session_id: state.sessionId };
+    // R2-F: 传递 mode (smart/expert) 和 goal_id (Project Context)
+    if (state.toolModes && state.toolModes.expert) payload.mode = 'expert';
+    else payload.mode = 'smart';
+    if (state.runtime && state.runtime.currentGoalId != null) payload.goal_id = state.runtime.currentGoalId;
 
     fetch('/api/chat', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       .then(function (r) { if (!r.ok || !r.body) throw new Error('HTTP ' + r.status); return r.body.getReader(); })

@@ -373,7 +373,7 @@ class ChatMixin:
                     emit({"xiao6_event": "tool_start", "tool": name, "args": args})
                     # P1：统一经 capability_runtime（默认 Chat 能力收敛点）→
                     # capability_os.invoke_capability / execute_tool → ai_core.execution.run（policy 门）
-                    _cap_result = _cap_execute(name, args, allowed=remote_allowed, mode=mode)
+                    _cap_result = _cap_execute(name, args, allowed=remote_allowed, mode=mode, goal_id=goal_id)
                     result = _cap_result.to_tool_message()
                     emit({"xiao6_event": "tool_end", "tool": name, "result": result})
                     tool_results.append((name, result))
