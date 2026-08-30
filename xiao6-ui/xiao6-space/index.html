@@ -172,29 +172,30 @@
             <!-- Composer -->
             <div class="x6-composer-wrap" id="composerWrap">
               <div class="x6-composer-hint">
-                <span>@ 引用文件 &nbsp;·&nbsp; / 调用指令 &nbsp;·&nbsp; $ 调用技能</span>
+                <span>@ 引用对话文件 · / 调用指令 · $ 调用技能</span>
               </div>
-              <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="给小6一个任务……"></textarea>
+              <textarea class="x6-composer-input" id="cmdInput" rows="1" placeholder="今天想让小6帮你做什么？"></textarea>
               <div class="x6-composer-bar">
                 <div class="x6-composer-left">
                   <button class="x6-composer-attach" title="附件">📎</button>
-                  <button class="x6-composer-mode" id="modeSel">智能模式 ▾</button>
+                  <button class="x6-composer-mode" id="modeSel" title="切换模式">🤖 智能模式 ▾</button>
                 </div>
                 <div class="x6-composer-right">
                   <button class="x6-composer-voice" id="voiceBtn" title="语音输入">🎤</button>
                   <button class="x6-composer-send" id="sendBtn" title="发送">↑</button>
                 </div>
               </div>
+              <div class="x6-composer-footer">
+                <span>内容由AI生成，请核实重要信息</span>
+              </div>
             </div>
 
             <!-- Quick Actions -->
             <div class="x6-quick-actions">
-              <div class="x6-quick-label">快速开始</div>
               <div class="x6-quick-grid">
-                <button class="x6-quick-card" data-prompt="帮我检查这个项目"><span>🔍</span>检查项目</button>
-                <button class="x6-quick-card" data-prompt="帮我写一个工具"><span>⚡</span>开发工具</button>
-                <button class="x6-quick-card" data-prompt="帮我分析一下代码"><span>📊</span>分析代码</button>
-                <button class="x6-quick-card" data-prompt="帮我生成一个网页"><span>🌐</span>制作网页</button>
+                <button class="x6-quick-card" data-prompt="帮我制作一个网站"><span>🌐</span>制作网站</button>
+                <button class="x6-quick-card" data-prompt="帮我开发一个Skill"><span>⚡</span>开发 Skill</button>
+                <button class="x6-quick-card" data-prompt="帮我进行日常项目开发"><span>📅</span>日常项目开发</button>
               </div>
             </div>
 

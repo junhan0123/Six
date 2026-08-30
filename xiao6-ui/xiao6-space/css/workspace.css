@@ -19,6 +19,7 @@
 .x6-composer-send { width: 36px; height: 36px; border-radius: var(--x6-radius); background: var(--x6-brand); color: white; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 0.15s, transform 0.1s; }
 .x6-composer-send:hover { background: var(--x6-brand-hover); transform: scale(1.05); }
 .x6-composer-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.x6-composer-footer { padding: 6px 16px; border-top: 1px solid var(--x6-border); background: var(--x6-surface-2); font-size: 11px; color: var(--x6-text-muted); text-align: center; }
 
 /* Quick Actions */
 .x6-quick-actions { width: 100%; text-align: center; }
