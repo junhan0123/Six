@@ -145,7 +145,7 @@ def select_capabilities(text: str, allowed: Optional[Any] = None) -> list:
 
 
 def execute(name: str, args: Any = None, *, allowed: Optional[Any] = None,
-            permission_mode: str = "none", goal_id: Optional[int] = None) -> CapabilityResult:
+            permission_mode: str = "none", goal_id: Optional[int] = None, mode: str = "smart") -> CapabilityResult:
     """默认 Chat 的统一能力执行桥（P1 收敛点）。
 
     纪律：
@@ -158,7 +158,7 @@ def execute(name: str, args: Any = None, *, allowed: Optional[Any] = None,
         # R8-P0：回退开关只影响能力选择，不再允许直连 execute_tool 绕过 Policy；
         # 统一经 ai_core.execution.run（policy 门，default_deny）执行。
         from ai_core.execution import run as _execution_run
-        raw = _execution_run(name, {"args": args or {}}, allowed=allowed)
+        raw = _execution_run(name, {"args": args or {}}, allowed=allowed, mode=mode, goal_id=goal_id)
         from capability_os import tool_to_capability
         return CapabilityResult.from_raw(name, tool_to_capability(name), raw)
 
@@ -181,5 +181,5 @@ def execute(name: str, args: Any = None, *, allowed: Optional[Any] = None,
     #    故默认 Chat 执行统一走 _execution_run（唯一 policy 门），不在此分叉。
     from ai_core.execution import run as _execution_run
     # R8-P0：参数契约 run(task, context={"args": args})，工具参数不得丢失
-    raw = _execution_run(name, {"args": args or {}}, allowed=allowed)
+    raw = _execution_run(name, {"args": args or {}}, allowed=allowed, mode=mode, goal_id=goal_id)
     return CapabilityResult.from_raw(name, cap_id, raw)

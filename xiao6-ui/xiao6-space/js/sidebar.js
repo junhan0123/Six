@@ -37,10 +37,39 @@
   function renderProjects() {
     var list = $('projectList'); if (!list) return;
     var goals = state.snap.goals.slice().sort(function (a, b) { return String(b.updated || '').localeCompare(String(a.updated || '')); });
+    var activeId = state.runtime.currentGoalId;
     list.innerHTML = goals.length ? goals.map(function (g) {
       var s = String(g.status || ''); var prog = Number(g.progress || 0);
-      return row('◆', g.title || ('目标 #' + g.id), s + ' · 进度 ' + prog + '%', s === 'active' ? 'run' : 'done', s);
+      var isActive = g.id === activeId;
+      var rowCls = isActive ? ' x6-row-active' : '';
+      return '<div class="x6-row' + rowCls + '" data-goal-id="' + esc(g.id) + '">' +
+        '<div class="ic">◆</div><div class="body">' +
+        '<div class="t">' + esc(g.title || ('目标 #' + g.id)) + '</div>' +
+        '<div class="s">' + esc(s) + ' · 进度 ' + prog + '%</div>' +
+        '</div>' +
+        '<span class="tag ' + (s === 'active' ? 'run' : 'done') + '">' + esc(s) + '</span>' +
+        '</div>';
     }).join('') : '<span class="x6-empty">暂无项目/目标</span>';
+    // Click handler for project selection
+    list.querySelectorAll('.x6-row[data-goal-id]').forEach(function (row) {
+      row.addEventListener('click', function () {
+        var goalId = Number(row.dataset.goalId);
+        setProjectContext(goalId);
+      });
+    });
+  }
+
+  function setProjectContext(goalId) {
+    state.runtime.currentGoalId = goalId;
+    state.snapshot = state.snapshot || {};
+    state.snapshot.goals = state.snap.goals || [];
+    window.Xiao6.api.getJSON('/api/goals').then(function (d) {
+      if (d && d.goals) {
+        state.snap.goals = d.goals;
+        renderProjects();
+      }
+    });
+    window.Xiao6.main.toast('已切换项目上下文');
   }
   function renderMemory() {
     var list = $('memoryList'); if (!list) return;
@@ -328,6 +357,7 @@
     renderSettings: renderSettings,
     openGoalForm: openGoalForm,
     openIntentForm: openIntentForm,
+    setProjectContext: setProjectContext,
     resumeSession: resumeSession,
     init: init
   };

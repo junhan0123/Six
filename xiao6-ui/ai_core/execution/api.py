@@ -47,6 +47,7 @@ def run(task: str, context: dict = None, **kwargs) -> dict:
     step_id = context.get("step_id")
     allowed = kwargs.get("allowed")
     permission_mode = kwargs.get("permission", "NONE")  # NONE or GOAL
+    mode = kwargs.get("mode", "smart")  # smart or expert
 
     # R8-P1：Execution Trace 观测点（入口）——纯观测，不改变任何执行逻辑
     _trace_t0 = time.time()
@@ -79,11 +80,12 @@ def run(task: str, context: dict = None, **kwargs) -> dict:
         #   2) 无 Goal 上下文时 request_approval 不快速拒绝而是挂起 300s（ev.wait）；
         #   3) 有 goal_id 且 default_deny=False 时 confirm 工具反而自动放行（policy 漏洞）。
         # 现与 agent_runtime / capability_runtime 的契约一致：无 Goal 上下文直接拒绝，有 Goal 走审批。
-        policy_result = evaluate(
-            tool_name,
-            tool_args,
-            goal_id=goal_id,
-            default_deny=True
+        policy_result = evaluate(\
+            tool_name,\
+            tool_args,\
+            goal_id=goal_id,\
+            default_deny=True,\
+            mode=mode\
         )
         
         decision = policy_result.get("decision", "block")

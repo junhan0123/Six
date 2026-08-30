@@ -2354,6 +2354,8 @@ def tool_archive_knowledge(args):
     """P4-B：把当前会话归档进本地知识库。"""
     t0 = time.time()
     session = globals().get("_current_session") or "default"
+    goal_id = globals().get("_current_goal_id")
+    mode = globals().get("_current_mode") or "smart"
     try:
         import knowledge
 
@@ -3288,7 +3290,7 @@ LOW_RISK_TOOLS = {
 }
 
 
-def execute_tool_calls(tool_calls, allowed=None):
+def execute_tool_calls(tool_calls, allowed=None, mode="smart", goal_id=None):
     """执行一批 tool_calls，返回 (tool_messages, events)。"""
     prepared = []
     for tc in tool_calls or []:
@@ -3306,18 +3308,12 @@ def execute_tool_calls(tool_calls, allowed=None):
     tool_msgs, events = [], []
 
     def run_one(p):
-        # P1：统一经 capability_runtime（默认 Chat 能力收敛点）→
-        #   capability_os.invoke_capability（已注册 tool/builtin）/ tools.execute_tool（回退）
-        #   → ai_core.execution.run（policy 门，default_deny）→ TOOL_FUNCS。
-        # 行为等价于原 _execution_run(name, args, allowed)，仅额外产出 CapabilityResult 契约。
         try:
             from capability_runtime import execute as _cap_execute
-            _res = _cap_execute(p["name"], p["args"], allowed=allowed)
+            _res = _cap_execute(p["name"], p["args"], allowed=allowed, mode=mode, goal_id=goal_id)
             return p, _res.to_tool_message()
         except Exception:
-            # 极端兜底：直接走统一执行入口，保持 P1 前语义
-            # R8-P0：参数契约 run(task, context={"args": args})，工具参数不得丢失
-            return p, str(_execution_run(p["name"], {"args": p["args"]}, allowed=allowed))
+            return p, str(_execution_run(p["name"], {"args": p["args"]}, allowed=allowed, mode=mode, goal_id=goal_id))
 
     if readonly:
         for p in readonly:
@@ -3361,10 +3357,11 @@ def _fc_fallback(messages, emit):
         return None
 
 
-def run_fc_loop(messages, emit, tools=None, temperature=0.7, reasoning=None, allowed=None):
+def run_fc_loop(messages, emit, tools=None, temperature=0.7, reasoning=None, allowed=None, mode="smart", goal_id=None):
     """真正的 function calling 闭环：LLM 自主决定调工具 → 本地执行 → 回填 → 再问 LLM，支持多轮。
     返回 (最终自然语言回复文本, 本轮实际调用的工具名集合)。
-    tools：可下发的工具 schema（默认全量 TOOLS）；Phase 2.4 由 select_tools 按意图裁剪后传入。"""
+    tools：可下发的工具 schema（默认全量 TOOLS）；Phase 2.4 由 select_tools 按意图裁剪后传入。
+    mode: smart|expert，传递给 execution layer 用于 policy 上下文。"""
     MAX_ROUNDS = 5
     called = set()
     effective_tools = tools if tools is not None else TOOLS
@@ -3396,7 +3393,7 @@ def run_fc_loop(messages, emit, tools=None, temperature=0.7, reasoning=None, all
         messages.append(assistant_msg)
         if not tool_calls:
             return content, called  # 无工具调用 = 最终自然语言回复
-        tool_msgs, events = execute_tool_calls(tool_calls, allowed)
+        tool_msgs, events = execute_tool_calls(tool_calls, allowed, mode=mode, goal_id=goal_id)
         for kind, name, payload in events:
             if kind == "start":
                 emit({"xiao6_event": "tool_start", "tool": name, "args": payload})

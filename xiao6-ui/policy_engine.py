@@ -194,9 +194,12 @@ def _classify_external_mcp(cap_id: str, args: dict):
 
 
 def evaluate(tool: str, args: Optional[dict] = None, context: Optional[dict] = None,
-             goal_id: Optional[int] = None, default_deny: bool = True) -> dict:
+             goal_id: Optional[int] = None, default_deny: bool = True, mode: str = "smart") -> dict:
     """统一裁决：返回 {decision: auto|confirm|block, reason, permission}。"""
     args = args or {}
+    # Mode 记录（仅用于上下文传递，不改变安全决策逻辑）
+    # Smart: 自动决策，Expert: 用户显式控制（但安全边界不变）
+    _mode_hint = f" [mode={mode}]" if mode != "smart" else ""
     # 47.3 M-01/M-02/M-03：external.mcp.* 显式分级。
     # 唯一权限真相源仍是本模块；此处仅做工具/参数级显式分类，不改变四级语义，
     # 不新建第二套权限系统。只读观察类 AUTO；IMDS/RFC1918 危险 URL 与外部文件删除 BLOCK；

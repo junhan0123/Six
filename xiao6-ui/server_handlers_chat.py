@@ -337,6 +337,10 @@ class ChatMixin:
             from capability_runtime import select_capabilities as _cap_select, execute as _cap_execute
             temperature = float(payload.get("temperature", 0.7))
             reasoning = payload.get("reasoning", None)
+            mode = (payload.get("mode") or "smart").strip().lower()
+            if mode not in ("smart", "expert"):
+                mode = "smart"
+            goal_id = payload.get("goal_id")
             peer = (self.client_address or ("",))[0]
             is_remote = not _is_local_peer(peer)
             remote_allowed = _remote_allowed_tools() if is_remote else None
@@ -345,12 +349,14 @@ class ChatMixin:
                 content, called = run_fc_loop(
                     messages, emit, tools=[],
                     temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
+                    mode=mode, goal_id=goal_id,
                 )
                 missed = []
             else:
                 content, called = run_fc_loop(
                     messages, emit, tools=_cap_select(user_text, allowed=remote_allowed),
                     temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
+                    mode=mode, goal_id=goal_id,
                 )
 
                 # —— 兜底强化：用户意图明显该走某工具，但 LLM 本轮没调用它（支持复合意图）
@@ -367,7 +373,7 @@ class ChatMixin:
                     emit({"xiao6_event": "tool_start", "tool": name, "args": args})
                     # P1：统一经 capability_runtime（默认 Chat 能力收敛点）→
                     # capability_os.invoke_capability / execute_tool → ai_core.execution.run（policy 门）
-                    _cap_result = _cap_execute(name, args, allowed=remote_allowed)
+                    _cap_result = _cap_execute(name, args, allowed=remote_allowed, mode=mode)
                     result = _cap_result.to_tool_message()
                     emit({"xiao6_event": "tool_end", "tool": name, "result": result})
                     tool_results.append((name, result))
