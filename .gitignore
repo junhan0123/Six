@@ -103,3 +103,4 @@ zhuangzhou-ui/_legacy/
 *.pid
 logs/execution_trace/
 *.jsonl
+third_party/UFO/
