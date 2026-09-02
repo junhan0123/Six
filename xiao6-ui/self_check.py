@@ -76,7 +76,8 @@ def _check_python() -> dict[str, Any]:
 
 
 def _check_deps() -> dict[str, Any]:
-    deps = ["edge_tts", "llm", "db", "tools", "weather", "hotspots", "http_client"]
+    """检查核心依赖（不含 TTS）。"""
+    deps = ["llm", "db", "tools", "weather", "hotspots", "http_client"]
     missing = []
     for mod in deps:
         try:
@@ -84,6 +85,13 @@ def _check_deps() -> dict[str, Any]:
         except Exception as e:
             missing.append(f"{mod}: {e}")
     return {"name": "核心依赖", "ok": not missing, "detail": "全部就绪" if not missing else "; ".join(missing)}
+    try:
+        from tools import TOOL_FUNCS
+
+        n = len(TOOL_FUNCS)
+        return {"name": "本地工具注册", "ok": n > 0, "detail": f"{n} 个工具已挂载"}
+    except Exception as e:
+        return {"name": "本地工具注册", "ok": False, "detail": f"读取失败：{e}"}
 
 
 def _check_tools_count() -> dict[str, Any]:
@@ -116,21 +124,27 @@ def _check_agnes_key() -> dict[str, Any]:
 
 
 def _check_tts() -> dict[str, Any]:
-    if TTS_BACKEND == "sovits":
-        if not GPT_SOVITS_REF_AUDIO:
-            return {
-                "name": "TTS 语音合成",
-                "ok": False,
-                "detail": "GPT-SoVITS 已启用但未配置参考音频（XIAO6_GPT_SOVITS_REF）",
-            }
-        if not os.path.isfile(GPT_SOVITS_REF_AUDIO):
-            return {"name": "TTS 语音合成", "ok": False, "detail": f"参考音频不存在：{GPT_SOVITS_REF_AUDIO}"}
-        return {"name": "TTS 语音合成", "ok": True, "detail": f"GPT-SoVITS 自定义音色（{GPT_SOVITS_URL}）"}
-    try:
-        __import__("edge_tts")
-        return {"name": "TTS 语音合成", "ok": True, "detail": "edge-tts 可用"}
-    except Exception as e:
-        return {"name": "TTS 语音合成", "ok": False, "detail": f"不可用：{e}"}
+    """检查 TTS（GPT-SoVITS = 唯一正式 TTS）。"""
+    # 检查 GPT-SoVITS
+    import os as _os
+    import config as _config
+    sovits_installed = _os.path.exists('G:/xiao6/gpt-sovits') or _os.path.exists('G:/xiao6/xiao6-ui/gpt-sovits')
+    sovits_configured = bool(getattr(_config, 'GPT_SOVITS_URL', None))
+    sovits_reachable = False
+    if sovits_installed and sovits_configured:
+        try:
+            import requests
+            result = requests.get(f"{_config.GPT_SOVITS_URL}/health", timeout=2)
+            sovits_reachable = result.status_code == 200
+        except:
+            pass
+
+    if sovits_reachable:
+        return {"name": "TTS 语音合成", "ok": True, "detail": "GPT-SoVITS 已部署并可用"}
+    elif sovits_configured:
+        return {"name": "TTS 语音合成", "ok": False, "detail": "GPT-SoVITS 已配置但不可达"}
+    else:
+        return {"name": "TTS 语音合成", "ok": False, "detail": "GPT-SoVITS 未部署（edge-tts 已禁用）"}
 
 
 def _check_agnes_reachable() -> dict[str, Any]:

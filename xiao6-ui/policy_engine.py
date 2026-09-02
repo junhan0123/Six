@@ -31,7 +31,7 @@ SESSION = "session"
 NEVER = "never"
 
 # 显式 never（危险 / 不可逆）静态种子；run_shell 视参数由 is_dangerous 再判
-_NEVER_TOOLS = {"kill_process", "file_delete"}
+_NEVER_TOOLS = {"kill_process", "file_delete", "delete", "system", "network", "execute_command"}
 
 POLICY_STORE_PATH = os.path.join("data", "policy_store.json")
 

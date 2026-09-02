@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 电脑动作安全层（safety.py）—— Phase 21.1
+"""Xiao6 · 电脑动作安全层（safety.py）—— Phase 21.1
 
 集中承载：动作白名单边界、风险等级、用户确认、紧急停止。
 底层裁决 100% 委托 policy_engine，无第二权限系统。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 电脑动作执行层（executor.py）—— Phase 21.1
+"""Xiao6 · 电脑动作执行层（executor.py）—— Phase 21.1
 
 仅白名单执行（open_application / open_folder / open_file / search / copy_text）
 + 安全只读辅助（read_file 等供验证/复制源）。继承既有 RealComputerExecutor 的安全纪律：

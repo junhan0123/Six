@@ -123,7 +123,7 @@ def _check_voice():
         import config
         tts_backend = getattr(config, "TTS_BACKEND", "edge") or "edge"
         if tts_backend == "sovits":
-            # 只探端口存活，不做真实合成（自检必须快且无副作用）
+            # GPT-SoVITS = 唯一正式 TTS
             import socket
             url = getattr(config, "GPT_SOVITS_URL", "") or "http://127.0.0.1:9880"
             host, port = _split_hostport(url)
@@ -137,7 +137,8 @@ def _check_voice():
             finally:
                 s.close()
         else:
-            tts_ok = True  # edge-tts 走网络，视为可用（真实失败时有系统合成兜底）
+            # 非 sovits 后端，edge-tts 已禁用，TTS 不可用
+            tts_ok = False
     except Exception:
         pass
 
@@ -390,7 +391,7 @@ import subprocess as _subprocess
 from datetime import datetime as _dt
 
 # Git 仓库根（顶层，用于 repo 名 / 分支 / 变更计数）。
-_PC_ROOT = _os.environ.get("ZZ_PROJECT_ROOT") or _os.path.dirname(
+_PC_ROOT = _os.environ.get("XIAO6_PROJECT_ROOT") or _os.path.dirname(
     _os.path.dirname(_os.path.abspath(__file__))
 )
 # 活动扫描根：只扫应用自身目录，不扫整个仓库。

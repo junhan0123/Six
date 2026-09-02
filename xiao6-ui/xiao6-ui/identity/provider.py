@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""庄周 · 身份与自我模型层（Identity & Self Model Layer）—— Phase 26
+"""Xiao6 · 身份与自我模型层（Identity & Self Model Layer）—— Phase 26
 
 单一身份来源（Single Source of Truth）：
-- identity.json 是庄周「是谁」的唯一权威定义（Agent Identity / User Relationship /
+- identity.json 是Xiao6「是谁」的唯一权威定义（Agent Identity / User Relationship /
   Project Understanding / Behavior Style / Long Term Objectives）；
 - 每条事实带 source / confidence / updated / status，可验证、可追溯来源、可评可信度；
 - 只有可信度 >= MIN_INJECT_CREDIBILITY 的事实才允许进入系统提示（Context Engine），

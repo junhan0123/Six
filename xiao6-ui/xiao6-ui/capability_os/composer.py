@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · 能力操作系统 · 多能力组合器（Composer）—— Phase 23.1
+"""Xiao6 · 能力操作系统 · 多能力组合器（Composer）—— Phase 23.1
 
 职责：把「一个任务」拆成「多能力有序执行计划（DAG）」。
 

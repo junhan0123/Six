@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · ai_core.lifecycle —— 启动就绪生命周期（Phase B 抽离，Extract Never Rewrite）。
+"""Xiao6 · ai_core.lifecycle —— 启动就绪生命周期（Phase B 抽离，Extract Never Rewrite）。
 
 本模块仅承载 server.py 原「启动就绪自检」相关逻辑，行为与原实现完全一致：
 

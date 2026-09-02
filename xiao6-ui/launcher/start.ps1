@@ -81,10 +81,24 @@ if ($backendRunning) {
     Log "Backend already running (HTTP 200 @ $HealthURL), skip start"
 } else {
     # -- 2. Resolve python --
+    # 依次探测 python3 / python，取第一个【实际可执行】的解释器。
+    # 原因：Windows 上 python3 常解析到 Microsoft Store 的 App Execution Alias 存根，
+    # 它"能被 Get-Command 找到"却"无法非交互执行"（报：系统无法访问此文件），
+    # 直接拿它启动后端会失败。故必须实测执行，而非仅判断是否存在。
     $py = $cfg.backend.python_bin
     if (-not $py) {
-        $py = (Get-Command python3 -ErrorAction SilentlyContinue).Source
-        if (-not $py) { $py = (Get-Command python -ErrorAction SilentlyContinue).Source }
+        $pyCandidates = @()
+        foreach ($name in @('python3', 'python')) {
+            $cmd = Get-Command $name -ErrorAction SilentlyContinue
+            if ($cmd -and ($pyCandidates -notcontains $cmd.Source)) { $pyCandidates += $cmd.Source }
+        }
+        foreach ($cand in $pyCandidates) {
+            try {
+                & $cand -c "import sys" 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) { $py = $cand; break }
+            } catch { }
+        }
+        if (-not $py -and $pyCandidates.Count -gt 0) { $py = $pyCandidates[0] }
     }
     if (-not $py) {
         Log "ERROR: python not found (python3/python); install Python or set backend.python_bin in launcher_config.json"

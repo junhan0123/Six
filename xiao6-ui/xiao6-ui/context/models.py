@@ -185,7 +185,7 @@ class ImportantDate:
 
 @dataclass(frozen=True)
 class ConversationMemory:
-    """一次对话的沉淀摘要（Phase 12 · P12-3），让庄周「记得你上周说的事」。"""
+    """一次对话的沉淀摘要（Phase 12 · P12-3），让Xiao6「记得你上周说的事」。"""
 
     date: str  # "2026-08-02"
     topic: str  # 对话主题

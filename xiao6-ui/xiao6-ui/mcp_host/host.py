@@ -11,7 +11,7 @@
 - Tool Registry Adapter / Invocation / Timeout / Cancellation / Audit。
 
 MCP 服务器是「外部能力提供方」，不是 Capability Registry。
-庄周侧：discover → map → authorize → invoke → verify。
+Xiao6侧：discover → map → authorize → invoke → verify。
 """
 from __future__ import annotations
 

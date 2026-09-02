@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""庄周 · ai_core —— AI OS 核心包（Phase B 抽离，Extract Never Rewrite）。
+"""Xiao6 · ai_core —— AI OS 核心包（Phase B 抽离，Extract Never Rewrite）。
 
 本包按 Phase B 规划逐步收纳 AI Core 子系统：lifecycle / context / execution /
 capability / health / metrics / recovery / logging。每个模块仅抽离既有逻辑、保持行为

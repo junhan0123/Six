@@ -37,7 +37,7 @@ from sysmon import get_logs, get_sysmon
 from tasks import recover_tasks
 from ai_core.lifecycle import lifecycle
 from ai_core.execution import run as _execution_run
-from tools import TOOL_FUNCS, TOOLS, detect_intents, run_fc_loop, select_tools, get_pending_video, clear_pending_video, strip_think_tags
+from tools import TOOL_FUNCS, TOOLS, detect_intents, select_tools, get_pending_video, clear_pending_video, strip_think_tags
 from wakeword import get_status as wakeword_status, start as wakeword_start, stop as wakeword_stop
 
 from server_globals import *

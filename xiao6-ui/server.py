@@ -37,6 +37,26 @@ from llm import _urlopen_with_proxy, agnes_completion, resolve_provider
 import provider_registry
 from media import status as media_status
 
+# ─────────────────────────────────────────────────────────────
+# UI CONSOLIDATION (v1.0.0) · 唯一正式 UI 根目录
+#   G:\xiao6\ui  ← 由本机 :8000 同源托管（无第二端口 / 无代理 / 无跳转）
+# 可用环境变量 XIAO6_UI_DIR 覆盖；缺省为 <项目根>/ui（即 xiao6-ui 的同级 ui/）
+# ─────────────────────────────────────────────────────────────
+def _ui_root():
+    env = os.environ.get("XIAO6_UI_DIR")
+    if env:
+        return os.path.realpath(env)
+    here = os.path.dirname(os.path.abspath(__file__))          # .../xiao6/xiao6-ui
+    return os.path.realpath(os.path.join(here, os.pardir, "ui"))  # .../xiao6/ui
+
+# 静态资源后缀：命中则不走 SPA fallback，未命中（如 /work /tasks）才回落到 index.html
+_UI_STATIC_EXT = {
+    ".html", ".htm", ".js", ".mjs", ".css", ".json", ".map",
+    ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp",
+    ".woff", ".woff2", ".ttf", ".otf", ".eot",
+    ".txt", ".md", ".webmanifest", ".xml",
+}
+
 # Phase 10-C · 本地 Provider 可用性探测缓存（仅白名单 127.0.0.1；spec §八）
 # 进程内内存 dict，存最近一次探测结果；禁扫描、禁任意远程探测。
 _PROVIDER_PROBE_CACHE = {}
@@ -96,7 +116,7 @@ def _proactive_dnd_state() -> bool:
 from tasks import recover_tasks
 from ai_core.lifecycle import lifecycle
 from ai_core.execution import run as _execution_run
-from tools import TOOL_FUNCS, TOOLS, detect_intents, run_fc_loop, select_tools, get_pending_video, clear_pending_video, strip_think_tags
+from tools import TOOL_FUNCS, TOOLS, detect_intents, select_tools, get_pending_video, clear_pending_video, strip_think_tags
 
 # ---------- Phase C：远程访问安全 ----------
 # 远程会话默认禁止的高危工具（run_shell/file_write/install/委托/工厂管理等）。
@@ -252,7 +272,11 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
         path = self.path.split("?", 1)[0]
         qs = parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
         if path in ("/", "/index.html"):
-            return self._serve_file("index.html")
+            # UI CONSOLIDATION：优先托管唯一正式 UI（G:\xiao6\ui\index.html）
+            ui_fp = self._resolve_ui("/index.html")
+            if ui_fp:
+                return self._serve_abs(ui_fp)
+            return self._serve_file("index.html")   # 兜底：UI 目录缺失时保持原行为
         if path == "/api/health":
             # liveness：仅表进程存活；ok 取最近一次自检缓存，不触发外部探测（P0.2 修复 RC-4）
             cached = lifecycle.self_check_result
@@ -496,6 +520,20 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 )
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        # —— Phase 47.5：工具清单（GET，只读）——
+        if path == "/api/tools/list":
+            try:
+                tool_list = [
+                    {
+                        "name": t["function"]["name"],
+                        "description": t["function"].get("description", ""),
+                        "parameters": t["function"].get("parameters", {}),
+                    }
+                    for t in TOOLS
+                ]
+                return self._send(200, json.dumps({"ok": True, "count": len(tool_list), "tools": tool_list}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
         # —— Phase 23 · Capability OS 统一能力目录（GET，只读）——
         if path == "/api/capability_os/catalog":
             try:
@@ -508,6 +546,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             try:
                 import capability_os
                 return self._send(200, json.dumps(capability_os.foundation_view(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+        # S95 · Capability 真实验证（GET，只读；调用 verification.verify_all）
+        if path == "/api/capability_os/verify":
+            try:
+                import capability_os
+                return self._send(200, json.dumps(capability_os.verify_capabilities(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
         # —— Phase 24 · Proactive Agent（GET，只读状态；只建议不执行）——
@@ -725,6 +770,18 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+        # ── UI CONSOLIDATION (v1.0.0) · 唯一正式 UI：G:\xiao6\ui ──
+        # /api/* 在上方已全部 return；此处双保险再次排除，API 绝不 fallback 到 index.html
+        if not path.startswith("/api/"):
+            ui_fp = self._resolve_ui(path)
+            if ui_fp:
+                return self._serve_abs(ui_fp)
+            # 前端路由（/work /tasks /memory /settings …）刷新 → 回落 index.html
+            if self._is_spa_route(path):
+                idx = self._resolve_ui("/index.html")
+                if idx:
+                    return self._serve_abs(idx)
+        # ── 以下为历史静态逻辑，保留以向下兼容（不删除既有能力）──
         if path.startswith("/static/"):
             return self._serve_file(path[len("/static/") :])
         if path.startswith("/xiao6-space"):
@@ -760,6 +817,65 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return None
         return fp
 
+    # ── UI CONSOLIDATION · 唯一正式 UI（G:\xiao6\ui）静态解析 ──
+    def _resolve_ui(self, path):
+        """解析 UI 根目录下的静态文件。
+
+        安全强度与 _resolve_static 对齐：
+        - 禁止 ".." 路径分量 / NUL（防路径穿越）
+        - 禁止 .env / .git（凭证与仓库元数据）
+        - realpath 归一 + commonpath 边界校验（symlink 越界同样被拒）
+        空路径视为 index.html。返回绝对路径；非法或不存在返回 None。
+        """
+        name = (path or "").split("?", 1)[0].split("#", 1)[0]
+        name = name.replace("\\", "/").lstrip("/")
+        if not name:
+            name = "index.html"
+        if name.startswith("/") or "\x00" in name:
+            return None
+        if ".." in name.split("/"):
+            return None
+        root = _ui_root()
+        fp = os.path.realpath(os.path.join(root, name))
+        try:
+            if os.path.commonpath([root, fp]) != root:
+                return None
+        except ValueError:
+            return None
+        bn = os.path.basename(fp)
+        if bn == ".env" or ".env" in bn or ".git" in bn:
+            return None
+        if not os.path.isfile(fp):
+            return None
+        return fp
+
+    def _is_spa_route(self, path):
+        """是否应回落到 UI index.html（前端路由刷新）。
+        /api/* 永不 fallback；带静态资源后缀的也不 fallback。"""
+        name = (path or "").split("?", 1)[0].split("#", 1)[0]
+        if name.startswith("/api/"):
+            return False
+        ext = os.path.splitext(name)[1].lower()
+        return ext not in _UI_STATIC_EXT
+
+    def _serve_abs(self, fp):
+        """按绝对路径发送文件（复用 CONTENT 的 Content-Type 映射）。"""
+        ext = os.path.splitext(fp)[1].lower()
+        try:
+            with open(fp, "rb") as f:
+                data = f.read()
+        except Exception:
+            return self._send(404, json.dumps({"error": "read failed"}, ensure_ascii=False))
+        return self._send(200, data, CONTENT.get(ext, "application/octet-stream"))
+
+    def _serve_abs_head(self, fp):
+        ext = os.path.splitext(fp)[1].lower()
+        try:
+            clen = os.path.getsize(fp)
+        except Exception:
+            return self._send_head(404)
+        return self._send_head(200, CONTENT.get(ext, "application/octet-stream"), clen)
+
     def _send_head(self, code, ctype="application/json; charset=utf-8", clen=0):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
@@ -780,9 +896,22 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
-            return self._serve_file_head("index.html")
+            # UI CONSOLIDATION：优先托管唯一正式 UI（G:\xiao6\ui\index.html）
+            ui_fp = self._resolve_ui("/index.html")
+            if ui_fp:
+                return self._serve_abs_head(ui_fp)
+            return self._serve_file_head("index.html")   # 兜底：保持原行为
         if path.startswith("/api/"):
             return self._send_head(200)
+        # ── UI CONSOLIDATION · 唯一正式 UI：G:\xiao6\ui（HEAD 探测）──
+        if not path.startswith("/api/"):
+            ui_fp = self._resolve_ui(path)
+            if ui_fp:
+                return self._serve_abs_head(ui_fp)
+            if self._is_spa_route(path):
+                idx = self._resolve_ui("/index.html")
+                if idx:
+                    return self._serve_abs_head(idx)
         if path.startswith("/static/"):
             return self._serve_file_head(path[len("/static/") :])
         if path.startswith("/xiao6-space"):

@@ -21,7 +21,8 @@ from datetime import datetime
 from config import AI_DISPLAY_NAME, SYSTEM_PROMPT
 from context import build_context_prompt
 from db import db_conn
-from tools import run_fc_loop, detect_intents, select_tools
+from agent_runtime import runtime as agent_runtime
+from tools import detect_intents, select_tools
 from ai_core.execution import run as _execution_run
 
 # 单 sender 最小处理间隔（秒），防刷屏 / 防回声环路
@@ -113,8 +114,12 @@ def handle_inbound(channel, sender, text, temperature=0.7):
         return None
 
     try:
-        content, called = run_fc_loop(
-            messages, _noop, tools=select_tools(text), temperature=temperature
+        # 统一使用 AgentRuntime 执行（不再直接调用 run_fc_loop）
+        def _noop_emit(_): pass
+        messages = [{"role": "user", "content": text}]
+        content, called = agent_runtime.run_chat_turn(
+            messages, _noop_emit, user_text=text,
+            tools=select_tools(text), temperature=temperature
         )
         # 意图兜底（与 /api/chat 一致）：LLM 没主动调的工具，按显式意图补跑
         intents = detect_intents(text)

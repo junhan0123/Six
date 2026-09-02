@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-庄周  全局配置与常量
+Xiao6  全局配置与常量
 - 纯标准库
 - 内置界面 (index.html / styles.css / app.js)
 - API Key 仅从环境变量或同目录 .env 读取，绝不硬编码
@@ -33,7 +33,7 @@ MLX_BASE_URL: str = ""
 MLX_MODEL: str = ""
 # ---- 新功能开关（KWS 唤醒 / 文档面板 / 成果审视分身）----
 XIAO6_KWS_ENABLED: str = "true"
-XIAO6_WAKE_PHRASE: str = "庄周,小周,小6"
+XIAO6_WAKE_PHRASE: str = "Xiao6,小周,小6"
 XIAO6_KWS_SENSITIVITY: str = "0.6"
 XIAO6_VOSK_KWS_ENABLED: str = "true"   # P8-2：优先用 Vosk 中文短语 KWS（开启且模型可用时）
 XIAO6_DOC_DIR: str = "docs"
@@ -287,7 +287,7 @@ def reload():
     MLX_BASE_URL = os.environ.get("MLX_BASE_URL", "").rstrip("/")
     MLX_MODEL = os.environ.get("MLX_MODEL", "")
     XIAO6_KWS_ENABLED = os.environ.get("XIAO6_KWS_ENABLED", "true").lower()
-    XIAO6_WAKE_PHRASE = os.environ.get("XIAO6_WAKE_PHRASE", "庄周,小周,小6")
+    XIAO6_WAKE_PHRASE = os.environ.get("XIAO6_WAKE_PHRASE", "Xiao6,小周,小6")
     XIAO6_KWS_SENSITIVITY = os.environ.get("XIAO6_KWS_SENSITIVITY", "0.6")
     XIAO6_VOSK_KWS_ENABLED = os.environ.get("XIAO6_VOSK_KWS_ENABLED", "true").lower()
     XIAO6_DOC_DIR = os.environ.get("XIAO6_DOC_DIR", "docs")
