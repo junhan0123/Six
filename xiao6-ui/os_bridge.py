@@ -137,7 +137,7 @@ def _check_voice():
             finally:
                 s.close()
         else:
-            # 非 sovits 后端，edge-tts 已禁用，TTS 不可用
+            # 非 GPT-SoVITS 后端，TTS 不可用
             tts_ok = False
     except Exception:
         pass

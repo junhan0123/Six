@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 小6 · 本地指挥核心 · server.py（薄入口）
-- 纯标准库（仅 TTS 用 edge-tts，lazy import）
+- 纯标准库（仅 TTS 用 GPT-SoVITS / Qwen3-TTS，lazy import）
 - 托管界面 (index.html / styles.css / app.js)
 - POST /api/chat  ->  function calling 闭环：调 Agnes -> 本地执行工具 -> 回填 -> 流式输出
-- POST /api/speak ->  用 edge-tts 合成中文语音并返回 mp3
+- POST /api/speak ->  用 GPT-SoVITS 合成中文语音并返回 mp3
 - GET  /api/health
 - API Key 仅存于服务端（环境变量或同目录 .env），绝不暴露给前端
 """

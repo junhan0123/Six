@@ -590,65 +590,7 @@ class ChatMixin:
         self.wfile.write(audio)
 
 
-    def _stream_edge(self, text, voice, rate):
-        """P8-2 流式 TTS：edge-tts 逐帧推 MP3 字节流（HTTP/1.1 chunked）。
-        返回 True 表示已开始写入音频字节；首块前失败返回 False（调用方降级整段 blob）。"""
-        import edge_tts
-        self.send_response(200)
-        self.send_header("Content-Type", "audio/mpeg")
-        self.send_header("X-TTS-Mode", "stream")
-        self.send_header("Transfer-Encoding", "chunked")
-        self.send_header("Access-Control-Allow-Origin", self._cors_origin())
-        self.end_headers()
-        wrote = False
-
-        async def _run():
-            nonlocal wrote
-            com = edge_tts.Communicate(text, voice, rate=rate)
-            async for chunk in com.stream():
-                if chunk["type"] == "audio":
-                    data = chunk["data"]
-                    if not data:
-                        continue
-                    wrote = True
-                    self.wfile.write(("%X\r\n" % len(data)).encode("ascii"))
-                    self.wfile.write(data)
-                    self.wfile.write(b"\r\n")
-                    self.wfile.flush()
-
-        try:
-            asyncio.run(_run())
-        except Exception:
-            if not wrote:
-                raise  # 首块前失败：交由调用方降级 blob
-            # 已开始写入后失败：响应头已发，无法回退，写终止帧静默收尾
-            try:
-                self.wfile.write(b"0\r\n\r\n")
-                self.wfile.flush()
-            except Exception:
-                pass
-            return wrote
-        self.wfile.write(b"0\r\n\r\n")
-        self.wfile.flush()
-        return wrote
-
-
-    def _edge_use_proxy(self):
-        """是否让 edge-tts 走代理。
-
-        历史实现会主动探测 127.0.0.1:7890(Clash) 并在可达时强行注入代理环境变量，
-        依据是当时注释所载「走代理 1.1s vs 直连 2.7s」。2026-08-11 复测该结论已不成立：
-            直连 1.18s / 1.43s / 1.20s      走代理 1.22s / 1.18s / 1.22s
-        两者同速，自动注入既无收益，又引入 socket 探测开销与「代理端口在线但转发异常」
-        时的静默劣化风险。现改为：只尊重用户显式设置的环境变量代理，不再自动探测注入。
-        """
-        return bool(
-            os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
-            or os.environ.get("https_proxy") or os.environ.get("http_proxy")
-        )
-
-
-    def _handle_speak(self):
+    def _tts_sovits(self, text):
         payload = self._read_json()
         if "_error" in payload:
             return self._send(400, json.dumps({"error": payload["_error"]}))
@@ -659,8 +601,8 @@ class ChatMixin:
         rate = (payload.get("rate") or "").strip() or config.TTS_RATE or "+0%"
         import re as _re
         if rate and not _re.match(r'^[\+\-]?\d+(\.\d+)?%$', rate):
-            rate = "+0%"  # edge-tts 7.x 仅接受百分比语速，非法值回退默认，避免 500
-        # 前端选了「自定义音色」但后端未启用 GPT-SoVITS 时，回退默认 edge 音色，避免无效 voice 报错
+            rate = "+0%"  # TTS rate format requires percentage, invalid values fall back to default to avoid 500
+        # 前端选了「自定义音色」但后端未启用 GPT-SoVITS 时，回退默认音色，避免无效 voice 报错
         if voice == "__sovits__" and config.TTS_BACKEND != "sovits":
             voice = config.TTS_VOICE
         # 自定义音色（GPT-SoVITS）：仅当显式启用且已配置参考音频时走此路
@@ -670,7 +612,7 @@ class ChatMixin:
                 return
             except Exception as e:
                 print(f"[TTS] GPT-SoVITS 合成失败：{e}")
-                # 不再降级到 edge-tts，直接返回错误
+                # 不再降级到其他 TTS，直接返回错误
                 return self._send(500, json.dumps({"error": f"GPT-SoVITS 不可用: {e}"}))
 
         # Qwen3-TTS 本地声线（默认声线 Qwen3-TTS-12Hz-1.7B-CustomVoice；
@@ -697,11 +639,11 @@ class ChatMixin:
                 return
             except Exception as e:
                 print(f"[TTS] Qwen3-TTS 合成失败：{e}")
-                # 不再降级到 edge-tts，直接返回错误
+                # 不再降级到其他 TTS，直接返回错误
                 return self._send(500, json.dumps({"error": f"Qwen3-TTS 不可用: {e}"}))
 
         # 默认：GPT-SoVITS 未部署，返回错误
-        return self._send(503, json.dumps({"error": "TTS 不可用：GPT-SoVITS 未部署，edge-tts 已禁用作为正式 TTS"}))
+        return self._send(503, json.dumps({"error": "TTS 不可用：GPT-SoVITS 未部署"}))
 
 
     def _handle_data_export(self):

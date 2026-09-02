@@ -13,11 +13,11 @@
   },
   "weather": {
     "temp": "24",
-    "feels_like": "25",
-    "humidity": "63",
+    "feels_like": "24",
+    "humidity": "53",
     "condition": "晴",
-    "wind_kmh": "8",
-    "wind_dir": "E"
+    "wind_kmh": "7",
+    "wind_dir": "S"
   },
-  "collected_at": "2026-09-02 10:23:49"
+  "collected_at": "2026-09-02 22:00:22"
 }

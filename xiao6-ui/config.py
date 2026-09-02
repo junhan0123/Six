@@ -79,7 +79,7 @@ FEATURE_MEMORY_INTELLIGENCE: bool = True
 FEATURE_PROACTIVE_V2: bool = False
 # P4-D：多端同步（同源 Web 客户端设备注册 / 设备清单）；默认开启，关闭即禁用 /api/devices
 FEATURE_MULTI_DEVICE: bool = False
-# P8-2：流式 TTS（edge-tts 逐帧推流 + 前端 MSE 边收边播）；默认开启，关闭即回退整段 blob
+# P8-2：流式 TTS（GPT-SoVITS / Qwen3-TTS 逐帧推流 + 前端 MSE 边收边播）；默认开启，关闭即回退整段 blob
 FEATURE_TTS_STREAM: bool = False
 # 自我学习系统（显式反馈捕获 + LLM 蒸馏经验 + 注入上下文）；默认开启，关闭即不记录/不注入
 FEATURE_SELF_LEARNING: bool = False
@@ -412,7 +412,7 @@ def reload():
 
     TTS_VOICE = os.environ.get("Xiao6_TTS_VOICE", "zh-CN-YunxiNeural")
     TTS_RATE = os.environ.get("Xiao6_TTS_RATE", "+0%")
-    TTS_BACKEND = os.environ.get("XIAO6_TTS_BACKEND", "edge")
+    TTS_BACKEND = os.environ.get("XIAO6_TTS_BACKEND", "sovits")
     GPT_SOVITS_URL = os.environ.get("XIAO6_GPT_SOVITS_URL", "http://localhost:9880")
     GPT_SOVITS_REF_AUDIO = os.environ.get("XIAO6_GPT_SOVITS_REF", "")
     GPT_SOVITS_PROMPT_TEXT = os.environ.get("XIAO6_GPT_SOVITS_PROMPT", "")

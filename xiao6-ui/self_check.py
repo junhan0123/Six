@@ -144,7 +144,7 @@ def _check_tts() -> dict[str, Any]:
     elif sovits_configured:
         return {"name": "TTS 语音合成", "ok": False, "detail": "GPT-SoVITS 已配置但不可达"}
     else:
-        return {"name": "TTS 语音合成", "ok": False, "detail": "GPT-SoVITS 未部署（edge-tts 已禁用）"}
+        return {"name": "TTS 语音合成", "ok": False, "detail": "GPT-SoVITS 未部署"}
 
 
 def _check_agnes_reachable() -> dict[str, Any]:
