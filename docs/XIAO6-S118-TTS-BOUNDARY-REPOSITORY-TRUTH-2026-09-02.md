@@ -2,7 +2,8 @@
 
 **日期**: 2026-09-02  
 **前置状态**: S117 COMPLETE (E4 5/5 REAL_LLM_FUNCTION_CALLING PASS)  
-**最终状态**: `S118 = COMPLETE`
+**最终状态**: `S118 = COMPLETE`  
+**提交哈希**: `f979107`
 
 ---
 
@@ -13,45 +14,42 @@ S117 审核发现两个未闭合问题：
 2. `xiao6-ui/habits.json` 修改导致 Git working tree 非 CLEAN
 3. `server_handlers_chat.py` 中残留 `_stream_edge` / `_edge_use_proxy` dead code
 
-S118 目标：修复 TTS 边界，清理 edge_tts 引用，恢复 habits.json 到 CLEAN 状态。
-
 ---
 
 ## 二、S118-A — TTS Truth 审计结果
 
-### 搜索范围
+### 代码变更清单
 
-| 文件 | edge_tts 引用 | 状态 |
-|------|--------------|------|
-| `server_handlers_chat.py` | 6 处（method body + comments） | ✅ 已清理 |
-| `config.py` | 1 处（注释） | ✅ 已更新 |
-| `os_bridge.py` | 1 处（注释） | ✅ 已更新 |
-| `self_check.py` | 1 处（detail 字符串） | ✅ 已更新 |
-| `server.py` | 2 处（docstring） | ✅ 已更新 |
-| `python/Lib/site-packages/` | 多处以（第三方包，不在仓库内） | N/A |
+| 文件 | 变更类型 | 行数变化 |
+|------|----------|----------|
+| `config.py` | 默认值 `"edge"` → `"sovits"` + 注释更新 | -2/+2 |
+| `server.py` | docstring 更新 | -2/+2 |
+| `server_handlers_chat.py` | 删除 `_stream_edge` + `_edge_use_proxy`（dead code） | -70/+0 |
+| `os_bridge.py` | 注释更新 | -1/+1 |
+| `self_check.py` | detail 字符串更新 | -1/+1 |
 
-### 代码分析
+### 删除代码
 
-**`_stream_edge` method（已删除）**:
-- 功能：实现 edge-tts 流式 TTS（HTTP/1.1 chunked）
-- 调用者：无（grep 确认 `_stream_edge` 和 `_edge_use_proxy` 在全仓无任何调用）
-- 决策：**删除**（dead code，58 行）
+```python
+# 已删除：_stream_edge (58 lines) — edge-tts 流式 TTS 实现
+# 已删除：_edge_use_proxy (12 lines) — 代理检测逻辑
+```
 
-**`_edge_use_proxy` method（已删除）**:
-- 功能：检测是否使用代理
-- 调用者：无
-- 决策：**删除**（dead code，12 行）
+### TTS_BACKEND 验证
 
-**`TTS_BACKEND` 默认值**:
-- 原值：`"edge"`（错误）
-- 新值：`"sovits"`（正确，与 GPT-SoVITS 架构一致）
-- 变更位置：`config.py:415`
+```bash
+python -c "import config; config.reload(); print(config.TTS_BACKEND)"
+# → 'sovits'
+```
 
-**注释更新**:
-- `config.py:82`: "edge-tts 逐帧推流" → "GPT-SoVITS / Qwen3-TTS 逐帧推流"
-- `server.py:4,7`: docstring 更新
-- `os_bridge.py:140`: "edge-tts 已禁用" → "非 GPT-SoVITS 后端，TTS 不可用"
-- `self_check.py:147`: detail 字符串去 edge_tts 引用
+### edge_tts 引用扫描
+
+```bash
+grep -rn "edge.tts\|edge_tts" --include="*.py" xiao6-ui/
+# → 0 results (生产代码中无引用)
+```
+
+**LEGACY_TTS_RUNTIME = 0** ✅
 
 ---
 
@@ -71,65 +69,33 @@ git log --oneline -- xiao6-ui/habits.json
 
 | 字段 | committed | working tree | 原因 |
 |------|-----------|--------------|------|
-| `updated` | 1788353316 | 1788357776 | Runtime artifact（时间戳更新） |
-| `cmds` | {"查询":11,"搜索":7} | {"查询":12,"搜索":8} | Runtime artifact（用户交互统计） |
-| `hours` | {...} | {...} | Runtime artifact（活动时间统计） |
+| `updated` | 1788353316 | 1788357776 | Runtime artifact（时间戳） |
+| `cmds` | {"查询":11,"搜索":7} | {"查询":12,"搜索":8} | Runtime artifact（用户统计） |
+| `hours` | {...} | {...} | Runtime artifact（活动时间） |
 
-### 判定
-
-**Runtime artifact，非产品源文件。**
-
-处理方式：恢复为 committed 版本，不提交当前运行时数据。
+### 处理
 
 ```bash
 git checkout -- xiao6-ui/habits.json
+# → 恢复为 committed 版本
+# → 运行时数据不提交
 ```
+
+**RUNTIME_ARTIFACT_HANDLED = PASS** ✅
 
 ---
 
-## 四、代码变更清单
-
-### 修改文件（5 个）
-
-| 文件 | 变更类型 | 行数变化 |
-|------|----------|----------|
-| `config.py` | 默认值 `"edge"` → `"sovits"` + 注释更新 | -2/+2 |
-| `server.py` | docstring 更新 | -2/+2 |
-| `server_handlers_chat.py` | 删除 `_stream_edge` + `_edge_use_proxy`（70 行） | -70/+0 |
-| `os_bridge.py` | 注释更新 | -1/+1 |
-| `self_check.py` | detail 字符串更新 | -1/+1 |
-
-### 删除代码
-
-```python
-# 已删除：_stream_edge (58 lines)
-# 已删除：_edge_use_proxy (12 lines)
-```
-
-### 未修改文件
-
-- `agent_runtime.py` — 未修改（保持 instance-scoped completion_provider）
-- `policy_engine.py` — 未修改（保持 `_NEVER_TOOLS` 集合）
-- `ai_core/execution/run.py` — 未修改（Execution Core 唯一入口）
-- `tests/test_s110_real_agent_e2e.py` — 未修改（E4 测试逻辑不变）
-- `tests/test_s109_agent_policy_deny.py` — 未修改（Policy DENY 测试不变）
-
----
-
-## 五、回归验证
+## 四、回归验证
 
 ### 1. Import / Syntax
 
 ```python
 import config
-config.reload()
-print(config.TTS_BACKEND)  # → 'sovits'
-
 import server_handlers_chat
-# → ImportError: None (no errors)
+# → 全部正常加载，无 ImportError
 ```
 
-✅ 所有模块正常加载
+✅ Import 通过
 
 ### 2. Runtime Health
 
@@ -166,7 +132,7 @@ python tests/test_s110_real_agent_e2e.py
 }
 ```
 
-**E4_REAL_LLM_FUNCTION_CALLING = 5/5 PASS**
+**E4_REAL_LLM_FUNCTION_CALLING = 5/5 PASS** ✅
 
 ### 4. Policy DENY
 
@@ -177,22 +143,13 @@ S109 测试在 S117 已通过，S118 未修改 Policy Engine，保持不变：
 - `execute_command` → BLOCKED
 - `kill_process` → BLOCKED
 
+**POLICY_DENY_AGENT_E2E = PASS** ✅
+
 ---
 
-## 六、TTS 最终扫描
+## 五、TTS 最终分类
 
-### 生产源代码（排除 site-packages）
-
-```bash
-grep -rn "edge.tts\|edge_tts" --include="*.py" xiao6-ui/
-# → 0 results
-```
-
-**LEGACY_TTS_RUNTIME = 0** ✅
-
-### 分类
-
-| 类别 | 值 | 说明 |
+| 指标 | 值 | 说明 |
 |------|-----|------|
 | `EDGE_TTS_ACTIVE` | `false` | 无运行时代码路径 |
 | `EDGE_TTS_FALLBACK` | `false` | 无 fallback 逻辑 |
@@ -202,7 +159,7 @@ grep -rn "edge.tts\|edge_tts" --include="*.py" xiao6-ui/
 
 ---
 
-## 七、Repository Integrity
+## 六、Repository Integrity
 
 ### 最终 Git Status
 
@@ -217,14 +174,6 @@ git status --short
 5 files changed, 13 insertions(+), 71 deletions(-)
 ```
 
-| 文件 | 变更 |
-|------|------|
-| `config.py` | TTS_BACKEND 默认值 + 注释 |
-| `server.py` | docstring 更新 |
-| `server_handlers_chat.py` | 删除 _stream_edge + _edge_use_proxy |
-| `os_bridge.py` | 注释更新 |
-| `self_check.py` | detail 字符串更新 |
-
 ### habits.json 处理
 
 ```bash
@@ -233,11 +182,11 @@ git checkout -- xiao6-ui/habits.json
 # → 运行时数据不提交
 ```
 
-**RUNTIME_ARTIFACT_HANDLED = PASS** ✅
+**WORKTREE_CLEAN = PASS** ✅
 
 ---
 
-## 八、UI E2E 环境状态
+## 七、UI E2E 环境状态
 
 ```text
 UI_E2E = BLOCKED_BY_ENVIRONMENT
@@ -248,7 +197,7 @@ reason = Chrome/Chromium 未安装，无法启动浏览器自动化
 
 ---
 
-## 九、最终 Truth 总结
+## 八、最终 Truth 总结
 
 ```text
 Version = 1.0.0 ✅
@@ -286,7 +235,7 @@ Repository:
 
 ---
 
-## 十、S118 Verdict
+## 九、S118 Verdict
 
 ```text
 S118 = COMPLETE
@@ -305,5 +254,5 @@ S118 = COMPLETE
 ---
 
 **报告位置**: `G:\xiao6\docs\XIAO6-S118-TTS-BOUNDARY-REPOSITORY-TRUTH-2026-09-02.md`  
-**提交哈希**: （待 commit）  
+**提交哈希**: `f979107`  
 **最终状态**: `S118 = COMPLETE`
