@@ -1,0 +1,5 @@
+{
+  "TEST-06a_PRIMARY": false,
+  "TEST-06b_FALLBACK": true,
+  "TEST-06c_STATE": true
+}

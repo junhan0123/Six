@@ -1,0 +1,30 @@
+{
+  "mission_a": {
+    "mission": "A",
+    "status": "PASS",
+    "browser_titles": 5,
+    "report_length": 402,
+    "save_ok": true,
+    "verify_ok": true,
+    "elapsed_ms": 7246
+  },
+  "mission_b": {
+    "mission": "B",
+    "status": "PASS",
+    "browser_data": "小6 AI OS v1.4 发布：多应用 Computer Use 能力突破",
+    "save_ok": true,
+    "reopened": true,
+    "read_ok": true,
+    "elapsed_ms": 6068
+  },
+  "mission_c": {
+    "mission": "C",
+    "status": "PASS",
+    "total_steps": 8,
+    "completed_steps": 8,
+    "recoveries": 1,
+    "file_exists": true,
+    "content_ok": true,
+    "elapsed_ms": 6178
+  }
+}

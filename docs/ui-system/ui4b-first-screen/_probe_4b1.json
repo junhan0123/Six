@@ -1,0 +1,715 @@
+{
+  "generatedAt": "2026-08-09T08:47:25.950Z",
+  "base": "http://127.0.0.1:8000",
+  "viewports": {
+    "1920x1080": {
+      "viewport": {
+        "w": 1920,
+        "h": 1080
+      },
+      "presence": "OFFLINE",
+      "presenceColor": "#8a93a6",
+      "theme": "dark-cyan",
+      "bodyClass": "kws-listening kws-downclocked",
+      "core": {
+        "_rect": {
+          "w": 1778,
+          "h": 736,
+          "x": 120,
+          "y": 100
+        },
+        "backdrop-filter": "none",
+        "border-top-color": "rgba(0, 0, 0, 0)",
+        "box-shadow": "none",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background-image": "radial-gradient(54% 48% at 50% 52%, color(srgb 0.541176 0.576471 0.65098 / 0.1) 0%, color(srgb 0.541176 0.576471 0.65098 / 0.04) 38%, rgba(0, 0, 0, 0) 72%), radial-gradient(76% 64% at 50% 54%, color(srgb 0.0235294 0.0392157 0.0588235 / 0.64) 0%, color(srgb 0.0235294 0.0392157 0.0588235 / 0.32) 44%, rgba(0, 0, 0, 0) 74%)",
+        "isolation": "isolate",
+        "overflow": "hidden"
+      },
+      "heroTitle": {
+        "_rect": {
+          "w": 59,
+          "h": 28,
+          "x": 183,
+          "y": 179
+        },
+        "text-shadow": "color(srgb 0.0235294 0.0392157 0.0588235 / 0.74) 0px 0px 2px, color(srgb 0.0235294 0.0392157 0.0588235 / 0.9) 0px 1px 14px",
+        "color": "rgba(0, 0, 0, 0)",
+        "font-size": "28px",
+        "display": "block"
+      },
+      "heroDesc": {
+        "_rect": {
+          "w": 0,
+          "h": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none"
+      },
+      "heroActions": {
+        "_rect": {
+          "w": 0,
+          "h": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none"
+      },
+      "solarCanvas": {
+        "_rect": {
+          "w": 1920,
+          "h": 1080,
+          "x": 0,
+          "y": 0
+        },
+        "filter": "brightness(0.72)",
+        "z-index": "0",
+        "position": "fixed",
+        "display": "block",
+        "opacity": "1"
+      },
+      "galaxyVeil": {
+        "_rect": {
+          "w": 1920,
+          "h": 1080,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": "1",
+        "z-index": "1",
+        "pointer-events": "none"
+      },
+      "nav": {
+        "_rect": {
+          "w": 76,
+          "h": 1036,
+          "x": 22,
+          "y": 22
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0280392)",
+        "border-top-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0884314)"
+      },
+      "hud": {
+        "_rect": {
+          "w": 1778,
+          "h": 56,
+          "x": 120,
+          "y": 22
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0280392)",
+        "border-top-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0884314)"
+      },
+      "glassMap": {
+        ".os-nav": "blur(14px) saturate(1.6)",
+        ".os-hud": "blur(14px) saturate(1.6)",
+        ".os-core": "none",
+        ".os-panel.os-timeline": "blur(14px) saturate(1.6)",
+        ".os-panel.os-dock": "none",
+        ".os-dock .os-dock-bar": "blur(26px) saturate(1.8)",
+        ".os-side .os-panel[0]": "blur(14px) saturate(1.6)",
+        ".os-side .os-panel[1]": "blur(14px) saturate(1.6)"
+      },
+      "glass3Users": [
+        ".os-dock .os-dock-bar"
+      ],
+      "glass3Count": 1,
+      "timelinePanel": {
+        "_rect": {
+          "w": 1040,
+          "h": 68,
+          "x": 489,
+          "y": 990
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0316078)",
+        "box-shadow": "none"
+      },
+      "sidePanelCount": 2,
+      "sideOpen": false,
+      "runtimeVizDisplay": "none",
+      "execMonitorDisplay": "none",
+      "dockPanel": {
+        "_rect": {
+          "w": 1040,
+          "h": 118,
+          "x": 489,
+          "y": 858
+        },
+        "backdrop-filter": "none",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-top-color": "rgba(0, 0, 0, 0)",
+        "box-shadow": "none",
+        "padding-top": "0px"
+      },
+      "dockH3": {
+        "_rect": {
+          "w": 1038,
+          "h": 14,
+          "x": 490,
+          "y": 859
+        },
+        "font-size": "11px",
+        "opacity": "0.72",
+        "color": "rgb(159, 198, 210)"
+      },
+      "dockBar": {
+        "_rect": {
+          "w": 1038,
+          "h": 68,
+          "x": 490,
+          "y": 881
+        },
+        "backdrop-filter": "blur(26px) saturate(1.8)",
+        "border-top-color": "color(srgb 0.467074 0.622072 0.702282 / 0.513255)",
+        "background-color": "color(srgb 0.378809 0.676389 0.763388 / 0.199373)",
+        "box-shadow": "color(srgb 0.541176 0.576471 0.65098 / 0.13) 0px 0px 0px 1px, color(srgb 0.541176 0.576471 0.65098 / 0.58) 0px 18px 48px -26px"
+      },
+      "dockInput": {
+        "tag": "INPUT",
+        "id": "osDockInput",
+        "disabled": false,
+        "readOnly": false,
+        "w": 774,
+        "h": 22,
+        "placeholder": "向小6下达指令，或拖入文件 / 截图…"
+      },
+      "dockButtons": [
+        {
+          "cls": "os-dock-btn",
+          "title": "语音",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "拖文件到此",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "截图",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "快捷命令",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn send",
+          "title": "发送",
+          "disabled": false
+        }
+      ],
+      "dockHint": "Ctrl/Cmd+U 打开宇宙视图 · ⌘/Ctrl+K 快捷命令 · 支持拖拽文件",
+      "scrollX": {
+        "scrollW": 1920,
+        "clientW": 1920,
+        "canScrollX": 0
+      },
+      "shellDisplay": "grid",
+      "shellVisibility": "visible",
+      "cssLoaded": [
+        "styles.css?v=20260807p9",
+        "premium.css?v=20260805p4",
+        "runtime-viz.css?v=20260805r1",
+        "execution-channel.css?v=20260805e1",
+        "ui2.css?v=20260807p9",
+        "spatial-runtime.css?v=20260809a1",
+        "ui4b-first-screen.css?v=20260809b1"
+      ],
+      "jsErrors": []
+    },
+    "1440x900": {
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "presence": "OFFLINE",
+      "presenceColor": "#8a93a6",
+      "theme": "dark-cyan",
+      "bodyClass": "kws-listening",
+      "core": {
+        "_rect": {
+          "w": 1298,
+          "h": 556,
+          "x": 120,
+          "y": 100
+        },
+        "backdrop-filter": "none",
+        "border-top-color": "rgba(0, 0, 0, 0)",
+        "box-shadow": "none",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background-image": "radial-gradient(54% 48% at 50% 52%, color(srgb 0.541176 0.576471 0.65098 / 0.1) 0%, color(srgb 0.541176 0.576471 0.65098 / 0.04) 38%, rgba(0, 0, 0, 0) 72%), radial-gradient(76% 64% at 50% 54%, color(srgb 0.0235294 0.0392157 0.0588235 / 0.64) 0%, color(srgb 0.0235294 0.0392157 0.0588235 / 0.32) 44%, rgba(0, 0, 0, 0) 74%)",
+        "isolation": "isolate",
+        "overflow": "hidden"
+      },
+      "heroTitle": {
+        "_rect": {
+          "w": 59,
+          "h": 28,
+          "x": 183,
+          "y": 179
+        },
+        "text-shadow": "color(srgb 0.0235294 0.0392157 0.0588235 / 0.74) 0px 0px 2px, color(srgb 0.0235294 0.0392157 0.0588235 / 0.9) 0px 1px 14px",
+        "color": "rgba(0, 0, 0, 0)",
+        "font-size": "28px",
+        "display": "block"
+      },
+      "heroDesc": {
+        "_rect": {
+          "w": 0,
+          "h": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none"
+      },
+      "heroActions": {
+        "_rect": {
+          "w": 0,
+          "h": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none"
+      },
+      "solarCanvas": {
+        "_rect": {
+          "w": 1440,
+          "h": 900,
+          "x": 0,
+          "y": 0
+        },
+        "filter": "brightness(0.72)",
+        "z-index": "0",
+        "position": "fixed",
+        "display": "block",
+        "opacity": "1"
+      },
+      "galaxyVeil": {
+        "_rect": {
+          "w": 1440,
+          "h": 900,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": "1",
+        "z-index": "1",
+        "pointer-events": "none"
+      },
+      "nav": {
+        "_rect": {
+          "w": 76,
+          "h": 856,
+          "x": 22,
+          "y": 22
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0280392)",
+        "border-top-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0884314)"
+      },
+      "hud": {
+        "_rect": {
+          "w": 1298,
+          "h": 56,
+          "x": 120,
+          "y": 22
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0280392)",
+        "border-top-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0884314)"
+      },
+      "glassMap": {
+        ".os-nav": "blur(14px) saturate(1.6)",
+        ".os-hud": "blur(14px) saturate(1.6)",
+        ".os-core": "none",
+        ".os-panel.os-timeline": "blur(14px) saturate(1.6)",
+        ".os-panel.os-dock": "none",
+        ".os-dock .os-dock-bar": "blur(26px) saturate(1.8)",
+        ".os-side .os-panel[0]": "blur(14px) saturate(1.6)",
+        ".os-side .os-panel[1]": "blur(14px) saturate(1.6)"
+      },
+      "glass3Users": [
+        ".os-dock .os-dock-bar"
+      ],
+      "glass3Count": 1,
+      "timelinePanel": {
+        "_rect": {
+          "w": 1040,
+          "h": 68,
+          "x": 249,
+          "y": 810
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0316078)",
+        "box-shadow": "none"
+      },
+      "sidePanelCount": 2,
+      "sideOpen": false,
+      "runtimeVizDisplay": "none",
+      "execMonitorDisplay": "none",
+      "dockPanel": {
+        "_rect": {
+          "w": 1040,
+          "h": 118,
+          "x": 249,
+          "y": 678
+        },
+        "backdrop-filter": "none",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-top-color": "rgba(0, 0, 0, 0)",
+        "box-shadow": "none",
+        "padding-top": "0px"
+      },
+      "dockH3": {
+        "_rect": {
+          "w": 1038,
+          "h": 14,
+          "x": 250,
+          "y": 679
+        },
+        "font-size": "11px",
+        "opacity": "0.72",
+        "color": "rgb(159, 198, 210)"
+      },
+      "dockBar": {
+        "_rect": {
+          "w": 1038,
+          "h": 68,
+          "x": 250,
+          "y": 701
+        },
+        "backdrop-filter": "blur(26px) saturate(1.8)",
+        "border-top-color": "color(srgb 0.467074 0.622072 0.702282 / 0.513255)",
+        "background-color": "color(srgb 0.378809 0.676389 0.763388 / 0.199373)",
+        "box-shadow": "color(srgb 0.541176 0.576471 0.65098 / 0.13) 0px 0px 0px 1px, color(srgb 0.541176 0.576471 0.65098 / 0.58) 0px 18px 48px -26px"
+      },
+      "dockInput": {
+        "tag": "INPUT",
+        "id": "osDockInput",
+        "disabled": false,
+        "readOnly": false,
+        "w": 774,
+        "h": 22,
+        "placeholder": "向小6下达指令，或拖入文件 / 截图…"
+      },
+      "dockButtons": [
+        {
+          "cls": "os-dock-btn",
+          "title": "语音",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "拖文件到此",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "截图",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "快捷命令",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn send",
+          "title": "发送",
+          "disabled": false
+        }
+      ],
+      "dockHint": "Ctrl/Cmd+U 打开宇宙视图 · ⌘/Ctrl+K 快捷命令 · 支持拖拽文件",
+      "scrollX": {
+        "scrollW": 1440,
+        "clientW": 1440,
+        "canScrollX": 0
+      },
+      "shellDisplay": "grid",
+      "shellVisibility": "visible",
+      "cssLoaded": [
+        "styles.css?v=20260807p9",
+        "premium.css?v=20260805p4",
+        "runtime-viz.css?v=20260805r1",
+        "execution-channel.css?v=20260805e1",
+        "ui2.css?v=20260807p9",
+        "spatial-runtime.css?v=20260809a1",
+        "ui4b-first-screen.css?v=20260809b1"
+      ],
+      "jsErrors": []
+    },
+    "720x1280": {
+      "viewport": {
+        "w": 720,
+        "h": 1280
+      },
+      "presence": "OFFLINE",
+      "presenceColor": "#8a93a6",
+      "theme": "dark-cyan",
+      "bodyClass": "kws-listening",
+      "core": {
+        "_rect": {
+          "w": 692,
+          "h": 898,
+          "x": 14,
+          "y": 158
+        },
+        "backdrop-filter": "none",
+        "border-top-color": "rgba(0, 0, 0, 0)",
+        "box-shadow": "none",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background-image": "radial-gradient(70% 34% at 50% 46%, color(srgb 0.541176 0.576471 0.65098 / 0.11) 0%, rgba(0, 0, 0, 0) 72%), radial-gradient(96% 48% at 50% 48%, color(srgb 0.0235294 0.0392157 0.0588235 / 0.6) 0%, color(srgb 0.0235294 0.0392157 0.0588235 / 0.28) 48%, rgba(0, 0, 0, 0) 78%)",
+        "isolation": "isolate",
+        "overflow": "hidden"
+      },
+      "heroTitle": {
+        "_rect": {
+          "w": 42,
+          "h": 20,
+          "x": 70,
+          "y": 227
+        },
+        "text-shadow": "color(srgb 0.0235294 0.0392157 0.0588235 / 0.74) 0px 0px 2px, color(srgb 0.0235294 0.0392157 0.0588235 / 0.9) 0px 1px 14px",
+        "color": "rgba(0, 0, 0, 0)",
+        "font-size": "20px",
+        "display": "block"
+      },
+      "heroDesc": {
+        "_rect": {
+          "w": 0,
+          "h": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none"
+      },
+      "heroActions": {
+        "_rect": {
+          "w": 0,
+          "h": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none"
+      },
+      "solarCanvas": {
+        "_rect": {
+          "w": 720,
+          "h": 1280,
+          "x": 0,
+          "y": 0
+        },
+        "filter": "brightness(0.72)",
+        "z-index": "0",
+        "position": "fixed",
+        "display": "block",
+        "opacity": "1"
+      },
+      "galaxyVeil": {
+        "_rect": {
+          "w": 720,
+          "h": 1280,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": "1",
+        "z-index": "1",
+        "pointer-events": "none"
+      },
+      "nav": {
+        "_rect": {
+          "w": 692,
+          "h": 60,
+          "x": 14,
+          "y": 84
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0397647)",
+        "border-top-color": "color(srgb 0.133333 0.827451 0.933333 / 0.125412)"
+      },
+      "hud": {
+        "_rect": {
+          "w": 692,
+          "h": 56,
+          "x": 14,
+          "y": 14
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0397647)",
+        "border-top-color": "color(srgb 0.133333 0.827451 0.933333 / 0.125412)"
+      },
+      "glassMap": {
+        ".os-nav": "blur(14px) saturate(1.6)",
+        ".os-hud": "blur(14px) saturate(1.6)",
+        ".os-core": "none",
+        ".os-panel.os-timeline": "blur(14px) saturate(1.6)",
+        ".os-panel.os-dock": "none",
+        ".os-dock .os-dock-bar": "blur(26px) saturate(1.8)",
+        ".os-side .os-panel[0]": "blur(14px) saturate(1.6)",
+        ".os-side .os-panel[1]": "blur(14px) saturate(1.6)"
+      },
+      "glass3Users": [
+        ".os-dock .os-dock-bar"
+      ],
+      "glass3Count": 1,
+      "timelinePanel": {
+        "_rect": {
+          "w": 692,
+          "h": 68,
+          "x": 14,
+          "y": 1198
+        },
+        "backdrop-filter": "blur(14px) saturate(1.6)",
+        "background-color": "color(srgb 0.133333 0.827451 0.933333 / 0.0316078)",
+        "box-shadow": "none"
+      },
+      "sidePanelCount": 2,
+      "sideOpen": false,
+      "runtimeVizDisplay": "none",
+      "execMonitorDisplay": "none",
+      "dockPanel": {
+        "_rect": {
+          "w": 692,
+          "h": 114,
+          "x": 14,
+          "y": 1070
+        },
+        "backdrop-filter": "none",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-top-color": "rgba(0, 0, 0, 0)",
+        "box-shadow": "none",
+        "padding-top": "0px"
+      },
+      "dockH3": {
+        "_rect": {
+          "w": 690,
+          "h": 14,
+          "x": 15,
+          "y": 1071
+        },
+        "font-size": "11px",
+        "opacity": "0.72",
+        "color": "rgb(159, 198, 210)"
+      },
+      "dockBar": {
+        "_rect": {
+          "w": 690,
+          "h": 64,
+          "x": 15,
+          "y": 1093
+        },
+        "backdrop-filter": "blur(26px) saturate(1.8)",
+        "border-top-color": "color(srgb 0.467074 0.622072 0.702282 / 0.513255)",
+        "background-color": "color(srgb 0.378809 0.676389 0.763388 / 0.199373)",
+        "box-shadow": "color(srgb 0.541176 0.576471 0.65098 / 0.13) 0px 0px 0px 1px, color(srgb 0.541176 0.576471 0.65098 / 0.58) 0px 18px 48px -26px"
+      },
+      "dockInput": {
+        "tag": "INPUT",
+        "id": "osDockInput",
+        "disabled": false,
+        "readOnly": false,
+        "w": 434,
+        "h": 22,
+        "placeholder": "向小6下达指令，或拖入文件 / 截图…"
+      },
+      "dockButtons": [
+        {
+          "cls": "os-dock-btn",
+          "title": "语音",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "拖文件到此",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "截图",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn",
+          "title": "快捷命令",
+          "disabled": false
+        },
+        {
+          "cls": "os-dock-btn send",
+          "title": "发送",
+          "disabled": false
+        }
+      ],
+      "dockHint": "Ctrl/Cmd+U 打开宇宙视图 · ⌘/Ctrl+K 快捷命令 · 支持拖拽文件",
+      "scrollX": {
+        "scrollW": 720,
+        "clientW": 720,
+        "canScrollX": 0
+      },
+      "shellDisplay": "grid",
+      "shellVisibility": "visible",
+      "cssLoaded": [
+        "styles.css?v=20260807p9",
+        "premium.css?v=20260805p4",
+        "runtime-viz.css?v=20260805r1",
+        "execution-channel.css?v=20260805e1",
+        "ui2.css?v=20260807p9",
+        "spatial-runtime.css?v=20260809a1",
+        "ui4b-first-screen.css?v=20260809b1"
+      ],
+      "jsErrors": []
+    }
+  },
+  "scopeGuard": {
+    "baseline": {
+      "backdropFilter": "none",
+      "backgroundImage": "radial-gradient(54% 48% at 50% 52%, color(srgb 0.541176 0.576471 0.65098 / 0.1) ",
+      "boxShadow": "none"
+    },
+    "chat-mode": {
+      "backdropFilter": "blur(26px) saturate(1.8)",
+      "backgroundImage": "radial-gradient(120% 120% at 50% 40%, color(srgb 0.133333 0.827451 0.933333 / 0.",
+      "boxShadow": "color(srgb 0.541176 0.576471 0.65098 / 0.55) 0px 0px 140px -",
+      "shellVisibility": "visible",
+      "shellDisplay": "none"
+    },
+    "universe-mode": {
+      "backdropFilter": "blur(26px) saturate(1.8)",
+      "backgroundImage": "radial-gradient(120% 120% at 50% 40%, color(srgb 0.133333 0.827451 0.933333 / 0.",
+      "boxShadow": "oklab(0.662322 -0.00241077 -0.0299678 / 0.438823) 0px 0px 11",
+      "shellVisibility": "hidden",
+      "shellDisplay": "grid"
+    }
+  },
+  "contextOpen": {
+    "sidePanelShadow": "color(srgb 0.0235294 0.0392157 0.0588235 / 0.92) 0px 24px 64px -32px",
+    "sideTransform": "none",
+    "sideOpacity": "1",
+    "canScrollX": 0
+  },
+  "presenceBinding": {
+    "IDLE": {
+      "presenceColor": "#5fb3c8",
+      "dockBarBorder": "oklab(0.713723 -0.063339 -0.0500245 / 0.513255)",
+      "coreBgFirstStop": "rgba(0, 0, 0, 0)"
+    },
+    "THINKING": {
+      "presenceColor": "#8b9bff",
+      "dockBarBorder": "oklab(0.724467 -0.0368111 -0.104002 / 0.513255)",
+      "coreBgFirstStop": "rgba(0, 0, 0, 0)"
+    },
+    "EXECUTING": {
+      "presenceColor": "#56d364",
+      "dockBarBorder": "oklab(0.765006 -0.13055 0.0487105 / 0.513255)",
+      "coreBgFirstStop": "rgba(0, 0, 0, 0)"
+    },
+    "ERROR": {
+      "presenceColor": "#ff6b6b",
+      "dockBarBorder": "oklab(0.702341 0.0666774 0.035694 / 0.513255)",
+      "coreBgFirstStop": "rgba(0, 0, 0, 0)"
+    }
+  }
+}

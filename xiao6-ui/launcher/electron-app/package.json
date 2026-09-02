@@ -1,0 +1,12 @@
+{
+  "name": "xiao6-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Xiao6 Desktop Launcher — 小6 正式桌面客户端外壳",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": ["xiao6", "desktop", "launcher"],
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "test": "M01_Word_Basic",
+    "status": "PASS",
+    "time_ms": 4517
+  },
+  {
+    "test": "M02_Word_Edit",
+    "status": "PASS",
+    "time_ms": 4507
+  },
+  {
+    "test": "M03_Excel_Basic",
+    "status": "PASS",
+    "time_ms": 1347
+  },
+  {
+    "test": "M04_Excel_Formula",
+    "status": "PASS",
+    "time_ms": 3039
+  },
+  {
+    "test": "M09_World_Model_Office",
+    "status": "PASS",
+    "time_ms": 8654
+  }
+]

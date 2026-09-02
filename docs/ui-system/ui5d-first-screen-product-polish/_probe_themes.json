@@ -1,0 +1,96 @@
+{
+  "at": "2026-08-10T01:02:51.694Z",
+  "themes": [
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#0a0c10",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "dark"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#060814",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "quantum"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#04060f",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "midnight"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#060a0f",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "dark-cyan"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#060f0b",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "dark-green"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#0a0610",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "dark-purple"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#100c06",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "dark-amber"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#100609",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "dark-rose"
+    },
+    {
+      "scrollW": 1920,
+      "innerW": 1920,
+      "horizOverflow": false,
+      "presenceColor": "#8a93a6",
+      "bg": "#eef2f7",
+      "shellW": 1920,
+      "navLabel": "对话",
+      "theme": "light"
+    }
+  ],
+  "errors": []
+}

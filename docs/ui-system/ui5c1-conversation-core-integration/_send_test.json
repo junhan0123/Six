@@ -1,0 +1,10 @@
+{
+  "before": 0,
+  "after": {
+    "count": 2,
+    "lastText": "\n        庄\n        核心连接失败：HTTP 501\n        \n          \n            \n          \n        ",
+    "chatHistoryH": 128.48443603515625,
+    "chatHistoryOp": "1"
+  },
+  "errors": []
+}

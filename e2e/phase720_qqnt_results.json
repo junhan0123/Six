@@ -1,0 +1,39 @@
+{
+  "window": {
+    "success": true,
+    "hwnd": 67606,
+    "rect": [
+      0,
+      0,
+      48,
+      56
+    ]
+  },
+  "search": {
+    "success": false,
+    "ocr_text": ""
+  },
+  "contact": {
+    "success": false
+  },
+  "chat": {
+    "success": false
+  },
+  "input": {
+    "success": false,
+    "message": "Xiao6 Phase 7.20 E2E 1787441748",
+    "ocr_text": ""
+  },
+  "pre_send": {
+    "success": false
+  },
+  "send": {
+    "success": true,
+    "note": "Enter pressed"
+  },
+  "post_send": {
+    "status": "SEND_PARTIALLY_VERIFIED",
+    "input_cleared": true,
+    "message_in_chat": false
+  }
+}

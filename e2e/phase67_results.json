@@ -1,0 +1,128 @@
+{
+  "phase": "6.7",
+  "verdict": "PASS",
+  "total": 13,
+  "passed": 13,
+  "tests": [
+    {
+      "mission": "A_30_Step",
+      "status": "PASS",
+      "time_ms": 2138,
+      "details": {
+        "steps": 30,
+        "goal_status": "COMPLETED"
+      }
+    },
+    {
+      "mission": "B_Multi_Cycle",
+      "status": "PASS",
+      "time_ms": 188,
+      "details": {
+        "cycles": 3,
+        "artifacts": 3
+      }
+    },
+    {
+      "mission": "C_Environment_Recovery",
+      "status": "PASS",
+      "time_ms": 12541,
+      "details": {
+        "steps_completed": 8,
+        "checkpoint_saved": true
+      }
+    },
+    {
+      "mission": "D_User_Modification",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "mod_count": 1,
+        "desc_updated": true
+      }
+    },
+    {
+      "mission": "E_Failure_Injection",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "failures_handled": 4,
+        "total": 4
+      }
+    },
+    {
+      "mission": "F_Priority_Interruption",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "decision_score": 0.5625,
+        "interrupt_detected": true
+      }
+    },
+    {
+      "mission": "G_Event_Autonomous",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "tasks_created": 3,
+        "dedupe_tested": true
+      }
+    },
+    {
+      "mission": "H_Restart_Recovery",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "goal_restored": true,
+        "total_steps": 15
+      }
+    },
+    {
+      "mission": "I_Parallel_Goals",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "parallel_goals": 3,
+        "locks_success": 3
+      }
+    },
+    {
+      "mission": "J_Artifact_Delivery",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "artifacts": 2,
+        "files_exist": 2
+      }
+    },
+    {
+      "mission": "K_Safety_Boundary",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "blocked_ops": 4,
+        "total_tested": 4
+      }
+    },
+    {
+      "mission": "L_Natural_Language",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "decision": "ACT",
+        "file_exists": true
+      }
+    },
+    {
+      "mission": "M_Stability_Simulation",
+      "status": "PASS",
+      "time_ms": 0,
+      "details": {
+        "events": 25,
+        "tasks": 25,
+        "goals_count": 0,
+        "db_size_kb": 68,
+        "duration_s": 15.85
+      }
+    }
+  ]
+}

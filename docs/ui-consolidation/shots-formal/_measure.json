@@ -1,0 +1,230 @@
+{
+  "panels": {
+    "label": "Surface/面板",
+    "sel": ".zz-panel,.zz-panel-card,.os-panel,.settings-card,.cap-card,.scene-card,.hs-list-card,.onb-card,.cp-panel,.mem-card",
+    "variants": 7,
+    "rows": [
+      {
+        "radius": "0px",
+        "border": "1px solid",
+        "blur": "blur(14px) saturate(1.6)",
+        "shadow": "rgba(255, 255, 255, 0.06) 0px 1px 0px 0px in",
+        "pad": "0px/0px",
+        "font": "16px Rajdhani",
+        "h": 314,
+        "n": 4
+      },
+      {
+        "radius": "22px",
+        "border": "1px solid",
+        "blur": "blur(26px) saturate(1.8)",
+        "shadow": "-",
+        "pad": "22px/22px",
+        "font": "16px Rajdhani",
+        "h": 666,
+        "n": 1
+      },
+      {
+        "radius": "22px",
+        "border": "1px solid",
+        "blur": "blur(26px) saturate(1.8)",
+        "shadow": "-",
+        "pad": "22px/22px",
+        "font": "16px Rajdhani",
+        "h": 90,
+        "n": 1
+      },
+      {
+        "radius": "22px",
+        "border": "1px solid",
+        "blur": "blur(26px) saturate(1.8)",
+        "shadow": "-",
+        "pad": "14px/22px",
+        "font": "16px Rajdhani",
+        "h": 68,
+        "n": 1
+      },
+      {
+        "radius": "22px",
+        "border": "1px solid",
+        "blur": "blur(26px) saturate(1.8)",
+        "shadow": "-",
+        "pad": "14px/22px",
+        "font": "16px Rajdhani",
+        "h": 157,
+        "n": 1
+      },
+      {
+        "radius": "0px",
+        "border": "0px none",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "16px Rajdhani",
+        "h": 65,
+        "n": 1
+      },
+      {
+        "radius": "14px",
+        "border": "1px solid",
+        "blur": "blur(26px)",
+        "shadow": "rgba(255, 255, 255, 0.08) 0px 1px 0px 0px in",
+        "pad": "0px/0px",
+        "font": "16px Rajdhani",
+        "h": 65,
+        "n": 1
+      }
+    ]
+  },
+  "buttons": {
+    "label": "Control/按钮",
+    "sel": "button:not(.os-theme-picker button):not(.onb-theme)",
+    "variants": 14,
+    "rows": [
+      {
+        "radius": "9px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "10px/14px",
+        "font": "13px Arial",
+        "h": 41,
+        "n": 13
+      },
+      {
+        "radius": "14px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "13.3333px Arial",
+        "h": 46,
+        "n": 5
+      },
+      {
+        "radius": "9px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "16px Arial",
+        "h": 38,
+        "n": 5
+      },
+      {
+        "radius": "4px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "11px Arial",
+        "h": 16,
+        "n": 3
+      },
+      {
+        "radius": "9px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "20px Arial",
+        "h": 31,
+        "n": 2
+      },
+      {
+        "radius": "4px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "11px Arial",
+        "h": 14,
+        "n": 2
+      },
+      {
+        "radius": "14px",
+        "border": "0px none",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "13.3333px Arial",
+        "h": 44,
+        "n": 1
+      },
+      {
+        "radius": "9px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "13.3333px Arial",
+        "h": 32,
+        "n": 1
+      }
+    ]
+  },
+  "inputs": {
+    "label": "Control/输入",
+    "sel": "input[type=text],input:not([type]),textarea,select,.onb-input",
+    "variants": 3,
+    "rows": [
+      {
+        "radius": "0px",
+        "border": "0px none",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "16px Arial",
+        "h": 18,
+        "n": 1
+      },
+      {
+        "radius": "10px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "9px/12px",
+        "font": "13px Arial",
+        "h": 35,
+        "n": 1
+      },
+      {
+        "radius": "10px",
+        "border": "1px solid",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "9px/12px",
+        "font": "13px Arial",
+        "h": 37,
+        "n": 1
+      }
+    ]
+  },
+  "badges": {
+    "label": "Information/徽章",
+    "sel": ".cp-badge,.zz-badge,.cap-badge,.os-cap-vit,.hs-tag,.mem-tag,.tele-ai",
+    "variants": 2,
+    "rows": [
+      {
+        "radius": "50%",
+        "border": "0px none",
+        "blur": "-",
+        "shadow": "-",
+        "pad": "0px/0px",
+        "font": "16px Rajdhani",
+        "h": 9,
+        "n": 5
+      },
+      {
+        "radius": "50%",
+        "border": "0px none",
+        "blur": "-",
+        "shadow": "rgb(86, 211, 100) 0px 0px 10px 0px",
+        "pad": "0px/0px",
+        "font": "16px Rajdhani",
+        "h": 9,
+        "n": 1
+      }
+    ]
+  }
+}

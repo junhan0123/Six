@@ -1,0 +1,107 @@
+# ============================================================
+# ZhuangZhou (庄周) — Root .gitignore
+# Created by RC Gate-0 (G0-2) on 2026-08-13.
+#
+# Scope: Git hygiene boundary.
+#   TRACKED (kept): source, config templates, LICENSE, README,
+#   release docs, tests, static assets.
+#   IGNORED: secrets, local env, user data, runtime DB (+ backups),
+#   logs, temp, cache, managed runtimes (node_modules/python/models),
+#   build/dist artifacts, IDE/OS files.
+#
+# NOTE: zhuangzhou-ui/ has its OWN .gitignore. This root file adds the
+#       root-level boundary and covers patterns repo-wide. gitignore
+#       NEVER affects already-tracked files — it only blocks NEW adds.
+# ============================================================
+
+# ----- Secrets / local environment -----
+.env
+*.env
+*.env.local
+
+# ----- Runtime database + backups -----
+# IMPORTANT: the runtime DB backups `zhuangzhou.db.bak_*` do NOT end in
+# `.db`, so the `*.db` rule in zhuangzhou-ui/.gitignore does NOT cover
+# them. These two patterns close that leak (verified NOT-IGNORED before).
+*.db
+*.db-wal
+*.db-shm
+*.db.bak*
+zhuangzhou.db.bak*
+
+# ----- Logs / temp / cache -----
+*.log
+*.tmp
+*.bak
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+Thumbs.db
+
+# ----- Local data / user data -----
+data/
+user-data/
+launcher/logs/
+
+# ----- Dependencies / managed runtimes (not source) -----
+node_modules/
+python/
+models/
+launcher/electron-bin/
+
+# ----- Build / dist artifacts -----
+dist/
+build/
+electron/dist/
+
+# ----- IDE / OS -----
+.vscode/
+.idea/
+*.swp
+
+# ----- Secrets hardening (P0-E augmentation, 2026-08-14) -----
+# Proactive block added before the first remote push (P0-I/J). The only
+# live secret is zhuangzhou-ui/.env (already covered by `*.env` above).
+# These patterns close common leak vectors that `*.env` does NOT catch.
+# (Minimal change: no existing rule above was modified.)
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.key
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+credentials*.json
+service-account*.json
+client_secret*.json
+*.secret
+
+# ----- P0 baseline hygiene (2026-08-14) -----
+# Isolated corrupted .git kept on disk for forensics (P0-D rename, NOT deleted);
+# exclude from the clean baseline so the new repo stays small and healthy.
+.git.corrupted-backup-*
+# WorkBuddy project tooling metadata (regenerable, not product source).
+.workbuddy/
+
+# ----- 2026-08-16 增补 -----
+# 玄岱清理回收区（可恢复档案，不入库）
+_recycle_safety/
+# UI 验收截图（可再生成）
+zz-space/_verify/
+*.png.aiboy.bak
+*.png.prev.bak
+# 归档的旧 UI（2026-08-16 迁移，磁盘保留不入库）
+zhuangzhou-ui/_legacy/
+
+# ----- R8 Release Closure: runtime artifacts (never committed) -----
+*.pid
+logs/execution_trace/
+*.jsonl
+third_party/UFO/
+/third_party/UFO/

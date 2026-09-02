@@ -1,0 +1,32 @@
+{
+  "e2e_01": {
+    "mission": "E2E-01 Stable Save",
+    "status": "PASS",
+    "save_method": "dialog",
+    "file_exists": true,
+    "content_match": true
+  },
+  "e2e_02": {
+    "mission": "E2E-02 Long-Horizon Recovery",
+    "status": "PASS",
+    "total_steps": 15,
+    "completed_steps": 14,
+    "last_verified": 14,
+    "elapsed_ms": 955
+  },
+  "e2e_03": {
+    "mission": "E2E-03 QQ Discovery",
+    "status": "PASS",
+    "process_running": true,
+    "process_count": 30,
+    "target_access": "PROCESS_AND_WINDOW_FOUND"
+  },
+  "e2e_04": {
+    "mission": "E2E-04 China Browser",
+    "status": "PASS",
+    "navigate_ok": true,
+    "extracted_length": 120,
+    "contains_target": true,
+    "elapsed_ms": 1856
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "mission_a": {
+    "mission": "A",
+    "status": "PASS",
+    "elapsed_ms": 1277
+  },
+  "mission_b": {
+    "mission": "B",
+    "status": "PASS",
+    "elapsed_ms": 858,
+    "cycles": 3,
+    "artifacts": 3
+  },
+  "mission_c": {
+    "mission": "C",
+    "status": "PASS",
+    "elapsed_ms": 11692,
+    "modifications": 1,
+    "tasks": 2
+  },
+  "mission_d": {
+    "mission": "D",
+    "status": "PASS",
+    "elapsed_ms": 6966,
+    "progress": 0.35,
+    "has_checkpoint": true
+  },
+  "mission_e": {
+    "mission": "E",
+    "status": "PASS",
+    "elapsed_ms": 3926,
+    "active_goals": 2,
+    "goal_b_status": "COMPLETED"
+  },
+  "mission_f": {
+    "mission": "F",
+    "status": "PASS",
+    "elapsed_ms": 992,
+    "top_priority": 2
+  },
+  "mission_g": {
+    "mission": "G",
+    "status": "PASS",
+    "elapsed_ms": 2909,
+    "failures": 3,
+    "recoveries": 3
+  },
+  "mission_h": {
+    "mission": "H",
+    "status": "PASS",
+    "elapsed_ms": 658,
+    "artifacts": 7,
+    "modifications": 1
+  },
+  "mission_i": {
+    "mission": "I",
+    "status": "PASS",
+    "elapsed_ms": 13395,
+    "tasks": 10,
+    "description": "整理 AI 行业信息并生成报告（增加 Agent 框架章节）"
+  },
+  "mission_j": {
+    "mission": "J",
+    "status": "PASS",
+    "elapsed_ms": 1407,
+    "final_status": "CANCELLED"
+  },
+  "mission_k": {
+    "mission": "K",
+    "status": "PASS",
+    "elapsed_ms": 787,
+    "goal_a_status": "ACTIVE",
+    "goal_b_status": "COMPLETED"
+  },
+  "mission_l": {
+    "mission": "L",
+    "status": "PASS",
+    "elapsed_ms": 4502,
+    "cycles": 3,
+    "artifacts": 3,
+    "report_exists": true
+  }
+}

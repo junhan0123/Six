@@ -1,0 +1,118 @@
+{
+  "phase": "6.7-R1",
+  "verdict": "PASS",
+  "total": 12,
+  "passed": 12,
+  "total_time_ms": 9615,
+  "tests": [
+    {
+      "name": "T01_Identical_10",
+      "status": "PASS",
+      "details": {
+        "submitted": 10,
+        "accepted": 1
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T02_Identical_100",
+      "status": "PASS",
+      "details": {
+        "submitted": 100,
+        "accepted": 1
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T03_Identical_1000",
+      "status": "PASS",
+      "details": {
+        "submitted": 1000,
+        "accepted": 1
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T04_Concurrent_100",
+      "status": "PASS",
+      "details": {
+        "submitted": 100,
+        "accepted": 1
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T05_Cross_Process",
+      "status": "PASS",
+      "details": {
+        "submitted": 3,
+        "accepted": 1
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T06_Restart_Same_Event",
+      "status": "PASS",
+      "details": {
+        "first_run": true,
+        "after_restart": true
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T07_Different_Events",
+      "status": "PASS",
+      "details": {
+        "submitted": 5,
+        "accepted": 5
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T08_Cooldown",
+      "status": "PASS",
+      "details": {
+        "first": true,
+        "during_cooldown": true,
+        "after_cooldown": true
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T09_Max_Runs",
+      "status": "PASS",
+      "details": {
+        "submitted": 5,
+        "accepted": 3,
+        "max_runs": 3
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T10_Disabled_Trigger",
+      "status": "PASS",
+      "details": {
+        "task_created": false
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T11_Reenable_Trigger",
+      "status": "PASS",
+      "details": {
+        "after_disable": true,
+        "after_enable": true
+      },
+      "time_ms": 0
+    },
+    {
+      "name": "T12_Crash_Recovery",
+      "status": "PASS",
+      "details": {
+        "first_run": true,
+        "after_crash": true
+      },
+      "time_ms": 0
+    }
+  ]
+}

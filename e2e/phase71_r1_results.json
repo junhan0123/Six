@@ -1,0 +1,27 @@
+[
+  {
+    "test": "M05_Window_Open_Close",
+    "status": "PASS",
+    "time_ms": 15794
+  },
+  {
+    "test": "M07_File_Change_Event",
+    "status": "PASS",
+    "time_ms": 355
+  },
+  {
+    "test": "M08_Environment_Change_Replan",
+    "status": "PASS",
+    "time_ms": 20929
+  },
+  {
+    "test": "M09_Long_Horizon_Recovery",
+    "status": "PASS",
+    "time_ms": 10934
+  },
+  {
+    "test": "M14_Cross_App_Chinese_Workflow",
+    "status": "PASS",
+    "time_ms": 9633
+  }
+]

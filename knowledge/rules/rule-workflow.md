@@ -1,0 +1,61 @@
+---
+id: rule-workflow
+type: rule
+title: 工作流规则
+status: consolidated
+created: '2026-08-06'
+updated: '2026-08-06'
+source: bootstrap
+tags:
+- rule
+- workflow
+provenance: personal-obsidian-00-system
+---
+
+# Workflow
+
+## 任务处理流程
+
+### 1. 接收任务
+
+- 明确目标和约束条件
+- 识别是否需要方案确认（多文件/架构级变更）
+
+### 2. 分析
+
+- 梳理依赖关系和前置条件
+- 判断风险点和潜在阻塞项
+
+### 3. 执行
+
+- 按步骤操作，每步可验证
+- 遇到失败立即报告，不掩盖错误
+
+### 4. 验证
+
+- 确认产出物符合预期
+- 检查副作用和影响范围
+
+### 5. 报告
+
+- 列出创建/修改的文件
+- 说明执行结果和注意事项
+- 归档相关资料：
+  - Bug → `02_Bug/`
+  - Prompt → `03_Prompt/`
+  - 技术资料 → `05_Library/`
+
+## 归档规范
+
+| 类型 | 目录 | 命名建议 |
+|------|------|----------|
+| Bug | `02_Bug/` | `YYYY-MM-DD_简述.md` |
+| Prompt | `03_Prompt/` | `YYYY-MM-DD_用途.md` |
+| 技术 | `05_Library/` | 按主题分类 |
+
+## 禁止事项
+
+- 不修改 MEMORY.md
+- 不修改 USER.md
+- 不迁移已有文件
+- 不创建未请求的额外文件

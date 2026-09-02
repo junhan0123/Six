@@ -1,0 +1,231 @@
+{
+  "how": [
+    {
+      "sel": "#app",
+      "exists": true,
+      "reason": "visibility:hidden",
+      "display": "grid",
+      "visibility": "hidden",
+      "opacity": "1",
+      "transform": "matrix(1, 0, 0, 1, 0, 0)",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1920,
+        "h": 1080
+      }
+    },
+    {
+      "sel": ".rail",
+      "exists": true,
+      "reason": "visibility:hidden",
+      "display": "flex",
+      "visibility": "hidden",
+      "opacity": "1",
+      "transform": "none",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 14,
+        "y": 14,
+        "w": 248,
+        "h": 1052
+      }
+    },
+    {
+      "sel": ".main",
+      "exists": true,
+      "reason": "visibility:hidden",
+      "display": "flex",
+      "visibility": "hidden",
+      "opacity": "1",
+      "transform": "none",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 276,
+        "y": 14,
+        "w": 1316,
+        "h": 1052
+      }
+    },
+    {
+      "sel": "#tele",
+      "exists": true,
+      "reason": "visibility:hidden",
+      "display": "flex",
+      "visibility": "hidden",
+      "opacity": "1",
+      "transform": "none",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 1606,
+        "y": 14,
+        "w": 300,
+        "h": 1052
+      }
+    },
+    {
+      "sel": "#zzPanel",
+      "exists": true,
+      "reason": "opacity:0",
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "0",
+      "transform": "none",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 1482,
+        "y": 82,
+        "w": 420,
+        "h": 65
+      }
+    },
+    {
+      "sel": "#memPanel",
+      "exists": true,
+      "reason": "display:none + [hidden] + zero-size + offscreen-x",
+      "display": "none",
+      "visibility": "visible",
+      "opacity": "1",
+      "transform": "none",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "sel": "#toast",
+      "exists": true,
+      "reason": "opacity:0",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "0",
+      "transform": "matrix(1, 0, 0, 1, -21, 20)",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 939,
+        "y": 1048,
+        "w": 42,
+        "h": 26
+      }
+    },
+    {
+      "sel": "#settingsPanel",
+      "exists": true,
+      "reason": "offscreen-x",
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "1",
+      "transform": "matrix(1, 0, 0, 1, 560, 0)",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 1920,
+        "y": 0,
+        "w": 560,
+        "h": 1080
+      }
+    },
+    {
+      "sel": ".os-side",
+      "exists": true,
+      "reason": "opacity:0 + offscreen-x",
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "0",
+      "transform": "matrix(1, 0, 0, 1, 404, 0)",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 1942,
+        "y": 100,
+        "w": 360,
+        "h": 958
+      }
+    }
+  ],
+  "focusableTotal": 182,
+  "trapCount": 29,
+  "byOwner": {
+    "#settingsPanel / offscreen": 17,
+    "#settingsPanel / opacity": 2,
+    "#sysPromptPanel / opacity": 1,
+    "#capPanel / opacity": 2,
+    "body / opacity": 7
+  },
+  "sample": [
+    {
+      "tag": "button#settingsClose",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "2426,18"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,85"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,129"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,172"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,216"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,259"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,303"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,346"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,390"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,433"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,477"
+    },
+    {
+      "tag": "button",
+      "owner": "#settingsPanel",
+      "why": "offscreen",
+      "rect": "1933,520"
+    }
+  ]
+}

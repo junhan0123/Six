@@ -1,0 +1,22 @@
+{
+  "_comment": "小6启动器默认配置（随版本提交，零密钥）。缺失时 start.ps1 亦用内置默认值启动，不会退出。端口优先级：环境变量 XIAO6_PORT > 本文件 backend.port。",
+  "version": "1.0.0",
+  "project": { "root": ".." },
+  "logs": { "dir": "logs", "startup_log": "logs/startup.log" },
+  "pid_files": { "backend": "backend.pid", "electron": "electron.pid" },
+  "backend": {
+    "host": "127.0.0.1",
+    "port": 8000,
+    "script": "server.py",
+    "python_bin": "",
+    "health_endpoint": "/api/health",
+    "health_timeout_sec": 60,
+    "log_file": "logs/backend.out.log"
+  },
+  "electron": {
+    "bin": "electron-bin/electron.exe",
+    "args": "launcher/electron-app",
+    "url": "http://127.0.0.1:8000",
+    "log_file": "logs/electron.out.log"
+  }
+}

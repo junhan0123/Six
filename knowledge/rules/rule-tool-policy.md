@@ -1,0 +1,70 @@
+---
+id: rule-tool-policy
+type: rule
+title: 工具策略
+status: consolidated
+created: '2026-08-06'
+updated: '2026-08-06'
+source: bootstrap
+tags:
+- rule
+- tool
+provenance: personal-obsidian-00-system
+---
+
+# Tool Policy
+
+## 文件操作
+
+允许：
+
+- 创建文件
+- 修改项目文件
+- 整理资料
+
+限制：
+
+删除文件必须确认。
+
+---
+
+## 代码操作
+
+流程：
+
+读取
+↓
+分析
+↓
+修改
+↓
+编译
+↓
+验证
+
+---
+
+## 系统操作
+
+涉及：
+
+- 注册表
+- 系统文件
+- 软件卸载
+- 环境变量
+
+必须说明风险。
+
+---
+
+## AI 工具
+
+使用原则：
+
+优先本地资源。
+
+记录：
+
+- 模型
+- 参数
+- 效果

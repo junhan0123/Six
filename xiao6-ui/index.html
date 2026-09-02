@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>小6 (Six) · UI 缺失</title>
+<style>
+  body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:#fff;color:#1a1a1a}
+  .box{max-width:520px;padding:0 24px;text-align:center}
+  .heart{width:56px;height:56px;background:#ff4d4f;transform:rotate(-45deg);border-radius:12px;
+         margin:0 auto 26px;position:relative;opacity:.45}
+  .heart::before,.heart::after{content:"";position:absolute;width:56px;height:56px;
+         background:#ff4d4f;border-radius:50%}
+  .heart::before{top:-28px;left:0}.heart::after{top:0;left:28px}
+  h1{font-size:19px;margin:0 0 10px;font-weight:600}
+  p{font-size:13.5px;color:#8a8a8a;line-height:1.7;margin:0}
+  code{background:#f7f7f9;padding:3px 8px;border-radius:6px;
+       font-family:Menlo,Consolas,monospace;font-size:12.5px;color:#ff4d4f}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="heart"></div>
+  <h1>未找到正式 UI</h1>
+  <p>
+    小6 的唯一正式 UI 目录不存在或缺少 <code>index.html</code>。<br />
+    后端（:8000）仍在运行，API 不受影响。
+  </p>
+  <p style="margin-top:16px">
+    预期位置：<code>G:\xiao6\ui\index.html</code>
+  </p>
+  <p style="margin-top:18px;font-size:12.5px">
+    若目录被移动，可设置环境变量 <code>XIAO6_UI_DIR</code> 指向新位置后重启后端。
+  </p>
+</div>
+</body>
+</html>

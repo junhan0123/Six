@@ -1,0 +1,6 @@
+### Result
+"Phase 5.12 Test\n\nPhase 5.12 Browser-to-Desktop E2E Test\nThis is cross-application computer use validation."
+### Ran Playwright code
+```js
+await page.evaluate('() => document.body.innerText');
+```

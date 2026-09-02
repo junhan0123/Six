@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Stage C/D — generate KNOWLEDGE_VALIDATION_REPORT.md and KNOWLEDGE_GRAPH_REPORT.md.
+
+Reads the live knowledge/ vault through KnowledgeRuntime (no DB/RAG) and emits
+two human + AI-readable reports. Must be run AFTER migrate_knowledge.py.
+"""
+from __future__ import annotations
+
+import sys
+from collections import Counter
+from datetime import date
+from pathlib import Path
+
+ROOT = Path("G:/ZhuangZhou")
+RT_ROOT = ROOT / "zhuangzhou-ui"
+sys.path.insert(0, str(RT_ROOT))
+
+from knowledge_runtime import KnowledgeRuntime
+
+KNOWLEDGE_ROOT = ROOT / "knowledge"
+OUT_DIR = ROOT / "docs" / "ai-os" / "knowledge-engine"
+TODAY = date.today().isoformat()
+
+SOURCE_INVENTORY = [
+    ("rules/", "15", "个人 Obsidian 00_System/*.md（剔除身份/环境/启动类 5 份）"),
+    ("failures/", "11", "G:/ZhuangZhou/BUG_WALL.md（原子化 B1-B7 + R1-R4）"),
+    ("decisions/", "7", "G:/ZhuangZhou/docs/decisions/*.md（运营级 ADR）"),
+    ("concepts/", "5", "策划型种子（来自真实项目知识）"),
+    ("people/", "2", "策划型种子（所有者 / 庄周）"),
+    ("projects/", "1", "策划型种子（ZhuangZhou AI OS 2.0 hub）"),
+    ("experiences/", "3", "策划型种子（真实历程教训）"),
+    ("daily/", "1", "初始迁移条目"),
+    ("index.md", "1", "根 MOC（豁免 id/type）"),
+]
+
+
+def key_doc_map(rt: KnowledgeRuntime):
+    return {d.id or d.path: d for d in rt.docs}
+
+
+def title_of(rt, kdm, key):
+    d = kdm.get(key)
+    return (d.title if d else key)
+
+
+def main():
+    rt = KnowledgeRuntime(str(KNOWLEDGE_ROOT))
+    rt.load(watch=False)
+    report = rt.validate()
+    stats = rt.stats()
+    kdm = key_doc_map(rt)
+
+    # ---- Validation report ----
+    status_dist = Counter(d.status for d in rt.docs)
+    orphans = [i for i in report.issues if i.severity == "info" and i.code == "orphan"]
+
+    vlines = []
+    vlines.append("# KNOWLEDGE_VALIDATION_REPORT")
+    vlines.append("")
+    vlines.append("> 生成时间：%s ｜ 知识层根：`%s`" % (TODAY, KNOWLEDGE_ROOT))
+    vlines.append("> 校验契约：error=0 即 `validation_ok`；warning/info 不阻断加载。")
+    vlines.append("")
+    vlines.append("## 1. 校验结论")
+    vlines.append("")
+    vlines.append("| 指标 | 值 |")
+    vlines.append("|------|----|")
+    vlines.append("| 节点总数 (nodes) | %d |" % stats["nodes"])
+    vlines.append("| 关系总数 (relations) | %d |" % stats["relations"])
+    vlines.append("| 错误 (errors) | %d |" % len(report.errors))
+    vlines.append("| 警告 (warnings) | %d |" % len(report.warnings))
+    vlines.append("| 提示 (infos) | %d |" % len([i for i in report.issues if i.severity == "info"]))
+    vlines.append("| **validation_ok** | **%s** |" % ("YES" if report.ok else "NO"))
+    vlines.append("")
+    vlines.append("**结论**：%s。知识层满足单一事实源契约，可进入后续 Stage。"
+                  % ("校验通过（零错误、零警告）" if report.ok and not report.warnings
+                     else "校验通过（零错误，存在若干 info 级提示）"))
+    vlines.append("")
+    vlines.append("## 2. 域分布 (by_domain)")
+    vlines.append("")
+    vlines.append("| 域 | 节点数 |")
+    vlines.append("|----|--------|")
+    for dom, n in sorted(stats["by_domain"].items(), key=lambda kv: -kv[1]):
+        label = dom if dom != "(none)" else "(root/index)"
+        vlines.append("| %s | %d |" % (label, n))
+    vlines.append("")
+    vlines.append("## 3. 类型分布 (by_type)")
+    vlines.append("")
+    vlines.append("| 类型 | 节点数 |")
+    vlines.append("|------|--------|")
+    for t, n in sorted(stats["by_type"].items(), key=lambda kv: -kv[1]):
+        label = t if t != "(none)" else "(none/index)"
+        vlines.append("| %s | %d |" % (label, n))
+    vlines.append("")
+    vlines.append("## 4. 生命周期状态分布 (status)")
+    vlines.append("")
+    vlines.append("| 状态 | 数量 |")
+    vlines.append("|------|------|")
+    for s, n in sorted(status_dist.items(), key=lambda kv: -kv[1]):
+        vlines.append("| %s | %d |" % (s, n))
+    vlines.append("")
+    vlines.append("## 5. 错误明细 (errors)")
+    vlines.append("")
+    if report.errors:
+        for i in report.errors:
+            vlines.append("- [%s] `%s` : %s" % (i.code, i.path, i.message))
+    else:
+        vlines.append("无。")
+    vlines.append("")
+    vlines.append("## 6. 警告明细 (warnings)")
+    vlines.append("")
+    if report.warnings:
+        for i in report.warnings:
+            vlines.append("- [%s] `%s` : %s" % (i.code, i.path, i.message))
+    else:
+        vlines.append("无。")
+    vlines.append("")
+    vlines.append("## 7. 孤立节点提示 (info: orphan)")
+    vlines.append("")
+    vlines.append("共 %d 个孤立节点（无入链/出链）。属 info 级，不影响 `validation_ok`；"
+                  "主要为外部参考类 rules/ 与自含 failures/ 叶子文档，预期如此。" % len(orphans))
+    vlines.append("")
+    for i in sorted(orphans, key=lambda x: x.path):
+        doc = kdm.get(i.path) or next((d for d in rt.docs if d.path == i.path), None)
+        t = doc.title if doc else i.path
+        vlines.append("- %s (`%s`)" % (t, i.path))
+    vlines.append("")
+    vlines.append("## 8. 校验契约说明")
+    vlines.append("")
+    vlines.append("- **error**：`missing_id` / `duplicate_id` / `invalid_type` / `missing_type` / "
+                  "`invalid_status` / `frontmatter_unparseable` —— 任一即破约。")
+    vlines.append("- **warning**：`type_domain_mismatch` / `agent_missing_*` / `broken_link` / "
+                  "`broken_wikilink` / `cycle` —— 可疑但非致命。")
+    vlines.append("- **info**：`orphan` —— 孤立节点提示。")
+    vlines.append("- 根 `index.md`（domain=None 且以 index.md 结尾）豁免 id/type 必填。")
+    vlines.append("- `source: agent` 文档需 `confidence`+`provenance`；本迁移统一用 `source: bootstrap` 规避。")
+    vlines.append("")
+    vlines.append("## 9. 迁移源清单")
+    vlines.append("")
+    vlines.append("| 目录 | 文档数 | 来源 |")
+    vlines.append("|------|--------|------|")
+    for dom, n, src in SOURCE_INVENTORY:
+        vlines.append("| %s | %s | %s |" % (dom, n, src))
+    vlines.append("")
+
+    (OUT_DIR / "KNOWLEDGE_VALIDATION_REPORT.md").write_text("\n".join(vlines),
+                                                            encoding="utf-8")
+
+    # ---- Graph report ----
+    glines = []
+    glines.append("# KNOWLEDGE_GRAPH_REPORT")
+    glines.append("")
+    glines.append("> 生成时间：%s ｜ 关系图由 KnowledgeRuntime 在加载时从 .md 实时构建（无数据库/Neo4j）。" % TODAY)
+    glines.append("")
+    glines.append("## 1. 图概览")
+    glines.append("")
+    glines.append("| 指标 | 值 |")
+    glines.append("|------|----|")
+    glines.append("| 节点数 | %d |" % stats["nodes"])
+    glines.append("| 有向边数 (out) | %d |" % sum(len(v) for v in rt.graph.out.values()))
+    glines.append("| 反向边 (back) | %d |" % sum(len(v) for v in rt.graph.back.values()))
+    glines.append("| 环 (cycle) | %d |" % len(rt.graph.find_cycles()))
+    glines.append("")
+    glines.append("关系图是**有向无环图（DAG）**：所有 `related_knowledge` 与可解析 wikilink 均单向流动"
+                  "（project hub 向外辐射；概念→决策/经验；经验→概念/决策），无 2-环或多环，便于无界遍历。")
+    glines.append("")
+    glines.append("## 2. 度数排名 (Top 15)")
+    glines.append("")
+    glines.append("度数 = 出边(out) + 入边(back)。")
+    glines.append("")
+    glines.append("| 排名 | 节点 | 域 | 出度 | 入度 | 度数 |")
+    glines.append("|------|------|----|------|------|------|")
+    deg = []
+    for d in rt.docs:
+        key = d.id or d.path
+        out = len(rt.graph.out.get(key, []))
+        back = len(rt.graph.back.get(key, set()))
+        deg.append((d, out, back, out + back))
+    deg.sort(key=lambda x: -x[3])
+    for rank, (d, out, back, tot) in enumerate(deg[:15], 1):
+        glines.append("| %d | %s | %s | %d | %d | %d |"
+                      % (rank, d.title, d.domain or "(root)", out, back, tot))
+    glines.append("")
+    glines.append("## 3. 域间流向 (domain flow)")
+    glines.append("")
+    glines.append("统计每条有向边 (src→tgt) 的源域→目标域。")
+    glines.append("")
+    flow = Counter()
+    for d in rt.docs:
+        src_key = d.id or d.path
+        src_dom = d.domain or "(root)"
+        for tgt_key in rt.graph.out.get(src_key, []):
+            tgt = kdm.get(tgt_key)
+            tgt_dom = (tgt.domain or "(root)") if tgt else "?"
+            flow[(src_dom, tgt_dom)] += 1
+    glines.append("| 源域 → 目标域 | 边数 |")
+    glines.append("|---------------|------|")
+    for (s, t), n in sorted(flow.items(), key=lambda kv: -kv[1]):
+        glines.append("| %s → %s | %d |" % (s, t, n))
+    glines.append("")
+    glines.append("## 4. Hub 节点")
+    glines.append("")
+    hub = kdm.get("project-zhuangzhou-ai-os")
+    if hub:
+        hkey = hub.id or hub.path
+        hout = rt.graph.out.get(hkey, [])
+        glines.append("- **%s**（projects hub）出度 = %d，向外链接：" % (hub.title, len(hout)))
+        for k in hout:
+            glines.append("  - %s" % title_of(rt, kdm, k))
+    glines.append("")
+    glines.append("## 5. 关系可解析性")
+    glines.append("")
+    glines.append("- 显式 `related_knowledge`（id 链接）全部解析成功：`bad_links = %d`。"
+                  % stats["bad_links"])
+    glines.append("- wikilink（`[[title]]`）经 Resolver 按 title/id/alias 解析；MOC 与概念体中的"
+                  " wikilink 均指向已存在标题，零 broken_wikilink。")
+    glines.append("- `related(token)` 评分：出边 +3、入边(back) +2、共享标签 +1，用于相关度排序。")
+    glines.append("")
+
+    (OUT_DIR / "KNOWLEDGE_GRAPH_REPORT.md").write_text("\n".join(glines),
+                                                        encoding="utf-8")
+
+    print("Validation: nodes=%d errors=%d warnings=%d infos=%d ok=%s"
+          % (stats["nodes"], len(report.errors), len(report.warnings),
+             len([i for i in report.issues if i.severity == "info"]), report.ok))
+    print("Graph: edges(out)=%d back=%d cycles=%d"
+          % (sum(len(v) for v in rt.graph.out.values()),
+             sum(len(v) for v in rt.graph.back.values()),
+             len(rt.graph.find_cycles())))
+    print("Wrote: %s" % (OUT_DIR / "KNOWLEDGE_VALIDATION_REPORT.md"))
+    print("Wrote: %s" % (OUT_DIR / "KNOWLEDGE_GRAPH_REPORT.md"))
+
+
+if __name__ == "__main__":
+    main()

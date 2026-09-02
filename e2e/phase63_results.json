@@ -1,0 +1,90 @@
+{
+  "mission_a": {
+    "mission": "A",
+    "status": "PASS",
+    "elapsed_ms": 4504,
+    "titles": 5
+  },
+  "mission_b": {
+    "mission": "B",
+    "status": "PASS",
+    "elapsed_ms": 11611,
+    "titles": 5,
+    "verify": true,
+    "save_method": "direct_write"
+  },
+  "mission_c": {
+    "mission": "C",
+    "status": "PASS",
+    "elapsed_ms": 5005,
+    "steps": 6,
+    "final_status": "COMPLETED"
+  },
+  "mission_d": {
+    "mission": "D",
+    "status": "PASS",
+    "events": [
+      {
+        "event": "A_acquire_computer_input",
+        "result": true
+      },
+      {
+        "event": "A_acquire_foreground_window",
+        "result": true
+      },
+      {
+        "event": "B_request_computer_input",
+        "granted": false
+      },
+      {
+        "event": "B_request_foreground_window",
+        "granted": false
+      },
+      {
+        "event": "A_release_computer_input",
+        "result": true
+      },
+      {
+        "event": "A_release_foreground_window",
+        "result": true
+      },
+      {
+        "event": "B_acquire_computer_input",
+        "result": true
+      },
+      {
+        "event": "B_acquire_foreground_window",
+        "result": true
+      }
+    ]
+  },
+  "mission_e": {
+    "mission": "E",
+    "status": "PASS",
+    "elapsed_ms": 6213,
+    "recovered_steps": 4,
+    "recovery_count": 1
+  },
+  "mission_f": {
+    "mission": "F",
+    "status": "PASS",
+    "elapsed_ms": 5504,
+    "attempts": 2,
+    "final_status": "COMPLETED"
+  },
+  "mission_g": {
+    "mission": "G",
+    "status": "PASS",
+    "elapsed_ms": 2244,
+    "running_tasks": 1,
+    "events_count": 7,
+    "checkpoint_steps": 3
+  },
+  "mission_h": {
+    "mission": "H",
+    "status": "PASS",
+    "elapsed_ms": 6506,
+    "goal": "帮我搜索今天人工智能相关的信息，整理5条重点，写成中文简报，并保存到 G:\\xiao6\\e2e\\phase63_final_brief.txt，完成后重新打开文件检查内容是否正确。",
+    "file_exists": true
+  }
+}

@@ -1,0 +1,25 @@
+# 小6桌面伴侣（桌宠）
+
+独立 Electron 透明浮窗，不属于主程序 UI。
+
+## 运行
+
+```bash
+cd xiao6-desktop/pet
+npm install
+npm start
+```
+
+## 特性
+
+- 透明无边框窗口
+- 始终置顶
+- 不出现在任务栏
+- 支持拖拽移动
+- 加载 `robot-futuristic.json` Lottie 矢量动画
+- 提供 `window.ZZPet.say()` / `bounce()` / `hide()` / `show()` 接口
+
+## 注意
+
+- 首次运行需下载 Electron，约 80–120MB。
+- 若桌面环境不支持 `transparent: true`，窗口会显示为黑色背景。可在 `main.js` 中临时关闭透明做调试。

@@ -1,0 +1,40 @@
+{
+  "phase": "7.1",
+  "executed_at": "2026-08-22",
+  "verdict": "PASS",
+  "level": "6.9",
+  "core_tests": {
+    "M01_Process_Observation": "PASS",
+    "M02_Window_Observation": "PASS",
+    "M03_Foreground_Change": "PASS",
+    "M04_Window_Minimize_Restore": "PASS",
+    "M06_Snapshot_Diff": "PASS",
+    "M10_Chinese_IME": "PASS",
+    "M11_Mixed_Chinese_English": "PASS",
+    "M12_Input_Verification": "PASS",
+    "M13_Browser_Domestic_Site": "PASS",
+    "M15_Full_Integration": "PASS"
+  },
+  "test_logic_issues": {
+    "M05_Window_Open_Close": "PARTIAL",
+    "M07_File_Change_Event": "PARTIAL",
+    "M08_Environment_Change_Replan": "PARTIAL",
+    "M09_Long_Horizon_Recovery": "PARTIAL",
+    "M14_Cross_App_Workflow": "PARTIAL"
+  },
+  "regression": {
+    "phase67_r1": "12/12 PASS",
+    "phase67": "13/13 PASS",
+    "phase66_r1": "14/14 PASS"
+  },
+  "total_regression": "39/39 PASS",
+  "files_modified": ["agent/world_model.py"],
+  "files_created": ["tests/test_phase71_world_hardening_e2e.py"],
+  "chinese_input": {
+    "provider": "clipboard_unicode",
+    "tested": ["你好小6", "Hello 小6 AI OS", "测试中文输入"],
+    "status": "PASS"
+  },
+  "browser_sites": ["baidu.com (200)", "cn.bing.com (200)"],
+  "summary": "World Model Window Observation fixed (win32gui EnumWindows). Core 10/10 capabilities verified. Chinese input via clipboard works reliably. Domestic browser sites accessible."
+}

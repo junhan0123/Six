@@ -1,0 +1,42 @@
+[
+  {
+    "test": "M01_Word_Conflict",
+    "status": "PASS",
+    "time_ms": 3326
+  },
+  {
+    "test": "M02_Excel_Conflict",
+    "status": "PASS",
+    "time_ms": 4289
+  },
+  {
+    "test": "M03_Browser_To_Excel",
+    "status": "PASS",
+    "time_ms": 2954
+  },
+  {
+    "test": "M04_Browser_To_Word",
+    "status": "PASS",
+    "time_ms": 3339
+  },
+  {
+    "test": "M05_Cross_App_Office",
+    "status": "PASS",
+    "time_ms": 5457
+  },
+  {
+    "test": "M06_World_Model_Office",
+    "status": "PASS",
+    "time_ms": 5047
+  },
+  {
+    "test": "M07_Long_Horizon",
+    "status": "PASS",
+    "time_ms": 6319
+  },
+  {
+    "test": "M08_Chinese_Input",
+    "status": "PASS",
+    "time_ms": 4081
+  }
+]

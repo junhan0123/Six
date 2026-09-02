@@ -1,0 +1,800 @@
+{
+  "skeleton": [
+    [
+      64,
+      2,
+      "div",
+      "",
+      "galaxy-veil"
+    ],
+    [
+      67,
+      2,
+      "section",
+      "osShell",
+      "os-shell"
+    ],
+    [
+      70,
+      4,
+      "nav",
+      "osNav",
+      "os-nav"
+    ],
+    [
+      83,
+      4,
+      "header",
+      "",
+      "os-hud"
+    ],
+    [
+      108,
+      4,
+      "div",
+      "osCore",
+      "os-core"
+    ],
+    [
+      125,
+      4,
+      "aside",
+      "",
+      "os-side"
+    ],
+    [
+      137,
+      4,
+      "div",
+      "",
+      "os-bottom"
+    ],
+    [
+      150,
+      2,
+      "div",
+      "universeView",
+      ""
+    ],
+    [
+      153,
+      4,
+      "div",
+      "gxStatus",
+      "gx-status"
+    ],
+    [
+      157,
+      4,
+      "div",
+      "gxCard",
+      "gx-card"
+    ],
+    [
+      168,
+      4,
+      "div",
+      "gxHint",
+      "gx-hint"
+    ],
+    [
+      169,
+      4,
+      "div",
+      "",
+      "uv-tip"
+    ],
+    [
+      246,
+      2,
+      "div",
+      "app",
+      "app"
+    ],
+    [
+      248,
+      4,
+      "aside",
+      "",
+      "rail"
+    ],
+    [
+      307,
+      4,
+      "main",
+      "mainArea",
+      "main"
+    ],
+    [
+      378,
+      4,
+      "aside",
+      "tele",
+      "tele"
+    ],
+    [
+      456,
+      2,
+      "div",
+      "toast",
+      "toast"
+    ],
+    [
+      459,
+      2,
+      "div",
+      "memPanel",
+      "mem-panel"
+    ],
+    [
+      460,
+      4,
+      "div",
+      "",
+      "mem-card"
+    ],
+    [
+      518,
+      2,
+      "div",
+      "settingsOverlay",
+      "settings-overlay"
+    ],
+    [
+      519,
+      2,
+      "aside",
+      "settingsPanel",
+      "settings-panel"
+    ],
+    [
+      520,
+      4,
+      "div",
+      "",
+      "settings-head"
+    ],
+    [
+      524,
+      4,
+      "div",
+      "",
+      "settings-body"
+    ],
+    [
+      1213,
+      2,
+      "div",
+      "sysPromptOverlay",
+      "sysprompt-overlay"
+    ],
+    [
+      1214,
+      2,
+      "aside",
+      "sysPromptPanel",
+      "sysprompt-panel"
+    ],
+    [
+      1215,
+      4,
+      "div",
+      "",
+      "settings-head"
+    ],
+    [
+      1219,
+      4,
+      "div",
+      "",
+      "sysprompt-body"
+    ],
+    [
+      1226,
+      2,
+      "div",
+      "capOverlay",
+      "cap-overlay"
+    ],
+    [
+      1227,
+      2,
+      "aside",
+      "capPanel",
+      "cap-panel"
+    ],
+    [
+      1228,
+      4,
+      "div",
+      "",
+      "settings-head"
+    ],
+    [
+      1234,
+      4,
+      "div",
+      "capBody",
+      "cap-body"
+    ],
+    [
+      1240,
+      2,
+      "div",
+      "zzPanel",
+      "zz-panel"
+    ],
+    [
+      1241,
+      4,
+      "div",
+      "zzPanelCard",
+      "zz-panel-card"
+    ],
+    [
+      1249,
+      2,
+      "div",
+      "onbOverlay",
+      "onb-overlay"
+    ],
+    [
+      1250,
+      4,
+      "div",
+      "",
+      "onb-card glass-panel neon-edge"
+    ]
+  ],
+  "id_count": 314,
+  "unique_classes": 283,
+  "top_classes": [
+    [
+      "settings-row",
+      55
+    ],
+    [
+      "settings-label",
+      55
+    ],
+    [
+      "zz-icon",
+      53
+    ],
+    [
+      "stroke",
+      51
+    ],
+    [
+      "settings-section",
+      34
+    ],
+    [
+      "settings-section-label",
+      34
+    ],
+    [
+      "settings-hint",
+      31
+    ],
+    [
+      "settings-feedback",
+      22
+    ],
+    [
+      "zz-toggle",
+      20
+    ],
+    [
+      "zz-toggle-track",
+      20
+    ],
+    [
+      "settings-input",
+      16
+    ],
+    [
+      "settings-row-action",
+      15
+    ],
+    [
+      "settings-save-btn",
+      15
+    ],
+    [
+      "settings-nav-item",
+      13
+    ],
+    [
+      "settings-tab",
+      13
+    ],
+    [
+      "ic",
+      12
+    ],
+    [
+      "theme-opt",
+      9
+    ],
+    [
+      "theme-opt-dot",
+      9
+    ],
+    [
+      "theme-opt-name",
+      9
+    ],
+    [
+      "onb-theme",
+      9
+    ],
+    [
+      "mem-btn",
+      8
+    ],
+    [
+      "settings-select",
+      8
+    ],
+    [
+      "settings-input-wrap",
+      8
+    ],
+    [
+      "input-eye",
+      8
+    ],
+    [
+      "settings-card",
+      8
+    ],
+    [
+      "settings-card-title",
+      8
+    ],
+    [
+      "settings-card-desc",
+      8
+    ],
+    [
+      "quick-chip",
+      6
+    ],
+    [
+      "qc-ico",
+      6
+    ],
+    [
+      "qc-lbl",
+      6
+    ],
+    [
+      "active",
+      6
+    ],
+    [
+      "act-stat",
+      6
+    ],
+    [
+      "act-stat-label",
+      6
+    ],
+    [
+      "act-stat-val",
+      6
+    ],
+    [
+      "kbd-row",
+      6
+    ],
+    [
+      "os-nav-btn",
+      5
+    ],
+    [
+      "dot",
+      5
+    ],
+    [
+      "ico",
+      5
+    ],
+    [
+      "lbl",
+      5
+    ],
+    [
+      "os-panel",
+      4
+    ],
+    [
+      "btn-new",
+      4
+    ],
+    [
+      "more-item",
+      4
+    ],
+    [
+      "mic-btn",
+      4
+    ],
+    [
+      "tcell",
+      4
+    ],
+    [
+      "tk",
+      4
+    ],
+    [
+      "tv",
+      4
+    ],
+    [
+      "cog-stat",
+      4
+    ],
+    [
+      "cog-dot",
+      4
+    ],
+    [
+      "cog-sl",
+      4
+    ],
+    [
+      "cog-sv",
+      4
+    ],
+    [
+      "mem-side-title",
+      4
+    ],
+    [
+      "onb-field",
+      4
+    ],
+    [
+      "onb-label",
+      4
+    ],
+    [
+      "onb-hint",
+      4
+    ],
+    [
+      "os-hero-chip",
+      3
+    ],
+    [
+      "tele-block",
+      3
+    ],
+    [
+      "settings-head",
+      3
+    ],
+    [
+      "settings-head-title",
+      3
+    ],
+    [
+      "settings-close",
+      3
+    ],
+    [
+      "settings-row--loc",
+      3
+    ]
+  ],
+  "inline_style_lines": [
+    [
+      176,
+      "<svg xmlns=\"http://www.w3.org/2000/svg\" style=\"display:none\" aria-hidden=\"true\" id=\"zzIconSprite\">"
+    ],
+    [
+      389,
+      "<div class=\"meter-bar\"><i id=\"mBar\" style=\"width:8%\"></i></div>"
+    ],
+    [
+      710,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      711,
+      "<input class=\"settings-input\" id=\"settingsLlmKey\" type=\"password\" placeholder=\"已保存的 Key 会在这里显示\" styl"
+    ],
+    [
+      766,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      767,
+      "<input class=\"settings-input\" id=\"settingsMinimaxKey\" type=\"password\" placeholder=\"填入 MiniMax API Ke"
+    ],
+    [
+      800,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      801,
+      "<input class=\"settings-input\" id=\"settingsDiscordToken\" type=\"password\" placeholder=\"填入 Discord Bot "
+    ],
+    [
+      815,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      816,
+      "<input class=\"settings-input\" id=\"settingsFeishuSecret\" type=\"password\" placeholder=\"飞书 App Secret…\""
+    ],
+    [
+      846,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      847,
+      "<input class=\"settings-input\" id=\"settingsSearchKey\" type=\"password\" placeholder=\"默认引擎 (Tavily) 或通用 "
+    ],
+    [
+      853,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      854,
+      "<input class=\"settings-input\" id=\"settingsSearchSerper\" type=\"password\" placeholder=\"Serper.dev Key（"
+    ],
+    [
+      860,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      861,
+      "<input class=\"settings-input\" id=\"settingsSearchJina\" type=\"password\" placeholder=\"Jina Reader Key（可"
+    ],
+    [
+      867,
+      "<div class=\"settings-input-wrap\" style=\"flex:1;min-width:120px;position:relative;display:flex;\">"
+    ],
+    [
+      868,
+      "<input class=\"settings-input\" id=\"settingsSearchBrave\" type=\"password\" placeholder=\"Brave Search Key"
+    ]
+  ],
+  "js_ui_producers": [
+    {
+      "file": "app.js",
+      "lines": 2506,
+      "innerHTML": 27,
+      "createElement": 20,
+      "classList": 54,
+      "styleWrite": 6,
+      "insertAdjacentHTML": 0,
+      "uiScore": 107
+    },
+    {
+      "file": "hotspot.js",
+      "lines": 1882,
+      "innerHTML": 13,
+      "createElement": 7,
+      "classList": 10,
+      "styleWrite": 17,
+      "insertAdjacentHTML": 1,
+      "uiScore": 48
+    },
+    {
+      "file": "memory.js",
+      "lines": 635,
+      "innerHTML": 21,
+      "createElement": 0,
+      "classList": 19,
+      "styleWrite": 4,
+      "insertAdjacentHTML": 0,
+      "uiScore": 44
+    },
+    {
+      "file": "overlay-manager.js",
+      "lines": 526,
+      "innerHTML": 5,
+      "createElement": 19,
+      "classList": 6,
+      "styleWrite": 5,
+      "insertAdjacentHTML": 0,
+      "uiScore": 35
+    },
+    {
+      "file": "settings.js",
+      "lines": 1111,
+      "innerHTML": 8,
+      "createElement": 4,
+      "classList": 15,
+      "styleWrite": 1,
+      "insertAdjacentHTML": 0,
+      "uiScore": 28
+    },
+    {
+      "file": "companion.js",
+      "lines": 646,
+      "innerHTML": 0,
+      "createElement": 0,
+      "classList": 11,
+      "styleWrite": 10,
+      "insertAdjacentHTML": 0,
+      "uiScore": 21
+    },
+    {
+      "file": "sysmon.js",
+      "lines": 239,
+      "innerHTML": 5,
+      "createElement": 3,
+      "classList": 3,
+      "styleWrite": 5,
+      "insertAdjacentHTML": 1,
+      "uiScore": 17
+    },
+    {
+      "file": "weather.js",
+      "lines": 498,
+      "innerHTML": 7,
+      "createElement": 1,
+      "classList": 7,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 15
+    },
+    {
+      "file": "command-palette.js",
+      "lines": 358,
+      "innerHTML": 3,
+      "createElement": 3,
+      "classList": 6,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 1,
+      "uiScore": 13
+    },
+    {
+      "file": "memory-panel.js",
+      "lines": 205,
+      "innerHTML": 8,
+      "createElement": 0,
+      "classList": 2,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 3,
+      "uiScore": 13
+    },
+    {
+      "file": "avatar-renderer.js",
+      "lines": 80,
+      "innerHTML": 10,
+      "createElement": 0,
+      "classList": 0,
+      "styleWrite": 2,
+      "insertAdjacentHTML": 0,
+      "uiScore": 12
+    },
+    {
+      "file": "doc.js",
+      "lines": 153,
+      "innerHTML": 9,
+      "createElement": 0,
+      "classList": 2,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 1,
+      "uiScore": 12
+    },
+    {
+      "file": "mobile-app.js",
+      "lines": 222,
+      "innerHTML": 4,
+      "createElement": 4,
+      "classList": 4,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 12
+    },
+    {
+      "file": "tasks.js",
+      "lines": 147,
+      "innerHTML": 2,
+      "createElement": 2,
+      "classList": 8,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 12
+    },
+    {
+      "file": "capabilities-view.js",
+      "lines": 209,
+      "innerHTML": 3,
+      "createElement": 0,
+      "classList": 8,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 11
+    },
+    {
+      "file": "insight-panel.js",
+      "lines": 142,
+      "innerHTML": 1,
+      "createElement": 9,
+      "classList": 1,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 11
+    },
+    {
+      "file": "memory-query.js",
+      "lines": 137,
+      "innerHTML": 7,
+      "createElement": 0,
+      "classList": 2,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 1,
+      "uiScore": 10
+    },
+    {
+      "file": "terminal-stream.js",
+      "lines": 99,
+      "innerHTML": 2,
+      "createElement": 1,
+      "classList": 6,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 1,
+      "uiScore": 10
+    },
+    {
+      "file": "main-cognitive.js",
+      "lines": 254,
+      "innerHTML": 4,
+      "createElement": 4,
+      "classList": 1,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 9
+    },
+    {
+      "file": "error-boundary.js",
+      "lines": 84,
+      "innerHTML": 0,
+      "createElement": 1,
+      "classList": 0,
+      "styleWrite": 7,
+      "insertAdjacentHTML": 0,
+      "uiScore": 8
+    },
+    {
+      "file": "kws.js",
+      "lines": 200,
+      "innerHTML": 1,
+      "createElement": 1,
+      "classList": 6,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 8
+    },
+    {
+      "file": "map.js",
+      "lines": 135,
+      "innerHTML": 5,
+      "createElement": 0,
+      "classList": 2,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 1,
+      "uiScore": 8
+    },
+    {
+      "file": "onboarding.js",
+      "lines": 173,
+      "innerHTML": 0,
+      "createElement": 0,
+      "classList": 8,
+      "styleWrite": 0,
+      "insertAdjacentHTML": 0,
+      "uiScore": 8
+    }
+  ],
+  "js_total": 66
+}
