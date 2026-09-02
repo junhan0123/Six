@@ -35,9 +35,10 @@ from self_check import run_self_check
 from social import status as social_status
 from sysmon import get_logs, get_sysmon
 from tasks import recover_tasks
+import agent_runtime
 from ai_core.lifecycle import lifecycle
 from ai_core.execution import run as _execution_run
-from tools import TOOL_FUNCS, TOOLS, detect_intents, run_fc_loop, select_tools, get_pending_video, clear_pending_video, strip_think_tags
+from tools import TOOL_FUNCS, TOOLS, detect_intents, select_tools, get_pending_video, clear_pending_video, strip_think_tags
 from wakeword import get_status as wakeword_status, start as wakeword_start, stop as wakeword_stop
 
 from server_globals import *
@@ -263,7 +264,6 @@ class ChatMixin:
             # casual_chat / knowledge_query / execution_task 一律不触发 Goal 决策链
             if getattr(config, "FEATURE_GOAL_DECISION", False) and _intent == "long_term_goal":
                 try:
-                    import agent_runtime
                     if getattr(agent_runtime.runtime, "_running", False):
                         from intent_gateway import run_intent_gateway
                         _res = run_intent_gateway(user_text, source="chat")
@@ -346,15 +346,18 @@ class ChatMixin:
             remote_allowed = _remote_allowed_tools() if is_remote else None
             if _intent == "casual_chat":
                 # Phase 6 · casual_chat 快速路径：不下发工具、跳过兜底意图，LLM 直接回复
-                content, called = run_fc_loop(
-                    messages, emit, tools=[],
+                # S89/S90: 统一经过 AgentRuntime（不再绕过）
+                content, called = agent_runtime.runtime.run_chat_turn(
+                    messages, emit, user_text=user_text, tools=[],
                     temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
                     mode=mode, goal_id=goal_id,
                 )
                 missed = []
             else:
-                content, called = run_fc_loop(
-                    messages, emit, tools=_cap_select(user_text, allowed=remote_allowed),
+                # S89/S90: 统一经过 AgentRuntime（不再绕过）
+                content, called = agent_runtime.runtime.run_chat_turn(
+                    messages, emit, user_text=user_text,
+                    tools=_cap_select(user_text, allowed=remote_allowed),
                     temperature=temperature, reasoning=reasoning, allowed=remote_allowed,
                     mode=mode, goal_id=goal_id,
                 )
@@ -660,13 +663,15 @@ class ChatMixin:
         # 前端选了「自定义音色」但后端未启用 GPT-SoVITS 时，回退默认 edge 音色，避免无效 voice 报错
         if voice == "__sovits__" and config.TTS_BACKEND != "sovits":
             voice = config.TTS_VOICE
-        # 自定义音色（GPT-SoVITS）：仅当显式启用且已配置参考音频时走此路，否则回退 edge-tts
+        # 自定义音色（GPT-SoVITS）：仅当显式启用且已配置参考音频时走此路
         if config.TTS_BACKEND == "sovits" and config.GPT_SOVITS_REF_AUDIO and self._sovits_reachable(config.GPT_SOVITS_URL):
             try:
                 self._send_audio(self._tts_sovits(text))
                 return
             except Exception as e:
-                print(f"[TTS] GPT-SoVITS 合成失败，降级 edge-tts：{e}")
+                print(f"[TTS] GPT-SoVITS 合成失败：{e}")
+                # 不再降级到 edge-tts，直接返回错误
+                return self._send(500, json.dumps({"error": f"GPT-SoVITS 不可用: {e}"}))
 
         # Qwen3-TTS 本地声线（默认声线 Qwen3-TTS-12Hz-1.7B-CustomVoice；
         # 配置参考音频时自动走音色克隆，Base 克隆接口预留）
@@ -691,64 +696,12 @@ class ChatMixin:
                 self._send_audio(audio)
                 return
             except Exception as e:
-                print(f"[TTS] Qwen3-TTS 合成失败，降级 edge-tts：{e}")
+                print(f"[TTS] Qwen3-TTS 合成失败：{e}")
+                # 不再降级到 edge-tts，直接返回错误
+                return self._send(500, json.dumps({"error": f"Qwen3-TTS 不可用: {e}"}))
 
-        # 默认 / 降级：edge-tts（应用前端设置的 voice / rate）
-        try:
-            import edge_tts
-        except ImportError:
-            return self._send(500, json.dumps({"error": "edge-tts 未安装：请先 pip install edge-tts"}))
-        import os as _os
-        # 代理策略：用户显式配置了代理就沿用；否则清空所有代理变量走直连
-        # （实测直连与代理同速，见 _edge_use_proxy 说明），避免误走异常代理。
-        if not self._edge_use_proxy():
-            for _k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy", "NO_PROXY", "no_proxy"):
-                _os.environ.pop(_k, None)
-
-        FALLBACK_VOICE = "zh-CN-YunxiNeural"  # 经实测最稳定的中文默认音色
-
-        # P8-2 流式 TTS：edge-tts 逐帧推流，前端 MSE 边收边播（首字延迟最低）
-        # 前端可传 stream=false 强制走整段 blob（用于流式失败后的兜底重试）
-        force_blob = payload.get("stream") is False
-        if config.FEATURE_TTS_STREAM and not force_blob:
-            try:
-                wrote = self._stream_edge(text, voice, rate)
-                if wrote:
-                    return
-                # 首块前失败（网络握手等）→ 降级整段 blob
-            except Exception as e:
-                print(f"[TTS] 流式合成失败，降级整段 blob：{e}", flush=True)
-
-        async def _edge_try_all():
-            # 单个事件循环内依次尝试：(指定音色,指定语速) → (最稳定音色,标准语速)；
-            # 每个候选重试 3 次应对网络抖动，避免多次 asyncio.run 引发的状态污染
-            candidates = [(voice, rate)]
-            if not (voice == FALLBACK_VOICE and rate == "+0%"):
-                candidates.append((FALLBACK_VOICE, "+0%"))
-            last = None
-            for v, r in candidates:
-                for attempt in range(3):
-                    try:
-                        buf = io.BytesIO()
-                        com = edge_tts.Communicate(text, v, rate=r)
-                        async for chunk in com.stream():
-                            if chunk["type"] == "audio":
-                                buf.write(chunk["data"])
-                        data = buf.getvalue()
-                        if data:
-                            return data
-                    except Exception as e:
-                        last = e
-                        print(f"[TTS] 候选音色 ({v},{r}) 第 {attempt + 1} 次尝试失败：{type(e).__name__}", flush=True)
-            raise last or RuntimeError("empty audio")
-
-        try:
-            audio = asyncio.run(_edge_try_all())
-            if audio:
-                self._send_audio(audio)
-                return
-        except Exception as e:
-            self._send(500, json.dumps({"error": f"TTS 失败：{e}"}))
+        # 默认：GPT-SoVITS 未部署，返回错误
+        return self._send(503, json.dumps({"error": "TTS 不可用：GPT-SoVITS 未部署，edge-tts 已禁用作为正式 TTS"}))
 
 
     def _handle_data_export(self):
