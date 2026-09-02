@@ -232,6 +232,11 @@ class AgentRuntime:
             except Exception as e:
                 emit({"error": f"核心调用失败：{e}"})
                 return ("（抱歉，核心暂时无法响应）"), called
+            finally:
+                # R8-P2: S109 seam 安全性 - 每次调用后必须恢复默认值，防止状态泄漏
+                if AgentRuntime._test_completion_response is not None:
+                    AgentRuntime._test_completion_response = None
+                    AgentRuntime._test_completion_call_count = 0
 
             msg = (data.get("choices") or [{}])[0].get("message", {})
             content = msg.get("content") or ""
