@@ -20,6 +20,10 @@ import time
 from datetime import date
 from typing import Optional
 
+import llm as _llm_mod
+from llm import agnes_completion
+from tools import TOOLS, execute_tool_calls
+
 # 状态
 IDLE, PLANNING, EXECUTING, REFLECTING = "IDLE", "PLANNING", "EXECUTING", "REFLECTING"
 
@@ -42,6 +46,10 @@ def _parse_date(s: str):
 
 
 class AgentRuntime:
+    # —— 测试注入 seam（生产默认 None，测试环境可设置）——
+    _test_completion_response = None  # 测试用：固定 LLM 响应（str JSON 或 MagicMock）
+    _test_completion_call_count = 0   # 测试用：记录调用次数
+
     def __init__(self):
         self.state = IDLE
         self._queue = []
@@ -93,6 +101,196 @@ class AgentRuntime:
         self._emit_agent_domain("AGENT_CREATED", g.id)  # Order 3：Agent 编排体随 Goal 创建
         self._emit_goal_domain("GOAL_STARTED", g.id)  # Order 2：运行时接管目标
         return g.id
+
+    def run_chat_turn(self, messages: list, emit, user_text: str = "", tools=None,
+                      temperature: float = 0.7, reasoning=None, allowed=None,
+                      mode: str = "smart", goal_id=None) -> tuple:
+        """Unified chat execution through AgentRuntime.
+
+        这是 Chat → AgentRuntime 统一架构的唯一入口。
+        所有 Chat 请求必须经过此方法，不得绕过。
+
+        设计要点：
+        - 真正统一执行：状态机 + Function Calling + Memory 蒸馏
+        - 经过 AgentRuntime 状态机（IDLE → PLANNING → EXECUTING → IDLE）
+        - 所有工具调用经过同一 Policy Gate（ai_core.execution.run）
+        - 工具结果通过 EventBus 发布（供 SSE 消费）
+        - 执行后自动蒸馏 Memory（与 AgentRuntime Goal 路径一致）
+
+        Args:
+            messages: 对话历史消息列表（已含 system prompt）
+            emit: SSE 事件发射函数
+            user_text: 用户原始输入文本（用于 Memory 蒸馏）
+            tools: 可下发的工具 schema（默认全量 TOOLS）
+            temperature: LLM 温度
+            reasoning: 是否启用 reasoning
+            allowed: 远程会话白名单
+            mode: smart|expert
+            goal_id: 关联的 Goal ID（可选，用于 Policy 上下文）
+
+        Returns:
+            (final_content, called_tools_set)
+        """
+        # 1. 状态转换：IDLE → PLANNING → EXECUTING
+        prev_state = self.state
+        self.state = PLANNING
+        self._publish_state(PLANNING)
+
+        try:
+            # 2. 轻量 Planner：判断任务复杂度
+            plan = self._plan_chat_turn(user_text, tools)
+
+            # 3. 执行
+            self.state = EXECUTING
+            self._publish_state(EXECUTING)
+
+            content, called = self._execute_chat_turn(
+                messages, emit, plan, temperature, reasoning,
+                allowed, mode, goal_id
+            )
+
+            # 4. 发布执行完成事件
+            self._emit_agent_domain("AGENT_COMPLETED", goal_id)
+
+            # 5. 自动 Memory 蒸馏（统一入口）
+            if user_text:
+                self._distill_memory(session_id="chat", messages=[{"role": "user", "content": user_text}])
+
+            return content, called
+
+        except Exception as e:
+            print(f"[runtime] Chat turn execution failed: {e}")
+            self._emit_agent_domain("AGENT_FAILED", goal_id, error=str(e))
+            emit({"error": f"执行失败：{e}"})
+            return f"（抱歉，处理出错：{e}）", set()
+
+        finally:
+            # 6. 状态恢复：EXECUTING → IDLE
+            self.state = IDLE
+            self._publish_state("idle")
+            # 恢复前一个状态（如果有的话）
+            if prev_state and prev_state != IDLE:
+                self.state = prev_state
+
+    def _plan_chat_turn(self, user_text: str, tools):
+        """轻量 Planner：判断任务复杂度。"""
+        simple_patterns = [
+            r"^(你好|您好|嗨|hello|hi|在吗|谢谢|你好呀)",
+            r"^(你是谁|介绍一下自己|自我介绍)",
+            r"^(几点了|现在时间|今天星期)",
+        ]
+        for pattern in simple_patterns:
+            if re.match(pattern, user_text.strip()):
+                return {"type": "direct", "tools": [], "steps": 1}
+        return {"type": "function_calling", "tools": tools or TOOLS, "steps": 5}
+
+    def _execute_chat_turn(self, messages, emit, plan, temperature, reasoning,
+                           allowed, mode, goal_id):
+        """执行 Chat turn（内部方法）。"""
+        if plan["type"] == "direct" and not plan["tools"]:
+            # 简单聊天：不下发工具
+            return self._run_fc_loop(messages, emit, tools=[],
+                                      temperature=temperature, reasoning=reasoning,
+                                      allowed=allowed, mode=mode, goal_id=goal_id)
+        else:
+            # 复杂任务：使用 function calling
+            return self._run_fc_loop(messages, emit, tools=plan["tools"],
+                                      temperature=temperature, reasoning=reasoning,
+                                      allowed=allowed, mode=mode, goal_id=goal_id)
+
+    def _run_fc_loop(self, messages, emit, tools=None, temperature=0.7,
+                     reasoning=None, allowed=None, mode="smart", goal_id=None):
+        """Internal LLM function calling loop.
+
+        这是 Chat 执行的统一引擎，不再暴露为公共 API。
+        所有 Chat 请求通过 run_chat_turn() → _run_fc_loop() 执行。
+        """
+        from tools import TOOLS, execute_tool_calls
+
+        MAX_ROUNDS = 5
+        called = set()
+        effective_tools = tools if tools is not None else TOOLS
+
+        for _ in range(MAX_ROUNDS):
+            try:
+                # —— 测试注入 seam：如果设置了测试响应，直接返回而非调用真实 LLM ——
+                if AgentRuntime._test_completion_response is not None:
+                    resp = AgentRuntime._test_completion_response
+                    if isinstance(resp, str):
+                        # 字符串格式：直接解析 JSON
+                        data = json.loads(resp)
+                    else:
+                        # MagicMock 格式：模拟 resp.read() 返回
+                        data = json.loads(resp.read().decode("utf-8"))
+                    AgentRuntime._test_completion_call_count += 1
+                else:
+                    with agnes_completion(
+                        messages, tools=effective_tools, stream=False,
+                        timeout=90, temperature=temperature, reasoning=reasoning
+                    ) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+            except Exception as e:
+                emit({"error": f"核心调用失败：{e}"})
+                return ("（抱歉，核心暂时无法响应）"), called
+
+            msg = (data.get("choices") or [{}])[0].get("message", {})
+            content = msg.get("content") or ""
+            tool_calls = msg.get("tool_calls") or []
+
+            for tc in tool_calls:
+                fn = tc.get("function", {}) if isinstance(tc, dict) else {}
+                called.add(fn.get("name", ""))
+
+            assistant_msg = {"role": "assistant", "content": content or None}
+            if tool_calls:
+                assistant_msg["tool_calls"] = tool_calls
+            messages.append(assistant_msg)
+
+            if not tool_calls:
+                return content, called  # 无工具调用 = 最终自然语言回复
+
+            tool_msgs, events = execute_tool_calls(
+                tool_calls, allowed, mode=mode, goal_id=goal_id
+            )
+            for kind, name, payload in events:
+                if kind == "start":
+                    emit({"xiao6_event": "tool_start", "tool": name, "args": payload})
+                else:
+                    emit({"xiao6_event": "tool_end", "tool": name, "result": payload})
+            messages.extend(tool_msgs)
+
+        # 超轮次保护
+        try:
+            with agnes_completion(
+                messages, tools=[], stream=False, timeout=90, temperature=temperature
+            ) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            return (data.get("choices") or [{}])[0].get("message", {}).get("content") or "（抱歉，处理超时）", called
+        except Exception as e:
+            emit({"error": f"收尾调用失败：{e}"})
+            return ("（抱歉，处理超时）"), called
+
+    def _distill_memory(self, session_id="agent", messages=None):
+        """统一 Memory 蒸馏入口（Chat 和 Goal 共享）。
+
+        直接从 chat_log 拉最近若干轮对话（与 goals.py 解耦，不破坏其事件契约），
+        经 memory_distiller.distill 提取 habit/preference/important_event/relationship，
+        并顺带沉淀一条 ConversationMemory（P12-3）。
+        若已传入 messages（Chat 路径），则直接使用；否则从 DB 加载（Goal/定时路径）。
+        """
+        try:
+            import config
+            if not getattr(config, "FEATURE_MEMORY_DISTILL", False):
+                return
+            if messages is None:
+                messages = self._load_recent_chat()
+            if not messages:
+                return
+            from memory_distiller import distill
+            distill(session_id, messages)
+            self._record_conversation_memory(messages)
+        except Exception:
+            pass
 
     def get_state(self) -> dict:
         return {
@@ -1019,7 +1217,7 @@ class AgentRuntime:
             try:
                 import config
                 if getattr(config, "FEATURE_MEMORY_DISTILL", False):
-                    threading.Thread(target=self._distill_memory, args=("goal",),
+                    threading.Thread(target=self._distill_memory, kwargs={"session_id": "goal"},
                                     name="zz-distill", daemon=True).start()
             except Exception:
                 pass
@@ -1047,26 +1245,6 @@ class AgentRuntime:
             ]
         except Exception:
             return []
-
-    def _distill_memory(self, session_id: str = "agent") -> None:
-        """P12-1：从近期对话蒸馏结构化长期记忆（best-effort，不抛错）。
-
-        直接从 chat_log 拉最近若干轮对话（与 goals.py 解耦，不破坏其事件契约），
-        经 memory_distiller.distill 提取 habit/preference/important_event/relationship，
-        并顺带沉淀一条 ConversationMemory（P12-3）。
-        """
-        try:
-            import config
-            if not getattr(config, "FEATURE_MEMORY_DISTILL", False):
-                return
-            messages = self._load_recent_chat()
-            if not messages:
-                return
-            from memory_distiller import distill
-            distill(session_id, messages)
-            self._record_conversation_memory(messages)
-        except Exception:
-            pass
 
     def _record_conversation_memory(self, messages: list) -> None:
         """P12-3：把本次对话沉淀为 ConversationMemory（best-effort）。"""
@@ -1142,7 +1320,7 @@ class AgentRuntime:
             if getattr(self, "_last_maintenance_date", None) == today:
                 return
             self._last_maintenance_date = today
-            self._distill_memory("daily")
+            self._distill_memory(session_id="daily")
             self._check_important_dates()
         except Exception:
             pass
