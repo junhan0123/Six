@@ -1,4 +1,0 @@
-data: {"zhuangzhou_event": "tool_start", "tool": "get_time", "args": {}}
-
-data: {"zhuangzhou_event": "tool_end", "tool": "get_time", "result": "本地 时间：2026年08月17日 06:50:44 星期一"}
-

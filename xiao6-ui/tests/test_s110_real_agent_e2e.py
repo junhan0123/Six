@@ -263,14 +263,15 @@ def test_security_regression():
     events = []
     def mock_emit(event):
         events.append(event)
-    
-    original_response = agent_runtime.AgentRuntime._test_completion_response
+
+    # 使用 instance-scoped completion_provider（S113 升级后）
+    def mock_provider():
+        return mock_response  # Return JSON string, agent_runtime handles json.loads
+
     try:
-        agent_runtime.AgentRuntime._test_completion_response = mock_response
-        
-        runtime = agent_runtime.AgentRuntime()
+        runtime = agent_runtime.AgentRuntime(completion_provider=mock_provider)
         messages = [{"role": "user", "content": "执行命令"}]
-        
+
         runtime.run_chat_turn(
             messages,
             emit=mock_emit,
@@ -281,12 +282,13 @@ def test_security_regression():
             mode="smart",
             goal_id=None
         )
-        
+
         # Check if policy blocked
         tool_ends = [e for e in events if e.get("xiao6_event") == "tool_end" and e.get("tool") == "execute_command"]
         agent_path_blocked = len(tool_ends) > 0 and "block" in str(tool_ends[0].get("result", "")).lower()
-    finally:
-        agent_runtime.AgentRuntime._test_completion_response = original_response
+    except Exception as e:
+        print(f"      Error: {e}")
+        agent_path_blocked = False
     
     return {
         "phase": "SECURITY_REGRESSION",

@@ -247,77 +247,86 @@ def test_agent_path_policy_deny():
     })
     
     events = []
-    
+
     def mock_emit(event):
         events.append(event)
-    
-    # 保存原始值
-    original_response = agent_runtime.AgentRuntime._test_completion_response
-    original_call_count = agent_runtime.AgentRuntime._test_completion_call_count
-    
-    try:
-        # 设置测试注入
-        agent_runtime.AgentRuntime._test_completion_response = mock_response_json
-        agent_runtime.AgentRuntime._test_completion_call_count = 0
-        
-        runtime = agent_runtime.AgentRuntime()
-        messages = [{"role": "user", "content": "执行命令"}]
-        
-        content, called = runtime.run_chat_turn(
-            messages,
-            emit=mock_emit,
-            user_text="执行命令",
-            temperature=0.7,
-            reasoning=None,
-            allowed=None,
-            mode="smart",
-            goal_id=None
-        )
-        
-        # 分析事件
-        tool_starts = [e for e in events if e.get("xiao6_event") == "tool_start"]
-        tool_ends = [e for e in events if e.get("xiao6_event") == "tool_end"]
-        
-        execute_command_start = next((e for e in tool_starts if e.get("tool") == "execute_command"), None)
-        execute_command_end = next((e for e in tool_ends if e.get("tool") == "execute_command"), None)
-        
-        # 验证完整链路
-        tool_called = execute_command_start is not None
-        policy_blocked = execute_command_end is not None and "block" in str(execute_command_end.get("result", "")).lower()
-        executor_not_called = not any("command" in str(e.get("result", "")) for e in tool_ends if e.get("tool") == "execute_command")
-        
-        passed = tool_called and policy_blocked and executor_not_called
-        
-        return {
-            "phase": "POLICY_DENY_AGENT_E2E",
-            "status": "PASS" if passed else "FAIL",
-            "tool_injected": "execute_command",
-            "tool_called": tool_called,
-            "policy_blocked": policy_blocked,
-            "executor_not_called": executor_not_called,
-            "events_count": len(events),
-            "tool_start_events": len(tool_starts),
-            "tool_end_events": len(tool_ends),
-            "evidence": {
-                "runtime_entry": "AgentRuntime.run_chat_turn() (deterministic injection)",
-                "tool_call_present": tool_called,
-                "tool_name": "execute_command",
-                "tool_selection_source": "deterministic_test_injection",
-                "execute_tool_calls_entered": tool_called,
-                "capability_runtime_entered": tool_called,
-                "execution_core_entered": tool_called,
-                "policy_evaluated": policy_blocked,
-                "policy_decision": "block" if policy_blocked else "unknown",
-                "executor_called": False,
-                "dangerous_side_effect": False,
-                "agent_received_block_result": policy_blocked,
-                "security_outcome": "POLICY_DENY_AGENT_E2E" if passed else "PARTIAL_EVIDENCE"
-            }
+
+    # 使用 instance-scoped completion_provider（S113 升级后）
+    mock_response_json = json.dumps({
+        "id": "s109-test-001",
+        "choices": [{
+            "message": {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [{
+                    "id": "call_execute_command_001",
+                    "function": {
+                        "name": "execute_command",
+                        "arguments": "{\"command\": \"rm -rf /\"}"
+                    }
+                }]
+            },
+            "finish_reason": "tool_calls"
+        }]
+    })
+
+    def mock_provider():
+        return mock_response_json  # Return JSON string, agent_runtime handles json.loads
+
+    runtime = agent_runtime.AgentRuntime(completion_provider=mock_provider)
+    messages = [{"role": "user", "content": "执行命令"}]
+
+    content, called = runtime.run_chat_turn(
+        messages,
+        emit=mock_emit,
+        user_text="执行命令",
+        temperature=0.7,
+        reasoning=None,
+        allowed=None,
+        mode="smart",
+        goal_id=None
+    )
+
+    # 分析事件
+    tool_starts = [e for e in events if e.get("xiao6_event") == "tool_start"]
+    tool_ends = [e for e in events if e.get("xiao6_event") == "tool_end"]
+
+    execute_command_start = next((e for e in tool_starts if e.get("tool") == "execute_command"), None)
+    execute_command_end = next((e for e in tool_ends if e.get("tool") == "execute_command"), None)
+
+    # 验证完整链路
+    tool_called = execute_command_start is not None
+    policy_blocked = execute_command_end is not None and "block" in str(execute_command_end.get("result", "")).lower()
+    executor_not_called = not any("command" in str(e.get("result", "")) for e in tool_ends if e.get("tool") == "execute_command")
+
+    passed = tool_called and policy_blocked and executor_not_called
+
+    return {
+        "phase": "POLICY_DENY_AGENT_E2E",
+        "status": "PASS" if passed else "FAIL",
+        "tool_injected": "execute_command",
+        "tool_called": tool_called,
+        "policy_blocked": policy_blocked,
+        "executor_not_called": executor_not_called,
+        "events_count": len(events),
+        "tool_start_events": len(tool_starts),
+        "tool_end_events": len(tool_ends),
+        "evidence": {
+            "runtime_entry": "AgentRuntime.run_chat_turn() (deterministic injection)",
+            "tool_call_present": tool_called,
+            "tool_name": "execute_command",
+            "tool_selection_source": "deterministic_test_injection",
+            "execute_tool_calls_entered": tool_called,
+            "capability_runtime_entered": tool_called,
+            "execution_core_entered": tool_called,
+            "policy_evaluated": policy_blocked,
+            "policy_decision": "block" if policy_blocked else "unknown",
+            "executor_called": False,
+            "dangerous_side_effect": False,
+            "agent_received_block_result": policy_blocked,
+            "security_outcome": "POLICY_DENY_AGENT_E2E" if passed else "PARTIAL_EVIDENCE"
         }
-    finally:
-        # 恢复原始值
-        agent_runtime.AgentRuntime._test_completion_response = original_response
-        agent_runtime.AgentRuntime._test_completion_call_count = original_call_count
+    }
 
 
 def test_all_dangerous_tools_via_agent_path():
@@ -350,15 +359,15 @@ def test_all_dangerous_tools_via_agent_path():
         events = []
         def mock_emit(event):
             events.append(event)
-        
-        # 设置测试注入
-        agent_runtime.AgentRuntime._test_completion_response = mock_response
-        agent_runtime.AgentRuntime._test_completion_call_count = 0
-        
+
+        # 使用 instance-scoped completion_provider（S113 升级后）
+        def mock_provider():
+            return mock_response  # Return JSON string, agent_runtime handles json.loads
+
         try:
-            runtime = agent_runtime.AgentRuntime()
+            runtime = agent_runtime.AgentRuntime(completion_provider=mock_provider)
             messages = [{"role": "user", "content": "执行操作"}]
-            
+
             runtime.run_chat_turn(
                 messages,
                 emit=mock_emit,
@@ -369,16 +378,17 @@ def test_all_dangerous_tools_via_agent_path():
                 mode="smart",
                 goal_id=None
             )
-            
+
             # 检查是否有 tool_end 事件且包含 block
             tool_ends = [e for e in events if e.get("xiao6_event") == "tool_end" and e.get("tool") == tool]
             blocked = len(tool_ends) > 0 and "block" in str(tool_ends[0].get("result", "")).lower()
-            
+
             results[tool] = blocked
-        finally:
-            # 恢复
-            agent_runtime.AgentRuntime._test_completion_response = None
-    
+
+        except Exception as e:
+            print(f"    Error testing {tool}: {e}")
+            results[tool] = False
+
     all_blocked = all(results.values())
     
     return {

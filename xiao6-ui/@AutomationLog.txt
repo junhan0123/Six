@@ -1,6 +1,0 @@
-2026-08-22 06:58:44.625 <string>[21] <module> -> Find Control Timeout(10s): {ControlType: EditControl}
-2026-08-22 06:59:02.148 ui_automation.py[160] set_value -> Find Control Timeout(10s): {ControlType: EditControl}
-2026-08-22 06:59:12.189 ui_automation.py[187] set_value -> Find Control Timeout(10s): {ControlType: EditControl}
-2026-08-22 07:00:09.201 <string>[30] <module> -> Find Control Timeout(10s): {ControlType: EditControl}
-2026-08-22 07:11:35.987 <string>[17] <module> -> Find Control Timeout(10s): {ControlType: EditControl}
-2026-08-22 09:34:07.107 <string>[31] <module> -> Find Control Timeout(10s): {ControlType: EditControl}

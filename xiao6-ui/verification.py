@@ -97,14 +97,14 @@ class VerificationLayer:
 
 
 class RealObserver:
-    """真实观察者：用 RealComputerExecutor 的只读观测能力产出世界快照。
+    """真实观察者：用 ComputerExecutor 的只读观测能力产出世界快照。
 
     仅供后端生产环境注入；测试用 MockObserver。不写文件、不开 shell。
     """
 
     def __init__(self):
-        from computer_executor import RealComputerExecutor
-        self.exe = RealComputerExecutor()
+        from computer_action.executor import ComputerExecutor
+        self.exe = ComputerExecutor()
 
     def __call__(self):
         try:

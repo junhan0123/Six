@@ -1,4 +1,0 @@
-- generic [active] [ref=e1]:
-  - heading "Xiao6 External" [level=1] [ref=e2]
-  - textbox [ref=e3]
-  - button "Go" [ref=e4]

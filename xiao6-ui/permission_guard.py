@@ -20,8 +20,8 @@
 - Agent / Runtime 严禁直接调用 executor；只能通过本 Guard 的 run() 入口。
 - 授权裁决 100% 委托既有 Policy Engine（policy_engine.evaluate），无第二权限系统。
 - 每次状态转变都发布领域事件（COMPUTER_ACTION_*），前端 AppState 合约消费。
-- Order 3 起 executor 默认仍为 MockComputerExecutor（安全）；生产应使用
-  PermissionGuard(RealComputerExecutor(), VerificationLayer(RealObserver()))。
+|- Order 3 起 executor 默认使用 ComputerExecutor（安全白名单）；生产应使用
+  PermissionGuard(ComputerExecutor(), VerificationLayer(RealObserver()))。
 - 真实执行器仅实现 LOW / MEDIUM；HIGH / CRITICAL 在 Guard 层即拒，绝不绕过。
 """
 
@@ -29,15 +29,16 @@ from __future__ import annotations
 
 from capability_os.registry import is_known, is_implemented, risk_of
 from computer_action import ComputerAction
-from computer_executor import MockComputerExecutor, RealComputerExecutor
+from computer_action.executor import ComputerExecutor
+from computer_action.safety import assert_allowed
 from verification import VerificationLayer
 from eventbus import publish_domain
 
 
 class PermissionGuard:
     def __init__(self, executor=None, verifier=None):
-        # 执行器是唯一可被调用执行的地方（默认 mock，安全）
-        self.executor = executor or MockComputerExecutor()
+        # 执行器是唯一可被调用执行的地方（默认 ComputerExecutor，安全白名单）
+        self.executor = executor or ComputerExecutor()
         # 验证层：执行后复核（默认无观察者，仅验证 result 自证的能力）
         self.verifier = verifier or VerificationLayer(observer=None)
 
