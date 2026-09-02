@@ -23,16 +23,16 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 # SSE 实时推送统一汇聚主题（proactive / scene 均发布到此，SSE 桥订阅扇出）
-TOPIC_SSE = "zz.sse"
+TOPIC_SSE = "xiao6.sse"
 
 # Phase 11 全息 HUD：常驻状态光环 / 情境 glance 卡订阅的状态机事件主题
-TOPIC_HUD_STATE = "zz.hud.state"
-# 目标更新主题（goals.py 已向 "zz.goal" 发布；此处提供语义化别名，避免重复造事件）
-TOPIC_GOAL_UPDATE = "zz.goal"
+TOPIC_HUD_STATE = "xiao6.hud.state"
+# 目标更新主题（goals.py 已向 "xiao6.goal" 发布；此处提供语义化别名，避免重复造事件）
+TOPIC_GOAL_UPDATE = "xiao6.goal"
 # Phase 13-1 移动伴随端：移动端 ↔ 桌面的轻量同步事件主题
-TOPIC_MOBILE_SYNC = "zz.mobile.sync"
+TOPIC_MOBILE_SYNC = "xiao6.mobile.sync"
 # Phase 9-3 剪贴板：剪贴板内容变化的同步事件主题
-TOPIC_CLIPBOARD = "zz.clipboard"
+TOPIC_CLIPBOARD = "xiao6.clipboard"
 
 # 重试上限（与 priority 无关，统一 2 次；超过即进死信）
 _MAX_RETRIES = 2

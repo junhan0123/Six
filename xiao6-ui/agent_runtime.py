@@ -78,7 +78,7 @@ class AgentRuntime:
         if self._running:
             return
         self._running = True
-        self._thread = threading.Thread(target=self._loop, name="zz-agent-runtime", daemon=True)
+        self._thread = threading.Thread(target=self._loop, name="xiao6-agent-runtime", daemon=True)
         self._thread.start()
         self._publish_state("started")
 

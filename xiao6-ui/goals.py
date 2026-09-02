@@ -3,7 +3,7 @@
 
 Goal = 用户意图 / 项目 / 长期方向；可拆解为多个 Task（经 tasks.goal_id 软外键归属）。
 目标进度优先由子 Task 完成比例自动聚合，也允许手动覆盖。
-所有状态变更经 eventbus 发布到 "zz.goal" 主题（供 proactive / scene / SSE 桥消费）。
+所有状态变更经 eventbus 发布到 "xiao6.goal" 主题（供 proactive / scene / SSE 桥消费）。
 
 依赖方向（无环）：
 - goals.py → db.py（持久化）
@@ -38,7 +38,7 @@ _GOAL_EVENT_TO_DOMAIN = {
 def _emit(event_type: str, goal: "Goal", extra: Optional[dict] = None):
     """经事件总线发布一条 Goal 事件（异常静默，绝不阻断主链路）。
 
-    Order 2：在保留原 zz.goal 内部主题的同时，额外把内部事件映射为规范领域事件，
+    Order 2：将内部事件映射为规范领域事件，
     经 publish_domain() 发到 TOPIC_SSE（前端 AppState 合约入口，readiness §2.2 R1）。
     职责不变：本函数仍是 Goal 模块唯一事件出口；映射表集中于此，禁止散落硬编码。
     """
@@ -46,7 +46,7 @@ def _emit(event_type: str, goal: "Goal", extra: Optional[dict] = None):
         from eventbus import bus
 
         bus.publish(
-            "zz.goal",
+            "xiao6.goal",
             {
                 "event": event_type,
                 "goal_id": goal.id,

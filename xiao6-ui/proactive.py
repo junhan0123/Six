@@ -233,7 +233,7 @@ def _use_eventbus():
 def _dispatch_sse(event):
     """把一条 SSE 事件推给所有在线连接。
 
-    FEATURE_EVENTBUS=true：经 EventBus 发布（zz.sse 主题统一扇出）；
+    FEATURE_EVENTBUS=true：经 EventBus 发布（xiao6.sse 主题统一扇出）；
     false / 异常：回退旧的 SUBSCRIBERS 全局队列直发（兼容性，§1.6）。
     """
     if _use_eventbus():
@@ -913,7 +913,7 @@ def _check_long_running(now):
 
 
 def _on_goal_event(event):
-    """消费 zz.goal 事件（领域事件信封）：完成时主动提示复盘。
+    """消费 xiao6.goal 事件（领域事件信封）：完成时主动提示复盘。
 
     信封结构：{"xiao6_event": "GOAL_COMPLETED", "payload": {...}}（见 eventbus.publish_domain）。
     """
@@ -971,7 +971,7 @@ def _on_domain_event_for_proactive(event):
 try:
     from eventbus import bus as _goal_bus
 
-    _goal_bus.subscribe("zz.goal", _on_goal_event)
-    _goal_bus.subscribe("zz.goal", _on_domain_event_for_proactive)
+    _goal_bus.subscribe("xiao6.goal", _on_goal_event)
+    _goal_bus.subscribe("xiao6.goal", _on_domain_event_for_proactive)
 except Exception:
     pass
