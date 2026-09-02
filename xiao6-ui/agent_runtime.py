@@ -46,11 +46,15 @@ def _parse_date(s: str):
 
 
 class AgentRuntime:
-    # —— 测试注入 seam（生产默认 None，测试环境可设置）——
-    _test_completion_response = None  # 测试用：固定 LLM 响应（str JSON 或 MagicMock）
-    _test_completion_call_count = 0   # 测试用：记录调用次数
+    # —— 测试注入 seam（instance-scoped，生产默认 None）——
+    # 每个实例独立维护 completion_provider，避免跨实例状态污染
+    _test_completion_response = None  # 保留向后兼容
 
-    def __init__(self):
+    def __init__(self, completion_provider=None):
+        # Instance-scoped completion provider:
+        # - None (default): 生产路径，使用真实 Agnes LLM
+        # - callable: 测试路径，使用确定性 mock
+        self._completion_provider = completion_provider
         self.state = IDLE
         self._queue = []
         self._ql = threading.Lock()
@@ -213,17 +217,16 @@ class AgentRuntime:
 
         for _ in range(MAX_ROUNDS):
             try:
-                # —— 测试注入 seam：如果设置了测试响应，直接返回而非调用真实 LLM ——
-                if AgentRuntime._test_completion_response is not None:
-                    resp = AgentRuntime._test_completion_response
-                    if isinstance(resp, str):
-                        # 字符串格式：直接解析 JSON
-                        data = json.loads(resp)
-                    else:
-                        # MagicMock 格式：模拟 resp.read() 返回
+                # —— 测试注入 seam：如果设置了 instance-scoped provider，使用 mock 而非真实 LLM ——
+                if self._completion_provider is not None:
+                    # Test path: use mock provider
+                    resp = self._completion_provider()
+                    if hasattr(resp, 'read'):
                         data = json.loads(resp.read().decode("utf-8"))
-                    AgentRuntime._test_completion_call_count += 1
+                    else:
+                        data = json.loads(resp)
                 else:
+                    # Production path: use real Agnes LLM
                     with agnes_completion(
                         messages, tools=effective_tools, stream=False,
                         timeout=90, temperature=temperature, reasoning=reasoning
@@ -232,11 +235,6 @@ class AgentRuntime:
             except Exception as e:
                 emit({"error": f"核心调用失败：{e}"})
                 return ("（抱歉，核心暂时无法响应）"), called
-            finally:
-                # R8-P2: S109 seam 安全性 - 每次调用后必须恢复默认值，防止状态泄漏
-                if AgentRuntime._test_completion_response is not None:
-                    AgentRuntime._test_completion_response = None
-                    AgentRuntime._test_completion_call_count = 0
 
             msg = (data.get("choices") or [{}])[0].get("message", {})
             content = msg.get("content") or ""
