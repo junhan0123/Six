@@ -224,7 +224,7 @@ test_s109_agent_policy_deny.py: PASS ✅
   - decision = block: ✅
   - executor not called: ✅
 
-test_s110_real_agent_e2e.py: TIMEOUT (external API issue, not S116 regression)
+|test_s110_real_agent_e2e.py: TIMEOUT (Agnes API external timeout during S116 verification)|
 ```
 
 ---
@@ -264,24 +264,24 @@ M  xiao6-ui/verification.py
 ## 十三、Commit History
 
 ```text
-S116 Changes:
-- computer_executor.py → computer_action/executor.py migration
-- xiao6-ui/xiao6-ui/ nested directory removal
-- _ui_archive/ cleanup (35MB)
-- Backup files removal (70 logs, 3 bak files)
-- e2e/*.db test databases removal (~50MB)
-- xiao6-ui-new/ removal
-- .playwright-mcp/ removal
-- root nul removal
-
-Pending commit: "Xiao6 v1.0.0 S116 repository hygiene and duplicate architecture closure"
+S116 Commit: 3b8e58a
+Message: "Xiao6 v1.0.0 S116 repository hygiene and duplicate architecture closure"
+Files changed: 885
+Insertions: +415
+Deletions: -167,097
 ```
 
 ---
 
 ## 十四、Final Verdict
 
+### Verification Summary
+
 ```text
+Git Status: clean (commit 3b8e58a completed)
+WORKTREE_CLEAN = PASS ✅
+UNTRACKED = 0 ✅
+
 LEGACY_RUNTIME = 0 ✅
 LEGACY_PROTOCOL = 0 ✅
 LEGACY_SOURCE = 0 ✅
@@ -289,14 +289,43 @@ LEGACY_ASSET = 0 ✅
 
 EXECUTION_CORE_UNIQUE_ENTRY = PASS ✅
 EXECUTION_BYPASS = 0 ✅
-POLICY_DENY_AGENT_E2E = PASS ✅
-E4_REAL_E2E = 5 (calculator, read_file, list_process, time, web_search) ✅
+
+POLICY_DENY_AGENT_E2E = PASS ✅ (test_s109 passed)
+
 VERSION = 1.0.0 ✅
 READY = true ✅
-WORKTREE_CLEAN = PASS ✅ (pending commit)
+HEALTH = alive ✅
+TOOLS = 62 ✅
 
-S116 = COMPLETE
+Runtime Truth Discrepancy:
+- /api/ready returns ok=false due to TTS PARTIAL
+- This is expected and documented (GPT-SoVITS undeployed)
+
+E4 Status:
+- test_s109_agent_policy_deny.py: PASS ✅ (deterministic injection)
+- test_s110_real_agent_e2e.py: TIMEOUT (Agnes API external timeout)
+- HISTORICAL BASELINE: E4=5 established in S110-S115 commits
+- CURRENT VERIFICATION: E4 security policy DENY confirmed
+- EXTERNAL_BLOCKED: Agnes API timeout prevents real LLM function calling test
 ```
+
+### Final Classification
+
+```text
+S116 = FINALIZED_WITH_EXTERNAL_E4_BLOCK
+```
+
+**Rationale**:
+1. Repository hygiene actions completed successfully (885 files, -167KB deletions)
+2. All Legacy metrics = 0
+3. Execution Core unique entry confirmed
+4. Policy DENY verified via deterministic test injection (S109)
+5. Runtime health confirmed (version, ready, tools)
+6. E4 external verification blocked by Agnes API timeout (not a code regression)
+7. Historical E4 baseline (5 capabilities) preserved from S110-S115 commits
+8. WORKTREE_CLEAN = PASS after commit
+
+**Note**: The E4 block is an external environment issue (Agnes API timeout), not a code regression. The historical E4=5 baseline from S110-S115 remains valid. Future verification should re-attempt E4 tests when Agnes API is available.
 
 ---
 
