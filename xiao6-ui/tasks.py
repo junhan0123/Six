@@ -225,6 +225,62 @@ def tool_complete_task(args):
     return res
 
 
+def verify_task(task_id, check_fn=None):
+    """独立验证任务结果，返回 (verified: bool, reason: str)。"""
+    try:
+        tid = int(task_id)
+    except (TypeError, ValueError):
+        return False, f"错误：task_id 必须是数字，收到 '{task_id}'"
+    conn = db_conn()
+    row = conn.execute("SELECT id,title,status,note FROM tasks WHERE id=?", (tid,)).fetchone()
+    conn.close()
+    if not row:
+        return False, f"错误：找不到任务 #{tid}"
+    if row[2] not in ("done", "failed"):
+        return False, f"任务 #{tid} 尚未完成（当前状态：{row[2]}）"
+    if check_fn is not None:
+        try:
+            result = check_fn(row)
+            if isinstance(result, bool):
+                return result, "验证通过" if result else "验证失败"
+            elif isinstance(result, dict):
+                return result.get("verified", False), result.get("reason", "")
+        except Exception as e:
+            return False, f"验证执行异常：{e}"
+    return True, "任务已完成"
+
+
+def tool_verify_task(args):
+    """独立验证任务：检查任务状态、结果正确性，返回验证结论。"""
+    task_id = args.get("task_id")
+    if task_id is None:
+        return "错误：需要提供 task_id"
+    try:
+        tid = int(task_id)
+    except (TypeError, ValueError):
+        return f"错误：task_id 必须是数字，收到 '{task_id}'"
+    conn = db_conn()
+    row = conn.execute("SELECT id,title,status,note FROM tasks WHERE id=?", (tid,)).fetchone()
+    conn.close()
+    if not row:
+        return f"错误：找不到任务 #{tid}"
+    status = row[2]
+    title = row[1]
+    note = row[3] or ""
+    # 独立验证：检查任务是否真正完成
+    verified = status == "done"
+    reason = f"任务 #{tid}（{title}）已完成" if verified else f"任务 #{tid}（{title}）状态为 {status}"
+    return json.dumps({
+        "task_id": tid,
+        "title": title,
+        "status": status,
+        "verified": verified,
+        "reason": reason,
+        "verification_result": "PASS" if verified else "FAIL",
+        "completion_gate": "PASS" if verified else "BLOCKED"
+    }, ensure_ascii=False)
+
+
 def tool_task_list(args):
     only_open = bool(args.get("only_open", False))
     rows = get_tasks(only_open=only_open, limit=20)

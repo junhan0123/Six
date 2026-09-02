@@ -41,6 +41,7 @@ from tasks import (
     tool_set_task,
     tool_task_list,
     tool_update_task_step,
+    tool_verify_task,
 )
 
 # ---------- 安全沙箱门控（对应参考实现「安全沙箱」设置） ----------
@@ -248,6 +249,20 @@ TOOLS = [
                     "task_id": {"type": "integer", "description": "任务 id"},
                     "success": {"type": "boolean", "description": "是否成功完成，默认 true"},
                     "note": {"type": "string", "description": "可选：完成备注"},
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "verify_task",
+            "description": "独立验证任务完成状态：检查任务是否已标记为 done，返回 verification_result (PASS/FAIL) 和 completion_gate 结论。用于 Final Verification Gate。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "integer", "description": "任务 id"},
                 },
                 "required": ["task_id"],
             },
@@ -1197,7 +1212,7 @@ def tool_file_read(args):
             return "错误：未提供文件路径"
         resolved = resolve_in_sandbox(raw)
         if not os.path.isfile(resolved):
-            return f"错误：文件不存在：{raw}"
+            raise FileNotFoundError(f"文件不存在：{raw}")
         with open(resolved, encoding="utf-8", errors="replace") as f:
             content = f.read()
         lines = content.split("\n")
@@ -1215,7 +1230,7 @@ def tool_file_read(args):
         return f"# 文件：{raw}（共 {len(lines)} 行，显示 {start}-{end} 行{'，已截断' if truncated else ''}）\n\n{body}"
     except Exception as e:
         audit_tool("file_read", args, "error", error=str(e), started_at=t0)
-        return f"读取失败：{e}"
+        raise
 
 
 def tool_file_list(args):
@@ -3194,6 +3209,7 @@ TOOL_FUNCS = {
     "set_task": tool_set_task,
     "update_task_step": tool_update_task_step,
     "complete_task": tool_complete_task,
+    "verify_task": tool_verify_task,
     "task_list": tool_task_list,
     "file_read": tool_file_read,
     "file_list": tool_file_list,
