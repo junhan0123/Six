@@ -15,7 +15,7 @@
   <aside class="sidebar">
 
     <div class="brand-row">
-      <span class="brand-name">小<b>6</b></span>
+      <span class="brand-name">小<b>6</b></span><span class="brand-heart" title="小6">❤</span>
       <span class="live-dot" id="liveDot" title="服务连接状态"></span>
     </div>
 
@@ -44,10 +44,6 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0 5.66 5.66l-9.9 9.9-4.24 1.41 1.41-4.24 9.9-9.9z"/></svg></span>
         能力中心
       </button>
-      <button class="nav-item" data-view="settings">
-        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1A2 2 0 1 1 4.4 17l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 7 4.4l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
-        设置
-      </button>
     </nav>
 
     <div class="divider"></div>
@@ -61,7 +57,12 @@
     <div class="user-card">
       <span class="user-avatar">6</span>
       <span class="user-name">我的小6</span>
-      <span class="user-pro" id="modelBadge">—</span>
+      <div class="user-actions">
+        <button class="user-action-btn" data-view="settings" title="设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1A2 2 0 1 1 4.4 17l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 7 4.4l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <span class="user-pro" id="modelBadge">—</span>
+      </div>
     </div>
   </aside>
 
@@ -72,7 +73,7 @@
     <section class="view active" id="view-dashboard">
       <div class="page">
         <div class="page-head">
-          <h1>你好，我是<span class="brand-text">小6</span></h1>
+          <h1>你好，我是<span class="brand-text">小6</span> <span class="brand-heart">❤</span></h1>
           <button class="customize-btn" data-act="reload-dashboard">刷新</button>
         </div>
         <div class="dash-grid" id="dashGrid">

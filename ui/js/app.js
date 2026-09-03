@@ -233,32 +233,79 @@
     box.innerHTML = html;
   }
 
+  /* 首页视觉增强辅助：天气图标 / 平台图标 / 状态点 / 会话标签清洗 */
+  const WEATHER_MAP = [
+    { re: /雷/, emoji: "⛈️", cls: "rain" },
+    { re: /雪/, emoji: "❄️", cls: "rain" },
+    { re: /雨/, emoji: "🌧️", cls: "rain" },
+    { re: /雾|霾/, emoji: "🌫️", cls: "fog" },
+    { re: /多云/, emoji: "⛅", cls: "cloudy" },
+    { re: /阴/, emoji: "☁️", cls: "cloudy" },
+    { re: /晴/, emoji: "☀️", cls: "sunny" },
+  ];
+  function weatherIcon(cond) {
+    const c = String(cond || "");
+    for (const m of WEATHER_MAP) if (m.re.test(c)) return m;
+    return { emoji: "🌡️", cls: "default" };
+  }
+  function platformIcon(p) {
+    const m = {
+      douyin: "🎬", weibo: "🌐", zhihu: "💡", bilibili: "📺", toutiao: "📰",
+      baidu: "🔍", kuaishou: "📱", xiaohongshu: "📕", hupu: "🏀",
+      github: "🐙", qq: "💬", tieba: "🧩", v2ex: "💻",
+    };
+    return m[String(p || "").toLowerCase()] || "🔗";
+  }
+  function statusDot(cls) {
+    if (cls === "ok") return "🟢";
+    if (cls === "warn") return "🟡";
+    return "⚪";
+  }
+  function cleanSessionLabel(sid) {
+    let s = String(sid || "").replace(/^p\d+_/, "");
+    s = s.replace(/_(stale|missing|get|valid|cp|a|id)$/i, "");
+    return s || "对话";
+  }
+  function aqiLabel(aqi) {
+    const v = Number(aqi);
+    if (!v) return null;
+    if (v <= 50) return "优";
+    if (v <= 100) return "良";
+    if (v <= 150) return "轻度";
+    return "中度";
+  }
+
   function weatherCard(w) {
     if (!w || w.__err) {
-      return dashCard("weather", "今日天气", '<div class="dc-empty">天气信息暂时不可用</div>');
+      return dashCard("weather", "🌤 今日天气", '<div class="dc-empty">天气信息暂时不可用</div>');
     }
     const c = w.card || {};
     const city = c.city || w.city || "—";
     const cond = c.condition || "—";
+    const wi = weatherIcon(cond);
     const temp = c.temp != null ? c.temp + "°" : "—";
     const high = c.high != null ? c.high + "°" : "—";
     const low = c.low != null ? c.low + "°" : "—";
     const feel = c.feel != null ? "体感 " + c.feel + "°" : "";
     const wind = c.wind || (c.wind_dir ? c.wind_dir + " " + c.wind_kmh + " km/h" : "");
+    const aqi = aqiLabel(c.aqi);
 
-    let body = '<div class="weather-main">' +
+    let body = '<div class="weather-hero weather-' + wi.cls + '">' +
+      '<div class="weather-emoji">' + wi.emoji + "</div>" +
+      '<div class="weather-main">' +
       '<div class="weather-temp">' + esc(temp) + "</div>" +
       '<div class="weather-info">' +
       '<div class="weather-condition">' + esc(cond) + "</div>" +
-      '<div class="weather-meta"><span>' + esc(city) + "</span><span>" + esc(high) + " / " + esc(low) + "</span></div>" +
-      "</div></div>";
-    if (feel || wind || c.humidity != null) {
-      body += '<div class="weather-meta" style="margin-top:0">' +
-        (feel ? "<span>" + esc(feel) + "</span>" : "") +
-        (c.humidity != null ? "<span>湿度 " + esc(c.humidity) + "%</span>" : "") +
-        (wind ? "<span>" + esc(wind) + "</span>" : "") +
-        "</div>";
-    }
+      '<div class="weather-meta"><span>' + esc(city) + "</span><span>最高 " + esc(high) + " / 最低 " + esc(low) + "</span></div>" +
+      "</div></div></div>";
+
+    const extra = [];
+    if (feel) extra.push("<span>" + esc(feel) + "</span>");
+    if (c.humidity != null) extra.push("<span>湿度 " + esc(c.humidity) + "%</span>");
+    if (wind) extra.push("<span>" + esc(wind) + "</span>");
+    if (aqi) extra.push('<span class="aqi-pill">空气 ' + esc(aqi) + " " + esc(c.aqi) + "</span>");
+    if (extra.length) body += '<div class="weather-extra">' + extra.join("") + "</div>";
+
     if (Array.isArray(w.forecast) && w.forecast.length) {
       body += '<div class="weather-forecast">' + w.forecast.slice(0, 3).map((f) =>
         '<div class="weather-day"><div class="wd">' + esc(f.day) + "</div>" +
@@ -270,12 +317,12 @@
         '<span class="li-item">' + esc(l.name) + " · " + esc(l.val) + "</span>").join("") + "</div>";
     }
     const foot = "更新于 " + (w.fetchedAt ? hhmm(w.fetchedAt) : "—");
-    return dashCard("weather", "今日天气", body, foot);
+    return dashCard("weather", "🌤 今日天气", body, foot);
   }
 
   function taskCard(t) {
     if (!Array.isArray(t)) {
-      return dashCard("task", "今日任务", '<div class="dc-empty">任务信息暂时不可用</div>');
+      return dashCard("task", "📋 今日任务", '<div class="dc-empty">任务信息暂时不可用</div>');
     }
     S.tasks = t;
     const RUNNING = ["open", "running", "in_progress", "active", "pending"];
@@ -291,15 +338,34 @@
       "</div>";
 
     if (running.length) {
-      body += '<div class="task-list">' + running.slice(0, 4).map((x) =>
-        '<div class="task-item" data-view="tasks">' +
-        '<span class="task-status ' + statusClass(x.status) + '"></span>' +
-        '<span class="task-title">' + esc(x.title || "(无标题)") + "</span>" +
-        '<span class="task-time">' + esc(statusLabel(x.status)) + "</span></div>").join("") + "</div>";
+      body += '<div class="task-list">' + running.slice(0, 4).map((x) => {
+        const sc = statusClass(x.status);
+        const glyph = sc === "done" ? "✅" : sc === "running" ? "🔄" : "⏳";
+        const pri = (x.priority === "high" || x.priority === "高") ? '<span class="task-pri" title="高优先级">⚠️</span>' : "";
+        return '<div class="task-item task-' + sc + '" data-view="tasks">' +
+          '<span class="task-status ' + sc + '"></span>' +
+          '<span class="task-title">' + pri + esc(x.title || "(无标题)") + "</span>" +
+          '<span class="task-time">' + glyph + " " + esc(statusLabel(x.status)) + "</span></div>";
+      }).join("") + "</div>";
     } else {
-      body += '<div class="dc-empty">当前没有进行中的任务</div>';
+      body += '<div class="task-empty">' +
+        '<div class="task-empty-title">今天还没有安排任务</div>' +
+        '<div class="task-empty-desc">告诉小6想完成什么，或者在任务中心创建任务</div>' +
+        '<button class="customize-btn task-btn-new" data-view="tasks">+ 创建任务</button>' +
+        "</div>";
     }
-    return dashCard("task", "今日任务", body, "");
+
+    // 任务入口 + 查看全部（与是否有任务无关，统一放在底部）
+    const hasRunning = running.length > 0;
+    body += '<div class="task-actions-bar">' +
+      '<button class="task-btn-new" data-view="tasks">+ 新建任务</button>' +
+      '<button class="task-btn-all" data-view="tasks">查看全部任务 →</button>' +
+      "</div>";
+
+    const foot = '<div class="task-source-hint">' +
+      "任务可以来自：• 对话中告诉小6 • 手动创建 • 目标拆解" +
+      "</div>";
+    return dashCard("task", "📋 今日任务", body, foot);
   }
 
   function statusClass(st) {
@@ -343,37 +409,41 @@
 
   function hotspotCard(h) {
     if (!h || h.__err) {
-      return dashCard("hot", "热点资讯", '<div class="dc-empty">热点信息暂时不可用</div>');
+      return dashCard("hot", "🔥 热点资讯", '<div class="dc-empty">热点信息暂时不可用</div>');
     }
-    const list = flattenHotspots(h).slice(0, 6);
-    if (!list.length) return dashCard("hot", "热点资讯", '<div class="dc-empty">暂无热点数据</div>');
+    const list = flattenHotspots(h).slice(0, 12);
+    if (!list.length) return dashCard("hot", "🔥 热点资讯", '<div class="dc-empty">暂无热点数据</div>');
 
-    let body = '<div class="hotspot-list">';
+    const updTime = h.fetchedAt ? hhmm(h.fetchedAt) : "—";
+    let body = '<div class="hotspot-grid">';
     list.forEach((x, i) => {
       const title = x.text || x.title || "(无标题)";
       const pname = PLATFORM_LABEL[x.__platform] || x.__platform || "网络";
       const heat = x.heat ? "热度 " + x.heat : "";
       const summary = x.desc || x.summary || x.abstract || "";
-      body += '<div class="hotspot-item">' +
+      const icon = platformIcon(x.__platform);
+      body += '<div class="hotspot-tile">' +
+        '<div class="hotspot-head">' +
         '<span class="hotspot-rank">' + (i + 1) + "</span>" +
-        '<div class="hotspot-content">' +
-        '<div class="hotspot-title">' + esc(title) + "</div>" +
-        (summary ? '<div class="hotspot-summary">' + esc(String(summary).slice(0, 80)) + "</div>" : "") +
+        '<div class="hotspot-title" title="' + esc(title) + '">' + esc(title) + "</div>" +
+        "</div>" +
+        (summary ? '<div class="hotspot-summary" title="' + esc(summary) + '">' + esc(String(summary).slice(0, 110)) + "</div>" : "") +
         '<div class="hotspot-meta">' +
-        "<span>" + esc(pname) + "</span>" +
+        '<span class="hs-src">' + icon + " " + esc(pname) + "</span>" +
         (heat ? "<span>" + esc(heat) + "</span>" : "") +
+        "<span>🕒 " + esc(updTime) + "</span>" +
         "</div>" +
         '<div class="hotspot-actions">' +
-        '<button data-hot="read" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) + '">阅读全文</button>' +
-        '<button data-hot="save" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) +
+        '<button class="hs-btn" data-hot="read" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) + '">阅读全文</button>' +
+        '<button class="hs-btn" data-hot="save" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) +
         '" data-src="' + esc(pname) + '" data-heat="' + esc(x.heat || "") + '">保存知识库</button>' +
-        '<button data-hot="sum" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) +
+        '<button class="hs-btn hs-primary" data-hot="sum" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) +
         '" data-src="' + esc(pname) + '">让小6总结</button>' +
-        "</div></div></div>";
+        "</div></div>";
     });
     body += "</div>";
-    const foot = "更新于 " + (h.fetchedAt ? hhmm(h.fetchedAt) : "—");
-    return dashCard("hot", "热点资讯", body, foot);
+    const foot = "共 " + list.length + " 条 · 更新于 " + updTime;
+    return dashCard("hot", "🔥 热点资讯", body, foot);
   }
 
   // 热点卡片操作（事件委托，卡片每次重绘都有效）
@@ -452,15 +522,21 @@
     const ttsOK = ttsCheck ? !!ttsCheck.ok : false;
     const ttsLabel = ttsCheck ? (ttsOK ? "可用" : "不可用") : (h.tts_backend ? String(h.tts_backend) : "未配置");
 
-    const body =
-      '<div class="status-grid">' +
-      statusItem("服务状态", serviceOK ? "运行中" : "异常", serviceOK ? "ok" : "warn") +
-      statusItem("模型状态", modelName, modelOK ? "ok" : "warn") +
-      statusItem("语音状态", ttsLabel, ttsOK ? "ok" : "warn") +
-      statusItem("小6 状态", failed.length ? failed.length + " 项待处理" : "一切正常", failed.length ? "warn" : "ok") +
-      "</div>";
+    const items = [
+      { label: "服务状态", value: serviceOK ? "运行中" : "异常", cls: serviceOK ? "ok" : "warn" },
+      { label: "模型状态", value: modelName, cls: modelOK ? "ok" : "warn" },
+      { label: "语音状态", value: ttsLabel, cls: ttsOK ? "ok" : "warn" },
+      { label: "小6 状态", value: failed.length ? failed.length + " 项待处理" : "一切正常", cls: failed.length ? "warn" : "ok" },
+    ];
+    const body = '<div class="status-grid">' + items.map((it) =>
+      '<div class="status-item' + (it.cls === "warn" ? " status-warn" : "") + '"' +
+      (it.cls === "warn" ? ' data-view="settings" title="点击查看并处理"' : "") + ">" +
+      '<div class="status-label">' + statusDot(it.cls) + " " + esc(it.label) + "</div>" +
+      '<div class="status-value ' + it.cls + '">' + esc(it.value) +
+      (it.cls === "warn" ? ' <span class="status-fix">[检查]</span>' : "") +
+      "</div></div>").join("") + "</div>";
     const foot = '<button class="customize-btn" data-view="settings" style="margin-top:2px">查看详情</button>';
-    return dashCard("sys", "系统状态", body, foot);
+    return dashCard("sys", "⚙️ 系统状态", body, foot);
   }
 
   function statusItem(label, value, cls) {
@@ -485,18 +561,56 @@
       const r = await getJSON("/api/sessions");
       const list = (r && r.sessions) || [];
       S.sessions = list;
-      if (!list.length) { box.innerHTML = empty("暂无历史对话"); return; }
-      box.innerHTML = list.slice(0, 6).map((s) => {
+      if (!list.length) {
+        box.innerHTML = '<div class="recent-empty">' +
+          '<div class="re-ico">💬</div><div>还没有对话记录</div>' +
+          '<button class="customize-btn" data-view="chat">开始对话</button></div>';
+        return;
+      }
+      const items = list.slice(0, 6).map((s) => {
         const sid = s.session_id || s.id || "";
-        const label = String(sid).replace(/^p\d+_/, "").replace(/_stale$/, "").slice(0, 20) || "对话";
+        const label = cleanSessionLabel(sid);
         const time = String(s.updated_at || s.created_at || "").slice(5, 16);
-        return '<button class="recent-item" data-session="' + esc(sid) + '" title="' + esc(sid) + '">' +
-          '<span class="title">' + esc(label) + "</span>" +
-          '<span class="time">' + esc(time) + "</span></button>";
-      }).join("");
+        return { sid, label, time };
+      });
+      box.innerHTML = items.map((it) =>
+        '<button class="recent-item" data-session="' + esc(it.sid) + '" title="' + esc(it.sid) + '">' +
+        '<span class="ri-ico">💬</span>' +
+        '<span class="title">' + esc(it.label) + "</span>" +
+        '<span class="time">' + esc(it.time) + "</span></button>").join("");
+      // 渐进增强：用已有会话详情补全可读摘要（零后端改动；取不到就保留清洗后的标签）
+      items.forEach((it) => enrichRecent(it, box));
     } catch (e) {
       box.innerHTML = errorBox("对话列表读取失败", e.message);
     }
+  }
+
+  function deriveSessionTitle(sess) {
+    const conv = sess.conversation;
+    if (Array.isArray(conv) && conv.length) {
+      const pick = conv.find((m) => m.role === "user" || m.role === "human") || conv[0];
+      const txt = pick.content || pick.text || pick.message || "";
+      const s = String(txt).replace(/\s+/g, " ").trim();
+      if (s) return s.slice(0, 24);
+    }
+    if (sess.latest_checkpoint && sess.latest_checkpoint.label)
+      return String(sess.latest_checkpoint.label).slice(0, 24);
+    return null;
+  }
+
+  async function enrichRecent(it, box) {
+    try {
+      const d = await getJSON("/api/session?session_id=" + encodeURIComponent(it.sid));
+      const sess = d && d.session;
+      if (!sess) return;
+      const title = deriveSessionTitle(sess);
+      if (!title) return;
+      box.querySelectorAll(".recent-item").forEach((el) => {
+        if (el.dataset.session !== it.sid) return;
+        const t = el.querySelector(".title");
+        if (t) { t.textContent = title; el.title = it.sid + " · " + title; }
+      });
+    } catch (e) { /* 详情不可用不影响列表，静默降级 */ }
   }
 
   async function resumeSession(sid) {

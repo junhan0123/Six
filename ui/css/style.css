@@ -165,22 +165,35 @@ input, textarea { font: inherit; color: inherit; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* Hotspot card */
-.hotspot-list { display: flex; flex-direction: column; gap: 6px; }
-.hotspot-item {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 8px 10px; border-radius: var(--r-sm); transition: background .15s;
+.hotspot-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.hotspot-tile {
+  background: var(--bg-soft); border-radius: var(--r-md); padding: 10px 11px;
+  transition: background .15s, box-shadow .15s; min-width: 0;
 }
-.hotspot-item:hover { background: var(--bg-soft); }
-.hotspot-rank { font-size: 12px; font-weight: 700; color: var(--brand); width: 20px; flex-shrink: 0; }
-.hotspot-content { flex: 1; min-width: 0; }
-.hotspot-title { font-size: 13px; font-weight: 500; color: var(--ink-1); margin-bottom: 2px; }
-.hotspot-meta { font-size: 11px; color: var(--ink-4); display: flex; gap: 8px; }
-.hotspot-actions { display: flex; gap: 6px; margin-top: 6px; }
+.hotspot-tile:hover { background: #fff; box-shadow: var(--sh-sm); }
+.hotspot-head { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 4px; }
+.hotspot-rank {
+  font-size: 10px; font-weight: 700; color: var(--brand); background: var(--brand-tint);
+  width: 18px; height: 18px; border-radius: 5px; display: inline-flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.hotspot-title { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--ink-1); line-height: 1.45; }
+.hotspot-summary {
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 6px;
+}
+.hotspot-meta { font-size: 11px; color: var(--ink-4); display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.hotspot-meta .hs-src { display: inline-flex; align-items: center; gap: 3px; color: var(--ink-2); font-weight: 500; }
+.hotspot-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .hotspot-actions button {
-  font-size: 11px; padding: 3px 8px; border-radius: 4px;
+  font-size: 10.5px; padding: 3px 7px; border-radius: 5px;
   border: 1px solid var(--line); background: #fff; color: var(--ink-3);
 }
 .hotspot-actions button:hover { border-color: var(--brand); color: var(--brand); }
+@media (max-width: 520px) {
+  .hotspot-grid { grid-template-columns: 1fr; }
+}
 
 /* System status card */
 .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -669,3 +682,48 @@ input, textarea { font: inherit; color: inherit; }
   .memory-panes { grid-template-columns: 1fr; }
   .memory-pane { max-height: 300px; }
 }
+
+/* ==================== S123.6 Home Polish ==================== */
+.brand-heart { color: var(--brand); margin-left: 3px; font-size: 13px; vertical-align: 1px; }
+
+/* 天气增强：图标 + 彩色状态 */
+.weather-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.weather-emoji { font-size: 42px; line-height: 1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.08)); }
+.weather-hero.weather-sunny .weather-temp { color: #f5a623; }
+.weather-hero.weather-cloudy .weather-temp { color: #6b7a8f; }
+.weather-hero.weather-rain .weather-temp { color: #3a8bdb; }
+.weather-hero.weather-fog .weather-temp { color: #8a8a8a; }
+.weather-extra { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-3); margin-bottom: 4px; }
+.weather-extra .aqi-pill { background: #e6f7ff; color: #1890ff; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
+
+/* 热点增强：来源图标 + 时间 + 主操作 */
+.hotspot-meta .hs-src { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); font-weight: 500; }
+.hs-btn {
+  font-size: 11px; padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink-3);
+  cursor: pointer; transition: all .15s;
+}
+.hs-btn:hover { border-color: var(--brand); color: var(--brand); }
+.hs-btn.hs-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.hs-btn.hs-primary:hover { background: #ff7875; color: #fff; }
+
+/* 任务增强：状态图标 + 优先级 + 左侧色条 */
+.task-item { gap: 10px; }
+.task-item.task-running { border-left: 3px solid var(--warn); }
+.task-item.task-done { border-left: 3px solid var(--ok); }
+.task-item.task-pending { border-left: 3px solid var(--ink-4); }
+.task-pri { margin-right: 1px; }
+
+/* 系统状态增强：状态点 + 异常行动入口 */
+.status-item.status-warn { cursor: pointer; }
+.status-fix { font-size: 11px; color: var(--brand); margin-left: 5px; font-weight: 600; }
+
+/* 最近对话增强：图标 + 空状态 */
+.recent-item { gap: 8px; }
+.recent-item .ri-ico { color: var(--brand); font-size: 13px; flex-shrink: 0; }
+.recent-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 12px; color: var(--ink-3); font-size: 13px; text-align: center;
+}
+.recent-empty .re-ico { font-size: 22px; }
+.recent-empty .customize-btn { margin-top: 4px; }
