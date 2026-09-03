@@ -561,6 +561,53 @@ class ChatMixin:
             return False
 
 
+    def _normalize_wav(self, audio, target_peak_dbfs=-1.0):
+        """对 GPT-SoVITS 原始 WAV 做安全峰值归一化，把输出音量提升到 target_peak_dbfs。
+
+        仅做线性增益（放大振幅），不改变采样率/声道/音色/模型，也不触碰 GPT-SoVITS 服务配置。
+        峰值硬限幅在 int 满量程内，杜绝爆音/clipping；若已达标则原样返回，避免无谓处理。
+        """
+        import io
+        import math
+        import wave
+        import array
+        try:
+            with wave.open(io.BytesIO(audio), "rb") as w:
+                nch = w.getnchannels()
+                sw = w.getsampwidth()
+                fr = w.getframerate()
+                nframes = w.getnframes()
+                raw = w.readframes(nframes)
+            if sw == 2:
+                a = array.array("h")
+                maxv = 32767
+            elif sw == 4:
+                a = array.array("i")
+                maxv = 2147483647
+            else:
+                return audio  # 不支持的位深，原样返回
+            a.frombytes(raw)
+            peak = max((abs(x) for x in a), default=0)
+            if peak <= 0:
+                return audio
+            cur_peak_dbfs = 20 * math.log10(peak / maxv)
+            if cur_peak_dbfs >= target_peak_dbfs:
+                return audio  # 已够响，不处理
+            gain = 10 ** ((target_peak_dbfs - cur_peak_dbfs) / 20.0)
+            out = array.array(a.typecode,
+                              (max(-maxv, min(maxv, int(round(x * gain)))) for x in a))
+            buf = io.BytesIO()
+            with wave.open(buf, "wb") as w:
+                w.setnchannels(nch)
+                w.setsampwidth(sw)
+                w.setframerate(fr)
+                w.writeframes(out.tobytes())
+            return buf.getvalue()
+        except Exception as e:
+            print(f"[TTS] WAV 归一化跳过（原样返回）：{e}")
+            return audio
+
+
     def _tts_sovits(self, text):
         """调用本地 GPT-SoVITS 合成自定义音色语音，返回 wav bytes；失败抛异常。
 
@@ -583,7 +630,9 @@ class ChatMixin:
         )
         req = Request(base + "/?" + qs, headers={"Accept": "audio/wav"})
         with urlopen(req, timeout=60) as resp:
-            return resp.read()
+            # 安全归一化输出音量：GPT-SoVITS 原始振幅偏低（实测峰值 ~-14dBFS），
+            # 归一化到 -1dBFS 后再下发，前端默认音量即可清晰出声。
+            return self._normalize_wav(resp.read())
 
 
     def _send_audio(self, audio):
