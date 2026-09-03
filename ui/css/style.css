@@ -842,3 +842,287 @@ input, textarea { font: inherit; color: inherit; }
 @media (max-width: 860px) {
   .agent-activity { margin: 12px 16px 0; }
 }
+
+/* ==================== PHASE 126.1 Work Center 升级 ==================== */
+/* 统计条（保留已有：进行中 / 今日完成 / 全部任务） */
+.wc-stats { display: flex; gap: 10px; margin-bottom: 16px; }
+.wc-stat {
+  flex: 1; text-align: center; background: var(--bg-soft); border: 1px solid var(--line-soft);
+  border-radius: var(--r-md); padding: 12px 6px; transition: border-color .15s, background .15s;
+}
+.wc-stat.run { background: var(--brand-tint); border-color: var(--brand-soft); }
+.wc-stat.done { background: #f6ffed; border-color: #b7eb8f; }
+.wc-stat-num { font-size: 22px; font-weight: 800; color: var(--ink-1); line-height: 1.1; }
+.wc-stat.run .wc-stat-num { color: var(--brand); }
+.wc-stat.done .wc-stat-num { color: var(--ok); }
+.wc-stat-label { font-size: 11.5px; color: var(--ink-3); margin-top: 3px; }
+
+/* Work Center 风格看板：小6正在工作 */
+.wc-board {
+  background: #fff; border: 1px solid var(--line-soft); border-radius: var(--r-lg);
+  padding: 16px 18px; margin-bottom: 18px; box-shadow: var(--sh-sm);
+}
+.wc-board-head {
+  display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700;
+  color: var(--ink-1); margin-bottom: 14px;
+}
+.wc-spark { color: var(--brand); font-size: 17px; animation: aaPulse 1.8s ease-in-out infinite; }
+.wc-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
+.wc-col {
+  background: var(--bg-soft); border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  padding: 10px; min-height: 80px; transition: border-color .15s;
+}
+.wc-col-run { border-top: 3px solid var(--brand); }
+.wc-col-done { border-top: 3px solid var(--ok); }
+.wc-col-wait { border-top: 3px solid var(--ink-4); }
+.wc-col-head {
+  display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
+  color: var(--ink-2); margin-bottom: 10px;
+}
+.wc-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.wc-dot.run { background: var(--brand); }
+.wc-dot.done { background: var(--ok); }
+.wc-dot.wait { background: var(--ink-4); }
+.wc-count {
+  margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--ink-3);
+  background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px;
+}
+.wc-col-body { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; }
+.wc-empty { font-size: 12px; color: var(--ink-4); text-align: center; padding: 14px 4px; }
+
+/* Work Center 任务卡（状态 / 时间 / 描述，字段缺失自动隐藏） */
+.wc-card {
+  background: #fff; border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  padding: 10px 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+.wc-card:hover { border-color: #ffd6d6; box-shadow: var(--sh-sm); transform: translateY(-1px); }
+.wc-card.wc-running { border-left: 3px solid var(--warn); }
+.wc-card.wc-done { border-left: 3px solid var(--ok); }
+.wc-card.wc-pending { border-left: 3px solid var(--ink-4); }
+.wc-card-top { display: flex; align-items: center; gap: 8px; }
+.wc-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.wc-status.running { background: var(--warn); animation: pulse 1.6s infinite; }
+.wc-status.done { background: var(--ok); }
+.wc-status.pending { background: var(--ink-4); }
+.wc-card-title {
+  flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wc-card-status { font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+.wc-card-desc {
+  font-size: 12px; color: var(--ink-3); line-height: 1.5; margin-top: 6px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.wc-card-foot { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--ink-4); margin-top: 7px; }
+
+/* 列表行也可点击打开详情 */
+.row-card[data-task-id] { cursor: pointer; }
+
+/* ==================== 任务详情弹窗 ==================== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.42); display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fadeUp .18s ease;
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+  width: 100%; max-width: 520px; background: #fff; border-radius: var(--r-lg);
+  box-shadow: 0 18px 50px rgba(0,0,0,.22); overflow: hidden;
+  border: 1px solid var(--line-soft);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid var(--line-soft);
+}
+.modal-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink-1); }
+.modal-close {
+  width: 30px; height: 30px; border-radius: 8px; color: var(--ink-3); font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.modal-close:hover { background: var(--bg-soft); color: var(--brand); }
+.modal-body { padding: 16px 18px 20px; max-height: 68vh; overflow-y: auto; }
+.td-rows { display: flex; flex-direction: column; gap: 2px; }
+.td-row { display: flex; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.td-row:last-child { border-bottom: 0; }
+.td-k { width: 76px; flex-shrink: 0; font-size: 13px; color: var(--ink-3); }
+.td-v { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink-1); word-break: break-word; line-height: 1.6; }
+
+/* ==================== PHASE 126.2 工作执行视图 ==================== */
+.td-section { margin-top: 16px; }
+.td-section-title {
+  font-size: 12px; font-weight: 700; color: var(--ink-3);
+  letter-spacing: .04em; margin-bottom: 9px;
+}
+/* 工作状态 */
+.td-ws {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line-soft);
+  background: var(--bg-soft);
+}
+.td-ws-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.td-ws-text { font-size: 12.5px; font-weight: 700; letter-spacing: .03em; }
+.td-ws-run { background: var(--brand-tint); border-color: var(--brand-soft); }
+.td-ws-run .td-ws-dot { background: var(--brand); animation: pulse 1.6s infinite; }
+.td-ws-run .td-ws-text { color: var(--brand); }
+.td-ws-done { background: #f6ffed; border-color: #b7eb8f; }
+.td-ws-done .td-ws-dot { background: var(--ok); }
+.td-ws-done .td-ws-text { color: var(--ok); }
+.td-ws-wait { background: var(--bg-soft); border-color: var(--line-soft); }
+.td-ws-wait .td-ws-dot { background: var(--ink-4); }
+.td-ws-wait .td-ws-text { color: var(--ink-3); }
+
+/* 执行时间线（ttl- 前缀，避开已有 .tl-* 执行过程样式） */
+.task-timeline {
+  display: flex; flex-direction: column;
+  background: var(--bg-soft); border: 1px solid var(--line-soft);
+  border-radius: var(--r-md); padding: 13px 14px;
+}
+.ttl-item { display: flex; gap: 11px; position: relative; padding-bottom: 14px; }
+.ttl-item:last-child { padding-bottom: 0; }
+.ttl-item::before {
+  content: ""; position: absolute; left: 9px; top: 20px; bottom: 0;
+  width: 1.5px; background: var(--line-soft);
+}
+.ttl-item:last-child::before { display: none; }
+.ttl-mark {
+  width: 19px; height: 19px; border-radius: 50%; flex-shrink: 0; z-index: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; line-height: 1; background: #fff;
+  border: 1.5px solid var(--line-soft); color: var(--ink-4);
+}
+.ttl-done .ttl-mark { background: var(--ok); border-color: var(--ok); color: #fff; }
+.ttl-current .ttl-mark {
+  background: #fff; border-color: var(--brand); color: var(--brand);
+  animation: pulse 1.6s infinite;
+}
+.ttl-body { flex: 1; min-width: 0; padding-top: 1px; }
+.ttl-title {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  font-size: 13px; font-weight: 600; color: var(--ink-1); line-height: 1.5;
+}
+.ttl-done .ttl-title { font-weight: 600; }
+.ttl-meta { font-size: 11.5px; font-weight: 400; color: var(--ink-4); }
+.ttl-sub {
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.5; margin-top: 3px;
+  word-break: break-word;
+}
+
+/* 最近 Agent 动作 */
+.td-agent {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 13px; border-radius: var(--r-md);
+  border: 1px solid var(--line-soft); background: #fff; margin-bottom: 9px;
+}
+.td-agent-text {
+  font-size: 12.5px; font-weight: 600; color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.td-agent-thinking { border-color: var(--brand-soft); background: var(--brand-tint); }
+.td-agent-thinking .td-ws-dot { background: var(--brand); animation: pulse 1.4s infinite; }
+.td-agent-working { border-color: #ffe7ba; background: #fffbe6; }
+.td-agent-working .td-ws-dot { background: var(--warn); animation: pulse 1.4s infinite; }
+.td-agent-approval { border-color: var(--brand-soft); background: var(--brand-tint); }
+.td-agent-approval .td-ws-dot { background: var(--brand); animation: pulse 1.4s infinite; }
+.td-agent-idle .td-ws-dot { background: var(--ok); }
+.td-aa-list { padding: 10px 12px; }
+
+/* ==================== PHASE 127.1 工作产出 / Artifact Center ====================
+   独立 wa- 前缀，不污染已有 wc- / td- / ttl- */
+.wa-section { margin-top: 16px; }
+.wa-section-title {
+  font-size: 12px; font-weight: 700; color: var(--ink-3);
+  letter-spacing: .04em; margin-bottom: 9px;
+}
+.wa-list { display: flex; flex-direction: column; gap: 8px; }
+.wa-empty {
+  font-size: 12.5px; color: var(--ink-4); text-align: center;
+  padding: 15px 12px; border: 1px dashed var(--line-soft);
+  border-radius: var(--r-md); background: var(--bg-soft);
+}
+.wa-card {
+  border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  background: #fff; padding: 11px 13px; transition: border-color .15s;
+}
+.wa-card:hover { border-color: var(--brand-soft); }
+.wa-card-top { display: flex; align-items: center; gap: 8px; }
+.wa-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.wa-name {
+  flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wa-type {
+  flex-shrink: 0; font-size: 11px; color: var(--ink-3);
+  background: var(--bg-soft); border: 1px solid var(--line-soft);
+  border-radius: 999px; padding: 1px 8px;
+}
+.wa-time { font-size: 11.5px; color: var(--ink-4); margin-top: 5px; }
+.wa-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.wa-btn {
+  font-size: 11.5px; line-height: 1; padding: 5px 11px; cursor: pointer;
+  border-radius: 8px; border: 1px solid var(--line-soft);
+  background: #fff; color: var(--ink-2); transition: all .15s;
+}
+.wa-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
+.wa-view {
+  margin-top: 9px; padding: 9px 11px; border-radius: 8px;
+  border: 1px solid var(--line-soft); background: var(--bg-soft);
+  font-size: 12px; line-height: 1.6; color: var(--ink-2);
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 180px; overflow-y: auto;
+}
+.wa-view[hidden] { display: none; }
+
+/* ---- PHASE 127.2 Agent Plan Visualization（独立 wp- 前缀，不污染 wc-/td-/ttl-/wa-）---- */
+.wp-section { margin-top: 16px; }
+.wp-section-title {
+  font-size: 12px; font-weight: 700; color: var(--ink-3);
+  letter-spacing: .04em; margin-bottom: 9px;
+}
+.wp-empty {
+  font-size: 12.5px; color: var(--ink-4); text-align: center;
+  padding: 15px 12px; border: 1px dashed var(--line-soft);
+  border-radius: var(--r-md); background: var(--bg-soft);
+}
+.wp-list { display: flex; flex-direction: column; gap: 6px; }
+.wp-item {
+  display: flex; align-items: center; gap: 9px;
+  border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  background: #fff; padding: 9px 11px;
+}
+.wp-item-completed { border-color: #d9f2c9; background: #f8fdf5; }
+.wp-item-running { border-color: var(--brand-soft); background: var(--brand-tint); }
+.wp-item-pending { background: var(--bg-soft); }
+.wp-idx {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 700; color: var(--brand);
+  background: var(--brand-tint); border: 1px solid var(--brand-soft);
+}
+.wp-item-completed .wp-idx { color: var(--ok); background: #f2fbeb; border-color: #d9f2c9; }
+.wp-text {
+  flex: 1; min-width: 0; font-size: 13px; color: var(--ink-1);
+  line-height: 1.55; word-break: break-word;
+}
+.wp-item-pending .wp-text { color: var(--ink-2); }
+.wp-state {
+  flex-shrink: 0; font-size: 10.5px; line-height: 1; padding: 3px 8px;
+  border-radius: 999px; border: 1px solid var(--line-soft);
+  color: var(--ink-3); background: #fff;
+}
+.wp-state-completed { color: var(--ok); border-color: #d9f2c9; background: #f2fbeb; }
+.wp-state-running { color: var(--brand); border-color: var(--brand-soft); background: #fff; }
+.wp-state-pending { color: var(--ink-3); background: var(--bg-soft); }
+.wp-card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.wp-chip {
+  font-size: 10.5px; line-height: 1; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--line-soft); background: var(--bg-soft); color: var(--ink-3);
+}
+.wp-chip-plan { color: var(--brand); border-color: var(--brand-soft); background: var(--brand-tint); }
+.wp-chip-out { color: var(--ink-2); }
+
+@media (max-width: 860px) {
+  .wc-cols { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .wp-item { align-items: flex-start; }
+}

@@ -118,6 +118,7 @@
     bindNav();
     bindComposer();
     bindActions();
+    bindTaskDetail();
     bindCommandBar();
     bindMemoryPane();
     await refreshHealth();
@@ -682,30 +683,312 @@
     if (S.taskTab === "trace") { renderTrace(box); return; }
 
     const RUNNING = ["open", "running", "in_progress", "active", "pending"];
+    const COMPLETED = ["done", "completed", "finished", "success"];
     const isRun = (x) => RUNNING.indexOf(String(x.status || "").toLowerCase()) >= 0;
-    const list = S.tasks.filter((x) => (S.taskTab === "current" ? isRun(x) : !isRun(x)));
+    const isDone = (x) => COMPLETED.indexOf(String(x.status || "").toLowerCase()) >= 0;
 
+    // 统计（保留已有：进行中 / 今日完成 / 全部任务）
+    const runningCount = S.tasks.filter(isRun).length;
+    const today = todayStr();
+    const doneToday = S.tasks.filter((x) => isDone(x) &&
+      String(x.updated || x.created || "").slice(0, 10) === today).length;
+    const total = S.tasks.length;
+
+    let html = '<div class="wc-stats">' +
+      wcStat(runningCount, "进行中", "run") +
+      wcStat(doneToday, "今日完成", "done") +
+      wcStat(total, "全部任务", "") +
+      "</div>";
+
+    // Work Center 风格区域：小6正在工作（按真实 status 分类，禁止假任务）
+    html += '<div class="wc-board">' +
+      '<div class="wc-board-head"><span class="wc-spark">⚡</span> 小6正在工作</div>' +
+      '<div class="wc-cols">' +
+        wcCol("run", "正在执行", S.tasks.filter(isRun), "run") +
+        wcCol("done", "已完成", S.tasks.filter(isDone), "done") +
+        wcCol("wait", "等待执行", S.tasks.filter((x) => !isRun(x) && !isDone(x)), "wait") +
+      "</div></div>";
+
+    // 保留已有：当前 / 历史 列表（可点击查看详情）
+    const list = S.tasks.filter((x) => (S.taskTab === "current" ? isRun(x) : !isRun(x)));
     if (!list.length) {
-      box.innerHTML = empty(S.taskTab === "current" ? "当前没有进行中的任务" : "暂无历史任务");
+      html += empty(S.taskTab === "current" ? "当前没有进行中的任务" : "暂无历史任务");
+    } else {
+      html += '<div class="list">' + list.slice(0, 60).map((t) => {
+        const pct = Number(t.progress || 0) || 0;
+        const cur = t.current_step || 0, tot = t.total_steps || 0;
+        const prog = tot ? Math.round((cur / tot) * 100) : pct;
+        return '<div class="row-card" data-task-id="' + esc(t.id) + '">' +
+          '<div class="row-title">' + esc(t.title || "(无标题)") +
+          '<span class="badge ' + (isRun(t) ? "run" : "ok") + '">' + esc(statusLabel(t.status)) + "</span></div>" +
+          (t.note ? '<div class="row-desc">' + esc(String(t.note).slice(0, 160)) + "</div>" : "") +
+          (tot ? '<div class="progress-wrap"><div class="progress"><span style="width:' +
+            Math.min(100, prog) + '%"></span></div><div class="progress-pct">' + prog + "%</div></div>" : "") +
+          '<div class="row-foot">' +
+          "<span>编号 " + esc(t.id) + "</span>" +
+          (tot ? "<span>步骤 " + esc(cur) + " / " + esc(tot) + "</span>" : "") +
+          (t.created ? "<span>创建 " + esc(t.created) + "</span>" : "") +
+          (t.updated ? "<span>更新 " + esc(t.updated) + "</span>" : "") +
+          "</div></div>";
+      }).join("") + "</div>";
+    }
+
+    box.innerHTML = html;
+  }
+
+  function wcStat(num, label, kind) {
+    return '<div class="wc-stat ' + (kind || "") + '"><div class="wc-stat-num">' + num +
+      '</div><div class="wc-stat-label">' + label + "</div></div>";
+  }
+  function wcCol(kind, title, items, accent) {
+    const body = items.length
+      ? items.map(wcTaskCard).join("")
+      : '<div class="wc-empty">暂无任务</div>';
+    return '<div class="wc-col wc-col-' + kind + '">' +
+      '<div class="wc-col-head"><span class="wc-dot ' + accent + '"></span>' + title +
+      ' <span class="wc-count">' + items.length + "</span></div>" +
+      '<div class="wc-col-body">' + body + "</div></div>";
+  }
+  function wcTaskCard(t) {
+    const sc = statusClass(t.status);
+    const label = statusLabel(t.status);
+    // 描述：优先 note，其次 description；不存在则隐藏
+    const desc = (t.note || t.description)
+      ? '<div class="wc-card-desc">' + esc(String(t.note || t.description).slice(0, 140)) + "</div>"
+      : "";
+    // 时间：仅当字段存在时显示
+    let meta = "";
+    if (t.created) meta += '<span>创建 ' + esc(t.created) + "</span>";
+    if (t.updated) meta += '<span>更新 ' + esc(t.updated) + "</span>";
+    // PHASE 127.2：计划步骤数量 / 产出数量——仅当真实字段存在时显示，否则整行隐藏
+    let wpMeta = "";
+    const planN = wpPlanCount(t);
+    const outN = wpArtifactCount(t);
+    if (planN) wpMeta += '<span class="wp-chip wp-chip-plan">计划 ' + planN + " 步</span>";
+    if (outN) wpMeta += '<span class="wp-chip wp-chip-out">产出 ' + outN + "</span>";
+    return '<div class="wc-card wc-' + sc + '" data-task-id="' + esc(t.id) + '">' +
+      '<div class="wc-card-top">' +
+        '<span class="wc-status ' + sc + '"></span>' +
+        '<span class="wc-card-title">' + esc(t.title || "(无标题)") + "</span>" +
+      "</div>" +
+      '<div class="wc-card-status">' + esc(label) + "</div>" +
+      desc +
+      (wpMeta ? '<div class="wp-card-meta">' + wpMeta + "</div>" : "") +
+      (meta ? '<div class="wc-card-foot">' + meta + "</div>" : "") +
+      "</div>";
+  }
+  /* ---- PHASE 127.1 工作产出 / Artifact Center（纯前端展示，零新增接口）----
+     数据来源（按优先级只读 task 已有字段）：artifacts → outputs → output → result → files
+     全部不存在 → 显示「暂无产出」；绝不生成模拟文件、不编造产出。
+     操作按钮能力判定：打开(需 http/https url) / 查看(需 content) / 复制(需 content 或 url)，
+     无对应能力则隐藏该按钮。 */
+  let waCache = [];
+  function waCollect(t) {
+    const keys = ["artifacts", "outputs", "output", "result", "files"];
+    for (let i = 0; i < keys.length; i++) {
+      const v = t[keys[i]];
+      if (v == null) continue;
+      if (Array.isArray(v)) { if (v.length) return v; continue; }
+      if (typeof v === "object") {
+        if (v.name || v.title || v.path || v.url || v.content || v.text) return [v];
+        continue;
+      }
+      if (typeof v === "string" && v.trim()) return [{ name: v.trim() }];
+    }
+    return [];
+  }
+  function waNorm(it) {
+    if (typeof it === "string") return { name: it, type: "", time: "", url: "", content: it };
+    const o = it || {};
+    const pick = function () {
+      for (let i = 0; i < arguments.length; i++) {
+        const v = o[arguments[i]];
+        if (typeof v !== "undefined" && v !== null && String(v).trim() !== "") return String(v).trim();
+      }
+      return "";
+    };
+    return {
+      name: pick("name", "title", "filename", "file", "path"),
+      type: pick("type", "kind", "mime", "ext"),
+      time: pick("time", "created", "updated", "timestamp", "at"),
+      url: pick("url", "link", "href"),
+      content: pick("content", "text", "body", "preview"),
+    };
+  }
+  function waIcon(type, name) {
+    const s = (String(type || "") + " " + String(name || "")).toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|svg|bmp)|image|图片|截图/.test(s)) return "🖼";
+    if (/\.(xlsx?|csv|json|tsv)|data|数据|表格|sheet/.test(s)) return "🗂";
+    if (/report|报告|summary|总结/.test(s)) return "📊";
+    if (/\.(md|txt|docx?|pdf|log)|文件|file|文档/.test(s)) return "📄";
+    return "📦";
+  }
+  function tdArtifacts(t) {
+    waCache = waCollect(t).map(waNorm);
+    let html = '<div class="wa-section">' +
+      '<div class="wa-section-title">📦 工作产出</div>';
+    if (!waCache.length) return html + '<div class="wa-empty">暂无产出</div></div>';
+    html += '<div class="wa-list">' + waCache.map(function (a, i) {
+      const canOpen = /^https?:\/\//i.test(a.url);
+      const canView = !!String(a.content || "").trim();
+      const canCopy = canView || !!a.url;
+      let acts = "";
+      if (canOpen) acts += '<button type="button" class="wa-btn" data-wa-act="open" data-wa-url="' + esc(a.url) + '">打开</button>';
+      if (canView) acts += '<button type="button" class="wa-btn" data-wa-act="view" data-wa-idx="' + i + '">查看</button>';
+      if (canCopy) acts += '<button type="button" class="wa-btn" data-wa-act="copy" data-wa-idx="' + i + '">复制</button>';
+      return '<div class="wa-card">' +
+        '<div class="wa-card-top">' +
+          '<span class="wa-icon">' + waIcon(a.type, a.name) + "</span>" +
+          '<span class="wa-name">' + esc(a.name || "(未命名产出)") + "</span>" +
+          (a.type ? '<span class="wa-type">' + esc(a.type) + "</span>" : "") +
+        "</div>" +
+        (a.time ? '<div class="wa-time">' + esc(a.time) + "</div>" : "") +
+        (acts ? '<div class="wa-acts">' + acts + "</div>" : "") +
+        (canView ? '<div class="wa-view" data-wa-view="' + i + '" hidden>' +
+          esc(String(a.content).slice(0, 4000)) + "</div>" : "") +
+        "</div>";
+    }).join("") + "</div>";
+    return html + "</div>";
+  }
+  function waCopy(text) {
+    const ok = function () { toast("已复制"); };
+    function fallback() {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = String(text || "");
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed"; ta.style.top = "-1000px"; ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        ok();
+      } catch (e) { toast("复制失败", true); }
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(String(text || "")).then(ok, fallback);
+        return;
+      }
+    } catch (e) { /* ignore → fallback */ }
+    fallback();
+  }
+  function handleWaAction(btn) {
+    const act = btn.dataset.waAct;
+    if (act === "open") {
+      const url = btn.dataset.waUrl || "";
+      if (url) window.open(url, "_blank", "noopener");
       return;
     }
-    box.innerHTML = '<div class="list">' + list.slice(0, 60).map((t) => {
-      const pct = Number(t.progress || 0) || 0;
-      const cur = t.current_step || 0, tot = t.total_steps || 0;
-      const prog = tot ? Math.round((cur / tot) * 100) : pct;
-      return '<div class="row-card">' +
-        '<div class="row-title">' + esc(t.title || "(无标题)") +
-        '<span class="badge ' + (isRun(t) ? "run" : "ok") + '">' + esc(statusLabel(t.status)) + "</span></div>" +
-        (t.note ? '<div class="row-desc">' + esc(String(t.note).slice(0, 160)) + "</div>" : "") +
-        (tot ? '<div class="progress-wrap"><div class="progress"><span style="width:' +
-          Math.min(100, prog) + '%"></span></div><div class="progress-pct">' + prog + "%</div></div>" : "") +
-        '<div class="row-foot">' +
-        "<span>编号 " + esc(t.id) + "</span>" +
-        (tot ? "<span>步骤 " + esc(cur) + " / " + esc(tot) + "</span>" : "") +
-        (t.created ? "<span>创建 " + esc(t.created) + "</span>" : "") +
-        (t.updated ? "<span>更新 " + esc(t.updated) + "</span>" : "") +
-        "</div></div>";
-    }).join("") + "</div>";
+    const idx = Number(btn.dataset.waIdx);
+    if (act === "view") {
+      const box = document.querySelector('[data-wa-view="' + idx + '"]');
+      if (box) {
+        box.hidden = !box.hidden;
+        btn.textContent = box.hidden ? "查看" : "收起";
+      }
+      return;
+    }
+    if (act === "copy") {
+      const a = waCache[idx];
+      if (!a) return;
+      waCopy(String(a.content || "").trim() || a.url || a.name || "");
+    }
+  }
+
+  function tdRow(k, v) {
+    return '<div class="td-row"><div class="td-k">' + esc(k) + '</div><div class="td-v">' + v + "</div></div>";
+  }
+
+  /* ---- PHASE 127.2 工作计划 / Agent Plan Visualization（纯前端展示，零新增接口）----
+     数据来源（按优先级只读 task 已有字段）：plan → steps → subtasks → checklist → description
+     支持形态：数组[{title,status}] / 字符串数组 / 对象{steps:[]} / 纯字符串描述
+     状态字段严格读取真实 status(|state)：completed / running / pending；
+       识别不了的状态值 → 原样展示真实文本（不转换、不推断）；没有 status 字段 → 只显示文本。
+     全部字段不存在 → 显示「暂无计划信息」，绝不生成假计划、绝不按序号推断状态。 */
+  function wpUnwrap(v) {
+    // 对象形态 { steps: [] } → 取出内部数组；取不出则返回 null
+    if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+    const keys = ["steps", "subtasks", "checklist", "items", "tasks", "plan"];
+    for (let i = 0; i < keys.length; i++) {
+      const inner = v[keys[i]];
+      if (Array.isArray(inner)) return inner.length ? inner : null;
+    }
+    return null;
+  }
+  function wpPlanSource(t) {
+    const keys = ["plan", "steps", "subtasks", "checklist", "description"];
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const v = t[key];
+      if (v == null) continue;
+      if (Array.isArray(v)) {
+        if (v.length) return { items: v, key: key, textual: false };
+        continue;
+      }
+      if (typeof v === "object") {
+        const inner = wpUnwrap(v);
+        if (inner) return { items: inner, key: key, textual: false };
+        continue;
+      }
+      if (typeof v === "string" && v.trim()) {
+        return { items: [v.trim()], key: key, textual: true };
+      }
+    }
+    return null;
+  }
+  function wpPlanState(it) {
+    if (!it || typeof it !== "object") return { code: "", text: "" };
+    const rawV = (typeof it.status !== "undefined" && it.status !== null) ? it.status
+      : (typeof it.state !== "undefined" && it.state !== null) ? it.state : null;
+    if (rawV === null || String(rawV).trim() === "") return { code: "", text: "" };
+    const v = String(rawV).trim().toLowerCase();
+    if (/^(completed|complete|done|success|succeeded|finished|finish|成功|已完成)$/.test(v)) {
+      return { code: "completed", text: "completed" };
+    }
+    if (/^(running|run|in_progress|in-progress|active|working|executing|执行中|进行中)$/.test(v)) {
+      return { code: "running", text: "running" };
+    }
+    if (/^(pending|wait|waiting|todo|to_do|not_started|未开始|等待中)$/.test(v)) {
+      return { code: "pending", text: "pending" };
+    }
+    return { code: "other", text: String(rawV).trim() };
+  }
+  function wpPlanTitle(it) {
+    if (typeof it === "string") return it;
+    const o = it || {};
+    const v = o.title || o.name || o.text || o.step || o.content || o.action;
+    return v ? String(v) : "";
+  }
+  function tdPlan(t) {
+    const src = wpPlanSource(t);
+    const head = '<div class="wp-section">' +
+      '<div class="wp-section-title">🧠 工作计划</div>';
+    const emptyHtml = head + '<div class="wp-empty">暂无计划信息</div></div>';
+    if (!src) return emptyHtml;
+    const body = src.items.map(function (it, i) {
+      const st = wpPlanState(it);
+      const title = wpPlanTitle(it);
+      if (!title && !st.text) return "";
+      // 纯文本描述（非步骤列表）不编号，避免把描述伪装成步骤
+      const idx = src.textual ? "" : '<span class="wp-idx">' + (i + 1) + "</span>";
+      return '<div class="wp-item' + (st.code ? " wp-item-" + st.code : "") + '">' +
+        idx +
+        '<span class="wp-text">' + esc(title || "(未命名步骤)") + "</span>" +
+        (st.text ? '<span class="wp-state wp-state-' + st.code + '">' + esc(st.text) + "</span>" : "") +
+        "</div>";
+    }).join("");
+    if (!body) return emptyHtml;
+    return head + '<div class="wp-list">' + body + "</div></div>";
+  }
+  function wpPlanCount(t) {
+    // 仅统计真实存在的步骤条目；纯描述文本不计入"步骤数"
+    const src = wpPlanSource(t);
+    if (!src || src.textual) return 0;
+    return src.items.length;
+  }
+  function wpArtifactCount(t) {
+    try { return waCollect(t).map(waNorm).length; } catch (e) { return 0; }
   }
 
   async function renderTrace(box) {
@@ -729,6 +1012,163 @@
     } catch (e) {
       box.innerHTML = errorBox("执行过程读取失败", e.message);
     }
+  }
+
+  /* =========================================================
+     任务详情（前端展示，无新增 API）
+     ========================================================= */
+  function bindTaskDetail() {
+    document.addEventListener("click", (e) => {
+      const waBtn = e.target.closest("[data-wa-act]");
+      if (waBtn) { handleWaAction(waBtn); return; }
+      const card = e.target.closest("[data-task-id]");
+      if (card && card.dataset.taskId) { openTaskDetail(card.dataset.taskId); return; }
+      if (e.target.closest('[data-act="close-task-modal"]')) { closeTaskModal(); return; }
+      const m = $("#taskDetailModal");
+      if (m && !m.hidden && e.target === m) closeTaskModal();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTaskModal(); });
+  }
+  function openTaskDetail(id) {
+    const t = S.tasks.find((x) => String(x.id) === String(id));
+    if (!t) { toast("未找到该任务", true); return; }
+    const sc = statusClass(t.status);
+    const isRun = sc === "running";
+    $("#tdTitle").textContent = t.title || "(无标题)";
+    let rows = "";
+    rows += tdRow("状态", '<span class="badge ' + (isRun ? "run" : "ok") + '">' + esc(statusLabel(t.status)) + "</span>");
+    const desc = t.note || t.description;
+    if (desc) rows += tdRow("描述", esc(String(desc)));
+    if (t.created) rows += tdRow("创建时间", esc(t.created));
+    if (t.updated) rows += tdRow("更新时间", esc(t.updated));
+    if (t.id != null) rows += tdRow("编号", esc(t.id));
+    if (t.total_steps != null || t.current_step != null) {
+      rows += tdRow("步骤", esc(t.current_step || 0) + " / " + esc(t.total_steps || 0));
+    }
+    $("#tdBody").innerHTML =
+      '<div class="td-rows">' + rows + "</div>" +
+      tdWorkState(sc) +
+      tdPlan(t) +
+      tdTimeline(t, sc) +
+      tdArtifacts(t) +
+      tdAgentActivity();
+    $("#taskDetailModal").hidden = false;
+  }
+
+  /* ---- PHASE 126.2 工作状态：RUNNING / COMPLETED / WAITING（由真实 status 经 statusClass 派生） ---- */
+  function tdWorkState(sc) {
+    const map = { done: "COMPLETED", running: "RUNNING", pending: "WAITING" };
+    const state = map[sc] || "WAITING";
+    const cls = sc === "done" ? "done" : (sc === "running" ? "run" : "wait");
+    return '<div class="td-section">' +
+      '<div class="td-section-title">工作状态</div>' +
+      '<div class="td-ws td-ws-' + cls + '">' +
+        '<span class="td-ws-dot"></span>' +
+        '<span class="td-ws-text">' + esc(state) + "</span>" +
+      "</div></div>";
+  }
+
+  /* ---- PHASE 126.2 执行时间线（纯前端派生，零新增接口）
+     数据来源：task 已有真实字段 created / step / steps / history / description / status / current_step / updated
+     规则：创建任务 → 开始执行 → 当前状态 → 完成；steps/history 存在且有内容时追加真实明细；
+           字段不存在 → 隐藏对应步骤，绝不编造执行记录。 */
+  function tdTimeline(t, sc) {
+    const items = [];
+    const stepArr = Array.isArray(t.steps) ? t.steps : null;
+    const histArr = Array.isArray(t.history) ? t.history : null;
+    const curStep = Number(t.current_step || 0) || 0;
+    const stepText = String(t.step || "").trim();
+    const descText = String(t.description || "").trim();
+    const started = curStep > 0 || !!stepText ||
+      !!(stepArr && stepArr.length) || !!(histArr && histArr.length);
+
+    // ① 创建任务：需 created 字段，否则隐藏
+    if (t.created) {
+      items.push(ttlItem("done", "创建任务", String(t.created), descText ? descText.slice(0, 120) : ""));
+    }
+    // ② 开始执行：需 step / steps / history / current_step 任一真实信号，否则隐藏
+    if (started) {
+      items.push(ttlItem("done", "开始执行", stepText || (curStep ? "已进入第 " + curStep + " 步" : ""), ""));
+    }
+    // ③ 当前状态：由真实 status 派生，恒为当前节点
+    items.push(ttlItem("current", "当前状态", statusLabel(t.status), ""));
+    // ④ 完成：仅当真实状态为已完成时才出现（不编造完成记录）
+    if (sc === "done") {
+      items.push(ttlItem("done", "完成", t.updated ? String(t.updated) : "", ""));
+    }
+    // steps 字段存在且有内容 → 追加真实步骤明细
+    if (stepArr && stepArr.length) {
+      stepArr.forEach(function (s, i) {
+        const txt = (typeof s === "string" ? s : (s && (s.title || s.name || s.text || s.step))) || "";
+        const st = s && (s.status || s.state) ? String(s.status || s.state).toLowerCase() : "";
+        const fin = st ? /done|complete|成功|finish/.test(st) : (curStep ? i < curStep : false);
+        const tm = s && (s.time || s.timestamp || s.updated) ? String(s.time || s.timestamp || s.updated) : "";
+        items.push(ttlItem(fin ? "done" : "current", String(txt || "步骤 " + (i + 1)), tm, ""));
+      });
+    }
+    // history 字段存在且有内容 → 追加真实历史明细
+    if (histArr && histArr.length) {
+      histArr.forEach(function (h) {
+        const txt = (typeof h === "string" ? h : (h && (h.text || h.title || h.event || h.action || h.content))) || "";
+        const tm = h && (h.time || h.timestamp || h.at) ? String(h.time || h.timestamp || h.at) : "";
+        items.push(ttlItem("done", String(txt || "执行记录"), tm, ""));
+      });
+    }
+    if (!items.length) return "";
+    return '<div class="td-section">' +
+      '<div class="td-section-title">执行时间线</div>' +
+      '<div class="task-timeline">' + items.join("") + "</div></div>";
+  }
+
+  function ttlItem(state, title, meta, sub) {
+    const mark = state === "done" ? "✓" : (state === "current" ? "●" : "○");
+    return '<div class="ttl-item ttl-' + state + '">' +
+      '<div class="ttl-mark">' + mark + "</div>" +
+      '<div class="ttl-body">' +
+        '<div class="ttl-title">' + esc(title) +
+          (meta ? '<span class="ttl-meta">' + esc(meta) + "</span>" : "") +
+        "</div>" +
+        (sub ? '<div class="ttl-sub">' + esc(sub) + "</div>" : "") +
+      "</div></div>";
+  }
+
+  /* ---- PHASE 126.2 最近 Agent 动作（复用 PHASE125.2 已有前端状态，零新增接口）
+     仅当 session 真实存在 thinking / working / approval / tool event 时展示；
+     idle 且无工具步骤 → 整段隐藏，不编造动作。 */
+  function tdAgentActivity() {
+    const el = $("#agentActivity");
+    if (!el) return "";
+    const cls = ["thinking", "working", "approval", "idle"]
+      .filter(function (c) { return el.classList.contains(c); })[0] || "idle";
+    let steps = [];
+    try {
+      if (typeof aaSteps !== "undefined" && aaSteps && aaSteps.length) {
+        steps = aaSteps.slice(-6).map(function (s) {
+          return { tool: s.tool || "工具", status: s.status || "done" };
+        });
+      }
+    } catch (e) { steps = []; }
+    const active = cls === "thinking" || cls === "working" || cls === "approval";
+    if (!active && !steps.length) return "";
+    const titleEl = $("#aaTitle");
+    const text = titleEl ? String(titleEl.textContent || "").trim() : "";
+    let html = '<div class="td-section">' +
+      '<div class="td-section-title">最近 Agent 动作</div>' +
+      '<div class="td-agent td-agent-' + cls + '">' +
+        '<span class="td-ws-dot"></span>' +
+        '<span class="td-agent-text">' + esc(text || defaultAaText(cls)) + "</span>" +
+      "</div>";
+    if (steps.length) {
+      html += '<div class="task-timeline td-aa-list">' + steps.map(function (s) {
+        const done = s.status === "done";
+        return ttlItem(done ? "done" : "current", s.tool + (done ? " 完成" : " 执行中"), "", "");
+      }).join("") + "</div>";
+    }
+    return html + "</div>";
+  }
+  function closeTaskModal() {
+    const m = $("#taskDetailModal");
+    if (m) m.hidden = true;
   }
 
   /* =========================================================
