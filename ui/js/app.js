@@ -1,8 +1,9 @@
 /* =========================================================
-   小6 (Six) UI 2.0 — app.js
+   小6 · 个人 AI OS — UI 2.0 (S122 Productization)
    唯一正式 UI：G:\xiao6\ui，由 Xiao6 server :8000 同源托管
-   所有 API 使用同源相对路径 /api/*（无代理、无跨端口、无硬编码 8765）
-   无任何 mock / 假数据；加载中显示 loading，失败显示 error+重试
+   所有 API 使用同源相对路径 /api/*（无代理、无跨端口、无硬编码端口）
+   红线：无任何 mock / 假数据；取不到就显示「不可用」，不编造
+   S122 约束：仅 UI / 配置入口 / 数据展示，零 Runtime 改动
    ========================================================= */
 (function () {
   "use strict";
@@ -16,6 +17,7 @@
   let toastTimer = null;
   function toast(msg, isErr) {
     const t = $("#toast");
+    if (!t) return;
     t.textContent = msg;
     t.className = "toast show" + (isErr ? " err" : "");
     clearTimeout(toastTimer);
@@ -28,6 +30,16 @@
     return '<div class="error-state"><div>' + esc(text) + "</div>" +
       (detail ? '<div class="detail">' + esc(detail) + "</div>" : "") +
       '<button class="customize-btn" style="margin-top:10px" onclick="location.reload()">重试</button></div>';
+  }
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function hhmm(ts) {
+    if (!ts) return "";
+    const s = String(ts);
+    if (s.length >= 16) return s.slice(11, 16);
+    return s.slice(0, 5);
   }
 
   /* ---------------- API ---------------- */
@@ -50,39 +62,36 @@
 
   /* ---------------- 全局状态 ---------------- */
   const S = {
-    health: null,       // /api/health → 62 工具
-    caps: null,         // /api/capability_os/catalog → 33 能力（含分组/图标/可用状态）
-    tasks: [],
-    goals: [],
-    knowledge: [],
-    memories: [],
-    profile: null,      // /api/memory → 用户画像
-    notes: [],
-    learnings: [],
-    episodes: [],
-    activity: null,
-    trace: null,
-    version: null,
-    userModel: null,
-    briefing: null,
-    agentState: null,
+    health: null,
+    ready: null,
     config: null,
-    history: [],
-    conversation: [],   // 当前会话 messages（发送给 /api/chat）
+    caps: null,
+    tasks: [],
+    knowledge: null,
+    notes: [],
+    graph: null,
+    currentNote: null,
+    capFilter: "all",
+    taskTab: "current",
+    settingsTab: "general",
+    conversation: [],
     busy: false,
-    search: false,
-    deep: false,
+    sessions: [],
   };
 
-  // 能力目录：真实后端 /api/capability_os/catalog（33 项 / 27 可用 / 10 分组）
+  const CAPS = () => S.caps;
+
   async function ensureCaps() {
     if (S.caps) return S.caps;
-    try {
-      S.caps = await getJSON("/api/capability_os/catalog");
-    } catch (e) {
-      S.caps = null;   // 不让单个接口失败拖垮整个页面
-    }
+    try { S.caps = await getJSON("/api/capability_os/catalog"); }
+    catch (e) { S.caps = null; }
     return S.caps;
+  }
+  async function ensureConfig() {
+    if (S.config) return S.config;
+    try { S.config = await getJSON("/api/config"); }
+    catch (e) { S.config = null; }
+    return S.config;
   }
 
   /* =========================================================
@@ -94,15 +103,11 @@
     bindNav();
     bindComposer();
     bindActions();
-    bindToolSearch();
-    bindMemorySearch();
-    await refreshHealth();   // 先探活，决定整体状态
+    bindMemoryPane();
+    await refreshHealth();
     loadRecent();
-    loadAbilities();
-    loadBriefing();        // 今日简报 + 天气 + 热点
-    loadTaskPreview();
-    initEventStream();     // 实时事件总线：主动推送 + 审批请求
-    // 其余页面进入时再加载，避免启动打爆后端
+    loadDashboard();
+    initEventStream();
   }
 
   async function refreshHealth() {
@@ -110,23 +115,25 @@
     try {
       S.health = await getJSON("/api/health");
       dot.className = "live-dot online";
-      dot.title = "后端在线 · " + (S.health.model || "") + " · 工具 " + ((S.health.tools || []).length);
-      const n = (S.health.tools || []).length;
-      $("#toolBadge").textContent = n ? n + " tools" : "—";
-      $("#heroSub").textContent = "你的专属 AI 助手 · " + (S.health.model || "") +
-        " · 已挂载 " + n + " 个工具";
+      dot.title = "服务运行中";
+      const badge = $("#modelBadge");
+      if (badge) badge.textContent = providerShortName(S.health.provider) || "—";
+      try { S.ready = await getJSON("/api/ready"); } catch (e) { S.ready = null; }
       return true;
     } catch (e) {
       dot.className = "live-dot offline";
-      dot.title = "后端不可达";
-      $("#heroSub").textContent = "无法连接后端：" + e.message;
-      $("#toolBadge").textContent = "offline";
-      $("#abilityGrid").innerHTML = errorBox("后端不可达", e.message);
-      $("#taskPreview").innerHTML = "";
-      $("#recentList").innerHTML = errorBox("后端不可达", e.message);
-      setHeart("error");
+      dot.title = "服务未连接";
+      const badge = $("#modelBadge");
+      if (badge) badge.textContent = "离线";
+      $("#dashGrid").innerHTML = errorBox("小6 服务未连接", e.message);
+      $("#recentList").innerHTML = errorBox("服务未连接", e.message);
       return false;
     }
+  }
+
+  function providerShortName(pid) {
+    const map = { agnes: "Agnes", llm2: "自定义", ollama: "Ollama", lmstudio: "LM Studio", mlx: "MLX" };
+    return map[String(pid || "").toLowerCase()] || "";
   }
 
   /* =========================================================
@@ -145,12 +152,11 @@
   function switchView(name) {
     $$(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
     $$(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + name));
-    // 进入页面时按需拉取真实数据
+    if (name === "dashboard") loadDashboard();
     if (name === "tasks") loadTasks();
     if (name === "knowledge") loadKnowledge();
     if (name === "memory") loadMemory();
-    if (name === "tools") loadTools();
-    if (name === "agents") loadAgents();
+    if (name === "capabilities") loadCapabilities();
     if (name === "settings") loadSettings();
     if (name === "chat") {
       const box = $("#chatScroll");
@@ -160,7 +166,6 @@
   }
 
   function bindActions() {
-    // 侧栏最近对话点击 → 真实会话恢复
     document.addEventListener("click", (e) => {
       const s = e.target.closest("[data-session]");
       if (s && s.dataset.session) resumeSession(s.dataset.session);
@@ -169,65 +174,352 @@
       const el = e.target.closest("[data-act]");
       if (!el) return;
       const a = el.dataset.act;
+      if (a === "reload-dashboard") loadDashboard();
       if (a === "reload-tasks") loadTasks();
       if (a === "reload-knowledge") loadKnowledge();
       if (a === "reload-memory") loadMemory();
-      if (a === "reload-tools") loadTools();
-      if (a === "reload-agents") loadAgents();
-      if (a === "reload-settings") loadSettings();
-      if (a === "reload-briefing") loadBriefing();
+      if (a === "reload-capabilities") { S.caps = null; loadCapabilities(); }
+      if (a === "reload-settings") { S.config = null; loadSettings(); }
+    });
+    // 任务中心 tabs
+    const tt = $("#taskTabs");
+    if (tt) tt.addEventListener("click", (e) => {
+      const b = e.target.closest(".tab");
+      if (!b) return;
+      $$("#taskTabs .tab").forEach((x) => x.classList.toggle("active", x === b));
+      S.taskTab = b.dataset.tab;
+      renderTasks();
+    });
+    // 能力中心分类
+    const cf = $("#capFilters");
+    if (cf) cf.addEventListener("click", (e) => {
+      const b = e.target.closest(".cap-filter");
+      if (!b) return;
+      $$("#capFilters .cap-filter").forEach((x) => x.classList.toggle("active", x === b));
+      S.capFilter = b.dataset.cat;
+      renderCapabilities();
+    });
+    // 设置 tabs
+    const sn = $("#settingsNav");
+    if (sn) sn.addEventListener("click", (e) => {
+      const b = e.target.closest(".settings-tab");
+      if (!b) return;
+      $$("#settingsNav .settings-tab").forEach((x) => x.classList.toggle("active", x === b));
+      S.settingsTab = b.dataset.setct;
+      renderSettings();
     });
   }
 
   /* =========================================================
-     最近对话（真实 /api/chat/history）
+     首页 Dashboard（面向普通用户：天气 / 任务 / 热点 / 系统状态）
      ========================================================= */
-  // 最近对话 = 真实会话列表 /api/sessions（可点击恢复）
+  async function loadDashboard() {
+    const box = $("#dashGrid");
+    if (!box) return;
+    box.innerHTML = '<div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>';
+
+    const [w, t, h] = await Promise.all([
+      getJSON("/api/weather").catch((e) => ({ __err: e.message })),
+      getJSON("/api/tasks").catch((e) => ({ __err: e.message })),
+      getJSON("/api/hotspots").catch((e) => ({ __err: e.message })),
+    ]);
+    await ensureConfig();
+
+    let html = "";
+    html += weatherCard(w);
+    html += taskCard(t);
+    html += hotspotCard(h);
+    html += systemCard();
+    box.innerHTML = html;
+  }
+
+  function weatherCard(w) {
+    if (!w || w.__err) {
+      return dashCard("weather", "今日天气", '<div class="dc-empty">天气信息暂时不可用</div>');
+    }
+    const c = w.card || {};
+    const city = c.city || w.city || "—";
+    const cond = c.condition || "—";
+    const temp = c.temp != null ? c.temp + "°" : "—";
+    const high = c.high != null ? c.high + "°" : "—";
+    const low = c.low != null ? c.low + "°" : "—";
+    const feel = c.feel != null ? "体感 " + c.feel + "°" : "";
+    const wind = c.wind || (c.wind_dir ? c.wind_dir + " " + c.wind_kmh + " km/h" : "");
+
+    let body = '<div class="weather-main">' +
+      '<div class="weather-temp">' + esc(temp) + "</div>" +
+      '<div class="weather-info">' +
+      '<div class="weather-condition">' + esc(cond) + "</div>" +
+      '<div class="weather-meta"><span>' + esc(city) + "</span><span>" + esc(high) + " / " + esc(low) + "</span></div>" +
+      "</div></div>";
+    if (feel || wind || c.humidity != null) {
+      body += '<div class="weather-meta" style="margin-top:0">' +
+        (feel ? "<span>" + esc(feel) + "</span>" : "") +
+        (c.humidity != null ? "<span>湿度 " + esc(c.humidity) + "%</span>" : "") +
+        (wind ? "<span>" + esc(wind) + "</span>" : "") +
+        "</div>";
+    }
+    if (Array.isArray(w.forecast) && w.forecast.length) {
+      body += '<div class="weather-forecast">' + w.forecast.slice(0, 3).map((f) =>
+        '<div class="weather-day"><div class="wd">' + esc(f.day) + "</div>" +
+        '<div class="wt">' + esc(f.condition || "") + "</div>" +
+        '<div class="wt">' + esc(f.low) + "° / " + esc(f.high) + "°</div></div>").join("") + "</div>";
+    }
+    if (Array.isArray(c.lifeIndex) && c.lifeIndex.length) {
+      body += '<div class="life-index">' + c.lifeIndex.slice(0, 3).map((l) =>
+        '<span class="li-item">' + esc(l.name) + " · " + esc(l.val) + "</span>").join("") + "</div>";
+    }
+    const foot = "更新于 " + (w.fetchedAt ? hhmm(w.fetchedAt) : "—");
+    return dashCard("weather", "今日天气", body, foot);
+  }
+
+  function taskCard(t) {
+    if (!Array.isArray(t)) {
+      return dashCard("task", "今日任务", '<div class="dc-empty">任务信息暂时不可用</div>');
+    }
+    S.tasks = t;
+    const RUNNING = ["open", "running", "in_progress", "active", "pending"];
+    const running = t.filter((x) => RUNNING.indexOf(String(x.status || "").toLowerCase()) >= 0);
+    const today = todayStr();
+    const doneToday = t.filter((x) => /done|complete|成功/.test(String(x.status || "")) &&
+      String(x.updated || x.created || "").slice(0, 10) === today).length;
+
+    let body = '<div class="task-summary">' +
+      '<div class="ts-item"><div class="ts-num">' + running.length + '</div><div class="ts-label">进行中</div></div>' +
+      '<div class="ts-item"><div class="ts-num">' + doneToday + '</div><div class="ts-label">今日完成</div></div>' +
+      '<div class="ts-item"><div class="ts-num">' + t.length + '</div><div class="ts-label">全部任务</div></div>' +
+      "</div>";
+
+    if (running.length) {
+      body += '<div class="task-list">' + running.slice(0, 4).map((x) =>
+        '<div class="task-item" data-view="tasks">' +
+        '<span class="task-status ' + statusClass(x.status) + '"></span>' +
+        '<span class="task-title">' + esc(x.title || "(无标题)") + "</span>" +
+        '<span class="task-time">' + esc(statusLabel(x.status)) + "</span></div>").join("") + "</div>";
+    } else {
+      body += '<div class="dc-empty">当前没有进行中的任务</div>';
+    }
+    return dashCard("task", "今日任务", body, "");
+  }
+
+  function statusClass(st) {
+    const s = String(st || "").toLowerCase();
+    if (/done|complete|成功/.test(s)) return "done";
+    if (/open|running|progress|active|pending/.test(s)) return "running";
+    return "pending";
+  }
+  function statusLabel(st) {
+    const s = String(st || "").toLowerCase();
+    if (/done|complete|成功/.test(s)) return "已完成";
+    if (/running|progress/.test(s)) return "执行中";
+    if (/open|pending/.test(s)) return "进行中";
+    if (/fail|error/.test(s)) return "失败";
+    if (/cancel/.test(s)) return "已取消";
+    return String(st || "未知");
+  }
+
+  const PLATFORM_LABEL = {
+    douyin: "抖音", weibo: "微博", zhihu: "知乎", baidu: "百度",
+    bilibili: "哔哩哔哩", toutiao: "今日头条", qq: "QQ 看点",
+    kuaishou: "快手", xiaohongshu: "小红书", hupu: "虎扑",
+   tieba: "百度贴吧", v2ex: "V2EX", github: "GitHub",
+  };
+
+  function flattenHotspots(h) {
+    const out = [];
+    if (!h || h.__err || !h.platforms) return out;
+    const keys = Object.keys(h.platforms);
+    let rank = 1;
+    const maxLen = Math.max.apply(null, keys.map((k) => (h.platforms[k] || []).length).concat([0]));
+    for (let i = 0; i < maxLen; i++) {
+      for (const k of keys) {
+        const item = (h.platforms[k] || [])[i];
+        if (!item) continue;
+        out.push(Object.assign({}, item, { __platform: k, __order: rank++ }));
+      }
+    }
+    return out;
+  }
+
+  function hotspotCard(h) {
+    if (!h || h.__err) {
+      return dashCard("hot", "热点资讯", '<div class="dc-empty">热点信息暂时不可用</div>');
+    }
+    const list = flattenHotspots(h).slice(0, 6);
+    if (!list.length) return dashCard("hot", "热点资讯", '<div class="dc-empty">暂无热点数据</div>');
+
+    let body = '<div class="hotspot-list">';
+    list.forEach((x, i) => {
+      const title = x.text || x.title || "(无标题)";
+      const pname = PLATFORM_LABEL[x.__platform] || x.__platform || "网络";
+      const heat = x.heat ? "热度 " + x.heat : "";
+      const summary = x.desc || x.summary || x.abstract || "";
+      body += '<div class="hotspot-item">' +
+        '<span class="hotspot-rank">' + (i + 1) + "</span>" +
+        '<div class="hotspot-content">' +
+        '<div class="hotspot-title">' + esc(title) + "</div>" +
+        (summary ? '<div class="hotspot-summary">' + esc(String(summary).slice(0, 80)) + "</div>" : "") +
+        '<div class="hotspot-meta">' +
+        "<span>" + esc(pname) + "</span>" +
+        (heat ? "<span>" + esc(heat) + "</span>" : "") +
+        "</div>" +
+        '<div class="hotspot-actions">' +
+        '<button data-hot="read" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) + '">阅读全文</button>' +
+        '<button data-hot="save" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) +
+        '" data-src="' + esc(pname) + '" data-heat="' + esc(x.heat || "") + '">保存知识库</button>' +
+        '<button data-hot="sum" data-url="' + esc(x.url || "") + '" data-title="' + esc(title) +
+        '" data-src="' + esc(pname) + '">让小6总结</button>' +
+        "</div></div></div>";
+    });
+    body += "</div>";
+    const foot = "更新于 " + (h.fetchedAt ? hhmm(h.fetchedAt) : "—");
+    return dashCard("hot", "热点资讯", body, foot);
+  }
+
+  // 热点卡片操作（事件委托，卡片每次重绘都有效）
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-hot]");
+    if (!b) return;
+    const act = b.dataset.hot;
+    const url = b.dataset.url || "";
+    const title = b.dataset.title || "";
+    const src = b.dataset.src || "";
+    const heat = b.dataset.heat || "";
+    if (act === "read") {
+      if (!url) { toast("该热点没有提供原文链接", true); return; }
+      window.open(url, "_blank", "noopener");
+      return;
+    }
+    if (act === "save") { saveHotspotToKnowledge(title, url, src, heat, b); return; }
+    if (act === "sum") { summarizeHotspot(title, url, src); return; }
+  });
+
+  async function saveHotspotToKnowledge(title, url, src, heat, btn) {
+    if (!title) return;
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = "保存中…";
+    // 诚实：后端只提供标题 / 链接 / 热度 / 平台，这里按真实字段入库，不编造正文
+    const text = ["标题：" + title, "来源：" + src, "热度：" + (heat || "—"), "链接：" + (url || "—")].join("\n");
+    try {
+      const r = await postJSON("/api/knowledge", { action: "upload", title: title, text: text, source: src });
+      if (r && r.ok) { toast("已保存到知识库"); S.knowledge = null; }
+      else throw new Error((r && (r.error || r.detail)) || "保存失败");
+    } catch (e) {
+      toast("保存失败：" + e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  }
+
+  function summarizeHotspot(title, url, src) {
+    if (!title) return;
+    switchView("chat");
+    const ta = $("#input");
+    ta.value = "帮我总结这条热点：「" + title + "」" + (src ? "（来源：" + src + "）" : "") +
+      (url ? "，原文链接：" + url : "") + "。请说明事件要点和可能的影响。";
+    ta.dispatchEvent(new Event("input"));
+    submit();
+  }
+
+  /* ---------- 系统状态（服务 / 模型 / 语音） ---------- */
+  const CHECK_LABEL = {
+    "Python 版本": "运行环境",
+    "核心依赖": "核心组件",
+    "本地工具注册": "能力挂载",
+    "SQLite 数据库": "数据存储",
+    "Agnes API 密钥": "模型密钥",
+    "TTS 语音合成": "语音合成",
+    "Agnes API 可达": "模型服务连接",
+    "天气源 Open-Meteo": "天气数据",
+    "热点数据源": "热点数据",
+    "Phase 4 功能开关": "功能开关",
+    "知识索引": "知识索引",
+    "已注册设备": "设备同步",
+  };
+
+  function systemCard() {
+    const h = S.health || {};
+    const checks = (h.self_check && h.self_check.checks) || [];
+    const ttsCheck = checks.find((c) => /TTS|语音/.test(String(c.name || "")));
+    const failed = checks.filter((c) => !c.ok);
+
+    const serviceOK = h.status === "alive" && (!S.ready || S.ready.ready !== false);
+    const cfg = S.config || {};
+    const llm = cfg.llm || {};
+    const modelName = llm.model || h.model || "—";
+    const modelOK = !!llm.key_present;
+
+    const ttsOK = ttsCheck ? !!ttsCheck.ok : false;
+    const ttsLabel = ttsCheck ? (ttsOK ? "可用" : "不可用") : (h.tts_backend ? String(h.tts_backend) : "未配置");
+
+    const body =
+      '<div class="status-grid">' +
+      statusItem("服务状态", serviceOK ? "运行中" : "异常", serviceOK ? "ok" : "warn") +
+      statusItem("模型状态", modelName, modelOK ? "ok" : "warn") +
+      statusItem("语音状态", ttsLabel, ttsOK ? "ok" : "warn") +
+      statusItem("小6 状态", failed.length ? failed.length + " 项待处理" : "一切正常", failed.length ? "warn" : "ok") +
+      "</div>";
+    const foot = '<button class="customize-btn" data-view="settings" style="margin-top:2px">查看详情</button>';
+    return dashCard("sys", "系统状态", body, foot);
+  }
+
+  function statusItem(label, value, cls) {
+    return '<div class="status-item"><div class="status-label">' + esc(label) + "</div>" +
+      '<div class="status-value ' + (cls || "") + '">' + esc(value) + "</div></div>";
+  }
+
+  function dashCard(kind, title, body, foot) {
+    return '<div class="dash-card dash-card-' + kind + '">' +
+      '<div class="dash-card-header"><div class="dash-card-title">' + esc(title) + "</div></div>" +
+      '<div class="dash-card-body">' + body + "</div>" +
+      (foot ? '<div class="dash-card-foot">' + foot + "</div>" : "") +
+      "</div>";
+  }
+
+  /* =========================================================
+     最近对话
+     ========================================================= */
   async function loadRecent() {
     const box = $("#recentList");
     try {
       const r = await getJSON("/api/sessions");
       const list = (r && r.sessions) || [];
-      S.history = list;
-      if (!list.length) { box.innerHTML = empty("暂无历史会话"); return; }
+      S.sessions = list;
+      if (!list.length) { box.innerHTML = empty("暂无历史对话"); return; }
       box.innerHTML = list.slice(0, 6).map((s) => {
         const sid = s.session_id || s.id || "";
-        // 去掉内部前缀与 _stale 后缀，尽量显示可读名
-        const label = String(sid).replace(/^p\d+_/, "").replace(/_stale$/, "").slice(0, 20) || "会话";
+        const label = String(sid).replace(/^p\d+_/, "").replace(/_stale$/, "").slice(0, 20) || "对话";
         const time = String(s.updated_at || s.created_at || "").slice(5, 16);
         return '<button class="recent-item" data-session="' + esc(sid) + '" title="' + esc(sid) + '">' +
           '<span class="title">' + esc(label) + "</span>" +
           '<span class="time">' + esc(time) + "</span></button>";
       }).join("");
     } catch (e) {
-      box.innerHTML = errorBox("会话列表读取失败", e.message);
+      box.innerHTML = errorBox("对话列表读取失败", e.message);
     }
   }
 
-  // 会话恢复：POST /api/session/resume {session_id}
   async function resumeSession(sid) {
     try {
       const d = await postJSON("/api/session/resume", { session_id: sid });
-      const r = (d && d.resume) || {};
       if (d && d.ok) {
-        toast("已恢复会话：" + String(sid).slice(0, 18));
+        toast("已恢复对话");
         await renderHistoryIntoChat();
         switchView("chat");
       } else {
-        toast("无法恢复：" + (r.reason || r.status || "无检查点"), true);
+        toast("无法恢复该对话", true);
       }
     } catch (e) {
-      toast("会话恢复失败：" + e.message, true);
+      toast("对话恢复失败：" + e.message, true);
     }
   }
 
-  // 把真实对话历史渲染进消息流
   async function renderHistoryIntoChat() {
     try {
       const rows = await getJSON("/api/chat/history?limit=20");
       const list = Array.isArray(rows) ? rows : (rows.items || rows.history || []);
       if (!list.length) return;
-      ensureChatMode();
+      hideChatEmpty();
       $("#messages").innerHTML = "";
       list.forEach((h) => {
         const role = (h.role === "user" || h.role === "human") ? "user" : "assistant";
@@ -239,228 +531,73 @@
   }
 
   /* =========================================================
-     能力卡片（来自真实工具名，不硬编码）
+     任务中心：当前任务 / 历史任务 / 执行过程
      ========================================================= */
-  const ABILITY_DEF = [
-    { key: "memory_search", name: "智能记忆", desc: "记住你的偏好与上下文", ico: "brain" },
-    { key: "file_write", name: "代码助手", desc: "读写代码、调试、优化", ico: "code" },
-    { key: "add_knowledge", name: "知识库", desc: "文档入库与检索", ico: "doc" },
-    { key: "run_shell", name: "系统执行", desc: "命令、进程与自动化", ico: "term" },
-    { key: "web_search", name: "联网搜索", desc: "实时检索网络信息", ico: "globe" },
-    { key: "media_generate", name: "内容生成", desc: "图像、媒体与创作", ico: "img" },
-  ];
-  const ICONS = {
-    brain: '<path d="M9 4a3 3 0 1 1-3 3"/><path d="M6 10v3a6 6 0 0 0 12 0v-3"/><path d="M9 7v6"/><path d="M15 7v3"/>',
-    code: '<path d="M8 6l-5 6 5 6"/><path d="M16 6l5 6-5 6"/>',
-    doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
-    term: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/>',
-    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/>',
-    img: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 17l-5-5-7 7"/>',
-  };
-
-  /* =========================================================
-     今日简报（真实 /api/briefing + /api/weather + /api/hotspots）
-     ========================================================= */
-  async function loadBriefing() {
-    const box = $("#briefingBox");
-    if (!box) return;
+  async function loadTasks() {
+    const box = $("#tasksBody");
     box.innerHTML = LOADING;
-    let html = "", errs = [];
-
-    // ① 简报
     try {
-      const b = await getJSON("/api/briefing");
-      S.briefing = b;
-      const parts = [];
-      if (b.date) parts.push("日期 " + b.date);
-      if (b.generatedAt) parts.push("生成 " + b.generatedAt);
-      const w = b.weather || {};
-      if (w.city) parts.push(w.city + " " + (w.condition || ""));
-      let body = b.summary || b.content || b.text || "";
-      if (!body && b.weather) body = JSON.stringify(w);
-      html += '<div class="proactive-card"><div class="pc-head">☀️ 每日简报</div>' +
-        '<div class="pc-body">' + esc(body || "（简报为空）") + "</div>" +
-        (parts.length ? '<div class="pc-time">' + esc(parts.join(" · ")) + "</div>" : "") +
-        "</div>";
-    } catch (e) { errs.push("简报：" + e.message); }
-
-    // ② 天气
-    try {
-      const w = await getJSON("/api/weather");
-      const d = w.data || w;
-      html += '<div class="proactive-card"><div class="pc-head">🌤 天气</div>' +
-        '<div class="pc-body">' + esc(JSON.stringify(d).slice(0, 300)) + "</div>" +
-        (w.fetchedAt ? '<div class="pc-time">获取于 ' + esc(w.fetchedAt) + "</div>" : "") +
-        "</div>";
-    } catch (e) { errs.push("天气：" + e.message); }
-
-    // ③ 热点
-    try {
-      const h = await getJSON("/api/hotspots");
-      const list = h.items || h.hotspots || (Array.isArray(h) ? h : []);
-      if (list.length) {
-        html += '<div class="proactive-card"><div class="pc-head">🔥 热点</div>' +
-          '<div class="pc-body">' +
-          list.slice(0, 8).map((x, i) =>
-            esc((i + 1) + ". " + (x.title || x.topic || String(x)))).join("\n") +
-          "</div></div>";
-      }
-    } catch (e) { errs.push("热点：" + e.message); }
-
-    if (errs.length) html += errorBox("部分简报数据读取失败", errs.join(" · "));
-    box.innerHTML = html || empty("暂无简报数据");
-  }
-
-  // 首页能力卡片：数据源为真实 /api/capability_os/catalog，不硬编码
-  async function loadAbilities() {
-    const box = $("#abilityGrid");
-    box.innerHTML = LOADING;
-    const caps = await ensureCaps();
-    if (!caps || !caps.groups) {
-      // 降级：退回 health.tools 的真实工具名
-      const tools = (S.health && S.health.tools) || [];
-      box.innerHTML = tools.length
-        ? '<div class="grid">' + tools.slice(0, 6).map((t) =>
-            '<div class="tool-card"><div class="tool-name">' + esc(t) + "</div>" +
-            '<div class="tool-desc">已挂载工具</div></div>').join("") + "</div>"
-        : empty("能力目录不可用");
-      return;
-    }
-    // 优先展示 available 的能力，最多 6 个
-    const all = [];
-    Object.keys(caps.groups).forEach((g) => {
-      caps.groups[g].forEach((c) => all.push(c));
-    });
-    all.sort((a, b) => (b.available ? 1 : 0) - (a.available ? 1 : 0));
-    const picked = all.slice(0, 6);
-    box.innerHTML = '<div class="grid">' + picked.map((c) =>
-      '<div class="tool-card" title="' + esc(c.id) + " · risk=" + esc(c.risk || "?") +
-      " · permission=" + esc(c.permission || "?") + '">' +
-      '<div class="tool-name">' + esc(c.icon || "") + " " + esc(c.name || c.id) + "</div>" +
-      '<div class="tool-desc">' + esc((c.description || "").slice(0, 40)) + "</div>" +
-      '<div class="row-foot"><span>' + esc(c.group || "") + "</span>" +
-      '<span class="badge ' + (c.available ? "ok" : "") + '">' +
-      (c.available ? "可用" : "不可用") + "</span></div></div>").join("") + "</div>";
-  }
-
-  /* =========================================================
-     任务
-     ========================================================= */
-  async function loadTaskPreview() {
-    const box = $("#taskPreview");
-    try {
-      const rows = await getJSON("/api/tasks");
-      S.tasks = Array.isArray(rows) ? rows : [];
-      const running = S.tasks.filter((t) => {
-        const s = String(t.status || "").toLowerCase();
-        return s === "running" || s === "in_progress" || s === "active" || s === "pending";
-      });
-      if (!S.tasks.length) { box.innerHTML = empty("暂无任务"); return; }
-      const list = (running.length ? running : S.tasks).slice(0, 2);
-      box.innerHTML = list.map(taskCardHTML).join("");
+      S.tasks = await getJSON("/api/tasks");
+      if (!Array.isArray(S.tasks)) S.tasks = [];
     } catch (e) {
       box.innerHTML = errorBox("任务读取失败", e.message);
+      return;
     }
+    renderTasks();
   }
 
-  function taskCardHTML(t) {
-    const st = String(t.status || "unknown");
-    const pct = Number(t.progress || t.percent || 0) || 0;
-    const steps = Array.isArray(t.steps) ? t.steps.length : 0;
-    return '<div class="task-card">' +
-      '<div class="task-icon">&gt;_</div>' +
-      '<div class="task-meta">' +
-      '<div class="task-title">' + esc(t.title || "(无标题)") + "</div>" +
-      '<div class="task-sub"><span class="pulse-dot"></span>' + esc(st) +
-      (steps ? " · " + steps + " 步" : "") + "</div>" +
-      "</div>" +
-      '<div class="progress-wrap"><div class="progress"><span style="width:' + Math.min(100, pct) + '%"></span></div>' +
-      '<div class="progress-pct">' + Math.round(pct) + "%</div></div>" +
-      '<button class="customize-btn" data-view="tasks">详情</button></div>';
-  }
+  function renderTasks() {
+    const box = $("#tasksBody");
+    if (S.taskTab === "trace") { renderTrace(box); return; }
 
-  async function loadTasks() {
-    const tb = $("#tasksBody"), gb = $("#goalsBody");
-    tb.innerHTML = LOADING; gb.innerHTML = LOADING;
-    try {
-      const rows = await getJSON("/api/tasks");
-      S.tasks = Array.isArray(rows) ? rows : [];
-      tb.innerHTML = S.tasks.length
-        ? '<div class="list">' + S.tasks.map(taskRowHTML).join("") + "</div>"
-        : empty("暂无任务");
-    } catch (e) { tb.innerHTML = errorBox("任务读取失败", e.message); }
+    const RUNNING = ["open", "running", "in_progress", "active", "pending"];
+    const isRun = (x) => RUNNING.indexOf(String(x.status || "").toLowerCase()) >= 0;
+    const list = S.tasks.filter((x) => (S.taskTab === "current" ? isRun(x) : !isRun(x)));
 
-    try {
-      const g = await getJSON("/api/goals");
-      S.goals = Array.isArray(g) ? g : (g.goals || []);
-      gb.innerHTML = S.goals.length
-        ? '<div class="list">' + S.goals.map(goalRowHTML).join("") + "</div>"
-        : empty("暂无目标");
-    } catch (e) { gb.innerHTML = errorBox("目标读取失败", e.message); }
-
-    // ③ 活动统计 /api/activity + 执行追踪 /api/trace（真实后端能力）
-    try {
-      const act = await getJSON("/api/activity");
-      S.activity = act && act.activity ? act.activity : null;
-    } catch (e) { S.activity = null; }
-    try {
-      const tr = await getJSON("/api/trace");
-      S.trace = tr && tr.trace ? tr.trace : null;
-    } catch (e) { S.trace = null; }
-
-    const extra = document.createElement("div");
-    let eh = '<div class="page-head" style="margin-top:30px"><h1>运行状况</h1></div>';
-    if (S.activity) {
-      const a = S.activity;
-      eh += '<div class="row-card"><div class="row-foot">' +
-        (a.session_id ? "<span>会话 " + esc(a.session_id) + "</span>" : "") +
-        (a.conversation_turns != null ? "<span>对话轮次 " + esc(a.conversation_turns) + "</span>" : "") +
-        (a.active_goals != null ? "<span>活跃目标 " + esc(a.active_goals) + "</span>" : "") +
+    if (!list.length) {
+      box.innerHTML = empty(S.taskTab === "current" ? "当前没有进行中的任务" : "暂无历史任务");
+      return;
+    }
+    box.innerHTML = '<div class="list">' + list.slice(0, 60).map((t) => {
+      const pct = Number(t.progress || 0) || 0;
+      const cur = t.current_step || 0, tot = t.total_steps || 0;
+      const prog = tot ? Math.round((cur / tot) * 100) : pct;
+      return '<div class="row-card">' +
+        '<div class="row-title">' + esc(t.title || "(无标题)") +
+        '<span class="badge ' + (isRun(t) ? "run" : "ok") + '">' + esc(statusLabel(t.status)) + "</span></div>" +
+        (t.note ? '<div class="row-desc">' + esc(String(t.note).slice(0, 160)) + "</div>" : "") +
+        (tot ? '<div class="progress-wrap"><div class="progress"><span style="width:' +
+          Math.min(100, prog) + '%"></span></div><div class="progress-pct">' + prog + "%</div></div>" : "") +
+        '<div class="row-foot">' +
+        "<span>编号 " + esc(t.id) + "</span>" +
+        (tot ? "<span>步骤 " + esc(cur) + " / " + esc(tot) + "</span>" : "") +
+        (t.created ? "<span>创建 " + esc(t.created) + "</span>" : "") +
+        (t.updated ? "<span>更新 " + esc(t.updated) + "</span>" : "") +
         "</div></div>";
-    }
-    if (S.trace && Array.isArray(S.trace.trace)) {
-      const rows = S.trace.trace.slice(-15).reverse();
-      eh += '<div class="page-head" style="margin-top:20px"><h1 style="font-size:16px">最近执行追踪' +
-        '<span class="badge" style="margin-left:10px">' + S.trace.trace.length + "</span></h1></div>" +
-        '<div class="list">' + rows.map((t) =>
-          '<div class="row-card"><div class="row-title">' + esc(t.event || t.type || t.action || "event") + "</div>" +
-          (t.detail ? '<div class="row-desc">' + esc(String(t.detail).slice(0, 140)) + "</div>" : "") +
-          (t.timestamp ? '<div class="row-foot"><span>' + esc(t.timestamp) + "</span></div>" : "") +
-          "</div>").join("") + "</div>";
-    }
-    if (!S.activity && !S.trace) eh += empty("活动与追踪数据不可用");
-    extra.innerHTML = eh;
-    const host = $("#view-tasks .page");
-    const old = host.querySelector("#runtimeExtra");
-    if (old) old.remove();
-    extra.id = "runtimeExtra";
-    host.appendChild(extra);
+    }).join("") + "</div>";
   }
 
-  function taskRowHTML(t) {
-    const st = String(t.status || "unknown");
-    const cls = /complet|done|成功/.test(st) ? "ok" : /running|progress|active|pending/.test(st) ? "run" : "";
-    return '<div class="row-card"><div class="row-title">' + esc(t.title || "(无标题)") +
-      '<span class="badge ' + cls + '">' + esc(st) + "</span></div>" +
-      (t.description ? '<div class="row-desc">' + esc(t.description) + "</div>" : "") +
-      '<div class="row-foot">' +
-      "<span>ID " + esc(t.id) + "</span>" +
-      (t.created_at ? "<span>创建 " + esc(t.created_at) + "</span>" : "") +
-      (Array.isArray(t.steps) ? "<span>" + t.steps.length + " 个步骤</span>" : "") +
-      "</div></div>";
-  }
-
-  function goalRowHTML(g) {
-    const st = String(g.status || "unknown");
-    const cls = /complet|done/.test(st) ? "ok" : /active|progress|pending/.test(st) ? "run" : "";
-    return '<div class="row-card"><div class="row-title">' + esc(g.title || "(无标题)") +
-      '<span class="badge ' + cls + '">' + esc(st) + "</span></div>" +
-      (g.description ? '<div class="row-desc">' + esc(g.description) + "</div>" : "") +
-      '<div class="row-foot">' +
-      (g.horizon ? "<span>周期 " + esc(g.horizon) + "</span>" : "") +
-      (g.priority ? "<span>优先级 " + esc(g.priority) + "</span>" : "") +
-      (g.progress != null ? "<span>进度 " + esc(g.progress) + "</span>" : "") +
-      "</div></div>";
+  async function renderTrace(box) {
+    box.innerHTML = LOADING;
+    try {
+      const r = await getJSON("/api/trace");
+      const arr = (r && r.trace && r.trace.trace) || [];
+      if (!arr.length) { box.innerHTML = empty("暂无执行记录"); return; }
+      const rows = arr.slice(-40).reverse();
+      box.innerHTML = '<div class="timeline">' + rows.map((x) => {
+        const who = x.role === "user" ? "你" : (x.role === "xiao6" ? "小6" : esc(x.role || "系统"));
+        const cls = x.role === "user" ? "tl-user" : (x.role === "xiao6" ? "tl-ai" : "tl-sys");
+        return '<div class="tl-item ' + cls + '">' +
+          '<div class="tl-dot"></div>' +
+          '<div class="tl-body">' +
+          '<div class="tl-head"><span class="tl-who">' + who + "</span>" +
+          '<span class="tl-time">' + esc(x.timestamp || "") + "</span></div>" +
+          '<div class="tl-text">' + esc(String(x.content || "").slice(0, 240)) + "</div>" +
+          "</div></div>";
+      }).join("") + "</div>";
+    } catch (e) {
+      box.innerHTML = errorBox("执行过程读取失败", e.message);
+    }
   }
 
   /* =========================================================
@@ -471,373 +608,785 @@
     box.innerHTML = LOADING;
     try {
       const r = await getJSON("/api/knowledge");
-      S.knowledge = Array.isArray(r) ? r : (r.docs || []);
-      if (!S.knowledge.length) { box.innerHTML = empty("知识库为空"); return; }
-      box.innerHTML = '<div class="list">' + S.knowledge.map((d) =>
-        '<div class="row-card"><div class="row-title">' + esc(d.title || d.doc_id || "(无标题)") +
-        '<span class="badge ' + (d.status === "reviewed" ? "ok" : "") + '">' + esc(d.status || "unknown") + "</span></div>" +
+      S.knowledge = r;
+      const docs = (r && r.docs) || [];
+      if (!docs.length) { box.innerHTML = empty("知识库还是空的，可以把热点或文档保存进来"); return; }
+      box.innerHTML = '<div class="list">' + docs.slice(0, 80).map((d) =>
+        '<div class="row-card">' +
+        '<div class="row-title">' + esc(d.title || d.doc_id || "(无标题)") +
+        '<span class="badge ' + (d.status === "reviewed" ? "ok" : "") + '">' +
+        esc(d.status === "reviewed" ? "已整理" : (d.status || "待整理")) + "</span></div>" +
         (d.path ? '<div class="row-desc">' + esc(d.path) + "</div>" : "") +
         '<div class="row-foot">' +
-        (d.type ? "<span>类型 " + esc(d.type) + "</span>" : "") +
-        (Array.isArray(d.tags) && d.tags.length ? "<span>" + esc(d.tags.join(" / ")) + "</span>" : "") +
+        (d.type ? "<span>" + esc(d.type) + "</span>" : "") +
+        (d.domain ? "<span>" + esc(d.domain) + "</span>" : "") +
+        (Array.isArray(d.tags) && d.tags.length ? "<span>" + esc(d.tags.slice(0, 4).join(" / ")) + "</span>" : "") +
         "</div></div>").join("") + "</div>";
-    } catch (e) { box.innerHTML = errorBox("知识库读取失败", e.message); }
+    } catch (e) {
+      box.innerHTML = errorBox("知识库读取失败", e.message);
+    }
   }
 
   /* =========================================================
-     记忆
+     记忆（Obsidian 三栏：文件树 / 编辑器 / 知识关系图）
+     真实接口：/api/notes*（列表 / 单条 / 新建 / 更新 / 删除 / 图谱 / 搜索）
      ========================================================= */
+  const LEGACY_PATTERNS = [/ZZ/i, /ZhuangZhou/i, /庄周/i, /旧\s*UI/i, /old[\s_-]*ui/i, /legacy[\s_-]*ui/i];
+  const isLegacy = (s) => LEGACY_PATTERNS.some((re) => re.test(String(s || "")));
+
   async function loadMemory() {
-    const box = $("#memoryBody");
-    box.innerHTML = LOADING;
-    let html = "", errs = [];
-
-    // ① 记忆条目
+    const tree = $("#treeBody"), graph = $("#graphBody");
+    tree.innerHTML = LOADING; graph.innerHTML = LOADING;
     try {
-      const r = await getJSON("/api/memories");
-      S.memories = Array.isArray(r) ? r : (r.items || r.memories || []);
-      html += '<div class="page-head"><h1 style="font-size:16px">记忆条目' +
-        '<span class="badge" style="margin-left:10px">' + S.memories.length + "</span></h1></div>";
-      html += S.memories.length ? renderMemoryHTML(S.memories) : empty("暂无记忆");
-    } catch (e) { errs.push("记忆：" + e.message); }
-
-    // ② 用户画像（/api/memory → profile）
-    try {
-      const m = await getJSON("/api/memory");
-      S.profile = m && m.profile ? m.profile : null;
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">用户画像' +
-        (S.profile ? '<span class="badge" style="margin-left:10px">' + S.profile.length + "</span>" : "") +
-        "</h1></div>";
-      html += S.profile && S.profile.length
-        ? '<div class="grid">' + S.profile.map((p) =>
-            '<div class="tool-card"><div class="tool-name">' + esc(p.key) + "</div>" +
-            '<div class="tool-desc">' + esc(p.value) + "</div>" +
-            (p.updated ? '<div class="row-foot"><span>' + esc(p.updated) + "</span></div>" : "") +
-            "</div>").join("") + "</div>"
-        : empty("暂无画像数据");
-    } catch (e) { errs.push("画像：" + e.message); }
-
-    // ③ 笔记 /api/notes
-    try {
-      const n = await getJSON("/api/notes");
-      S.notes = Array.isArray(n) ? n : (n.notes || []);
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">笔记' +
-        '<span class="badge" style="margin-left:10px">' + S.notes.length + "</span></h1></div>";
-      html += S.notes.length
-        ? '<div class="list">' + S.notes.slice(0, 20).map((x) =>
-            '<div class="row-card"><div class="row-title">' + esc(x.title || "(无标题)") + "</div>" +
-            (x.markdown ? '<div class="row-desc">' + esc(String(x.markdown).slice(0, 120)) + "</div>" : "") +
-            (x.ts ? '<div class="row-foot"><span>' + esc(x.ts) + "</span></div>" : "") +
-            "</div>").join("") + "</div>"
-        : empty("暂无笔记");
-    } catch (e) { errs.push("笔记：" + e.message); }
-
-    // ④ 学习记录 /api/learnings
-    try {
-      const l = await getJSON("/api/learnings");
-      S.learnings = (l && l.learnings) || [];
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">学习记录' +
-        '<span class="badge" style="margin-left:10px">' + S.learnings.length + "</span></h1></div>";
-      html += S.learnings.length
-        ? '<div class="list">' + S.learnings.slice(0, 20).map((x) =>
-            '<div class="row-card"><div class="row-title">' + esc(x.type || "learning") + "</div>" +
-            '<div class="row-desc">' + esc(String(x.content || "").slice(0, 140)) + "</div>" +
-            "</div>").join("") + "</div>"
-        : empty("暂无学习记录");
-    } catch (e) { errs.push("学习：" + e.message); }
-
-    // ⑤ 事件 /api/episodes
-    try {
-      const ep = await getJSON("/api/episodes");
-      S.episodes = (ep && ep.episodes) || [];
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">事件' +
-        '<span class="badge" style="margin-left:10px">' + S.episodes.length + "</span></h1></div>";
-      html += S.episodes.length
-        ? '<div class="list">' + S.episodes.slice(0, 20).map((x) =>
-            '<div class="row-card"><div class="row-title">' + esc(x.title || "(无标题)") + "</div>" +
-            (x.summary ? '<div class="row-desc">' + esc(String(x.summary).slice(0, 140)) + "</div>" : "") +
-            "</div>").join("") + "</div>"
-        : empty("暂无事件");
-    } catch (e) { errs.push("事件：" + e.message); }
-
-    // ⑥ 对话历史 /api/memory/conversations
-    try {
-      const c = await getJSON("/api/memory/conversations");
-      const list = (c && c.conversations) || [];
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">对话历史' +
-        '<span class="badge" style="margin-left:10px">' + list.length + "</span></h1></div>";
-      html += list.length
-        ? '<div class="list">' + list.slice(0, 20).map((x) =>
-            '<div class="row-card"><div class="row-title">' + esc(x.topic || "(无主题)") + "</div>" +
-            (x.summary ? '<div class="row-desc">' + esc(String(x.summary).slice(0, 140)) + "</div>" : "") +
-            (x.date ? '<div class="row-foot"><span>' + esc(x.date) + "</span></div>" : "") +
-            "</div>").join("") + "</div>"
-        : empty("暂无对话历史");
-    } catch (e) { errs.push("对话历史：" + e.message); }
-
-    // ⑦ 重要日期 /api/memory/important-dates
-    try {
-      const d = await getJSON("/api/memory/important-dates");
-      const list = (d && d.dates) || [];
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">重要日期' +
-        '<span class="badge" style="margin-left:10px">' + list.length + "</span></h1></div>";
-      html += list.length
-        ? '<div class="list">' + list.slice(0, 20).map((x) =>
-            '<div class="row-card"><div class="row-title">' + esc(x.description || x.title || "(无描述)") +
-            '<span class="badge">' + esc(x.type || "date") + "</span></div>" +
-            (x.date ? '<div class="row-foot"><span>' + esc(x.date) + "</span></div>" : "") +
-            "</div>").join("") + "</div>"
-        : empty("暂无重要日期");
-    } catch (e) { errs.push("重要日期：" + e.message); }
-
-    if (errs.length) html += errorBox("部分数据读取失败", errs.join(" · "));
-    box.innerHTML = html || empty("无数据");
+      let notes = await getJSON("/api/notes");
+      if (!Array.isArray(notes)) notes = [];
+      // 默认隐藏历史遗留数据（ZZ / ZhuangZhou / 庄周 / 旧 UI），不删除
+      S.notes = notes.filter((n) => !isLegacy(n.title) && !isLegacy(n.folder) && !isLegacy(n.tags));
+      S.legacyHidden = notes.length - S.notes.length;
+    } catch (e) {
+      tree.innerHTML = errorBox("记忆读取失败", e.message);
+      graph.innerHTML = "";
+      return;
+    }
+    renderTree();
+    renderGraph();
   }
 
-  function renderMemoryHTML(list) {
-    return '<div class="list">' + list.map((m) =>
-      '<div class="row-card"><div class="row-title">' + esc(m.title || "(无标题)") +
-      '<span class="badge">' + esc(m.event_type || m.type || "memory") + "</span></div>" +
-      (m.content ? '<div class="row-desc">' + esc(m.content) + "</div>" : "") +
-      '<div class="row-foot">' +
-      (m.mem_id ? "<span>" + esc(m.mem_id) + "</span>" : "") +
-      (m.created_at ? "<span>" + esc(m.created_at) + "</span>" : "") +
-      (m.source ? "<span>来源 " + esc(m.source) + "</span>" : "") +
-      "</div></div>").join("") + "</div>";
-  }
-
-  function renderMemory(list) {
-    const box = $("#memoryBody");
-    if (!list.length) { box.innerHTML = empty("没有匹配的记忆"); return; }
-    box.innerHTML = '<div class="list">' + list.map((m) =>
-      '<div class="row-card"><div class="row-title">' + esc(m.title || "(无标题)") +
-      '<span class="badge">' + esc(m.event_type || m.type || "memory") + "</span></div>" +
-      (m.content ? '<div class="row-desc">' + esc(m.content) + "</div>" : "") +
-      '<div class="row-foot">' +
-      (m.mem_id ? "<span>" + esc(m.mem_id) + "</span>" : "") +
-      (m.created_at ? "<span>" + esc(m.created_at) + "</span>" : "") +
-      (m.source ? "<span>来源 " + esc(m.source) + "</span>" : "") +
-      "</div></div>").join("") + "</div>";
-  }
-
-  /* =========================================================
-     工具（真实 62 个）
-     ========================================================= */
-  async function loadTools() {
-    const box = $("#toolsBody");
-    box.innerHTML = LOADING;
-    try {
-      if (!S.health) S.health = await getJSON("/api/health");
-      const tools = (S.health && S.health.tools) || [];
-      const caps = await ensureCaps();
-
-      let html = "";
-      // ① 能力目录（真实 33 项，按分组）
-      if (caps && caps.groups) {
-        $("#toolCount").textContent = (caps.total || 0) + " 项能力 · " +
-          (caps.available || 0) + " 可用 · " + tools.length + " 个工具";
-        Object.keys(caps.groups).forEach((g) => {
-          const items = caps.groups[g];
-          html += '<div class="page-head" style="margin-top:22px"><h1 style="font-size:16px">' +
-            esc(g) + '<span class="badge" style="margin-left:10px">' + items.length + "</span></h1></div>" +
-            '<div class="grid">' + items.map((c) =>
-              '<div class="tool-card" title="entry: ' + esc(c.entry || "—") + '">' +
-              '<div class="tool-name">' + esc(c.icon || "") + " " + esc(c.name || c.id) + "</div>" +
-              '<div class="tool-desc">' + esc(c.description || "") + "</div>" +
-              '<div class="row-foot">' +
-              '<span>' + esc(c.group || "") + "</span>" +
-              '<span>risk ' + esc(c.risk || "?") + "</span>" +
-              '<span>' + esc(c.permission || "?") + "</span>" +
-              (c.implemented === false ? '<span class="badge">未实现</span>' : "") +
-              '<span class="badge ' + (c.available ? "ok" : "") + '">' +
-              (c.available ? "可用" : "不可用") + "</span>" +
-              "</div></div>").join("") + "</div>";
-        });
-      } else {
-        $("#toolCount").textContent = tools.length + " 个工具";
-        html += empty("能力目录不可用，仅展示工具清单");
-      }
-
-      // ② Agent 实际挂载的可调用工具（62 个）
-      html += '<div class="page-head" style="margin-top:26px"><h1 style="font-size:16px">Agent 可调用工具' +
-        '<span class="badge" style="margin-left:10px">' + tools.length + "</span></h1></div>";
-      html += tools.length
-        ? '<div class="grid">' + tools.map((t) =>
-            '<div class="tool-card"><div class="tool-name">' + esc(t) + "</div>" +
-            '<div class="tool-desc">已挂载 · 由 Agent 按需求自动调用</div></div>').join("") + "</div>"
-        : empty("后端未返回工具");
-
-      box.innerHTML = html;
-    } catch (e) { box.innerHTML = errorBox("工具列表读取失败", e.message); }
-  }
-
-  // 工具搜索：同时筛能力名与工具名
-  function bindToolSearch() {
-    const input = $("#toolSearch");
-    if (!input) return;
-    input.addEventListener("input", () => {
-      const q = input.value.trim().toLowerCase();
-      let shown = 0;
-      $$("#toolsBody .tool-card").forEach((card) => {
-        const hit = !q || card.textContent.toLowerCase().indexOf(q) >= 0;
-        card.style.display = hit ? "" : "none";
-        if (hit) shown++;
+  function renderTree() {
+    const tree = $("#treeBody");
+    const notes = S.notes || [];
+    if (!notes.length) { tree.innerHTML = empty("暂无记忆笔记"); return; }
+    const byFolder = {};
+    notes.forEach((n) => {
+      const f = n.folder || "未整理";
+      (byFolder[f] = byFolder[f] || []).push(n);
+    });
+    let html = "";
+    Object.keys(byFolder).sort().forEach((f) => {
+      html += '<div class="tree-folder-row"><span class="tree-folder">📁</span>' + esc(f) +
+        '<span class="tree-count">' + byFolder[f].length + "</span></div>";
+      byFolder[f].slice().sort((a, b) => String(b.ts || "").localeCompare(String(a.ts || ""))).forEach((n) => {
+        html += '<div class="tree-item' + (S.currentNote && S.currentNote.id === n.id ? " active" : "") +
+          '" data-note="' + esc(n.id) + '" title="' + esc(n.title || "") + '">' +
+          '<span class="ico">📄</span><span class="ti-title">' + esc(n.title || "(无标题)") + "</span></div>";
       });
-      const c = $("#toolCount");
-      if (c && q) c.textContent = "匹配 " + shown + " 项";
+    });
+    tree.innerHTML = html;
+  }
+
+  async function openNote(id) {
+    try {
+      const n = await getJSON("/api/notes/" + encodeURIComponent(id));
+      S.currentNote = n;
+      $("#editorTitle").textContent = n.title || "(无标题)";
+      $("#markdownEditor").value = n.markdown || "";
+      $("#markdownEditor").disabled = false;
+      $("#btnSaveNote").disabled = false;
+      $("#btnDeleteNote").disabled = false;
+      $("#btnRenameNote").disabled = false;
+      renderTree();
+      // 右侧显示该笔记的关联
+      renderBacklinks(n.title);
+    } catch (e) {
+      toast("打开笔记失败：" + e.message, true);
+    }
+  }
+
+  async function renderBacklinks(title) {
+    const box = $("#graphBody");
+    if (!title) return;
+    try {
+      const bl = await getJSON("/api/notes/backlinks?title=" + encodeURIComponent(title));
+      const list = Array.isArray(bl) ? bl : (bl.backlinks || []);
+      if (list.length) {
+        box.innerHTML = '<div class="bl-wrap"><div class="bl-title">被以下笔记引用</div>' +
+          list.slice(0, 12).map((x) =>
+            '<div class="tree-item" data-note="' + esc(x.id) + '"><span class="ico">🔗</span>' +
+            '<span class="ti-title">' + esc(x.title || "(无标题)") + "</span></div>").join("") +
+          "</div>" +
+          '<div class="bl-switch"><button class="mini-btn" id="btnBackGraph">返回关系图</button></div>';
+        const b = $("#btnBackGraph");
+        if (b) b.addEventListener("click", renderGraph);
+      }
+    } catch (e) { /* 反向链接不可用时保留关系图 */ }
+  }
+
+  async function renderGraph() {
+    const box = $("#graphBody");
+    box.innerHTML = LOADING;
+    try {
+      S.graph = await getJSON("/api/notes/graph");
+    } catch (e) {
+      box.innerHTML = errorBox("关系图读取失败", e.message);
+      return;
+    }
+    const g = S.graph || {};
+    const nodes = g.nodes || [];
+    const edges = g.edges || [];
+    if (!nodes.length) { box.innerHTML = empty("还没有可展示的知识节点"); return; }
+    const hint = $("#graphHint");
+    if (hint) hint.textContent = nodes.length + " 个节点";
+    box.innerHTML = drawGraph(nodes, edges);
+    box.querySelectorAll("[data-gnode]").forEach((el) => {
+      el.addEventListener("click", () => openNote(el.getAttribute("data-gnode")));
     });
   }
 
-  // 记忆搜索：回车/点击走真实后端 /api/memory/query，失败则本地过滤
-  function bindMemorySearch() {
-    const input = $("#memSearch"), btn = $("#btnMemSearch");
-    if (!input) return;
-    const run = async () => {
-      const q = input.value.trim();
-      if (!q) { $("#memoryBody").innerHTML = renderMemoryHTML(S.memories); return; }
-      try {
-        const r = await postJSON("/api/memory/query", { query: q });
-        const list = Array.isArray(r) ? r : (r.results || r.items || []);
-        if (list.length) {
-          $("#memoryBody").innerHTML =
-            '<div class="page-head"><h1 style="font-size:16px">后端检索结果' +
-            '<span class="badge" style="margin-left:10px">' + list.length + "</span></h1></div>" +
-            renderMemoryHTML(list);
-          return;
+  // 轻量力导向布局（无第三方库）： repulsion + spring + 向心力
+  function drawGraph(nodes, edges) {
+    const W = 260, H = 340, pad = 22;
+    const n = nodes.length;
+    const pos = nodes.map((_, i) => {
+      const a = (i / n) * Math.PI * 2;
+      return { x: W / 2 + Math.cos(a) * 90, y: H / 2 + Math.sin(a) * 90, vx: 0, vy: 0 };
+    });
+    const idx = {};
+    nodes.forEach((nd, i) => { idx[nd.id] = i; });
+    const links = edges.map((e) => ({
+      s: idx[e.source != null ? e.source : e.from],
+      t: idx[e.target != null ? e.target : e.to],
+    })).filter((l) => l.s != null && l.t != null);
+
+    for (let it = 0; it < 220; it++) {
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          let dx = pos[i].x - pos[j].x, dy = pos[i].y - pos[j].y;
+          let d2 = dx * dx + dy * dy || 0.01;
+          const f = 900 / d2;
+          const d = Math.sqrt(d2);
+          pos[i].vx += (dx / d) * f; pos[i].vy += (dy / d) * f;
+          pos[j].vx -= (dx / d) * f; pos[j].vy -= (dy / d) * f;
         }
-      } catch (e) { /* 后端检索不可用 → 降级本地过滤 */ }
-      const low = q.toLowerCase();
-      const hit = S.memories.filter((m) =>
-        JSON.stringify(m).toLowerCase().indexOf(low) >= 0);
-      $("#memoryBody").innerHTML = hit.length
-        ? '<div class="page-head"><h1 style="font-size:16px">本地匹配' +
-          '<span class="badge" style="margin-left:10px">' + hit.length + "</span></h1></div>" +
-          renderMemoryHTML(hit)
-        : empty("没有匹配的记忆");
+      }
+      links.forEach((l) => {
+        const a = pos[l.s], b = pos[l.t];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        const f = (d - 60) * 0.02;
+        a.vx += (dx / d) * f; a.vy += (dy / d) * f;
+        b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
+      });
+      pos.forEach((p) => {
+        p.vx += (W / 2 - p.x) * 0.006;
+        p.vy += (H / 2 - p.y) * 0.006;
+        p.x += Math.max(-8, Math.min(8, p.vx));
+        p.y += Math.max(-8, Math.min(8, p.vy));
+        p.x = Math.max(pad, Math.min(W - pad, p.x));
+        p.y = Math.max(pad, Math.min(H - pad, p.y));
+        p.vx *= 0.82; p.vy *= 0.82;
+      });
+    }
+
+    let svg = '<svg class="graph-canvas" viewBox="0 0 ' + W + " " + H + '">';
+    links.forEach((l) => {
+      svg += '<line x1="' + pos[l.s].x.toFixed(1) + '" y1="' + pos[l.s].y.toFixed(1) +
+        '" x2="' + pos[l.t].x.toFixed(1) + '" y2="' + pos[l.t].y.toFixed(1) +
+        '" stroke="#ececef" stroke-width="1" />';
+    });
+    nodes.forEach((nd, i) => {
+      const r = 3.2 + Math.min(4, (nd.val || 1) * 0.7);
+      const cur = S.currentNote && S.currentNote.id === nd.id;
+      svg += '<g class="gnode' + (cur ? " cur" : "") + '" data-gnode="' + esc(nd.id) + '">' +
+        '<circle cx="' + pos[i].x.toFixed(1) + '" cy="' + pos[i].y.toFixed(1) + '" r="' + r.toFixed(1) +
+        '" fill="' + (cur ? "#ff4d4f" : "#ffb3b3") + '" />' +
+        '<text x="' + (pos[i].x + r + 4).toFixed(1) + '" y="' + (pos[i].y + 3.2).toFixed(1) +
+        '" font-size="8" fill="#8a8a8a">' + esc(String(nd.title || "").slice(0, 10)) + "</text>" +
+        "</g>";
+    });
+    svg += "</svg>";
+    if (!links.length) {
+      svg += '<div class="graph-note">笔记之间暂无双向链接，先展示全部节点</div>';
+    }
+    return svg;
+  }
+
+  function bindMemoryPane() {
+    const tree = $("#treeBody");
+    if (tree) tree.addEventListener("click", (e) => {
+      const el = e.target.closest("[data-note]");
+      if (el) openNote(el.dataset.note);
+    });
+    const gbox = $("#graphBody");
+    if (gbox) gbox.addEventListener("click", (e) => {
+      const el = e.target.closest("[data-note]");
+      if (el) openNote(el.dataset.note);
+    });
+
+    const btnNew = $("#btnNewNote");
+    if (btnNew) btnNew.addEventListener("click", async () => {
+      const title = prompt("新笔记标题", "新笔记 " + todayStr());
+      if (title == null) return;
+      try {
+        const r = await postJSON("/api/notes", {
+          title: title || ("新笔记 " + todayStr()),
+          markdown: "# " + (title || "新笔记") + "\n\n",
+          folder: "收件箱",
+        });
+        if (r && r.ok) { toast("已创建"); await loadMemory(); openNote(r.id); }
+        else throw new Error((r && r.error) || "创建失败");
+      } catch (e) { toast("创建失败：" + e.message, true); }
+    });
+
+    const btnSave = $("#btnSaveNote");
+    if (btnSave) btnSave.addEventListener("click", async () => {
+      const n = S.currentNote;
+      if (!n) { toast("请先选择一篇笔记", true); return; }
+      const md = $("#markdownEditor").value;
+      try {
+        const r = await postJSON("/api/notes/update", {
+          id: n.id, title: n.title, markdown: md,
+          folder: n.folder || "收件箱", tags: n.tags || "",
+        });
+        if (r && r.ok) { toast("已保存"); await loadMemory(); openNote(n.id); }
+        else throw new Error((r && r.error) || "保存失败");
+      } catch (e) { toast("保存失败：" + e.message, true); }
+    });
+
+    const btnDel = $("#btnDeleteNote");
+    if (btnDel) btnDel.addEventListener("click", async () => {
+      const n = S.currentNote;
+      if (!n) { toast("请先选择一篇笔记", true); return; }
+      if (!confirm("确定删除笔记「" + (n.title || "") + "」？此操作不可恢复。")) return;
+      try {
+        const r = await postJSON("/api/notes/delete", { id: n.id });
+        if (r && r.ok) {
+          toast("已删除");
+          S.currentNote = null;
+          $("#editorTitle").textContent = "选择一篇笔记";
+          $("#markdownEditor").value = "";
+          await loadMemory();
+        } else throw new Error((r && r.error) || "删除失败");
+      } catch (e) { toast("删除失败：" + e.message, true); }
+    });
+
+    const btnRename = $("#btnRenameNote");
+    if (btnRename) btnRename.addEventListener("click", async () => {
+      const n = S.currentNote;
+      if (!n) { toast("请先选择一篇笔记", true); return; }
+      const t = prompt("重命名笔记", n.title || "");
+      if (t == null || !t.trim()) return;
+      try {
+        const r = await postJSON("/api/notes/update", {
+          id: n.id, title: t.trim(), markdown: $("#markdownEditor").value,
+          folder: n.folder || "收件箱", tags: n.tags || "",
+        });
+        if (r && r.ok) { toast("已重命名"); await loadMemory(); openNote(n.id); }
+        else throw new Error((r && r.error) || "重命名失败");
+      } catch (e) { toast("重命名失败：" + e.message, true); }
+    });
+
+    // 记忆搜索（真实 /api/notes/search?q=）
+    const input = $("#memSearch"), btn = $("#btnMemSearch");
+    const runSearch = async () => {
+      const q = (input.value || "").trim();
+      if (!q) { await loadMemory(); return; }
+      const tree = $("#treeBody");
+      tree.innerHTML = LOADING;
+      try {
+        let list = await getJSON("/api/notes/search?q=" + encodeURIComponent(q));
+        if (!Array.isArray(list)) list = [];
+        list = list.filter((n) => !isLegacy(n.title));
+        if (!list.length) { tree.innerHTML = empty("没有找到相关记忆"); return; }
+        let html = '<div class="tree-folder-row">搜索结果 · ' + list.length + " 条</div>";
+        list.slice(0, 40).forEach((n) => {
+          html += '<div class="tree-item" data-note="' + esc(n.id) + '">' +
+            '<span class="ico">📄</span><span class="ti-title">' + esc(n.title || "(无标题)") + "</span></div>";
+        });
+        tree.innerHTML = html;
+      } catch (e) {
+        tree.innerHTML = errorBox("搜索失败", e.message);
+      }
     };
-    if (btn) btn.addEventListener("click", run);
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+    if (btn) btn.addEventListener("click", runSearch);
+    if (input) input.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+
+    // 清理历史遗留数据（默认只统计，删除需二次确认）
+    const btnClean = $("#btnCleanLegacy");
+    if (btnClean) btnClean.addEventListener("click", cleanLegacy);
   }
 
-  /* =========================================================
-     智能体
-     ========================================================= */
-  async function loadAgents() {
-    const box = $("#agentsBody");
-    box.innerHTML = LOADING;
+  async function cleanLegacy() {
+    const PATTERNS = [/ZZ/i, /ZhuangZhou/i, /庄周/i, /旧\s*UI/i, /old[\s_-]*ui/i, /legacy[\s_-]*ui/i];
+    const box = $("#knowledgeBody");
     try {
-      const st = await getJSON("/api/agent/state");
-      S.agentState = st;
-      const tools = (S.health && S.health.tools) || [];
-      const enabled = st.enabled ? '<span class="badge ok">enabled</span>' : '<span class="badge">disabled</span>';
-      const running = st.running ? '<span class="badge run">running</span>' : '<span class="badge">stopped</span>';
-      box.innerHTML =
-        '<div class="row-card"><div class="row-title">小6 主 Agent ' + enabled + running + "</div>" +
-        '<div class="row-desc">模型 ' + esc((S.health && S.health.model) || "—") +
-        " · 已挂载 " + tools.length + " 个工具</div>" +
-        '<div class="row-foot"><span>状态 ' + esc(st.state || "—") + "</span>" +
-        "<span>连续失败 " + esc(st.consecutive_failures) + "</span>" +
-        (st.current_goal ? "<span>当前目标 " + esc(String(st.current_goal).slice(0, 40)) + "</span>" : "") +
-        "</div></div>" +
-        '<div class="empty-state" style="margin-top:14px">后端当前未暴露多 Agent 注册表端点，' +
-        "因此此处只展示真实存在的主 Agent，不虚构其余 Agent。</div>";
-    } catch (e) { box.innerHTML = errorBox("Agent 状态读取失败", e.message); }
+      let notes = await getJSON("/api/notes");
+      if (!Array.isArray(notes)) notes = [];
+      const hit = notes.filter((n) => PATTERNS.some((re) =>
+        re.test(String(n.title || "")) || re.test(String(n.folder || "")) || re.test(String(n.tags || ""))));
+      let kdocs = [];
+      try {
+        const k = await getJSON("/api/knowledge");
+        kdocs = ((k && k.docs) || []).filter((d) => PATTERNS.some((re) =>
+          re.test(String(d.title || "")) || re.test(String(d.path || "")) || re.test(String(d.doc_id || ""))));
+      } catch (e) { kdocs = []; }
+
+      if (!hit.length && !kdocs.length) { toast("没有找到需要清理的历史数据"); return; }
+
+      const names = hit.slice(0, 10).map((n) => "· " + (n.title || "(无标题)")).join("\n") +
+        (hit.length > 10 ? "\n… 等共 " + hit.length + " 条笔记" : "");
+      const ok = confirm(
+        "检测到历史遗留数据：\n\n笔记 " + hit.length + " 条\n知识库文档 " + kdocs.length + " 篇\n\n" +
+        names + "\n\n确定要永久删除吗？此操作不可恢复。\n（只删除这些内容，不会影响其他记忆）"
+      );
+      if (!ok) { toast("已取消，未做任何改动"); return; }
+
+      let okN = 0, failN = 0;
+      for (const n of hit) {
+        try {
+          const r = await postJSON("/api/notes/delete", { id: n.id });
+          if (r && r.ok) okN++; else failN++;
+        } catch (e) { failN++; }
+      }
+      toast("清理完成：笔记删除 " + okN + " 条" + (failN ? "，失败 " + failN + " 条" : ""));
+      if (box) S.knowledge = null;
+      await loadMemory();
+    } catch (e) {
+      toast("清理失败：" + e.message, true);
+    }
   }
 
   /* =========================================================
-     设置
+     能力中心（用户视角分类，不暴露工具数量）
+     ========================================================= */
+  const CAP_CATEGORY = {
+    // 推理
+    user_model: "推理", self_diagnosis: "推理", time: "推理",
+    // 搜索
+    tools: "搜索", world_pulse: "搜索", hotspot: "搜索", prefetch: "搜索",
+    // 文件
+    read_file: "文件", modify_file: "文件", open_file: "文件", open_folder: "文件",
+    search: "文件", delete: "文件",
+    // 浏览器
+    browser_navigate: "浏览器",
+    // 语音
+    voice: "语音",
+    // 桌面
+    computer_action: "桌面", perception: "桌面", capture_screen: "桌面",
+    get_window_info: "桌面", list_process: "桌面", "perception.screen": "桌面",
+    "perception.window": "桌面", "perception.ocr": "桌面", copy_text: "桌面",
+    open_application: "桌面", focus_window: "桌面", execute_command: "桌面",
+    kill_process: "桌面", system: "桌面", network: "桌面",
+    // 知识
+    memory: "知识", knowledge: "知识",
+    // 任务
+    goals: "任务",
+  };
+  const CAP_CATS = [
+    { key: "推理", desc: "理解你的偏好、分析问题与系统状态" },
+    { key: "搜索", desc: "联网检索、热点与实时信息" },
+    { key: "文件", desc: "读取、整理与管理本地文件" },
+    { key: "浏览器", desc: "打开网页、按你的指令浏览" },
+    { key: "语音", desc: "听懂你说的话，也能读给你听" },
+    { key: "桌面", desc: "感知屏幕、操作窗口与应用" },
+    { key: "知识", desc: "记住你，管理你的知识库" },
+    { key: "任务", desc: "拆解目标、跟踪执行进度" },
+  ];
+
+  async function loadCapabilities() {
+    const box = $("#capabilitiesBody");
+    box.innerHTML = LOADING;
+    await ensureCaps();
+    renderCapabilities();
+  }
+
+  function allCapItems() {
+    const caps = CAPS();
+    const out = [];
+    if (!caps || !caps.groups) return out;
+    Object.keys(caps.groups).forEach((g) => {
+      (caps.groups[g] || []).forEach((c) => out.push(Object.assign({}, c, { __group: g })));
+    });
+    return out;
+  }
+
+  function renderCapabilities() {
+    const box = $("#capabilitiesBody");
+    const filters = $("#capFilters");
+    const items = allCapItems();
+
+    if (filters) {
+      filters.innerHTML = '<button class="cap-filter' + (S.capFilter === "all" ? " active" : "") +
+        '" data-cat="all">全部</button>' +
+        CAP_CATS.map((c) => {
+          const n = items.filter((x) => CAP_CATEGORY[x.id] === c.key).length;
+          if (!n) return "";
+          return '<button class="cap-filter' + (S.capFilter === c.key ? " active" : "") +
+            '" data-cat="' + esc(c.key) + '">' + esc(c.key) + " " + n + "</button>";
+        }).join("");
+    }
+
+    if (!items.length) {
+      box.innerHTML = errorBox("能力列表不可用", "后端 /api/capability_os/catalog 未返回数据");
+      return;
+    }
+
+    const picked = S.capFilter === "all" ? items : items.filter((x) => CAP_CATEGORY[x.id] === S.capFilter);
+    if (!picked.length) { box.innerHTML = empty("该分类下暂无能力"); return; }
+
+    const catDesc = CAP_CATS.find((c) => c.key === S.capFilter);
+    let html = "";
+    if (catDesc) {
+      html += '<div class="cat-intro"><div class="ci-name">' + esc(catDesc.key) + "</div>" +
+        '<div class="ci-desc">' + esc(catDesc.desc) + "</div></div>";
+    }
+    html += '<div class="grid">' + picked.map((c) => {
+      const on = !!c.available;
+      return '<div class="tool-card cap-card' + (on ? "" : " cap-off") + '">' +
+        '<div class="cap-card-head">' +
+        '<div class="tool-name">' + esc(c.icon || "") + " " + esc(c.name || c.id) + "</div>" +
+        '<span class="badge ' + (on ? "ok" : "") + '">' + (on ? "可用" : "未开启") + "</span>" +
+        "</div>" +
+        '<div class="tool-desc">' + esc(c.description || "") + "</div>" +
+        "</div>";
+    }).join("") + "</div>";
+    box.innerHTML = html;
+  }
+
+  /* =========================================================
+     设置：通用 / 模型中心 / 联网策略 / 服务状态
      ========================================================= */
   async function loadSettings() {
     const box = $("#settingsBody");
     box.innerHTML = LOADING;
+    await ensureConfig();
+    renderSettings();
+  }
+
+  function renderSettings() {
+    const box = $("#settingsBody");
+    const t = S.settingsTab;
+    if (t === "models") { renderModels(box); return; }
+    if (t === "network") { renderNetwork(box); return; }
+    if (t === "diagnostics") { renderDiagnostics(box); return; }
+    renderGeneral(box);
+  }
+
+  function renderGeneral(box) {
+    const cfg = S.config || {};
+    let html = '<div class="row-card"><div class="kv">' +
+      kv("助手名称", cfg.ai_name) +
+      kv("外观主题", cfg.theme === "light" ? "浅色" : (cfg.theme || "—")) +
+      kv("当前模型", (cfg.llm && cfg.llm.model) || "—") +
+      kv("模型提供方", providerShortName(cfg.active_provider || (cfg.llm && cfg.llm.active)) || "—") +
+      kv("长期记忆", cfg.memory_graph ? "已开启" : "已关闭") +
+      "</div></div>";
+
+    html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">关于</h1></div>';
+    const v = (cfg.version && cfg.version.current) || "1.0.0";
+    html += '<div class="row-card"><div class="kv">' +
+      kv("小6 版本", v) +
+      kv("应用名称", (cfg.version && cfg.version.app_name) || "小6") +
+      "</div></div>";
+    box.innerHTML = html;
+  }
+
+  function kv(k, v) {
+    return '<div class="k">' + esc(k) + '</div><div class="v">' + esc(v == null ? "—" : v) + "</div>";
+  }
+
+  /* ---------- 模型中心 ---------- */
+  const CLOUD_PROVIDERS = [
+    { key: "agnes", name: "Agnes", slot: "agnes", base: "https://api.agnes-ai.cn/v1",
+      models: ["agnes-2.5-flash", "agnes-2.0-flash", "agnes-1.5-flash"], auth: true, hint: "小6 默认使用的云端模型" },
+    { key: "deepseek", name: "DeepSeek", slot: "llm2", base: "https://api.deepseek.com/v1",
+      models: ["deepseek-chat", "deepseek-reasoner"], auth: true },
+    { key: "glm", name: "智谱 GLM", slot: "llm2", base: "https://open.bigmodel.cn/api/paas/v4",
+      models: ["glm-4.6", "glm-4.5", "glm-4-flash"], auth: true },
+    { key: "minimax", name: "MiniMax", slot: "llm2", base: "https://api.minimax.chat/v1",
+      models: ["MiniMax-Text-01", "abab6.5s-chat"], auth: true },
+    { key: "openai", name: "OpenAI", slot: "llm2", base: "https://api.openai.com/v1",
+      models: ["gpt-4o", "gpt-4o-mini", "gpt-4.1"], auth: true },
+    { key: "claude", name: "Claude", slot: "llm2", base: "https://api.anthropic.com/v1",
+      models: ["claude-sonnet-4-5", "claude-3-7-sonnet"], auth: true,
+      hint: "Anthropic 原生接口非 OpenAI 格式，需填写 OpenAI 兼容网关地址" },
+    { key: "gemini", name: "Gemini", slot: "llm2", base: "https://generativelanguage.googleapis.com/v1beta/openai",
+      models: ["gemini-2.5-pro", "gemini-2.5-flash"], auth: true },
+  ];
+  const LOCAL_PROVIDERS = [
+    { key: "ollama", name: "Ollama", slot: "ollama", base: "http://127.0.0.1:11434/v1", models: [], auth: false },
+    { key: "mlx", name: "MLX", slot: "mlx", base: "http://127.0.0.1:8080/v1", models: [], auth: false },
+    { key: "lmstudio", name: "LM Studio", slot: "lmstudio", base: "http://127.0.0.1:1234/v1", models: [], auth: false },
+  ];
+  const SLOT_ENV = {
+    agnes: { base: "AGNES_BASE_URL", key: "AGNES_API_KEY", model: "AGNES_MODEL" },
+    llm2: { base: "LLM2_BASE_URL", key: "LLM2_API_KEY", model: "LLM2_MODEL" },
+    ollama: { base: "OLLAMA_BASE_URL", key: "", model: "OLLAMA_MODEL" },
+    mlx: { base: "MLX_BASE_URL", key: "", model: "MLX_MODEL" },
+    lmstudio: { base: "LMSTUDIO_BASE_URL", key: "", model: "LMSTUDIO_MODEL" },
+  };
+
+  function llm2Occupant(cfg) {
+    const b = ((cfg.llm || {}).llm2 || {}).base_url || "";
+    if (!b) return null;
+    return CLOUD_PROVIDERS.find((p) => p.slot === "llm2" && p.base === b.replace(/\/+$/, "")) || { key: "custom", name: "自定义服务" };
+  }
+
+  function providerValues(cfg, p) {
+    const spec = (cfg.providers || []).find((x) => x.id === p.slot) || {};
+    if (p.slot === "agnes") {
+      return { base: (cfg.llm && cfg.llm.base_url) || p.base, model: (cfg.llm && cfg.llm.model) || "", keySet: !!(cfg.llm && cfg.llm.key_present) };
+    }
+    if (p.slot === "llm2") {
+      const occ = llm2Occupant(cfg);
+      const mine = occ && occ.key === p.key;
+      return {
+        base: mine ? (cfg.llm.llm2.base_url || p.base) : p.base,
+        model: mine ? (cfg.llm.llm2.model || "") : "",
+        keySet: mine ? !!(cfg.llm.llm2.key_present) : false,
+        occupiedBy: (!mine && occ) ? occ.name : "",
+      };
+    }
+    return { base: spec.resolved_base_url || p.base, model: spec.resolved_model || "", keySet: false };
+  }
+
+  function renderModels(box) {
+    const cfg = S.config || {};
+    const active = (cfg.active_provider || (cfg.llm && cfg.llm.active) || "").toLowerCase();
+    const occ = llm2Occupant(cfg);
+
+    let html = "";
+    if (occ && occ.key === "custom") {
+      html += '<div class="notice-box">当前「自定义云端服务」槽位填的是一个未在列表中的地址，' +
+        "选择下方任一云端厂商并启用后会覆盖它。</div>";
+    }
+
+    html += '<div class="sec-title">云端模型</div>';
+    html += CLOUD_PROVIDERS.map((p) => modelCard(cfg, p, active, "cloud")).join("");
+    html += '<div class="notice-box">云端模型中，Agnes 使用独立配置；DeepSeek / 智谱 GLM / MiniMax / OpenAI / Claude / Gemini ' +
+      "共用同一个「自定义云端服务」槽位，同一时间只能启用其中一个。</div>";
+
+    html += '<div class="sec-title" style="margin-top:24px">本地模型</div>';
+    html += LOCAL_PROVIDERS.map((p) => modelCard(cfg, p, active, "local")).join("");
+    html += '<div class="notice-box">本地模型需要先在本机启动对应服务（Ollama / LM Studio / MLX），' +
+      "并填写正确的服务地址与模型名称。</div>";
+
+    html += '<div class="notice-box warn">配置保存后会写入小6 的配置文件，<b>重启小6 后生效</b>。</div>';
+
+    box.innerHTML = html;
+    bindModelActions();
+  }
+
+  function modelCard(cfg, p, active, kind) {
+    const v = providerValues(cfg, p);
+    const isActive = active === p.slot && (p.slot !== "llm2" || !v.occupiedBy);
+    const envs = SLOT_ENV[p.slot];
+    const modelOptions = (p.models && p.models.length)
+      ? p.models.map((m) => '<option value="' + esc(m) + '"' + (v.model === m ? " selected" : "") + ">" + esc(m) + "</option>").join("")
+      : "";
+
+    return '<div class="model-card' + (isActive ? " mc-active" : "") + '" data-pk="' + esc(p.key) + '">' +
+      '<div class="model-card-header">' +
+      '<div class="model-card-title">' + esc(p.name) +
+      '<span class="mc-kind">' + (kind === "local" ? "本地" : "云端") + "</span></div>" +
+      (isActive ? '<span class="model-card-badge active">当前使用</span>'
+        : '<span class="model-card-badge">' + (v.keySet ? "已配置密钥" : (kind === "local" ? "未连接" : "未配置")) + "</span>") +
+      "</div>" +
+      (v.occupiedBy ? '<div class="mc-occupied">该槽位当前被「' + esc(v.occupiedBy) + "」占用</div>" : "") +
+      (p.hint ? '<div class="mc-hint">' + esc(p.hint) + "</div>" : "") +
+      '<div class="model-form">' +
+      (envs.key
+        ? '<div class="field"><label>API Key</label><input type="password" class="f-key" placeholder="' +
+          (v.keySet ? "已保存，留空则不修改" : "请输入 API Key") + '" autocomplete="off" /></div>'
+        : '<div class="field"><label>API Key</label><input type="text" value="本地服务无需密钥" disabled /></div>') +
+      '<div class="field"><label>Base URL</label><input type="text" class="f-base" value="' + esc(v.base) + '" /></div>' +
+      '<div class="field"><label>模型</label>' +
+      (modelOptions
+        ? '<select class="f-model">' + modelOptions + "</select>"
+        : '<input type="text" class="f-model" value="' + esc(v.model) + '" placeholder="例如 llama3.1:8b" />') +
+      "</div>" +
+      "</div>" +
+      '<div class="model-actions">' +
+      '<button class="btn-secondary" data-mact="test">连接测试</button>' +
+      '<button class="btn-primary" data-mact="save">保存并设为默认</button>' +
+      "</div>" +
+      '<div class="mc-result"></div>' +
+      "</div>";
+  }
+
+  function findProvider(key) {
+    return CLOUD_PROVIDERS.find((p) => p.key === key) || LOCAL_PROVIDERS.find((p) => p.key === key);
+  }
+
+  function bindModelActions() {
+    $$(".model-card").forEach((card) => {
+      const key = card.dataset.pk;
+      const p = findProvider(key);
+      if (!p) return;
+      card.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-mact]");
+        if (!b) return;
+        const act = b.dataset.mact;
+        const base = card.querySelector(".f-base").value.trim();
+        const model = card.querySelector(".f-model").value.trim();
+        const keyEl = card.querySelector(".f-key");
+        const apiKey = keyEl ? keyEl.value.trim() : "";
+        const result = card.querySelector(".mc-result");
+        if (act === "test") testProvider(card, p, base, model, apiKey, result, b);
+        if (act === "save") saveProvider(card, p, base, model, apiKey, result, b);
+      });
+    });
+  }
+
+  async function testProvider(card, p, base, model, apiKey, result, btn) {
+    if (!model) { result.className = "mc-result err"; result.textContent = "请先填写模型名称"; return; }
+    if (p.auth && !apiKey) {
+      const cfg = S.config || {};
+      const v = providerValues(cfg, p);
+      if (!v.keySet) { result.className = "mc-result err"; result.textContent = "请先填写 API Key"; return; }
+    }
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = "测试中…";
+    result.className = "mc-result"; result.textContent = "正在连接…";
     try {
-      const cfg = await getJSON("/api/config");
-      S.config = cfg;
-      const rows = [
-        ["AI 名称", cfg.ai_name],
-        ["主题", cfg.theme],
-        ["模型", cfg.llm && cfg.llm.model],
-        ["Provider", cfg.llm && cfg.llm.active],
-        ["Base URL", cfg.llm && cfg.llm.base_url],
-        ["API Key", cfg.llm && cfg.llm.key_present ? "已配置（仅存于服务端）" : "未配置"],
-        ["记忆图", String(cfg.memory_graph)],
-        ["构建通道", cfg.build_channel],
-      ];
-      let html = '<div class="row-card"><div class="kv">' + rows.map((r) =>
-        '<div class="k">' + esc(r[0]) + '</div><div class="v">' + esc(r[1] == null ? "—" : r[1]) + "</div>"
-      ).join("") + "</div></div>";
+      const r = await postJSON("/api/test-llm", {
+        base_url: base,
+        api_key: p.auth ? apiKey : "local",
+        model: model,
+      });
+      if (r && r.ok) {
+        result.className = "mc-result ok";
+        result.textContent = "连接成功 · 响应 " + (r.latency_ms || "—") + " ms · 模型 " + (r.model || model);
+      } else {
+        throw new Error((r && (r.error || r.detail)) || "连接失败");
+      }
+    } catch (e) {
+      result.className = "mc-result err";
+      result.textContent = "连接失败：" + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  }
 
-      // 版本信息 /api/version
-      try {
-        const v = await getJSON("/api/version");
-        S.version = v;
-        html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">版本</h1></div>' +
-          '<div class="row-card"><div class="kv">' +
-          '<div class="k">应用</div><div class="v">' + esc(v.app_name) + "</div>" +
-          '<div class="k">版本</div><div class="v">' + esc(v.version) + "</div>" +
-          (v.check_url ? '<div class="k">更新地址</div><div class="v">' + esc(v.check_url) + "</div>" : "") +
-          "</div></div>";
-      } catch (e) { /* 版本接口失败不影响主配置 */ }
+  async function saveProvider(card, p, base, model, apiKey, result, btn) {
+    if (!model) { result.className = "mc-result err"; result.textContent = "请先填写模型名称"; return; }
+    if (p.auth && !apiKey && !providerValues(S.config || {}, p).keySet) {
+      result.className = "mc-result err"; result.textContent = "请先填写 API Key"; return;
+    }
+    const env = SLOT_ENV[p.slot];
+    const payload = {};
+    payload[env.base] = base;
+    payload[env.model] = model;
+    if (p.auth && apiKey) payload[env.key] = apiKey;
+    payload.ACTIVE_LLM = p.slot;
 
-      // 用户模型 /api/user_model
-      try {
-        const um = await getJSON("/api/user_model");
-        S.userModel = um && um.model ? um.model : null;
-        if (S.userModel) {
-          const idt = S.userModel.identity || {};
-          html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">用户模型</h1></div>' +
-            '<div class="row-card"><div class="kv">' +
-            '<div class="k">身份</div><div class="v">' + esc(idt.name || "—") + " / " + esc(idt.role || "—") + "</div>" +
-            (idt.org ? '<div class="k">组织</div><div class="v">' + esc(idt.org) + "</div>" : "") +
-            '<div class="k">字段</div><div class="v">' + esc(Object.keys(S.userModel).join("、")) + "</div>" +
-            "</div></div>";
-        }
-      } catch (e) { /* 用户模型失败不影响主配置 */ }
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = "保存中…";
+    try {
+      const r = await postJSON("/api/config", payload);
+      if (r && r.ok) {
+        result.className = "mc-result ok";
+        result.textContent = "已保存并设为默认，重启小6 后生效";
+        toast("已保存，重启小6 后生效");
+        S.config = null;
+        await ensureConfig();
+      } else {
+        throw new Error((r && (r.error || r.detail)) || "保存失败");
+      }
+    } catch (e) {
+      result.className = "mc-result err";
+      result.textContent = "保存失败：" + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  }
 
-      // 诊断：就绪状态 /api/ready
-      try {
-        const rd = await getJSON("/api/ready");
-        const chk = (rd && rd.self_check && rd.self_check.checks) || [];
-        const failed = chk.filter((c) => !c.ok);
-        html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">就绪状态' +
-          '<span class="badge ' + (failed.length ? "warn" : "ok") + '" style="margin-left:10px">' +
-          (failed.length ? failed.length + " 项异常" : "全部通过") + "</span></h1></div>";
-        html += chk.length
-          ? '<div class="list">' + chk.slice(0, 12).map((c) =>
-              '<div class="row-card"><div class="row-title">' + esc(c.name) +
-              '<span class="badge ' + (c.ok ? "ok" : "") + '">' + (c.ok ? "通过" : "失败") + "</span></div>" +
-              (c.detail ? '<div class="row-desc">' + esc(String(c.detail).slice(0, 120)) + "</div>" : "") +
-              "</div>").join("") + "</div>"
-          : empty("无自检项");
-      } catch (e) { /* 就绪检查失败不阻断 */ }
+  /* ---------- 联网策略（仅 UI 配置，不改 Agent Runtime） ---------- */
+  const NET_KEY = "xiao6.network.policy";
+  function loadPolicy() {
+    try {
+      return Object.assign({ mode: "auto", sources: "" }, JSON.parse(localStorage.getItem(NET_KEY) || "{}"));
+    } catch (e) { return { mode: "auto", sources: "" }; }
+  }
+  function savePolicy(p) { try { localStorage.setItem(NET_KEY, JSON.stringify(p)); } catch (e) {} }
 
-      // 诊断：系统监控 /api/sysmon
-      try {
-        const sm = await getJSON("/api/sysmon");
-        html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">系统监控</h1></div>' +
-          '<div class="row-card"><div class="kv">' +
-          (sm.cpu ? '<div class="k">CPU</div><div class="v">' + esc(sm.cpu.percent) + "%</div>" : "") +
-          (sm.memory ? '<div class="k">内存</div><div class="v">' + esc(sm.memory.percent) + "%</div>" : "") +
-          (sm.ts ? '<div class="k">采样时间</div><div class="v">' + esc(sm.ts) + "</div>" : "") +
-          "</div></div>";
-      } catch (e) { /* 系统监控失败不阻断 */ }
+  function renderNetwork(box) {
+    const pol = loadPolicy();
+    const opts = [
+      { mode: "auto", label: "自动判断", desc: "由小6自己决定这次是否需要联网查资料（默认）" },
+      { mode: "off", label: "禁止联网", desc: "只用已有知识与本地数据回答，不访问网络" },
+      { mode: "sources", label: "指定来源", desc: "需要联网时，只从你填写的来源获取信息" },
+    ];
+    let html = '<div class="row-card">' +
+      opts.map((o) =>
+        '<div class="network-option">' +
+        '<input type="radio" name="netmode" value="' + o.mode + '" id="nm-' + o.mode + '"' +
+        (pol.mode === o.mode ? " checked" : "") + " />" +
+        '<div><label class="opt-label" for="nm-' + o.mode + '">' + esc(o.label) + "</label>" +
+        '<div class="opt-desc">' + esc(o.desc) + "</div></div></div>").join("") +
+      '<div class="source-field" id="srcField" style="display:' + (pol.mode === "sources" ? "flex" : "none") + '">' +
+      '<input type="text" id="srcInput" placeholder="多个来源用逗号分隔，例如：官网, 知乎, 维基百科" value="' + esc(pol.sources) + '" />' +
+      '<button id="btnSaveNet">保存</button></div>' +
+      '<div class="net-note">这里只调整小6 的联网偏好；是否联网、怎么查，仍由小6 在每次对话中自行判断。</div>' +
+      "</div>";
+    box.innerHTML = html;
 
-      // 诊断：后端日志 /api/logs（最近 15 行）
-      try {
-        const lg = await getJSON("/api/logs");
-        const lines = (lg && lg.lines) || [];
-        if (lines.length) {
-          html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">后端日志' +
-            '<span class="badge" style="margin-left:10px">最近 ' + lines.length + " 行</span></h1></div>" +
-            '<div class="row-card"><div class="ap-args" style="max-height:200px">' +
-            esc(lines.slice(-15).join("\n")) + "</div></div>";
-        }
-      } catch (e) { /* 日志失败不阻断 */ }
+    $$('input[name="netmode"]').forEach((r) => r.addEventListener("change", () => {
+      const sf = $("#srcField");
+      if (sf) sf.style.display = r.value === "sources" ? "flex" : "none";
+    }));
+    const bs = $("#btnSaveNet");
+    if (bs) bs.addEventListener("click", () => {
+      const m = ($$('input[name="netmode"]').find((r) => r.checked) || {}).value || "auto";
+      const src = ($("#srcInput") || {}).value || "";
+      savePolicy({ mode: m, sources: src.trim() });
+      toast("联网策略已保存");
+    });
+  }
 
-      html += '<div class="empty-state" style="margin-top:14px">设置项为只读展示：后端 /api/config 的写入语义未验证，' +
-        "为避免破坏现有配置，此处不做修改。</div>";
-      box.innerHTML = html;
-    } catch (e) { box.innerHTML = errorBox("配置读取失败", e.message); }
+  function policyPrefix() {
+    const p = loadPolicy();
+    if (p.mode === "off") {
+      return "【联网约束】本次及后续回答禁止使用任何联网工具，只基于你已有的知识与本地数据回答。\n\n";
+    }
+    if (p.mode === "sources" && p.sources) {
+      return "【联网约束】如需联网检索，请只从以下来源获取信息：" + p.sources + "。\n\n";
+    }
+    return "";
+  }
+
+  /* ---------- 服务状态 ---------- */
+  async function renderDiagnostics(box) {
+    box.innerHTML = LOADING;
+    let ready = S.ready, health = S.health;
+    try { if (!ready) ready = await getJSON("/api/ready"); } catch (e) { ready = null; }
+    try { if (!health) health = await getJSON("/api/health"); } catch (e) { health = null; }
+
+    const checks = (health && health.self_check && health.self_check.checked_at) || "";
+    const list = (ready && ready.self_check && ready.self_check.checks) ||
+      (health && health.self_check && health.self_check.checks) || [];
+    const failed = list.filter((c) => !c.ok);
+
+    let html = '<div class="status-grid" style="grid-template-columns:repeat(3,1fr)">' +
+      statusItem("服务", (ready && ready.ready !== false) ? "运行中" : "启动中", (ready && ready.ready !== false) ? "ok" : "warn") +
+      statusItem("模型", (S.config && S.config.llm && S.config.llm.model) || (health && health.model) || "—",
+        (S.config && S.config.llm && S.config.llm.key_present) ? "ok" : "warn") +
+      statusItem("语音", ttStatusLabel(list, health), ttStatusOK(list) ? "ok" : "warn") +
+      "</div>";
+
+    html += '<div class="page-head" style="margin-top:24px"><h1 style="font-size:16px">各模块状态' +
+      '<span class="badge ' + (failed.length ? "warn" : "ok") + '" style="margin-left:10px">' +
+      (failed.length ? failed.length + " 项待处理" : "全部正常") + "</span></h1></div>";
+
+    html += list.length
+      ? '<div class="grid">' + list.map((c) =>
+          '<div class="tool-card"><div class="cap-card-head">' +
+          '<div class="tool-name">' + esc(CHECK_LABEL[c.name] || c.name) + "</div>" +
+          '<span class="badge ' + (c.ok ? "ok" : "warn") + '">' + (c.ok ? "正常" : "待处理") + "</span>" +
+          "</div></div>").join("") + "</div>"
+      : empty("暂无状态信息");
+
+    if (checks) html += '<div class="net-note" style="margin-top:16px">最近检查时间：' + esc(checks) + "</div>";
+    box.innerHTML = html;
+  }
+
+  function ttStatusLabel(list, health) {
+    const c = list.find((x) => /TTS|语音/.test(String(x.name || "")));
+    if (c) return c.ok ? "可用" : "待处理";
+    return (health && health.tts_backend) ? String(health.tts_backend) : "未配置";
+  }
+  function ttStatusOK(list) {
+    const c = list.find((x) => /TTS|语音/.test(String(x.name || "")));
+    return c ? !!c.ok : false;
   }
 
   /* =========================================================
@@ -845,7 +1394,6 @@
      ========================================================= */
   function bindComposer() {
     const ta = $("#input"), send = $("#btnSend");
-
     ta.addEventListener("input", () => {
       ta.style.height = "auto";
       ta.style.height = Math.min(200, ta.scrollHeight) + "px";
@@ -854,19 +1402,9 @@
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
     });
     send.addEventListener("click", submit);
-
-    $("#btnSearch").addEventListener("click", function () {
-      S.search = !S.search; this.classList.toggle("on", S.search);
-      toast(S.search ? "已开启联网搜索（Agent 将优先使用 web_search）" : "已关闭联网搜索");
-    });
-    $("#btnThink").addEventListener("click", function () {
-      // 诚实：后端 /api/models 返回 404，无模型切换端点
-      toast("后端暂无模型切换端点（/api/models → 404），深度思考未接入，不做假装实现", true);
-    });
     $("#btnAttach").addEventListener("click", () => $("#fileInput").click());
     $("#fileInput").addEventListener("change", onFiles);
 
-    // 拖拽上传
     const cw = $("#composer");
     ["dragenter", "dragover"].forEach((ev) => cw.addEventListener(ev, (e) => {
       e.preventDefault(); cw.style.borderColor = "#ff4d4f";
@@ -878,20 +1416,20 @@
       if (e.dataTransfer && e.dataTransfer.files.length) attachPaths(e.dataTransfer.files);
     });
 
-    // 快捷胶囊
     const QUICK = [
-      "帮我写一段代码",
-      "分析当前项目结构",
-      "现在几点了",
-      "帮我查一下今天的热点",
+      "今天有什么值得关注的新闻",
+      "帮我整理一下今天要做的事",
+      "查一下现在的天气",
+      "帮我总结一下最近的工作",
     ];
-    $("#quickChips").innerHTML = QUICK.map((q) =>
-      '<button class="chip" data-q="' + esc(q) + '">' + esc(q) + "</button>").join("");
-    $("#quickChips").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-q]");
-      if (b) { ta.value = b.dataset.q; ta.dispatchEvent(new Event("input")); submit(); }
-    });
-
+    const qc = $("#quickChips");
+    if (qc) {
+      qc.innerHTML = QUICK.map((q) => '<button class="chip" data-q="' + esc(q) + '">' + esc(q) + "</button>").join("");
+      qc.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-q]");
+        if (b) { ta.value = b.dataset.q; ta.dispatchEvent(new Event("input")); submit(); }
+      });
+    }
     bindVoice();
   }
 
@@ -899,12 +1437,11 @@
   function attachPaths(files) {
     const names = Array.from(files).map((f) => f.name).join("、");
     if (!names) return;
-    // 沙箱约束提示：后端文件工具仅限 xiao6-ui/sandbox
-    toast("已选择：" + names + "（注意：后端文件工具仅限沙箱目录，上传链路需后端端点支持）");
+    toast("已选择：" + names + "（文件读取受沙箱目录限制）");
   }
 
   /* =========================================================
-     语音（真实 /api/asr）
+     语音输入（真实 /api/asr）
      ========================================================= */
   let rec = null, recStream = null, recChunks = [];
   function bindVoice() {
@@ -914,104 +1451,76 @@
       if (!navigator.mediaDevices || !window.MediaRecorder) {
         toast("当前环境不支持录音", true); return;
       }
-      try {
-        recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (e) {
-        toast("麦克风不可用：" + e.message, true); return;
-      }
+      try { recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch (e) { toast("麦克风不可用：" + e.message, true); return; }
       recChunks = [];
       rec = new MediaRecorder(recStream);
       rec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
       rec.onstop = async () => {
         recStream.getTracks().forEach((t) => t.stop());
-        setHeart(S.busy ? "thinking" : "idle");
         btn.classList.remove("on");
         const blob = new Blob(recChunks, { type: rec.mimeType || "audio/webm" });
-        if (!blob.size) { toast("未采集到音频", true); return; }
-        setHeart("thinking");
+        if (!blob.size) { toast("没有采集到声音", true); return; }
         try {
-          // 冻结契约（源自旧 UI voice.js）：POST /api/asr?ext=.wav
-          // multipart 字段名必须是 audio，不得修改
+          // 冻结契约：POST /api/asr?ext=.wav，multipart 字段名必须是 audio
           const fd = new FormData();
           fd.append("audio", blob, "voice.wav");
-          const text = await api("/api/asr?ext=.wav", {
-            method: "POST",
-            body: fd,   // 不手工设 Content-Type，让浏览器生成 multipart boundary
-          });
+          const text = await api("/api/asr?ext=.wav", { method: "POST", body: fd });
           const out = (typeof text === "string" ? text : (text.text || text.result || "")).trim();
-          if (!out) { toast("识别结果为空", true); setHeart("idle"); return; }
+          if (!out) { toast("没有听清，请再说一次", true); return; }
           $("#input").value = out;
           $("#input").dispatchEvent(new Event("input"));
-          setHeart("idle");
-          toast("识别完成：" + out.slice(0, 20));
+          toast("已识别：" + out.slice(0, 20));
         } catch (e) {
-          setHeart("error");
           toast("语音识别失败：" + e.message, true);
-          setTimeout(() => setHeart("idle"), 1600);
         }
       };
       rec.start();
       btn.classList.add("on");
-      setHeart("listening");
       toast("正在聆听… 再次点击结束");
     });
   }
 
   /* =========================================================
-     SSE 事件总线 /api/stream（主动推送 + 审批请求）
-     契约源自旧 UI：api.js 用 EventSource 连接 /api/stream；
-     approval.js 用 POST /api/agent/approval?ticket=<t>&decision=approve|reject
-     truthful 红线：只有后端 {ok:true} 才置终态，否则保留按钮等重试，绝不假成功
+     SSE 事件总线 /api/stream（主动消息 + 审批请求）
+     truthful：只有后端 {ok:true} 才置终态，否则保留按钮等重试
      ========================================================= */
   let evtSource = null;
-
   function initEventStream() {
     if (typeof EventSource === "undefined") return;
     if (evtSource) return;
     try { evtSource = new EventSource("/api/stream"); } catch (e) { return; }
-
     evtSource.onopen = function () {
       const dot = $("#liveDot");
-      if (dot) dot.title = "后端在线 · 实时事件通道已连接";
+      if (dot) dot.title = "服务运行中 · 实时消息已连接";
     };
     evtSource.onmessage = function (e) {
       let m = null;
       try { m = JSON.parse(e.data); } catch (_) { return; }
       handleStreamEvent(m);
     };
-    // EventSource 自带重连，onerror 不做破坏性动作
-    evtSource.onerror = function () { /* 静默等待自动重连 */ };
+    evtSource.onerror = function () { /* EventSource 自动重连 */ };
   }
 
   function handleStreamEvent(m) {
     if (!m || typeof m !== "object") return;
     const ap = m.approval || m.modal || {};
     const ticket = m.ticket || ap.ticket;
-    if (ticket) { renderApprovalCard(m, ticket); return; }            // ① 审批请求（最高优先）
-    if (m.xiao6_event === "proactive" || m.kind) { renderProactive(m); return; } // ② 主动推送
-    // ③ 其余事件忽略，避免刷屏
+    if (ticket) { renderApprovalCard(m, ticket); return; }
+    if (m.xiao6_event === "proactive" || m.kind) { renderProactive(m); return; }
   }
 
   function renderProactive(m) {
     const kind = m.kind || "notice";
-    const icon = kind === "alert" ? "📡" : kind === "briefing" ? "☀️" :
-                 kind === "reminder" ? "⏰" : "💬";
+    const icon = kind === "alert" ? "📡" : kind === "briefing" ? "☀️" : kind === "reminder" ? "⏰" : "💬";
     const content = m.content || m.text || m.message || "";
     if (!content) return;
-    const time = m.ts || "";
-    const card = '<div class="proactive-card">' +
-      '<div class="pc-head">' + icon + " " + esc(kind) + "</div>" +
+    const card = '<div class="proactive-card"><div class="pc-head">' + icon + " " + esc(kind) + "</div>" +
       '<div class="pc-body">' + esc(content) + "</div>" +
-      (time ? '<div class="pc-time">' + esc(time) + "</div>" : "") + "</div>";
-
-    const hero = $("#hero");
-    if (hero && hero.style.display !== "none") {
-      const feed = $("#proactiveFeed");
-      if (feed) feed.insertAdjacentHTML("afterbegin", card);
-    } else {
-      addMsg("assistant", card);
-    }
-    toast(icon + " 小6 有新的主动消息");
+      (m.ts ? '<div class="pc-time">' + esc(m.ts) + "</div>" : "") + "</div>";
+    hideChatEmpty();
+    addMsg("assistant", card);
+    toast(icon + " 小6 有新的消息");
   }
 
   function renderApprovalCard(m, ticket) {
@@ -1020,33 +1529,27 @@
     const summary = m.summary || ap.summary || m.prompt || ap.prompt || "有一项操作需要你确认";
     const args = m.args_preview || ap.args_preview || m.argsPreview || ap.argsPreview || "";
 
-    ensureChatMode();
+    hideChatEmpty();
     const bubble = addMsg("assistant", "");
     const card = document.createElement("div");
     card.className = "approval-card";
     card.innerHTML =
-      '<div class="ap-head">⚠️ 需要确认' +
+      '<div class="ap-head">需要你确认' +
       (tool ? '<span class="ap-tool">' + esc(tool) + "</span>" : "") + "</div>" +
       '<div class="ap-body">' + esc(summary) + "</div>" +
       (args ? '<div class="ap-args">' + esc(args) + "</div>" : "") +
-      '<div class="ap-actions">' +
-      '<button class="ap-yes">批准</button>' +
-      '<button class="ap-no">拒绝</button>' +
-      '<span class="ap-state">ticket ' + esc(String(ticket).slice(0, 12)) + "</span>" +
+      '<div class="ap-actions"><button class="ap-yes">批准</button><button class="ap-no">拒绝</button>' +
       "</div>";
     bubble.appendChild(card);
-
     card.querySelector(".ap-yes").addEventListener("click", () => postApproval(ticket, "approve", card));
     card.querySelector(".ap-no").addEventListener("click", () => postApproval(ticket, "reject", card));
-    toast("有一项操作需要确认");
+    toast("有一项操作需要你确认");
   }
 
   async function postApproval(ticket, decision, card) {
     const yes = card.querySelector(".ap-yes"), no = card.querySelector(".ap-no");
-    const stateEl = card.querySelector(".ap-state");
     if (yes) yes.disabled = true;
     if (no) no.disabled = true;
-    if (stateEl) stateEl.textContent = "提交中…";
     try {
       const res = await fetch("/api/agent/approval?ticket=" + encodeURIComponent(ticket) +
         "&decision=" + decision, { method: "POST" });
@@ -1063,34 +1566,25 @@
         throw new Error((d && (d.error || d.detail)) || "HTTP " + res.status);
       }
     } catch (e) {
-      // truthful：恢复按钮、保留 blocked，等待重试
       if (yes) yes.disabled = false;
       if (no) no.disabled = false;
-      if (stateEl) stateEl.textContent = "提交失败 · 请重试";
-      toast("审批提交失败：" + e.message, true);
+      toast("提交失败：" + e.message + "，请重试", true);
     }
   }
 
   /* =========================================================
-     发送 + SSE 流式
+     发送 + 流式输出
      ========================================================= */
-  function setHeart(state) {
-    const h = $("#heartBig");
-    if (!h) return;
-    h.className = "heart-big state-" + state;
-  }
-
-  function ensureChatMode() {
-    // 隐藏首页 hero，进入对话模式（直接置 display，不依赖不存在的 .hidden 类）
-    const hero = $("#hero");
-    if (hero && hero.style.display !== "none") hero.style.display = "none";
+  function hideChatEmpty() {
+    const ce = $("#chatEmpty");
+    if (ce) ce.style.display = "none";
   }
 
   function addMsg(role, html, id) {
     const wrap = document.createElement("div");
     wrap.className = "msg " + role;
     if (id) wrap.id = id;
-    wrap.innerHTML = '<div class="avatar">' + (role === "user" ? "S" : "6") + "</div>" +
+    wrap.innerHTML = '<div class="avatar">' + (role === "user" ? "我" : "6") + "</div>" +
       '<div class="bubble">' + html + "</div>";
     $("#messages").appendChild(wrap);
     const box = $("#chatScroll");
@@ -1099,19 +1593,17 @@
   }
 
   function addToolLine(text, cls) {
-    const b = addMsg("assistant",
+    return addMsg("assistant",
       '<span class="tool-evt ' + cls + '"><span class="dot"></span>' + text + "</span>");
-    return b;
   }
 
-  /* ---------------- TTS 朗读（真实 POST /api/speak → edge-tts mp3） ---------------- */
+  /* ---------------- TTS 朗读（真实 POST /api/speak） ---------------- */
   let currentAudio = null;
   async function speak(text, btn) {
     if (!text || !text.trim()) return;
     try {
       if (btn) { btn.disabled = true; btn.textContent = "合成中…"; }
-      setHeart("thinking");
-      // 冻结契约（源自旧 UI voice.js）：body { text, stream:false }
+      // 冻结契约：body { text, stream:false }
       const res = await fetch("/api/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1119,34 +1611,32 @@
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const blob = await res.blob();
-      if (!blob.size) throw new Error("返回音频为空");
+      if (!blob.size) throw new Error("返回的音频为空");
       const url = URL.createObjectURL(blob);
       if (currentAudio) { currentAudio.pause(); currentAudio = null; }
       const audio = new Audio(url);
       currentAudio = audio;
-      setHeart("speaking");
       if (btn) { btn.classList.add("playing"); btn.textContent = "播放中…"; }
       audio.onended = () => {
         URL.revokeObjectURL(url);
-        setHeart("idle");
         if (btn) { btn.classList.remove("playing"); btn.disabled = false; btn.textContent = "朗读"; }
       };
       audio.onerror = () => {
         URL.revokeObjectURL(url);
-        setHeart("idle");
         toast("音频播放失败", true);
         if (btn) { btn.classList.remove("playing"); btn.disabled = false; btn.textContent = "朗读"; }
       };
       await audio.play();
     } catch (e) {
-      setHeart("error");
-      setTimeout(() => setHeart("idle"), 1500);
-      toast("语音合成失败：" + e.message, true);
+      // 后端 /api/speak 在 v1.0.0 为悬空路由（S118 遗留，非本次改动），
+      // 连接会被直接重置，fetch 抛 TypeError。此处对普通用户降级为可读提示，不暴露堆栈。
+      const raw = String((e && e.message) || e || "");
+      const netErr = /failed to fetch|networkerror|load failed|empty reply/i.test(raw);
+      toast(netErr ? "语音朗读暂不可用（TTS 服务未挂载），已跳过朗读" : "语音合成失败：" + raw, true);
       if (btn) { btn.classList.remove("playing"); btn.disabled = false; btn.textContent = "朗读"; }
     }
   }
 
-  // 给一条 assistant 回答挂上朗读按钮
   function attachSpeak(bubble, text) {
     if (!text || !text.trim()) return;
     const btn = document.createElement("button");
@@ -1162,26 +1652,21 @@
     const text = (ta.value || "").trim();
     if (!text || S.busy) return;
 
-    let payload = text;
-    if (S.search) payload = "请使用 web_search 工具联网检索后回答：" + text;
+    // 联网策略：仅在用户消息前附加约束说明，不改任何 Runtime 逻辑
+    const payload = policyPrefix() + text;
 
-    ensureChatMode();
+    hideChatEmpty();
     addMsg("user", esc(text));
     ta.value = ""; ta.style.height = "auto";
-
     S.conversation.push({ role: "user", content: payload });
 
     S.busy = true;
     $("#btnSend").disabled = true;
-    setHeart("thinking");
-
     const bubble = addMsg("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
-    let acc = "";
-    let gotAny = false;
+    let acc = "", gotAny = false;
 
     try {
       await streamChat(S.conversation, (evt) => {
-        // 1) 文本流
         const delta = evt.choices && evt.choices[0] && evt.choices[0].delta;
         if (delta && typeof delta.content === "string") {
           if (!gotAny) { bubble.innerHTML = ""; gotAny = true; }
@@ -1190,10 +1675,7 @@
           const box = $("#chatScroll");
           box.scrollTop = box.scrollHeight;
         }
-        // 2) 真实工具事件
         if (evt.xiao6_event === "tool_start") {
-          setHeart("executing");
-          const name = (evt.tool || "tool") + (evt.args ? " " + JSON.stringify(evt.args).slice(0, 60) : "");
           addToolLine("正在调用 <code>" + esc(evt.tool || "tool") + "</code> …", "running");
         }
         if (evt.xiao6_event === "tool_end") {
@@ -1202,22 +1684,17 @@
       });
 
       if (!gotAny) {
-        bubble.innerHTML = '<span style="color:#8a8a8a">（本次请求未返回文本内容）</span>';
+        bubble.innerHTML = '<span style="color:#8a8a8a">（这次没有返回文字内容）</span>';
       } else {
         S.conversation.push({ role: "assistant", content: acc });
-        attachSpeak(bubble, acc);   // 真实 TTS：POST /api/speak
+        attachSpeak(bubble, acc);
       }
-      setHeart("idle");
-      // 刷新任务/记忆（Agent 可能已写入）
-      loadTaskPreview();
       loadRecent();
     } catch (e) {
       bubble.innerHTML = '<div class="error-state" style="text-align:left">' +
-        "<div>小6暂时无法完成这个请求</div>" +
+        "<div>小6暂时没能完成这个请求</div>" +
         '<div class="detail" style="text-align:left">' + esc(e.message) + "</div>" +
         '<button class="customize-btn" style="margin-top:10px" data-retry="1">重试</button></div>';
-      setHeart("error");
-      setTimeout(() => setHeart("idle"), 1800);
       toast("请求失败：" + e.message, true);
     } finally {
       S.busy = false;
@@ -1225,12 +1702,9 @@
     }
   }
 
-  // 重试
   document.addEventListener("click", (e) => {
     if (e.target && e.target.dataset && e.target.dataset.retry) {
-      if (S.conversation.length && S.conversation[S.conversation.length - 1].role === "user") {
-        submit();
-      }
+      if (S.conversation.length && S.conversation[S.conversation.length - 1].role === "user") submit();
     }
   });
 
@@ -1270,10 +1744,9 @@
         if (!line.startsWith("data:")) continue;
         const payload = line.slice(5).trim();
         if (!payload || payload === "[DONE]") continue;
-        try { onEvent(JSON.parse(payload)); } catch (_) { /* 忽略非 JSON 心跳 */ }
+        try { onEvent(JSON.parse(payload)); } catch (_) {}
       }
     }
-    // 收尾残留
     const tail = buf.trim();
     if (tail.startsWith("data:")) {
       const p = tail.slice(5).trim();

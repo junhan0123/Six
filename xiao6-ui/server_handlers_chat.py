@@ -562,7 +562,12 @@ class ChatMixin:
 
 
     def _tts_sovits(self, text):
-        """调用本地 GPT-SoVITS GET /tts 合成自定义音色语音，返回 mp3 bytes；失败抛异常。"""
+        """调用本地 GPT-SoVITS 合成自定义音色语音，返回 wav bytes；失败抛异常。
+
+        实际合成端点为根路径 POST/GET /（见 :9880/openapi.json，operationId=tts_endpoint），
+        参数名遵循 GPT-SoVITS api.py 契约：refer_wav_path / prompt_text / prompt_language /
+        text / text_language。
+        """
         from urllib.parse import quote
         from urllib.request import Request, urlopen
 
@@ -570,27 +575,27 @@ class ChatMixin:
         qs = (
             "text="
             + quote(text)
-            + "&ref_audio_path="
+            + "&refer_wav_path="
             + quote(config.GPT_SOVITS_REF_AUDIO)
             + "&prompt_text="
             + quote(config.GPT_SOVITS_PROMPT_TEXT)
-            + "&text_lang=zh&prompt_lang=zh"
+            + "&text_language=zh&prompt_language=zh"
         )
-        req = Request(base + "/tts?" + qs, headers={"Accept": "audio/mpeg"})
+        req = Request(base + "/?" + qs, headers={"Accept": "audio/wav"})
         with urlopen(req, timeout=60) as resp:
             return resp.read()
 
 
     def _send_audio(self, audio):
         self.send_response(200)
-        self.send_header("Content-Type", "audio/mpeg")
+        self.send_header("Content-Type", "audio/wav")
         self.send_header("Content-Length", str(len(audio)))
         self.send_header("Access-Control-Allow-Origin", self._cors_origin())
         self.end_headers()
         self.wfile.write(audio)
 
 
-    def _tts_sovits(self, text):
+    def _handle_speak(self):
         payload = self._read_json()
         if "_error" in payload:
             return self._send(400, json.dumps({"error": payload["_error"]}))

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>小6 (Six)</title>
+<title>小6 · 个人 AI OS</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -15,18 +15,22 @@
   <aside class="sidebar">
 
     <div class="brand-row">
-      <span class="brand-name">小<b>6</b> (Six)</span>
-      <span class="live-dot" id="liveDot" title="后端连接状态"></span>
+      <span class="brand-name">小<b>6</b></span>
+      <span class="live-dot" id="liveDot" title="服务连接状态"></span>
     </div>
 
     <nav class="nav" id="nav">
-      <button class="nav-item active" data-view="chat">
+      <button class="nav-item active" data-view="dashboard">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+        首页
+      </button>
+      <button class="nav-item" data-view="chat">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         对话
       </button>
       <button class="nav-item" data-view="tasks">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>
-        任务
+        任务中心
       </button>
       <button class="nav-item" data-view="knowledge">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h10a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M4 16a4 4 0 0 1 4-4h10"/></svg></span>
@@ -36,13 +40,9 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4a3 3 0 1 1-3 3"/><path d="M6 10v3a6 6 0 0 0 12 0v-3"/><path d="M9 7v6"/><path d="M15 7v3"/></svg></span>
         记忆
       </button>
-      <button class="nav-item" data-view="tools">
+      <button class="nav-item" data-view="capabilities">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0 5.66 5.66l-9.9 9.9-4.24 1.41 1.41-4.24 9.9-9.9z"/></svg></span>
-        工具
-      </button>
-      <button class="nav-item" data-view="agents">
-        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0"/><path d="M14.5 18a4 4 0 0 1 6.5-1"/></svg></span>
-        智能体
+        能力中心
       </button>
       <button class="nav-item" data-view="settings">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1A2 2 0 1 1 4.4 17l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 7 4.4l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
@@ -59,76 +59,45 @@
     <div class="spacer"></div>
 
     <div class="user-card">
-      <span class="user-avatar">S</span>
-      <span class="user-name">Six 用户</span>
-      <span class="user-pro" id="toolBadge">—</span>
+      <span class="user-avatar">6</span>
+      <span class="user-name">我的小6</span>
+      <span class="user-pro" id="modelBadge">—</span>
     </div>
   </aside>
 
   <!-- ==================== 主区 ==================== -->
   <main class="main">
 
-    <!-- ---------- 对话 ---------- -->
-    <section class="view active" id="view-chat">
-      <div class="chat-scroll" id="chatScroll">
-
-        <!-- 空状态 / 首页 -->
-        <div class="hero" id="hero">
-          <div class="greeting">你好，我是<span class="name">小6</span></div>
-          <div class="sub-greeting" id="heroSub">你的专属 AI 助手，随时为你服务</div>
-
-          <!-- 主动推送（/api/stream 真实事件：简报 / 舆情告警 / 提醒） -->
-          <div class="proactive-feed" id="proactiveFeed"></div>
-
-          <div class="quick" id="quickChips"></div>
-
-          <div class="hero-extra">
-            <!-- 今日简报（真实 /api/briefing + /api/weather + /api/hotspots） -->
-            <div class="section-head">
-              <div class="section-title">今日简报</div>
-              <button class="customize-btn" data-act="reload-briefing">刷新</button>
-            </div>
-            <div id="briefingBox">
-              <div class="mini-loading"><span class="spinner"></span>读取简报…</div>
-            </div>
-
-            <div class="section-head" style="margin-top:26px">
-              <div class="section-title">小6 的能力</div>
-              <button class="customize-btn" data-view="tools">全部能力</button>
-            </div>
-            <div class="abilities" id="abilityGrid">
-              <div class="mini-loading"><span class="spinner"></span>读取真实能力…</div>
-            </div>
-
-            <div class="section-head" style="margin-top:26px">
-              <div class="section-title">进行中的任务</div>
-              <button class="customize-btn" data-view="tasks">全部任务</button>
-            </div>
-            <div id="taskPreview">
-              <div class="mini-loading"><span class="spinner"></span>读取任务…</div>
-            </div>
-          </div>
+    <!-- ---------- 首页 Dashboard ---------- -->
+    <section class="view active" id="view-dashboard">
+      <div class="page">
+        <div class="page-head">
+          <h1>你好，我是<span class="brand-text">小6</span></h1>
+          <button class="customize-btn" data-act="reload-dashboard">刷新</button>
         </div>
+        <div class="dash-grid" id="dashGrid">
+          <div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>
+        </div>
+      </div>
+    </section>
 
-        <!-- 消息流 -->
+    <!-- ---------- 对话 ---------- -->
+    <section class="view" id="view-chat">
+      <div class="chat-scroll" id="chatScroll">
+        <div class="chat-empty" id="chatEmpty">
+          <div class="ce-greeting">有什么可以帮你的？</div>
+          <div class="ce-sub">我是小6，可以查信息、管任务、读文件、操作电脑，也能陪你聊天。</div>
+          <div class="quick" id="quickChips"></div>
+        </div>
         <div class="messages" id="messages"></div>
       </div>
 
-      <!-- 输入框 -->
       <div class="composer-wrap">
         <div class="composer" id="composer">
           <textarea id="input" rows="1" placeholder="告诉小6你想做什么…"></textarea>
           <div class="composer-toolbar">
-            <button class="round-btn" id="btnAttach" title="上传文件">
+            <button class="round-btn" id="btnAttach" title="添加文件">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-            <button class="pill-btn" id="btnSearch" title="启用联网搜索">
-              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>
-              联网搜索
-            </button>
-            <button class="pill-btn" id="btnThink" title="深度思考">
-              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 4 12.7c-.6.5-1 1.3-1 2.1V18H9v-1.2c0-.8-.4-1.6-1-2.1A7 7 0 0 1 12 2z"/></svg></span>
-              深度思考
             </button>
             <div class="spacer-h"></div>
             <button class="round-btn" id="btnVoice" title="语音输入">
@@ -139,17 +108,20 @@
             </button>
           </div>
         </div>
-        <div class="composer-hint">Enter 发送 · Shift+Enter 换行 · 内容直达小6后端（同源 127.0.0.1:8000）</div>
+        <div class="composer-hint">Enter 发送 · Shift+Enter 换行 · 是否联网由小6自动判断</div>
       </div>
     </section>
 
-    <!-- ---------- 任务 ---------- -->
+    <!-- ---------- 任务中心 ---------- -->
     <section class="view" id="view-tasks">
       <div class="page">
-        <div class="page-head"><h1>任务</h1><button class="customize-btn" data-act="reload-tasks">刷新</button></div>
-        <div id="tasksBody"><div class="mini-loading"><span class="spinner"></span>读取真实任务…</div></div>
-        <div class="page-head" style="margin-top:30px"><h1>目标</h1></div>
-        <div id="goalsBody"><div class="mini-loading"><span class="spinner"></span>读取目标…</div></div>
+        <div class="page-head"><h1>任务中心</h1><button class="customize-btn" data-act="reload-tasks">刷新</button></div>
+        <div class="tabs" id="taskTabs">
+          <button class="tab active" data-tab="current">当前任务</button>
+          <button class="tab" data-tab="history">历史任务</button>
+          <button class="tab" data-tab="trace">执行过程</button>
+        </div>
+        <div id="tasksBody"><div class="mini-loading"><span class="spinner"></span>加载中…</div></div>
       </div>
     </section>
 
@@ -161,43 +133,73 @@
       </div>
     </section>
 
-    <!-- ---------- 记忆 ---------- -->
+    <!-- ---------- 记忆 (Obsidian 三栏布局) ---------- -->
     <section class="view" id="view-memory">
-      <div class="page">
-        <div class="page-head"><h1>记忆</h1><button class="customize-btn" data-act="reload-memory">刷新</button></div>
+      <div class="page memory-layout">
+        <div class="page-head">
+          <h1>记忆</h1>
+          <div class="head-actions">
+            <button class="customize-btn" id="btnCleanLegacy">清理历史数据</button>
+            <button class="customize-btn" data-act="reload-memory">刷新</button>
+          </div>
+        </div>
         <div class="search-bar">
-          <input id="memSearch" type="text" placeholder="搜索记忆…" />
+          <input id="memSearch" type="text" placeholder="搜索记忆与笔记…" />
           <button class="customize-btn" id="btnMemSearch">搜索</button>
         </div>
-        <div id="memoryBody"><div class="mini-loading"><span class="spinner"></span>读取记忆…</div></div>
-      </div>
-    </section>
-
-    <!-- ---------- 工具 ---------- -->
-    <section class="view" id="view-tools">
-      <div class="page">
-        <div class="page-head"><h1>工具</h1><button class="customize-btn" data-act="reload-tools">刷新</button></div>
-        <div class="toolbar">
-          <input id="toolSearch" type="text" placeholder="筛选 62 个已挂载工具…" />
-          <span class="count" id="toolCount">—</span>
+        <div class="memory-panes">
+          <!-- 左：Markdown 文件树 -->
+          <div class="memory-pane memory-tree" id="memoryTree">
+            <div class="pane-header">
+              <span>文件</span>
+              <button class="mini-btn" id="btnNewNote" title="新建笔记">+ 新建</button>
+            </div>
+            <div id="treeBody"><div class="mini-loading"><span class="spinner"></span></div></div>
+          </div>
+          <!-- 中：Markdown 编辑器 -->
+          <div class="memory-pane memory-editor" id="memoryEditor">
+            <div class="pane-header">
+              <span id="editorTitle">选择一篇笔记</span>
+              <div class="pane-actions">
+                <button class="mini-btn" id="btnRenameNote" title="重命名">重命名</button>
+                <button class="mini-btn" id="btnSaveNote" title="保存">保存</button>
+                <button class="mini-btn danger" id="btnDeleteNote" title="删除">删除</button>
+              </div>
+            </div>
+            <textarea class="markdown-editor" id="markdownEditor" placeholder="选择左侧的笔记开始查看，或点击「+ 新建」写一篇新的 Markdown 笔记…"></textarea>
+          </div>
+          <!-- 右：知识关系图 -->
+          <div class="memory-pane memory-graph" id="memoryGraph">
+            <div class="pane-header">
+              <span>知识关系</span>
+              <span class="pane-hint" id="graphHint"></span>
+            </div>
+            <div id="graphBody"><div class="mini-loading"><span class="spinner"></span></div></div>
+          </div>
         </div>
-        <div id="toolsBody"><div class="mini-loading"><span class="spinner"></span>读取真实工具…</div></div>
       </div>
     </section>
 
-    <!-- ---------- 智能体 ---------- -->
-    <section class="view" id="view-agents">
+    <!-- ---------- 能力中心 ---------- -->
+    <section class="view" id="view-capabilities">
       <div class="page">
-        <div class="page-head"><h1>智能体</h1><button class="customize-btn" data-act="reload-agents">刷新</button></div>
-        <div id="agentsBody"><div class="mini-loading"><span class="spinner"></span>读取 Agent 状态…</div></div>
+        <div class="page-head"><h1>能力中心</h1><button class="customize-btn" data-act="reload-capabilities">刷新</button></div>
+        <div class="cap-filters" id="capFilters"></div>
+        <div id="capabilitiesBody"><div class="mini-loading"><span class="spinner"></span>加载中…</div></div>
       </div>
     </section>
 
     <!-- ---------- 设置 ---------- -->
     <section class="view" id="view-settings">
       <div class="page">
-        <div class="page-head"><h1>设置</h1><button class="customize-btn" data-act="reload-settings">刷新</button></div>
-        <div id="settingsBody"><div class="mini-loading"><span class="spinner"></span>读取配置…</div></div>
+        <div class="page-head"><h1>设置</h1></div>
+        <div class="settings-nav" id="settingsNav">
+          <button class="settings-tab active" data-setct="general">通用</button>
+          <button class="settings-tab" data-setct="models">模型中心</button>
+          <button class="settings-tab" data-setct="network">联网策略</button>
+          <button class="settings-tab" data-setct="diagnostics">服务状态</button>
+        </div>
+        <div id="settingsBody"><div class="mini-loading"><span class="spinner"></span>加载中…</div></div>
       </div>
     </section>
 
