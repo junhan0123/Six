@@ -64,8 +64,8 @@ def _probe_voice(cap_id: str) -> dict:
     if sovits_installed and sovits_configured:
         try:
             import requests
-            result = requests.get(f"{__import__('config', fromlist=['GPT_SOVITS_URL']).GPT_SOVITS_URL}/health", timeout=2)
-            sovits_ok = result.status_code == 200
+            result = requests.get(f"{__import__('config', fromlist=['GPT_SOVITS_URL']).GPT_SOVITS_URL}/", timeout=2)
+            sovits_ok = result.status_code in [200, 400]  # 400 = OK (no ref audio provided)
         except:
             pass
         details["tts_sovits_installed"] = sovits_installed

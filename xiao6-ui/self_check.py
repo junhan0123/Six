@@ -134,8 +134,8 @@ def _check_tts() -> dict[str, Any]:
     if sovits_installed and sovits_configured:
         try:
             import requests
-            result = requests.get(f"{_config.GPT_SOVITS_URL}/health", timeout=2)
-            sovits_reachable = result.status_code == 200
+            result = requests.get(f"{_config.GPT_SOVITS_URL}/", timeout=2)
+            sovits_reachable = result.status_code in [200, 400]  # 400 = OK (no ref audio provided)
         except:
             pass
 

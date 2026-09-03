@@ -279,7 +279,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._serve_file("index.html")   # 兜底：UI 目录缺失时保持原行为
         if path == "/api/health":
             # liveness：仅表进程存活；ok 取最近一次自检缓存，不触发外部探测（P0.2 修复 RC-4）
+            # refresh=1 时强制重新运行自检
+            force_refresh = qs.get("refresh", ["0"])[0] in ("1", "true", "True")
             cached = lifecycle.self_check_result
+            if force_refresh:
+                from self_check import run_self_check
+                cached = run_self_check(force=True)
+                lifecycle.self_check_result = cached
             key_ok = bool(config.AGNES_KEY)
             return self._send(
                 200,
