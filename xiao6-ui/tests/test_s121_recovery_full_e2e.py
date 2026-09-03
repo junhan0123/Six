@@ -1,12 +1,11 @@
 """S121-R Recovery Full Execution E2E Test
 
 验证完整的 Recovery 执行链路：
-file_read FAIL → classification → alternative selected → alternative executed → task continued → final verification PASS
+file_read FAIL → classification → alternative selected → alternative ACTUALLY EXECUTED → task continued → final verification PASS
 """
 
 import sys
 import os
-import json
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
@@ -20,7 +19,7 @@ def test_recovery_full_e2e():
     1. file_read 失败 → success=False
     2. classification → "file"
     3. Recovery Router → alternative selected
-    4. alternative tool ACTUALLY EXECUTED → success=True
+    4. alternative tool ACTUALLY EXECUTED (与 selection 一致) → success=True
     5. task CONTINUED after recovery
     6. final verification → PASS
     7. completion_gate → PASS
@@ -85,43 +84,47 @@ def test_recovery_full_e2e():
             return result
         result["evidence"]["step3_alternative_selected"] = f"PASS - alternative '{alt_tool}' selected"
 
-        # ========== Step 4: 实际执行 alternative tool ==========
-        # 使用 calculator 作为 deterministic alternative
-        # 如果 alternative 不是 calculator，使用 calculator 的确定性输入
-        test_expression = "1 + 1"
-        if alt_tool != "calculator":
-            # 尝试使用替代工具，但失败后回退到 calculator
-            result["evidence"]["step4_alternative_execution"] = {
-                "attempted_tool": alt_tool,
-                "actual_tool": "calculator",
-                "note": "Using calculator as deterministic alternative"
-            }
+        # ========== Step 4: 实际执行被选中的 alternative tool ==========
+        # 关键：必须执行 _try_alternative_tool 返回的 alt_tool，不能替换
+        # get_time 不需要参数，calculator 需要 expression 参数
+        if alt_tool == "get_time":
+            exec_args = {}
+            test_desc = "get_time()"
+        elif alt_tool == "calculator":
+            exec_args = {"expression": "1 + 1"}
+            test_desc = "calculator(1+1)"
         else:
-            result["evidence"]["step4_alternative_execution"] = {
-                "attempted_tool": alt_tool,
-                "actual_tool": alt_tool,
-                "note": "Alternative tool is calculator"
-            }
+            # 其他工具尝试空参数
+            exec_args = {}
+            test_desc = f"{alt_tool}()"
 
-        # 实际执行 calculator
-        calc_result = run("calculator", {"args": {"expression": test_expression}})
-        calc_success = calc_result.get("success") is True
-        calc_result_value = str(calc_result.get("result", ""))
+        # 实际执行被选中的 alternative
+        exec_result = run(alt_tool, {"args": exec_args})
+        exec_success = exec_result.get("success") is True
+        exec_result_value = str(exec_result.get("result", ""))
 
-        result["evidence"]["step4_alternative_execution"]["calc_success"] = calc_success
-        result["evidence"]["step4_alternative_execution"]["calc_result"] = calc_result_value
-        result["evidence"]["step4_alternative_execution"]["expected"] = "2"
+        result["evidence"]["step4_alternative_execution"] = {
+            "selected_tool": alt_tool,
+            "executed_tool": alt_tool,
+            "args": exec_args,
+            "success": exec_success,
+            "result": exec_result_value[:100],
+            "note": f"Executed the SAME tool selected by Recovery Router"
+        }
 
-        if not calc_success:
-            result["evidence"]["step4_alternative_execution"] = "FAIL - calculator execution failed"
+        if not exec_success:
+            result["evidence"]["step4_alternative_execution"] = f"FAIL - selected alternative '{alt_tool}' execution failed"
             return result
-        if "2" not in calc_result_value:
-            result["evidence"]["step4_alternative_execution"] = "FAIL - unexpected result"
+
+        # 验证执行结果有意义（非空、非错误信息）
+        if "错误" in exec_result_value or "error" in exec_result_value.lower() or exec_result_value.strip() == "":
+            result["evidence"]["step4_alternative_execution"] = "FAIL - execution returned error/empty"
             return result
-        result["evidence"]["step4_alternative_execution"] = "PASS - alternative tool executed successfully"
+
+        result["evidence"]["step4_alternative_execution"]["status"] = "PASS"
+        result["evidence"]["step4_alternative_execution"]["verification"] = f"selected='{alt_tool}' == executed='{alt_tool}'"
 
         # ========== Step 5: 任务继续执行 ==========
-        # 创建一个任务，模拟 Recovery 后继续执行
         task_id = create_task("recovery_full_e2e_test", total_steps=1)
         result["evidence"]["step5_task_creation"] = {
             "task_id": task_id,
@@ -132,11 +135,11 @@ def test_recovery_full_e2e():
         complete_task(
             task_id,
             success=True,
-            note="Recovery: file_read failed, alternative calculator executed: 1+1=2. Task continued after recovery."
+            note=f"Recovery: file_read failed, alternative {alt_tool} executed successfully. Task continued after recovery."
         )
         result["evidence"]["step5_task_continued"] = {
             "task_id": task_id,
-            "note": "Recovery: file_read failed, alternative calculator executed: 1+1=2. Task continued after recovery."
+            "note": f"Recovery: file_read failed, alternative {alt_tool} executed successfully. Task continued after recovery."
         }
 
         # ========== Step 6: 最终验证 ==========
@@ -144,8 +147,8 @@ def test_recovery_full_e2e():
             """验证任务结果是正确的"""
             note = row[3] or ""
             # 检查是否包含 recovery 成功的关键字（不区分大小写）
-            if "recovery" in note.lower() and ("continued" in note.lower() or "calculator" in note.lower()):
-                return {"verified": True, "reason": "Recovery and verification successful"}
+            if "recovery" in note.lower() and alt_tool.lower() in note.lower():
+                return {"verified": True, "reason": f"Recovery with {alt_tool} successful"}
             return {"verified": False, "reason": f"Result mismatch: {note}"}
 
         verified, reason = verify_task(task_id, check_fn=check_recovery_result)
@@ -167,7 +170,7 @@ def test_recovery_full_e2e():
             category == "file" and
             alt_tool is not None and
             alt_tool != "file_read" and
-            calc_success and
+            exec_success and
             verified
         )
 
@@ -177,10 +180,12 @@ def test_recovery_full_e2e():
             "initial_success": False,
             "failure_class": "file",
             "recovery_strategy": "RECOVERY_RETRY_ALTERNATIVE",
-            "alternative_tool": alt_tool,
+            "selected_alternative": alt_tool,
+            "executed_alternative": alt_tool,
+            "alternative_match": True,  # 选中和执行的是同一个
             "alternative_executed": True,
-            "alternative_success": calc_success,
-            "alternative_result": calc_result_value,
+            "alternative_success": exec_success,
+            "alternative_result": exec_result_value,
             "task_continued": True,
             "final_verification": verified,
             "completion_gate": "PASS" if verified else "BLOCKED",
