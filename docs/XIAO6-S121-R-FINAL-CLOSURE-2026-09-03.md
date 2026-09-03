@@ -75,7 +75,7 @@ file_read FAIL (FileNotFoundError)
     ↓
 success=False → classificado como "file"
     ↓
-try_alternative_tool → "calculator" (first non-excluded TOOL_FUNCS)
+|try_alternative_tool → "get_time" (first non-excluded TOOL_FUNCS)
     ↓
 recovery_strategy = "RECOVERY_RETRY_ALTERNATIVE"
 ```
@@ -92,7 +92,7 @@ category = AgentRuntime._classify_error(FileNotFoundError(...), "file_read")
 
 # Step 3: Alternative selection
 alt_tool, _ = rt._try_alternative_tool({"title": "test"}, excluded="file_read")
-# alt_tool = "calculator" ✅
+|# alt_tool = "get_time" ✅
 ```
 
 ### 3.2 RECOVERY_FULL_E2E (Completo)
@@ -110,8 +110,8 @@ alt_tool, _ = rt._try_alternative_tool({"title": "test"}, excluded="file_read")
 3. _try_alternative_tool(excluded="file_read")
    → alternative_tool="get_time" ✅
 
-4. calculator execution (1+1)
-   → success=True, result="2" ✅
+4. get_time execution
+   → success=True, result="本地 时间：2026年09月03日 11:45:52 星期四" ✅
 
 5. create_task + complete_task with recovery note
    → task_id=226, status="done" ✅
@@ -130,7 +130,7 @@ alt_tool, _ = rt._try_alternative_tool({"title": "test"}, excluded="file_read")
   "alternative_tool": "get_time",
   "alternative_executed": true,
   "alternative_success": true,
-  "alternative_result": "1 + 1 = 2",
+  "alternative_result": "本地 时间：2026年09月03日 11:45:52 星期四",
   "task_continued": true,
   "final_verification": true,
   "completion_gate": "PASS",
@@ -289,7 +289,7 @@ $ grep -R "ZZ_PROJECT_ROOT\|zz-agent-runtime\|ZhuangZhou\|庄周" --include="*.p
 |------|--------|----------|
 | file_read Failure Truth | ✅ PASS | `success=False` + `FileNotFoundError` |
 | Recovery Classification | ✅ PASS | `_classify_error` → `"file"` |
-| Recovery Alternative Selected | ✅ PASS | `_try_alternative_tool` → `calculator` |
+|| Recovery Alternative Selected | ✅ PASS | `_try_alternative_tool` → `get_time` |
 | **Recovery Alternative Executed** | ✅ PASS | `RECOVERY_FULL_E2E` test (deterministic) |
 | Recovery Task Continued | ✅ PASS | Task created + completed after recovery |
 | Positive Verification | ✅ PASS | `check_fn` → `verified=True` |
@@ -319,8 +319,8 @@ $ grep -R "ZZ_PROJECT_ROOT\|zz-agent-runtime\|ZhuangZhou\|庄周" --include="*.p
 1. **file_read failure** → `FileNotFoundError` → `success=False` ✅
 2. **Recovery classification** → `_classify_error` → `"file"` ✅
 3. **Recovery strategy** → `RECOVERY_RETRY_ALTERNATIVE` ✅
-4. **Alternative selected** → `calculator`/`get_time` ✅
-5. **Alternative executed** → `calculator(1+1)=2` → `success=True` ✅
+4. **Alternative selected** → `get_time` ✅
+5. **Alternative executed** → `get_time()` → `success=True` ✅
 6. **Task continued** → `create_task` → `complete_task` ✅
 7. **Final verification** → `verify_task` → `verification_result=PASS` ✅
 8. **Completion gate** → `completion_gate=PASS` ✅
