@@ -97,6 +97,10 @@ zhuangzhou.db*
 server*.log
 _backend.log
 
+# Runtime stats
+xiao6-ui/habits.json
+xiao6-ui/geo-weather.json
+
 # Electron
 electron-bin/
 
