@@ -47,7 +47,7 @@
     </nav>
 
     <div class="divider"></div>
-    <div class="section-label">最近对话</div>
+    <div class="section-label">💬 最近对话</div>
     <div class="recent" id="recentList">
       <div class="mini-loading"><span class="spinner"></span>加载中</div>
     </div>
@@ -80,10 +80,35 @@
           <div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>
         </div>
       </div>
+
+      <!-- ---------- 全局 Command Bar ---------- -->
+      <div class="dashboard-command-wrap">
+        <div class="dashboard-command">
+          <div class="command-bar" id="commandBar">
+            <span class="command-sparkle">✦</span>
+            <input type="text" id="commandInput" placeholder="让小6帮我……" autocomplete="off" />
+            <button class="round-btn command-voice" id="commandVoice" title="语音输入">🎙</button>
+            <button class="command-send" id="commandSend" title="发送">↑</button>
+          </div>
+          <div class="command-hints">
+            <span>试试：</span>
+            <button data-cmd="帮我总结今天热点">总结热点</button>
+            <button data-cmd="帮我创建一个任务">创建任务</button>
+            <button data-cmd="查询我的记忆">查询记忆</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ---------- 对话 ---------- -->
     <section class="view" id="view-chat">
+      <div class="agent-activity idle" id="agentActivity" title="小6 的工作状态">
+        <div class="aa-side"><span class="aa-pulse"></span></div>
+        <div class="aa-main">
+          <div class="aa-title" id="aaTitle">小6已就绪</div>
+          <div class="aa-steps" id="aaSteps"></div>
+        </div>
+      </div>
       <div class="chat-scroll" id="chatScroll">
         <div class="chat-empty" id="chatEmpty">
           <div class="ce-greeting">有什么可以帮你的？</div>

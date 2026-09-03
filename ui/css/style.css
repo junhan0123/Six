@@ -133,7 +133,7 @@ input, textarea { font: inherit; color: inherit; }
 
 /* Weather card */
 .weather-main { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
-.weather-temp { font-size: 36px; font-weight: 700; color: var(--ink-1); line-height: 1; }
+.weather-temp { font-size: 46px; font-weight: 800; color: var(--ink-1); line-height: 1; letter-spacing: -.5px; }
 .weather-info { font-size: 14px; color: var(--ink-2); }
 .weather-condition { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
 .weather-meta { display: flex; gap: 16px; font-size: 12px; color: var(--ink-3); margin-top: 4px; }
@@ -688,7 +688,7 @@ input, textarea { font: inherit; color: inherit; }
 
 /* 天气增强：图标 + 彩色状态 */
 .weather-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
-.weather-emoji { font-size: 42px; line-height: 1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.08)); }
+.weather-emoji { font-size: 52px; line-height: 1; filter: drop-shadow(0 3px 8px rgba(0,0,0,.10)); }
 .weather-hero.weather-sunny .weather-temp { color: #f5a623; }
 .weather-hero.weather-cloudy .weather-temp { color: #6b7a8f; }
 .weather-hero.weather-rain .weather-temp { color: #3a8bdb; }
@@ -727,3 +727,118 @@ input, textarea { font: inherit; color: inherit; }
 }
 .recent-empty .re-ico { font-size: 22px; }
 .recent-empty .customize-btn { margin-top: 4px; }
+
+/* ==================== S124 UI Final Experience Polish ==================== */
+/* 热点卡：降低非主操作视觉噪音，突出「让小6总结」主操作 */
+.hotspot-actions .hs-btn:not(.hs-primary) {
+  font-size: 10px; padding: 2px 6px; color: var(--ink-4);
+  background: transparent; border-color: transparent;
+}
+.hotspot-actions .hs-btn:not(.hs-primary):hover {
+  color: var(--brand); background: var(--brand-tint); border-color: var(--brand-soft);
+}
+
+/* 任务入口：示例提示（柔和品牌色底，引导用户理解任务如何产生） */
+.task-source-example {
+  margin-top: 7px; font-size: 11.5px; color: var(--ink-2); line-height: 1.55;
+  padding: 7px 10px; background: var(--brand-tint); border-radius: 8px;
+}
+.task-source-example::before { content: "💡 "; }
+
+/* ==================== S125.1 全局 Command Entry ==================== */
+/* 修复：侧边栏 user-card 操作区（S123 移动设置入口时遗漏的样式） */
+.user-actions {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+}
+.user-actions .user-pro { margin-left: 0; }
+.user-action-btn {
+  width: 32px; height: 32px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; background: #fff;
+  border: 1px solid var(--line); color: var(--ink-3);
+  transition: color .15s, border-color .15s, background .15s;
+}
+.user-action-btn:hover { color: var(--brand); border-color: var(--brand); background: var(--brand-tint); }
+.user-action-btn svg { width: 16px; height: 16px; }
+
+/* 首页底部全局命令入口 */
+.dashboard-command-wrap {
+  padding: 0 34px 28px; flex-shrink: 0; background: var(--bg);
+  border-top: 1px solid var(--line-soft);
+}
+.dashboard-command { max-width: 780px; margin: 0 auto; padding-top: 18px; }
+.command-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1px solid var(--line); border-radius: 18px;
+  padding: 10px 14px; box-shadow: var(--sh-md);
+  transition: border-color .15s, box-shadow .15s;
+}
+.command-bar:focus-within {
+  border-color: var(--brand-soft);
+  box-shadow: 0 4px 20px rgba(255,77,79,.12);
+}
+.command-sparkle { color: var(--brand); font-size: 18px; flex-shrink: 0; }
+.command-bar input {
+  flex: 1; border: 0; outline: 0; background: transparent;
+  font-size: 15px; line-height: 1.5; color: var(--ink-1);
+}
+.command-bar input::placeholder { color: var(--ink-3); }
+.command-bar .command-voice { flex-shrink: 0; font-size: 16px; }
+.command-send {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: var(--brand); color: #fff; display: inline-flex;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(255,77,79,.35);
+  transition: background .15s, transform .12s;
+}
+.command-send:hover { background: #ff7875; }
+.command-send:active { transform: scale(.95); }
+.command-send:disabled { background: #ffc9c9; box-shadow: none; cursor: not-allowed; }
+.command-hints {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 6px 10px; margin-top: 10px; font-size: 12px; color: var(--ink-3);
+}
+.command-hints button {
+  font-size: 12px; color: var(--ink-3); background: transparent; border: 0;
+  padding: 2px 6px; border-radius: 4px; transition: color .15s, background .15s;
+}
+.command-hints button:hover { color: var(--brand); background: var(--brand-tint); }
+
+@media (max-width: 860px) {
+  .dashboard-command-wrap { padding: 0 18px 20px; }
+}
+
+/* ==================== PHASE 125.2 Agent Activity 可视化 ==================== */
+.agent-activity {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 12px 28px 0; padding: 10px 14px;
+  background: var(--bg-soft); border: 1px solid var(--line-soft);
+  border-radius: var(--r-md); flex-shrink: 0;
+  transition: background .25s, border-color .25s;
+}
+.agent-activity .aa-side { padding-top: 3px; }
+.aa-pulse {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  background: var(--ink-4); transition: background .2s;
+}
+.agent-activity.thinking .aa-pulse { background: var(--brand); animation: aaPulse 1.2s ease-in-out infinite; }
+.agent-activity.working .aa-pulse { background: var(--warn); animation: aaPulse 1s ease-in-out infinite; }
+.agent-activity.approval .aa-pulse { background: var(--brand); animation: aaPulse .8s ease-in-out infinite; }
+.agent-activity.idle .aa-pulse { background: var(--ok); }
+@keyframes aaPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .35; transform: scale(.65); }
+}
+.aa-main { flex: 1; min-width: 0; }
+.aa-title { font-size: 13px; font-weight: 600; color: var(--ink-1); }
+.aa-steps { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.agent-activity.idle .aa-steps { display: none; }
+.aa-step { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-3); }
+.aa-step-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--warn); }
+.aa-step.running .aa-step-dot { animation: aaPulse 1s ease-in-out infinite; }
+.aa-step.done .aa-step-dot { background: var(--ok); }
+.aa-step.done .aa-step-text { color: var(--ink-4); }
+.aa-step-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 860px) {
+  .agent-activity { margin: 12px 16px 0; }
+}

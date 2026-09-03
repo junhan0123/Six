@@ -41,6 +41,21 @@
     if (s.length >= 16) return s.slice(11, 16);
     return s.slice(0, 5);
   }
+  function relTime(ts) {
+    const s = String(ts || "").trim();
+    if (!s) return "—";
+    const d = new Date(s.replace(" ", "T"));
+    if (isNaN(d.getTime())) return s.slice(5, 16) || s.slice(0, 16);
+    const now = new Date();
+    const pad = (n) => ("0" + n).slice(-2);
+    const hm = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    if (sameDay) return "今天 " + hm;
+    const y = new Date(now); y.setDate(now.getDate() - 1);
+    const isYest = d.getFullYear() === y.getFullYear() && d.getMonth() === y.getMonth() && d.getDate() === y.getDate();
+    if (isYest) return "昨天 " + hm;
+    return pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + hm;
+  }
 
   /* ---------------- API ---------------- */
   async function api(path, opts) {
@@ -103,6 +118,7 @@
     bindNav();
     bindComposer();
     bindActions();
+    bindCommandBar();
     bindMemoryPane();
     await refreshHealth();
     loadRecent();
@@ -364,6 +380,7 @@
 
     const foot = '<div class="task-source-hint">' +
       "任务可以来自：• 对话中告诉小6 • 手动创建 • 目标拆解" +
+      '<div class="task-source-example">例如，告诉小6：「帮我明天提醒开会」，就会自动生成任务</div>' +
       "</div>";
     return dashCard("task", "📋 今日任务", body, foot);
   }
@@ -523,17 +540,17 @@
     const ttsLabel = ttsCheck ? (ttsOK ? "可用" : "不可用") : (h.tts_backend ? String(h.tts_backend) : "未配置");
 
     const items = [
-      { label: "服务状态", value: serviceOK ? "运行中" : "异常", cls: serviceOK ? "ok" : "warn" },
+      { label: "服务状态", value: serviceOK ? "服务正常" : "需要检查", cls: serviceOK ? "ok" : "warn" },
       { label: "模型状态", value: modelName, cls: modelOK ? "ok" : "warn" },
-      { label: "语音状态", value: ttsLabel, cls: ttsOK ? "ok" : "warn" },
-      { label: "小6 状态", value: failed.length ? failed.length + " 项待处理" : "一切正常", cls: failed.length ? "warn" : "ok" },
+      { label: "语音状态", value: ttsOK ? "语音正常" : "需要检查", cls: ttsOK ? "ok" : "warn" },
+      { label: "小6 状态", value: failed.length ? "需要关注" : "一切正常", cls: failed.length ? "warn" : "ok" },
     ];
     const body = '<div class="status-grid">' + items.map((it) =>
       '<div class="status-item' + (it.cls === "warn" ? " status-warn" : "") + '"' +
       (it.cls === "warn" ? ' data-view="settings" title="点击查看并处理"' : "") + ">" +
       '<div class="status-label">' + statusDot(it.cls) + " " + esc(it.label) + "</div>" +
       '<div class="status-value ' + it.cls + '">' + esc(it.value) +
-      (it.cls === "warn" ? ' <span class="status-fix">[检查]</span>' : "") +
+      (it.cls === "warn" ? ' <span class="status-fix">[查看]</span>' : "") +
       "</div></div>").join("") + "</div>";
     const foot = '<button class="customize-btn" data-view="settings" style="margin-top:2px">查看详情</button>';
     return dashCard("sys", "⚙️ 系统状态", body, foot);
@@ -570,7 +587,7 @@
       const items = list.slice(0, 6).map((s) => {
         const sid = s.session_id || s.id || "";
         const label = cleanSessionLabel(sid);
-        const time = String(s.updated_at || s.created_at || "").slice(5, 16);
+        const time = relTime(s.updated_at || s.created_at);
         return { sid, label, time };
       });
       box.innerHTML = items.map((it) =>
@@ -1547,6 +1564,46 @@
     bindVoice();
   }
 
+  /* =========================================================
+     首页全局 Command Bar（S125.1）
+     复用已有聊天流程：switchView('chat') → 填充 #input → submit()
+     禁止新增 API / 后端能力
+     ========================================================= */
+  function bindCommandBar() {
+    const input = $("#commandInput");
+    const send = $("#commandSend");
+    const voice = $("#commandVoice");
+    if (!input || !send) return;
+
+    const doSend = () => {
+      const text = (input.value || "").trim();
+      if (!text) { toast("请输入你想让小6做什么", true); return; }
+      input.value = "";
+      switchView("chat");
+      const ta = $("#input");
+      ta.value = text;
+      ta.dispatchEvent(new Event("input"));
+      submit();
+    };
+
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") doSend(); });
+    send.addEventListener("click", doSend);
+    if (voice) {
+      voice.addEventListener("click", () => {
+        switchView("chat");
+        const chatVoice = $("#btnVoice");
+        if (chatVoice) chatVoice.click();
+        else toast("当前环境不支持语音输入", true);
+      });
+    }
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-cmd]");
+      if (!b || !input) return;
+      input.value = b.dataset.cmd;
+      input.focus();
+    });
+  }
+
   function onFiles(e) { attachPaths(e.target.files); e.target.value = ""; }
   function attachPaths(files) {
     const names = Array.from(files).map((f) => f.name).join("、");
@@ -1620,7 +1677,11 @@
     if (!m || typeof m !== "object") return;
     const ap = m.approval || m.modal || {};
     const ticket = m.ticket || ap.ticket;
-    if (ticket) { renderApprovalCard(m, ticket); return; }
+    if (ticket) {
+      setAgentState("approval", "等待你确认：" + esc((ap.tool || ap.summary || "一项操作")));
+      renderApprovalCard(m, ticket);
+      return;
+    }
     if (m.xiao6_event === "proactive" || m.kind) { renderProactive(m); return; }
   }
 
@@ -1711,6 +1772,56 @@
       '<span class="tool-evt ' + cls + '"><span class="dot"></span>' + text + "</span>");
   }
 
+  /* ---------------- PHASE 125.2 Agent Activity 可视化（纯前端，复用已有 xiao6_event 流） ----------------
+     状态源（零后端改动）：
+       · S.busy 提交→响应周期             → thinking / idle
+       · /api/chat SSE 的 xiao6_event     → tool_start(running) / tool_end(done)
+       · /api/stream 的 approval 事件     → approval（等待用户确认）
+     红线：只展示已有真实事件，不编造、不新增接口。 */
+  let aaSteps = [];
+  function defaultAaText(state) {
+    return state === "thinking" ? "小6正在思考…" :
+           state === "working" ? "小6正在工作" :
+           state === "approval" ? "等待你确认…" : "小6已就绪";
+  }
+  function setAgentState(state, text) {
+    const el = $("#agentActivity");
+    if (!el) return;
+    el.classList.remove("idle", "thinking", "working", "approval");
+    el.classList.add(state);
+    const t = $("#aaTitle");
+    if (t) t.textContent = text || defaultAaText(state);
+  }
+  function clearAgentSteps() {
+    aaSteps = [];
+    const box = $("#aaSteps");
+    if (box) box.innerHTML = "";
+  }
+  function addAgentStep(tool, status) {
+    const box = $("#aaSteps");
+    if (!box) return;
+    const row = document.createElement("div");
+    row.className = "aa-step " + status;
+    const label = tool || "工具";
+    row.innerHTML = '<span class="aa-step-dot"></span><span class="aa-step-text">' +
+      esc(status === "running" ? "正在调用 " + label + " …" : label + " 完成") + "</span>";
+    box.appendChild(row);
+    aaSteps.push({ tool, el: row, status });
+    while (box.children.length > 6) box.removeChild(box.firstChild);
+  }
+  function finishAgentStep(tool) {
+    for (let i = aaSteps.length - 1; i >= 0; i--) {
+      if (aaSteps[i].status === "running") {
+        aaSteps[i].status = "done";
+        const el = aaSteps[i].el;
+        el.classList.remove("running"); el.classList.add("done");
+        const txt = el.querySelector(".aa-step-text");
+        if (txt) txt.textContent = esc(aaSteps[i].tool || "工具") + " 完成";
+        return;
+      }
+    }
+  }
+
   /* ---------------- TTS 朗读（真实 POST /api/speak） ---------------- */
   let currentAudio = null;
   async function speak(text, btn) {
@@ -1775,6 +1886,8 @@
     S.conversation.push({ role: "user", content: payload });
 
     S.busy = true;
+    clearAgentSteps();
+    setAgentState("thinking", "小6正在思考…");
     $("#btnSend").disabled = true;
     const bubble = addMsg("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
     let acc = "", gotAny = false;
@@ -1791,9 +1904,12 @@
         }
         if (evt.xiao6_event === "tool_start") {
           addToolLine("正在调用 <code>" + esc(evt.tool || "tool") + "</code> …", "running");
+          setAgentState("working", "小6正在工作");
+          addAgentStep(evt.tool || "tool", "running");
         }
         if (evt.xiao6_event === "tool_end") {
           addToolLine("<code>" + esc(evt.tool || "tool") + "</code> 调用完成", "done");
+          finishAgentStep(evt.tool || "tool");
         }
       });
 
@@ -1810,10 +1926,11 @@
         '<div class="detail" style="text-align:left">' + esc(e.message) + "</div>" +
         '<button class="customize-btn" style="margin-top:10px" data-retry="1">重试</button></div>';
       toast("请求失败：" + e.message, true);
-    } finally {
-      S.busy = false;
-      $("#btnSend").disabled = false;
-    }
+      } finally {
+        S.busy = false;
+        $("#btnSend").disabled = false;
+        setAgentState("idle");
+      }
   }
 
   document.addEventListener("click", (e) => {
