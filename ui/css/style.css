@@ -79,8 +79,46 @@ input, textarea { font: inherit; color: inherit; }
   border-radius: 10px; color: var(--ink-2); font-size: 13.5px; cursor: pointer; width: 100%; text-align: left;
 }
 .recent-item:hover { background: var(--bg-soft); }
-.recent-item .title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-item .title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
 .recent-item .time { color: var(--ink-4); font-size: 12px; margin-left: 12px; flex-shrink: 0; }
+.recent-item .menu-icon { opacity: 0; color: var(--ink-4); font-size: 12px; transition: opacity 0.15s; flex-shrink: 0; }
+.recent-item:hover .menu-icon { opacity: 1; }
+
+/* ==================== 右键上下文菜单 ==================== */
+.context-menu {
+  position: fixed;
+  background: var(--bg);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  padding: 6px 0;
+  min-width: 200px;
+  z-index: 9999;
+  display: none;
+}
+.context-menu.show { display: block; }
+.context-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px;
+  color: var(--ink-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.context-menu-item:hover { background: var(--brand-tint); color: var(--brand); }
+.context-menu-item.danger { color: #ff4d4f; }
+.context-menu-item.danger:hover { background: #ff4d4f1a; color: #ff4d4f; }
+.context-menu-item .ico { width: 16px; text-align: center; flex-shrink: 0; }
+.context-menu-item .label { flex: 1; }
+.context-menu-item .arrow { color: var(--ink-4); font-size: 11px; }
+.context-menu-divider { height: 1px; background: var(--line-soft); margin: 6px 0; }
+.context-menu-label {
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
 .spacer { flex: 1; }
 .user-card {
@@ -1120,8 +1158,98 @@ input, textarea { font: inherit; color: inherit; }
 .wp-chip-plan { color: var(--brand); border-color: var(--brand-soft); background: var(--brand-tint); }
 .wp-chip-out { color: var(--ink-2); }
 
+/* ===== PHASE 128.1 Work Center 交互收口 =====
+   独立 wx- 前缀，不改动 wc- / td- / ttl- / wa- / wp- 任何既有规则。
+   卡片 hover 采用叠加方式：既有任务卡 class 之外新增 wx-card，
+   同特异性 + 源码位置在后 → 生效，无需改动任何既有规则。 */
+.wx-card:hover {
+  border-color: var(--brand-soft);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .09);
+  transform: translateY(-2px);
+}
+.wx-card:focus-visible { outline: 2px solid var(--brand-soft); outline-offset: 2px; }
+
+.wx-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.wx-q {
+  font-size: 10.5px; line-height: 1; padding: 3px 7px; border-radius: 999px;
+  border: 1px solid var(--line-soft); background: var(--bg-soft); color: var(--ink-3);
+}
+.wx-q-step { color: var(--ink-2); }
+.wx-q-created, .wx-q-updated { color: var(--ink-4); }
+
+.wx-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.wx-filter {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line-soft); background: #fff; color: var(--ink-2);
+  font-size: 12.5px; line-height: 1;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.wx-filter:hover { border-color: var(--brand-soft); color: var(--ink-1); }
+.wx-filter.wx-active {
+  border-color: var(--brand-soft); background: var(--brand-tint); color: var(--brand);
+}
+.wx-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--ink-4); }
+.wx-dot-all { background: var(--ink-3); }
+.wx-dot-run { background: var(--brand); }
+.wx-dot-done { background: var(--ok); }
+.wx-dot-wait { background: var(--ink-4); }
+.wx-fnum { font-size: 11px; color: var(--ink-4); }
+.wx-filter.wx-active .wx-fnum { color: var(--brand); }
+
+.wx-section {
+  background: var(--bg-soft); border: 1px solid var(--line-soft);
+  border-radius: var(--r-md); padding: 12px 14px; margin-top: 12px;
+}
+.wx-section-title { font-size: 12.5px; font-weight: 700; color: var(--ink-2); margin-bottom: 8px; }
+.wx-summary-body { display: flex; flex-direction: column; gap: 6px; }
+.wx-srow { display: flex; gap: 12px; font-size: 12.5px; line-height: 1.6; }
+.wx-sk { width: 62px; flex-shrink: 0; color: var(--ink-3); }
+.wx-sv { flex: 1; min-width: 0; color: var(--ink-1); word-break: break-word; }
+.wx-summary-empty { color: var(--ink-4); font-size: 12.5px; }
+
+@media (max-width: 860px) {
+  .wx-filters { gap: 6px; }
+  .wx-srow { flex-direction: column; gap: 2px; }
+}
 @media (max-width: 860px) {
   .wc-cols { grid-template-columns: 1fr; }
+}
+
+/* ==================== PHASE 128.2 Work Intelligence Layer ==================== */
+/* 健康度徽章 */
+.health-badge {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; cursor: default; transition: transform .15s;
+}
+.health-badge:hover { transform: scale(1.15); }
+.health-warning { background: #fff3e0; color: #f57c00; }
+.health-stale { background: #fce4ec; color: #c2185b; }
+.health-failed { background: #ffebee; color: #d32f2f; }
+
+/* 关注按钮 */
+.watch-btn {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; cursor: pointer; border: 1px solid var(--line-soft);
+  background: #fff; color: var(--ink-4); transition: all .15s;
+}
+.watch-btn:hover { border-color: var(--brand-soft); color: var(--brand); }
+.watch-btn.watched { background: #fff8e1; border-color: #ffcc02; color: #f57c00; }
+
+/* 关注筛选点 */
+.wx-dot-watched { background: #f57c00; }
+
+/* 最近工作视图 */
+.recent-work-sections { display: flex; flex-direction: column; gap: 24px; }
+.recent-work-group { margin-bottom: 8px; }
+.recent-work-group-title { font-size: 13px; font-weight: 700; color: var(--ink-2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.recent-work-count { font-size: 11px; font-weight: 600; color: var(--ink-4); background: var(--bg-soft); padding: 2px 8px; border-radius: 999px; }
+.recent-work-list { display: flex; flex-direction: column; gap: 8px; }
+
+@media (max-width: 860px) {
+  .wx-srow { flex-direction: column; gap: 2px; }
 }
 @media (max-width: 860px) {
   .wp-item { align-items: flex-start; }

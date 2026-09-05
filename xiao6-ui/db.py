@@ -110,6 +110,100 @@ def db_conn():
         enabled INTEGER DEFAULT 1,
         last_triggered TEXT,
         created TEXT)""")
+    # PHASE 130：主动建议表（只读建议，不自动执行）
+    conn.execute("""CREATE TABLE IF NOT EXISTS suggestions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        observation_id TEXT UNIQUE,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        priority INTEGER DEFAULT 5,
+        status TEXT DEFAULT 'pending',
+        created TEXT,
+        accepted_at TEXT,
+        rejected_at TEXT
+    )""")
+    # PHASE 131：任务提案表（用户审批后才创建任务）
+    conn.execute("""CREATE TABLE IF NOT EXISTS task_proposals(
+        id TEXT PRIMARY KEY,
+        suggestion_id TEXT UNIQUE,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        steps TEXT,
+        estimated_cost INTEGER DEFAULT 5,
+        risk TEXT DEFAULT 'low',
+        status TEXT DEFAULT 'pending',
+        created TEXT,
+        approved_at TEXT,
+        rejected_at TEXT,
+        task_id INTEGER
+    )""")
+    # PHASE 133: 自动化执行层表
+    try:
+        _migrate_automation(conn)
+    except Exception:
+        pass
+    # PHASE 139: GFE 数据源基础层表
+    try:
+        _migrate_gfe_sources(conn)
+    except Exception:
+        pass
+    # PHASE 140: GFE World State Engine 表
+    try:
+        _migrate_gfe_world_state(conn)
+    except Exception:
+        pass
+    # PHASE 141: GFE Event Intelligence 表
+    try:
+        _migrate_gfe_events(conn)
+    except Exception:
+        pass
+    # PHASE 142: GFE Historical Comparison 表
+    try:
+        _migrate_gfe_historical_comparison(conn)
+    except Exception:
+        pass
+    # PHASE 143: GFE Causal Graph 表
+    try:
+        _migrate_gfe_causal_graph(conn)
+    except Exception:
+        pass
+    # PHASE 144: GFE Analyst Council 表
+    try:
+        _migrate_gfe_analyst_council(conn)
+    except Exception:
+        pass
+    # PHASE 145: GFE Scenario Engine 表
+    try:
+        _migrate_gfe_scenario_engine(conn)
+    except Exception:
+        pass
+    # PHASE 146: GFE Forecast Engine 表
+    try:
+        _migrate_gfe_forecast_engine(conn)
+    except Exception:
+        pass
+    # PHASE 147: GFE Forecast Ledger 表
+    try:
+        _migrate_gfe_forecast_ledger(conn)
+    except Exception:
+        pass
+    # PHASE 148: GFE Early Warning 表
+    try:
+        _migrate_gfe_early_warning(conn)
+    except Exception:
+        pass
+    # PHASE 149: GFE Forecast Calibration 表
+    try:
+        _migrate_gfe_calibration(conn)
+    except Exception:
+        pass
+    # 向后兼容：补齐 suggestions 表缺失列
+    try:
+        _migrate_suggestions(conn)
+    except Exception:
+        pass
     # 通用预取任务（对齐参考实现 manage_prefetch_task）：TICK 按各自的 interval 自动取数，
     # 结果落盘 prefetch_cache（action=cache）或推进主动消息（action=notify）。
     conn.execute("""CREATE TABLE IF NOT EXISTS prefetch_tasks(
@@ -581,6 +675,574 @@ def _migrate_tasks(conn):
         ("current_step", "ALTER TABLE tasks ADD COLUMN current_step INTEGER DEFAULT 0"),
         ("note", "ALTER TABLE tasks ADD COLUMN note TEXT"),
         ("goal_id", "ALTER TABLE tasks ADD COLUMN goal_id INTEGER DEFAULT NULL"),
+    ]
+    for col, ddl in adds:
+        if col not in cols:
+            try:
+                conn.execute(ddl)
+            except Exception:
+                pass
+    conn.commit()
+
+
+def _migrate_automation(conn):
+    """PHASE 133: 自动化执行层表。"""
+    # execution_requests 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(execution_requests)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE execution_requests(
+            id TEXT PRIMARY KEY,
+            proposal_id TEXT NOT NULL,
+            task_id INTEGER NOT NULL,
+            risk TEXT DEFAULT 'low',
+            approval_source TEXT DEFAULT 'user',
+            status TEXT DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            started_at TEXT,
+            completed_at TEXT,
+            result TEXT,
+            error_message TEXT,
+            runtime_name TEXT DEFAULT 'agent_runtime',
+            runtime_entry TEXT DEFAULT 'run_chat_turn',
+            tools_called TEXT,
+            duration_ms INTEGER
+        )""")
+    
+    # 向后兼容：补齐 execution_requests 缺失列
+    _add_columns_if_missing(conn, 'execution_requests', [
+        ('runtime_name', 'TEXT DEFAULT \'agent_runtime\''),
+        ('runtime_entry', 'TEXT DEFAULT \'run_chat_turn\''),
+        ('tools_called', 'TEXT'),
+        ('duration_ms', 'INTEGER')
+    ])
+    
+    # automation_audit 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(automation_audit)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE automation_audit(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            entity_id TEXT,
+            entity_type TEXT,
+            action TEXT NOT NULL,
+            user TEXT DEFAULT 'system',
+            details TEXT,
+            created_at TEXT NOT NULL
+        )""")
+    
+    conn.commit()
+
+
+def _migrate_gfe_sources(conn):
+    """PHASE 139: GFE 数据源基础层表。"""
+    # gfe_sources 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_sources)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_sources(
+            source_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            authority TEXT,
+            country TEXT,
+            reliability REAL DEFAULT 0.5,
+            historical_accuracy REAL DEFAULT 0.0,
+            update_frequency TEXT,
+            license TEXT,
+            provenance TEXT,
+            metadata TEXT DEFAULT '{}',
+            created_at REAL,
+            last_updated REAL
+        )""")
+    
+    # gfe_source_metrics 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_source_metrics)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_source_metrics(
+            metric_id TEXT PRIMARY KEY,
+            source_id TEXT NOT NULL,
+            accuracy_score REAL,
+            freshness_score REAL,
+            authority_score REAL,
+            historical_score REAL,
+            overall_score REAL,
+            sample_count INTEGER DEFAULT 0,
+            updated_at REAL,
+            FOREIGN KEY (source_id) REFERENCES gfe_sources(source_id)
+        )""")
+    
+    conn.commit()
+
+
+def _migrate_gfe_world_state(conn):
+    """PHASE 140: GFE World State Engine 表。"""
+    # gfe_world_states 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_world_states)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_world_states(
+            state_id TEXT PRIMARY KEY,
+            country_code TEXT NOT NULL,
+            snapshot_time REAL NOT NULL,
+            confidence REAL DEFAULT 0.5,
+            provenance TEXT,
+            demographics TEXT DEFAULT '{}',
+            economy TEXT DEFAULT '{}',
+            finance TEXT DEFAULT '{}',
+            industry TEXT DEFAULT '{}',
+            technology TEXT DEFAULT '{}',
+            energy TEXT DEFAULT '{}',
+            military TEXT DEFAULT '{}',
+            diplomacy TEXT DEFAULT '{}',
+            trade TEXT DEFAULT '{}',
+            fiscal TEXT DEFAULT '{}',
+            social TEXT DEFAULT '{}',
+            created_at REAL
+        )""")
+
+    # gfe_indicators 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_indicators)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_indicators(
+            indicator_id TEXT PRIMARY KEY,
+            country_code TEXT NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            value REAL,
+            unit TEXT,
+            timestamp REAL NOT NULL,
+            source_id TEXT,
+            confidence REAL DEFAULT 0.5,
+            provenance TEXT,
+            created_at REAL
+        )""")
+
+    # gfe_state_changes 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_state_changes)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_state_changes(
+            change_id TEXT PRIMARY KEY,
+            country_code TEXT NOT NULL,
+            field_name TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            change_reason TEXT,
+            source_refs TEXT DEFAULT '[]',
+            timestamp REAL NOT NULL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_events(conn):
+    """PHASE 141: GFE Event Intelligence 表。"""
+    # gfe_events 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_events)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_events(
+            event_id TEXT PRIMARY KEY,
+            source_id TEXT,
+            title TEXT NOT NULL,
+            summary TEXT,
+            category TEXT NOT NULL,
+            country_code TEXT,
+            region TEXT,
+            severity REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            impact TEXT,
+            status TEXT DEFAULT 'detected',
+            provenance TEXT,
+            event_time REAL,
+            created_at REAL
+        )""")
+
+    # gfe_event_impacts 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_event_impacts)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_event_impacts(
+            impact_id TEXT PRIMARY KEY,
+            event_id TEXT NOT NULL,
+            target_dimension TEXT NOT NULL,
+            impact_direction TEXT NOT NULL,
+            impact_strength REAL,
+            time_horizon INTEGER,
+            reason TEXT,
+            confidence REAL DEFAULT 0.5,
+            created_at REAL
+        )""")
+
+    # gfe_risk_signals 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_risk_signals)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_risk_signals(
+            signal_id TEXT PRIMARY KEY,
+            country_code TEXT NOT NULL,
+            signal_type TEXT NOT NULL,
+            description TEXT NOT NULL,
+            severity REAL DEFAULT 0.5,
+            probability REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            source_event_ids TEXT DEFAULT '[]',
+            status TEXT DEFAULT 'active',
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_historical_comparison(conn):
+    """PHASE 142: GFE Historical Comparison 表。"""
+    # gfe_historical_cases 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_historical_cases)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_historical_cases(
+            case_id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            period_start REAL,
+            period_end REAL,
+            country_code TEXT,
+            category TEXT NOT NULL,
+            description TEXT,
+            state_snapshot TEXT DEFAULT '{}',
+            event_refs TEXT DEFAULT '[]',
+            outcome TEXT,
+            lessons TEXT,
+            provenance TEXT,
+            created_at REAL
+        )""")
+
+    # gfe_historical_matches 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_historical_matches)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_historical_matches(
+            match_id TEXT PRIMARY KEY,
+            current_reference TEXT NOT NULL,
+            case_id TEXT NOT NULL,
+            similarity_score REAL,
+            matching_dimensions TEXT DEFAULT '[]',
+            explanation TEXT,
+            confidence REAL DEFAULT 0.5,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_causal_graph(conn):
+    """PHASE 143: GFE Causal Graph 表。"""
+    # gfe_causal_nodes 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_causal_nodes)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_causal_nodes(
+            node_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT,
+            description TEXT,
+            entity_type TEXT,
+            provenance TEXT,
+            created_at REAL
+        )""")
+
+    # gfe_causal_edges 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_causal_edges)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_causal_edges(
+            edge_id TEXT PRIMARY KEY,
+            source_node TEXT NOT NULL,
+            target_node TEXT NOT NULL,
+            relationship_type TEXT,
+            strength REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            time_delay INTEGER,
+            evidence_refs TEXT DEFAULT '[]',
+            provenance TEXT,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_analyst_council(conn):
+    """PHASE 144: GFE Analyst Council 表。"""
+    # gfe_analyst_agents 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_analyst_agents)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_analyst_agents(
+            agent_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            specialization TEXT NOT NULL,
+            weight REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            provenance TEXT,
+            created_at REAL
+        )""")
+
+    # gfe_analysis_reports 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_analysis_reports)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_analysis_reports(
+            report_id TEXT PRIMARY KEY,
+            question TEXT NOT NULL,
+            analyst_id TEXT NOT NULL,
+            analysis TEXT NOT NULL,
+            confidence REAL DEFAULT 0.5,
+            evidence_refs TEXT DEFAULT '[]',
+            created_at REAL
+        )""")
+
+    # gfe_consensus_results 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_consensus_results)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_consensus_results(
+            consensus_id TEXT PRIMARY KEY,
+            question TEXT NOT NULL,
+            final_analysis TEXT NOT NULL,
+            agreement_score REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_scenario_engine(conn):
+    """PHASE 145: GFE Scenario Engine 表。"""
+    # gfe_scenarios 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_scenarios)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_scenarios(
+            scenario_id TEXT PRIMARY KEY,
+            question TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            assumptions TEXT DEFAULT '{}',
+            probability REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            created_at REAL
+        )""")
+
+    # gfe_scenario_impacts 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_scenario_impacts)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_scenario_impacts(
+            impact_id TEXT PRIMARY KEY,
+            scenario_id TEXT NOT NULL,
+            dimension TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            strength REAL DEFAULT 0.5,
+            reason TEXT,
+            confidence REAL DEFAULT 0.5,
+            created_at REAL
+        )""")
+
+    # gfe_scenario_paths 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_scenario_paths)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_scenario_paths(
+            path_id TEXT PRIMARY KEY,
+            scenario_id TEXT NOT NULL,
+            source_node TEXT NOT NULL,
+            target_node TEXT NOT NULL,
+            impact_score REAL DEFAULT 0.5,
+            time_horizon INTEGER,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_forecast_engine(conn):
+    """PHASE 146: GFE Forecast Engine 表。"""
+    # gfe_forecasts 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_forecasts)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_forecasts(
+            forecast_id TEXT PRIMARY KEY,
+            question TEXT NOT NULL,
+            target TEXT NOT NULL,
+            prediction TEXT NOT NULL,
+            probability REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            time_horizon INTEGER,
+            status TEXT DEFAULT 'draft',
+            created_at REAL,
+            updated_at REAL
+        )""")
+
+    # gfe_forecast_evidence 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_forecast_evidence)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_forecast_evidence(
+            evidence_id TEXT PRIMARY KEY,
+            forecast_id TEXT NOT NULL,
+            source_type TEXT NOT NULL,
+            source_ref TEXT,
+            weight REAL DEFAULT 0.5,
+            impact REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            created_at REAL
+        )""")
+
+    # gfe_forecast_versions 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_forecast_versions)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_forecast_versions(
+            version_id TEXT PRIMARY KEY,
+            forecast_id TEXT NOT NULL,
+            previous_prediction TEXT,
+            new_prediction TEXT,
+            change_reason TEXT,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_forecast_ledger(conn):
+    """PHASE 147: GFE Forecast Ledger 表。"""
+    # gfe_forecast_ledger 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_forecast_ledger)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_forecast_ledger(
+            ledger_id TEXT PRIMARY KEY,
+            forecast_id TEXT NOT NULL,
+            prediction TEXT NOT NULL,
+            actual_result TEXT,
+            brier_score REAL,
+            accuracy_score REAL,
+            evaluated_at REAL,
+            created_at REAL
+        )""")
+
+    # gfe_forecast_metrics 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_forecast_metrics)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_forecast_metrics(
+            metric_id TEXT PRIMARY KEY,
+            forecast_type TEXT NOT NULL,
+            sample_count INTEGER DEFAULT 0,
+            average_brier_score REAL DEFAULT 0.5,
+            accuracy_rate REAL DEFAULT 0.5,
+            calibration_score REAL DEFAULT 0.5,
+            updated_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_early_warning(conn):
+    """PHASE 148: GFE Early Warning 表。"""
+    # gfe_warning_rules 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_warning_rules)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_warning_rules(
+            rule_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT,
+            conditions TEXT DEFAULT '{}',
+            severity REAL DEFAULT 0.5,
+            confidence REAL DEFAULT 0.5,
+            enabled INTEGER DEFAULT 1,
+            created_at REAL
+        )""")
+
+    # gfe_warning_alerts 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_warning_alerts)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_warning_alerts(
+            alert_id TEXT PRIMARY KEY,
+            country_code TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            severity REAL,
+            probability REAL,
+            confidence REAL,
+            trigger_refs TEXT DEFAULT '[]',
+            status TEXT DEFAULT 'active',
+            created_at REAL
+        )""")
+
+    # gfe_warning_history 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_warning_history)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_warning_history(
+            history_id TEXT PRIMARY KEY,
+            alert_id TEXT,
+            old_status TEXT,
+            new_status TEXT,
+            reason TEXT,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _migrate_gfe_calibration(conn):
+    """PHASE 149: GFE Forecast Calibration 表。"""
+    # gfe_calibration_records 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_calibration_records)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_calibration_records(
+            record_id TEXT PRIMARY KEY,
+            forecast_id TEXT,
+            analyst_id TEXT,
+            domain TEXT,
+            predicted_probability REAL,
+            actual_result REAL,
+            brier_score REAL,
+            confidence_error REAL,
+            created_at REAL
+        )""")
+
+    # gfe_analyst_metrics 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_analyst_metrics)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_analyst_metrics(
+            metric_id TEXT PRIMARY KEY,
+            analyst_id TEXT NOT NULL,
+            domain TEXT,
+            sample_count INTEGER DEFAULT 0,
+            average_brier_score REAL DEFAULT 0.5,
+            accuracy_rate REAL DEFAULT 0.5,
+            calibration_score REAL DEFAULT 0.5,
+            weight_adjustment REAL DEFAULT 0.0,
+            updated_at REAL
+        )""")
+
+    # gfe_calibration_history 表
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(gfe_calibration_history)").fetchall()}
+    if not cols:
+        conn.execute("""CREATE TABLE gfe_calibration_history(
+            history_id TEXT PRIMARY KEY,
+            analyst_id TEXT,
+            old_weight REAL,
+            new_weight REAL,
+            reason TEXT,
+            created_at REAL
+        )""")
+
+    conn.commit()
+
+
+def _add_columns_if_missing(conn, table_name, columns):
+    """向后兼容：为表添加缺失的列（幂等）。"""
+    cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table_name})").fetchall()}
+    for col_name, col_def in columns:
+        if col_name not in cols:
+            try:
+                conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
+    conn.commit()
+
+
+def _migrate_suggestions(conn):
+    """向后兼容升级 suggestions 表：补齐缺失列。"""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(suggestions)").fetchall()}
+    adds = [
+        ("description", "ALTER TABLE suggestions ADD COLUMN description TEXT"),
+        ("priority", "ALTER TABLE suggestions ADD COLUMN priority INTEGER DEFAULT 5"),
+        ("created", "ALTER TABLE suggestions ADD COLUMN created TEXT"),
+        ("accepted_at", "ALTER TABLE suggestions ADD COLUMN accepted_at TEXT"),
+        ("rejected_at", "ALTER TABLE suggestions ADD COLUMN rejected_at TEXT"),
     ]
     for col, ddl in adds:
         if col not in cols:

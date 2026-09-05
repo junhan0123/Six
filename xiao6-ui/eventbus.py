@@ -285,6 +285,44 @@ SYSTEM_EVENT_NAMES = {
     "tool_finished",
     "retry_started",
     "retry_finished",
+    # —— Phase 139：GFE 数据源基础层事件 ——
+    "gfe_source_registered",            # 数据源注册
+    "gfe_source_updated",               # 数据源更新
+    "gfe_source_reliability_changed",   # 数据源可信度变化
+    # —— Phase 140：GFE World State Engine 事件 ——
+    "gfe_world_state_created",          # 世界状态快照创建
+    "gfe_world_state_updated",          # 世界状态更新
+    "gfe_indicator_updated",            # 指标更新
+    # —— Phase 141：GFE Event Intelligence 事件 ——
+    "gfe_event_detected",               # 事件检测
+    "gfe_event_analyzed",               # 事件分析完成
+    "gfe_risk_signal_created",          # 风险信号生成
+    # —— Phase 142：GFE Historical Comparison 事件 ——
+    "gfe_historical_case_added",        # 历史案例新增
+    "gfe_historical_comparison_completed",  # 历史比对完成
+    "gfe_similarity_calculated",        # 相似度计算完成
+    # —— Phase 143：GFE Causal Graph 事件 ——
+    "gfe_causal_node_added",            # 因果节点新增
+    "gfe_causal_edge_added",            # 因果边新增
+    "gfe_causal_path_generated",        # 因果路径生成
+    # —— Phase 144：GFE Analyst Council 事件 ——
+    "gfe_analysis_created",             # 分析结果提交
+    "gfe_consensus_reached",            # 共识达成
+    # —— Phase 145：GFE Scenario Engine 事件 ——
+    "gfe_scenario_created",             # 情景创建
+    "gfe_scenario_evaluated",           # 情景评估
+    # —— Phase 146：GFE Forecast Engine 事件 ——
+    "gfe_forecast_created",             # 预测创建
+    "gfe_forecast_updated",             # 预测更新
+    # —— Phase 147：GFE Forecast Ledger 事件 ——
+    "gfe_forecast_evaluated",           # 预测评估
+    "gfe_accuracy_updated",             # 准确率更新
+    # —— Phase 148：GFE Early Warning 事件 ——
+    "gfe_warning_created",              # 预警创建
+    "gfe_warning_updated",              # 预警更新
+    # —— Phase 149：GFE Forecast Calibration 事件 ——
+    "gfe_forecast_calibrated",          # 预测校准
+    "gfe_analyst_weight_updated",       # 分析师权重更新
 }
 
 

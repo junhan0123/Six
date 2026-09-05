@@ -6,7 +6,7 @@ agent 通过 render_card 工具「声明」界面某处此刻该长什么样，�
 1) 聊天流：server.py 在 run_fc_loop 后调用 drain_scene_events() 随本次 SSE 推给前端；
 2) 后台任务（如软件安装）：先 push_scene_event() 再调 flush_scene_events() 实时推给所有在线连接。
 
-前端 ZZScene 按 id 幂等渲染 / 更新 / 移除卡片（参考实现 scene.js 同款能力，用小6架构重写）。
+# 前端 Xiao6Scene 按 id 幂等渲染 / 更新 / 移除卡片（参考实现 scene.js 同款能力，用小6架构重写）。
 """
 
 from proactive import SUBSCRIBERS, SUBSCRIBERS_LOCK

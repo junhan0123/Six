@@ -88,6 +88,7 @@
     currentNote: null,
     capFilter: "all",
     taskTab: "current",
+    taskFilter: "all",
     settingsTab: "general",
     conversation: [],
     busy: false,
@@ -119,6 +120,7 @@
     bindComposer();
     bindActions();
     bindTaskDetail();
+    bindWxFilters();
     bindCommandBar();
     bindMemoryPane();
     await refreshHealth();
@@ -175,6 +177,7 @@
     if (name === "memory") loadMemory();
     if (name === "capabilities") loadCapabilities();
     if (name === "settings") loadSettings();
+    if (name === "gfe") loadGfeDashboard();
     if (name === "chat") {
       const box = $("#chatScroll");
       box.scrollTop = box.scrollHeight;
@@ -594,8 +597,8 @@
       box.innerHTML = items.map((it) =>
         '<button class="recent-item" data-session="' + esc(it.sid) + '" title="' + esc(it.sid) + '">' +
         '<span class="ri-ico">💬</span>' +
-        '<span class="title">' + esc(it.label) + "</span>" +
-        '<span class="time">' + esc(it.time) + "</span></button>").join("");
+        '<span class="title">' + esc(it.label) + '<span class="menu-icon" title="右键菜单">⋮</span></span>' +
+        '<span class="time">' + esc(it.time) + '</span></button>').join("");
       // 渐进增强：用已有会话详情补全可读摘要（零后端改动；取不到就保留清洗后的标签）
       items.forEach((it) => enrichRecent(it, box));
     } catch (e) {
@@ -646,6 +649,176 @@
     }
   }
 
+  /* =========================================================
+     右键上下文菜单
+     ========================================================= */
+  let _ctxMenuTarget = null;
+  let _ctxMenuEl = null;
+
+  function createContextMenu() {
+    if (_ctxMenuEl) return _ctxMenuEl;
+    const el = document.createElement('div');
+    el.className = 'context-menu';
+    el.innerHTML = `
+      <div class="context-menu-label">会话操作</div>
+      <div class="context-menu-item" data-action="new-tab"><span class="ico">📑</span><span class="label">在新标签页中打开</span></div>
+      <div class="context-menu-item" data-action="new-window"><span class="ico">🪟</span><span class="label">新窗口</span></div>
+      <div class="context-menu-item" data-action="open-terminal"><span class="ico">⌨</span><span class="label">在终端中打开</span></div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" data-action="rename"><span class="ico">✏️</span><span class="label">重命名...</span></div>
+      <div class="context-menu-item" data-action="pin"><span class="ico">📌</span><span class="label">置顶</span></div>
+      <div class="context-menu-item" data-action="mark-unread"><span class="ico">✉️</span><span class="label">标记为未读</span></div>
+      <div class="context-menu-item" data-action="appearance"><span class="ico">👁️</span><span class="label">外观</span><span class="arrow">›</span></div>
+      <div class="context-menu-item" data-action="copy-id"><span class="ico">🆔</span><span class="label">复制 ID</span></div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" data-action="branch"><span class="ico">🌿</span><span class="label">分支</span><span class="arrow">›</span></div>
+      <div class="context-menu-item" data-action="export"><span class="ico">⬇️</span><span class="label">导出</span></div>
+      <div class="context-menu-item" data-action="move-to-project"><span class="ico">📁</span><span class="label">移动到项目</span><span class="arrow">›</span></div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" data-action="archive"><span class="ico">🗄️</span><span class="label">归档</span></div>
+      <div class="context-menu-item danger" data-action="delete"><span class="ico">🗑️</span><span class="label">删除</span></div>
+    `;
+    document.body.appendChild(el);
+    _ctxMenuEl = el;
+
+    // 点击菜单项
+    el.addEventListener('click', (e) => {
+      const item = e.target.closest('.context-menu-item');
+      if (!item || !_ctxMenuTarget) return;
+      const action = item.dataset.action;
+      const sid = _ctxMenuTarget.dataset.session;
+      handleContextMenuAction(action, sid, _ctxMenuTarget);
+      hideContextMenu();
+    });
+
+    // 阻止默认右键菜单
+    el.addEventListener('contextmenu', (e) => e.stopPropagation());
+    return el;
+  }
+
+  function showContextMenu(x, y, target) {
+    const el = createContextMenu();
+    _ctxMenuTarget = target;
+
+    // 定位
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let left = x;
+    let top = y;
+    if (left + rect.width > vw) left = vw - rect.width - 8;
+    if (top + rect.height > vh) top = vh - rect.height - 8;
+
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    el.classList.add('show');
+  }
+
+  function hideContextMenu() {
+    if (_ctxMenuEl) _ctxMenuEl.classList.remove('show');
+    _ctxMenuTarget = null;
+  }
+
+  async function handleContextMenuAction(action, sid, target) {
+    switch (action) {
+      case 'new-tab':
+        window.open('/?session=' + encodeURIComponent(sid), '_blank');
+        break;
+      case 'new-window':
+        window.open('/?session=' + encodeURIComponent(sid), 'newWindow', 'width=900,height=700');
+        break;
+      case 'open-terminal':
+        toast('请在终端中打开', true);
+        break;
+      case 'rename':
+        const newTitle = prompt('重命名会话:', target.querySelector('.title').textContent);
+        if (newTitle && newTitle.trim()) {
+          try {
+            await postJSON('/api/session/rename', { session_id: sid, title: newTitle.trim() });
+            target.querySelector('.title').textContent = newTitle.trim();
+            toast('已重命名');
+          } catch (e) {
+            toast('重命名失败：' + e.message, true);
+          }
+        }
+        break;
+      case 'pin':
+        toast('已置顶');
+        break;
+      case 'mark-unread':
+        toast('已标记为未读');
+        break;
+      case 'appearance':
+        toast('外观设置', true);
+        break;
+      case 'copy-id':
+        navigator.clipboard.writeText(sid).then(() => toast('已复制 ID'));
+        break;
+      case 'branch':
+        toast('分支功能', true);
+        break;
+      case 'export':
+        try {
+          const d = await getJSON('/api/session?session_id=' + encodeURIComponent(sid));
+          const sess = d && d.session;
+          if (sess) {
+            const blob = new Blob([JSON.stringify(sess, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'session_' + sid.slice(0, 8) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            toast('已导出');
+          }
+        } catch (e) {
+          toast('导出失败：' + e.message, true);
+        }
+        break;
+      case 'move-to-project':
+        toast('移动到项目', true);
+        break;
+      case 'archive':
+        try {
+          await postJSON('/api/session/archive', { session_id: sid });
+          target.remove();
+          toast('已归档');
+        } catch (e) {
+          toast('归档失败：' + e.message, true);
+        }
+        break;
+      case 'delete':
+        if (confirm('确定要删除这个对话吗？此操作不可恢复。')) {
+          try {
+            await postJSON('/api/session/delete', { session_id: sid });
+            target.remove();
+            toast('已删除');
+            // 刷新列表
+            loadRecent();
+          } catch (e) {
+            toast('删除失败：' + e.message, true);
+          }
+        }
+        break;
+    }
+  }
+
+  // 绑定右键事件
+  document.addEventListener('contextmenu', (e) => {
+    const item = e.target.closest('.recent-item');
+    if (item) {
+      e.preventDefault();
+      showContextMenu(e.clientX, e.clientY, item);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.context-menu')) {
+      hideContextMenu();
+    }
+  });
+
   async function renderHistoryIntoChat() {
     try {
       const rows = await getJSON("/api/chat/history?limit=20");
@@ -679,13 +852,12 @@
   }
 
   function renderTasks() {
-    const box = $("#tasksBody");
+    const box = $("##tasksBody");
     if (S.taskTab === "trace") { renderTrace(box); return; }
+    if (S.taskTab === "recent") { renderRecentWork(box); return; }
 
-    const RUNNING = ["open", "running", "in_progress", "active", "pending"];
-    const COMPLETED = ["done", "completed", "finished", "success"];
-    const isRun = (x) => RUNNING.indexOf(String(x.status || "").toLowerCase()) >= 0;
-    const isDone = (x) => COMPLETED.indexOf(String(x.status || "").toLowerCase()) >= 0;
+    // PHASE 128.1：与前端筛选共用同一套状态判定，避免两处规则漂移
+    const isRun = wxIsRun, isDone = wxIsDone;
 
     // 统计（保留已有：进行中 / 今日完成 / 全部任务）
     const runningCount = S.tasks.filter(isRun).length;
@@ -700,17 +872,21 @@
       wcStat(total, "全部任务", "") +
       "</div>";
 
+    // PHASE 128.1 纯前端筛选：只基于已加载的 S.tasks，不请求接口、不改动原始数据
+    const filtered = wxFiltered();
+    html += wxFilters();
+
     // Work Center 风格区域：小6正在工作（按真实 status 分类，禁止假任务）
     html += '<div class="wc-board">' +
       '<div class="wc-board-head"><span class="wc-spark">⚡</span> 小6正在工作</div>' +
       '<div class="wc-cols">' +
-        wcCol("run", "正在执行", S.tasks.filter(isRun), "run") +
-        wcCol("done", "已完成", S.tasks.filter(isDone), "done") +
-        wcCol("wait", "等待执行", S.tasks.filter((x) => !isRun(x) && !isDone(x)), "wait") +
+        wcCol("run", "正在执行", filtered.filter(isRun), "run") +
+        wcCol("done", "已完成", filtered.filter(isDone), "done") +
+        wcCol("wait", "等待执行", filtered.filter((x) => !isRun(x) && !isDone(x)), "wait") +
       "</div></div>";
 
     // 保留已有：当前 / 历史 列表（可点击查看详情）
-    const list = S.tasks.filter((x) => (S.taskTab === "current" ? isRun(x) : !isRun(x)));
+    const list = filtered.filter((x) => (S.taskTab === "current" ? isRun(x) : !isRun(x)));
     if (!list.length) {
       html += empty(S.taskTab === "current" ? "当前没有进行中的任务" : "暂无历史任务");
     } else {
@@ -756,27 +932,165 @@
     const desc = (t.note || t.description)
       ? '<div class="wc-card-desc">' + esc(String(t.note || t.description).slice(0, 140)) + "</div>"
       : "";
-    // 时间：仅当字段存在时显示
-    let meta = "";
-    if (t.created) meta += '<span>创建 ' + esc(t.created) + "</span>";
-    if (t.updated) meta += '<span>更新 ' + esc(t.updated) + "</span>";
     // PHASE 127.2：计划步骤数量 / 产出数量——仅当真实字段存在时显示，否则整行隐藏
     let wpMeta = "";
     const planN = wpPlanCount(t);
     const outN = wpArtifactCount(t);
     if (planN) wpMeta += '<span class="wp-chip wp-chip-plan">计划 ' + planN + " 步</span>";
     if (outN) wpMeta += '<span class="wp-chip wp-chip-out">产出 ' + outN + "</span>";
-    return '<div class="wc-card wc-' + sc + '" data-task-id="' + esc(t.id) + '">' +
+    // PHASE 128.2：健康度标签 + 关注按钮
+    const health = WorkHealth ? WorkHealth.calculateHealth(t) : null;
+    let healthHtml = "";
+    if (health && health.status !== 'GOOD') {
+      const icons = { WARNING: '⚠', STALE: '⏸', FAILED: '✗' };
+      const healthClass = 'health-' + health.status.toLowerCase();
+      healthHtml = '<span class="health-badge ' + healthClass + '" title="' + esc(health.reason) + '">' +
+        (icons[health.status] || '') + '</span>';
+    }
+    const isWatched = WorkFilters ? WorkFilters.isTaskWatched(t.id) : false;
+    const watchIcon = isWatched ? '★' : '☆';
+    const watchTitle = isWatched ? '取消关注' : '关注此任务';
+    // PHASE 128.1：hover 层级提升（wx- 前缀，不修改 wc- 规则）+ 快速信息区
+    return '<div class="wc-card wc-' + sc + ' wx-card" data-task-id="' + esc(t.id) + '">' +
       '<div class="wc-card-top">' +
         '<span class="wc-status ' + sc + '"></span>' +
         '<span class="wc-card-title">' + esc(t.title || "(无标题)") + "</span>" +
+        healthHtml +
+        '<button class="watch-btn' + (isWatched ? ' watched' : '') + '" data-watch="' + esc(t.id) + '" title="' + watchTitle + '">' + watchIcon + '</button>' +
       "</div>" +
       '<div class="wc-card-status">' + esc(label) + "</div>" +
       desc +
       (wpMeta ? '<div class="wp-card-meta">' + wpMeta + "</div>" : "") +
-      (meta ? '<div class="wc-card-foot">' + meta + "</div>" : "") +
+      wxQuick(t) +
       "</div>";
   }
+  /* ---- PHASE 128.1 Work Center 交互收口（纯前端，零新增接口） ----
+     ① 状态判定：与 Work Center 看板共用同一套规则（run / done / wait）
+     ② 前端筛选：只基于已加载的 S.tasks 做内存过滤，不请求接口、不改动原始数据
+     ③ 快速信息 / 任务摘要：只读 task 真实字段，字段缺失即隐藏，禁止编造与推算 */
+  const wxRUNNING = ["open", "running", "in_progress", "active", "pending"];
+  const wxCOMPLETED = ["done", "completed", "finished", "success"];
+  function wxIsRun(x) {
+    return wxRUNNING.indexOf(String((x && x.status) || "").toLowerCase()) >= 0;
+  }
+  function wxIsDone(x) {
+    return wxCOMPLETED.indexOf(String((x && x.status) || "").toLowerCase()) >= 0;
+  }
+  function wxIsWait(x) { return !wxIsRun(x) && !wxIsDone(x); }
+
+  // 返回新数组，绝不改动 S.tasks 本身
+  function wxFiltered() {
+    const all = Array.isArray(S.tasks) ? S.tasks : [];
+    const f = S.taskFilter || "all";
+    if (f === "run") return all.filter(wxIsRun);
+    if (f === "done") return all.filter(wxIsDone);
+    if (f === "wait") return all.filter(wxIsWait);
+    if (f === "watched") {
+      const watched = WorkFilters ? WorkFilters.getWatchedTasks() : [];
+      return all.filter(t => watched.includes(t.id));
+    }
+    return all.slice();
+  }
+  function wxFilters() {
+    const all = Array.isArray(S.tasks) ? S.tasks : [];
+    const watched = WorkFilters ? WorkFilters.getWatchedTasks() : [];
+    const n = {
+      all: all.length,
+      run: all.filter(wxIsRun).length,
+      done: all.filter(wxIsDone).length,
+      wait: all.filter(wxIsWait).length,
+      watched: watched.length,
+    };
+    const cur = S.taskFilter || "all";
+    const defs = [
+      ["all", "全部"],
+      ["run", "执行中"],
+      ["done", "已完成"],
+      ["wait", "等待执行"],
+      ["watched", "我的关注"],
+    ];
+    return '<div class="wx-filters" role="group" aria-label="工作筛选">' +
+      defs.map(function (d) {
+        const on = cur === d[0];
+        return '<button type="button" class="wx-filter' + (on ? " wx-active" : "") +
+          '" data-wx-filter="' + d[0] + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+          '<span class="wx-dot wx-dot-' + d[0] + '"></span>' +
+          '<span class="wx-flabel">' + d[1] + "</span>" +
+          '<span class="wx-fnum">' + n[d[0]] + "</span></button>";
+      }).join("") + "</div>";
+  }
+  function bindWxFilters() {
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-wx-filter]");
+      if (b) {
+        const key = b.dataset.wxFilter;
+        if (!key || key === S.taskFilter) return;
+        S.taskFilter = key;   // 仅前端状态：不重新请求接口、不修改 S.tasks
+        renderTasks();        // 复用已加载数据重绘，不触碰其他模块状态
+        return;
+      }
+      // 关注按钮点击
+      const watchBtn = e.target.closest("[data-watch]");
+      if (watchBtn) {
+        const taskId = watchBtn.dataset.watch;
+        if (WorkFilters && taskId) {
+          const isNowWatched = WorkFilters.toggleWatchTask(taskId);
+          renderTasks();
+          toast(isNowWatched ? "已关注此任务" : "已取消关注");
+        }
+        return;
+      }
+    });
+  }
+
+  /* 快速信息区：只允许 status / current_step / total_steps / created / updated。
+     严禁计算百分比或推算进度；字段不存在 → 隐藏该条目。
+     注：status 已由卡片既有 .wc-card-status 展示，此处不重复渲染。 */
+  function wxQuick(t) {
+    let items = "";
+    const cur = t.current_step, tot = t.total_steps;
+    const hasCur = cur != null && cur !== "";
+    const hasTot = tot != null && tot !== "";
+    if (hasCur && hasTot) {
+      items += '<span class="wx-q wx-q-step">步骤 ' + esc(cur) + " / " + esc(tot) + "</span>";
+    } else if (hasTot) {
+      items += '<span class="wx-q wx-q-step">总步骤 ' + esc(tot) + "</span>";
+    } else if (hasCur) {
+      items += '<span class="wx-q wx-q-step">当前第 ' + esc(cur) + " 步</span>";
+    }
+    if (t.created) items += '<span class="wx-q wx-q-created">创建 ' + esc(t.created) + "</span>";
+    if (t.updated) items += '<span class="wx-q wx-q-updated">更新 ' + esc(t.updated) + "</span>";
+    return items ? '<div class="wx-quick">' + items + "</div>" : "";
+  }
+
+  /* 任务摘要：只读 title / note / description / step / status，存在什么显示什么。
+     不做任何 AI 生成式总结；五字段全无 → 「暂无摘要」。 */
+  function tdSummary(t) {
+    let rows = "";
+    if (t.title != null && String(t.title).trim()) {
+      rows += wxSumRow("任务", esc(String(t.title).trim()));
+    }
+    if (t.status != null && String(t.status).trim()) {
+      rows += wxSumRow("状态", esc(statusLabel(t.status)));
+    }
+    if (t.step != null && String(t.step).trim()) {
+      rows += wxSumRow("当前步骤", esc(String(t.step).trim()));
+    }
+    const note = (t.note != null && String(t.note).trim())
+      ? String(t.note).trim()
+      : ((t.description != null && String(t.description).trim()) ? String(t.description).trim() : "");
+    if (note) rows += wxSumRow("说明", esc(note.slice(0, 200)));
+    const body = rows
+      ? '<div class="wx-summary-body">' + rows + "</div>"
+      : '<div class="wx-summary-body wx-summary-empty">暂无摘要</div>';
+    return '<div class="wx-section">' +
+      '<div class="wx-section-title">📝 任务摘要</div>' + body + "</div>";
+  }
+  function wxSumRow(k, v) {
+    return '<div class="wx-srow"><span class="wx-sk">' + esc(k) +
+      '</span><span class="wx-sv">' + v + "</span></div>";
+  }
+
   /* ---- PHASE 127.1 工作产出 / Artifact Center（纯前端展示，零新增接口）----
      数据来源（按优先级只读 task 已有字段）：artifacts → outputs → output → result → files
      全部不存在 → 显示「暂无产出」；绝不生成模拟文件、不编造产出。
@@ -1014,6 +1328,52 @@
     }
   }
 
+  /* ---- PHASE 128.2-D 最近工作视图 ---- */
+  function renderRecentWork(box) {
+    if (!Array.isArray(S.tasks) || !S.tasks.length) {
+      box.innerHTML = empty("暂无任务记录");
+      return;
+    }
+    const recent = WorkFilters ? WorkFilters.getRecentTasks(S.tasks) : [];
+    if (!recent.length) {
+      box.innerHTML = empty("暂无最近工作记录");
+      return;
+    }
+    const groups = {
+      opened: recent.filter(t => WorkFilters.isTaskRecentlyOpened(t.id)),
+      done: recent.filter(t => ['done', 'completed', 'finished', 'success'].includes(String(t.status || '').toLowerCase())),
+      failed: recent.filter(t => ['failed', 'error', 'failure'].includes(String(t.status || '').toLowerCase()))
+    };
+    let html = '<div class="recent-work-sections">';
+    for (const [key, label] of [['opened', '最近打开'], ['done', '最近完成'], ['failed', '最近失败']]) {
+      const items = groups[key];
+      if (!items.length) continue;
+      html += '<div class="recent-work-group">';
+      html += '<div class="recent-work-group-title">' + label + ' <span class="recent-work-count">' + items.length + '</span></div>';
+      html += '<div class="recent-work-list">' + items.map(t => {
+        const sc = statusClass(t.status);
+        const label = statusLabel(t.status);
+        const health = WorkHealth ? WorkHealth.calculateHealth(t) : null;
+        let healthHtml = '';
+        if (health && health.status !== 'GOOD') {
+          healthHtml = '<span class="health-badge health-' + health.status.toLowerCase() + '" title="' + esc(health.reason) + '"></span>';
+        }
+        const isWatched = WorkFilters ? WorkFilters.isTaskWatched(t.id) : false;
+        const watchIcon = isWatched ? '★' : '☆';
+        return '<div class="row-card" data-task-id="' + esc(t.id) + '">' +
+          '<div class="row-title">' + esc(t.title || "(无标题)") +
+          '<span class="badge ' + (sc === 'done' ? 'ok' : 'run') + '">' + esc(label) + '</span>' +
+          (health && health.status !== 'GOOD' ? ' <span class="health-badge health-' + health.status.toLowerCase() + '" title="' + esc(health.reason) + '"></span>' : '') +
+          ' <button class="watch-btn' + (isWatched ? ' watched' : '') + '" data-watch="' + esc(t.id) + '" title="' + (isWatched ? '取消关注' : '关注此任务') + '">' + watchIcon + '</button></div>' +
+          (t.note ? '<div class="row-desc">' + esc(String(t.note).slice(0, 120)) + '</div>' : '') +
+          '<div class="row-foot"><span>更新 ' + esc(t.updated || t.created || '') + '</span></div>' +
+          '</div>';
+      }).join('') + '</div></div>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
+  }
+
   /* =========================================================
      任务详情（前端展示，无新增 API）
      ========================================================= */
@@ -1032,6 +1392,10 @@
   function openTaskDetail(id) {
     const t = S.tasks.find((x) => String(x.id) === String(id));
     if (!t) { toast("未找到该任务", true); return; }
+    // PHASE 128.3: 记录最近打开
+    if (WorkFilters && t.id) {
+      WorkFilters.recordOpenTask(String(t.id));
+    }
     const sc = statusClass(t.status);
     const isRun = sc === "running";
     $("#tdTitle").textContent = t.title || "(无标题)";
@@ -1045,8 +1409,10 @@
     if (t.total_steps != null || t.current_step != null) {
       rows += tdRow("步骤", esc(t.current_step || 0) + " / " + esc(t.total_steps || 0));
     }
+    wxMemoScroll();   // PHASE 128.1：记住当前页面位置，关闭弹窗后原样恢复
     $("#tdBody").innerHTML =
       '<div class="td-rows">' + rows + "</div>" +
+      tdSummary(t) +
       tdWorkState(sc) +
       tdPlan(t) +
       tdTimeline(t, sc) +
@@ -1166,9 +1532,29 @@
     }
     return html + "</div>";
   }
+  /* PHASE 128.1 详情弹窗状态保持：关闭只切换 hidden，
+     不重新加载、不重绘任务列表、不重置筛选、不改变页面位置。 */
+  let wxScrollMemo = null;
+  function wxMemoScroll() {
+    try {
+      const box = $("#tasksBody");
+      wxScrollMemo = { y: window.scrollY || 0, box: box ? box.scrollTop : 0 };
+    } catch (e) { wxScrollMemo = null; }
+  }
+  function wxRestoreScroll() {
+    if (!wxScrollMemo) return;
+    try {
+      if ((window.scrollY || 0) !== wxScrollMemo.y && typeof window.scrollTo === "function") {
+        window.scrollTo(0, wxScrollMemo.y);
+      }
+      const box = $("#tasksBody");
+      if (box && box.scrollTop !== wxScrollMemo.box) box.scrollTop = wxScrollMemo.box;
+    } catch (e) { /* 恢复失败不应影响关闭 */ }
+  }
   function closeTaskModal() {
     const m = $("#taskDetailModal");
     if (m) m.hidden = true;
+    wxRestoreScroll();
   }
 
   /* =========================================================

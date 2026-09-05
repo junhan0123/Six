@@ -1,50 +1,66 @@
 #!/usr/bin/env python3
-"""Xiao6 · MCP Host / External Tool Bridge（Phase 41）
+"""Xiao6 · MCP Host — External Tool Bridge (Phase 41, incomplete in v1.0.0)
 
-小6第一次真正进入「外部世界可执行 AI OS」的桥：
-  MCP Host（服务器管理 / stdio 传输 / 工具发现 / 调用 / 审计）
-  + Browser Automation（第一个真实外部能力，经 Playwright MCP）。
+NOTE: This module is intentionally incomplete in v1.0.0.
+Transport, runtime, executor, and browser submodules are not yet implemented.
+Product code does not depend on this module being fully functional.
 
-纪律（严格，见 PHASE-41 spec）：
-- 不新建第二套 Capability / Permission / Execution / EventBus / Memory / Context
-  / AgentRuntime / Planner / Goal 系统。全部复用 Phase 40 Capability Foundation。
-- MCP 服务器是「外部能力提供方」，不是 Capability Registry。
-- 启动命令固定为受信任二进制（命令允许列表），LLM 不能决定。
-- 仅 stdio transport；asyncio.create_subprocess_exec，绝不 shell=True。
-
-对外 API：
-  get_host()             —— MCPServerManager 单例（配置 + 运行时状态）
-  ensure_loaded()        —— 加载受信任内置配置（不启动服务器）
-  get_runtime()          —— 持久异步事件循环（见 runtime.py）
-  execute_mcp_capability_sync(...) —— 同步执行入口
-  bootstrap_mcp(audit_path)       —— 初始化（加载配置 + 审计路径）
+对外 API (stub):
+  ensure_loaded()        — no-op stub
+  bootstrap_mcp()        — no-op stub
 """
 from __future__ import annotations
 
-from .config import (
-    ServerConfig, ServerState,
-    COMMAND_ALLOWLIST, ALLOWED_BROWSERS,
-    resolve_env, build_playwright_config,
-)
-from .transport import StdioTransport, TransportError
-from .host import (
-    MCPServer, MCPServerManager, ToolSpec, AuditEntry,
-    get_host, ensure_loaded, bootstrap_mcp,
-)
-from .executor import (
-    execute_mcp_capability, execute_mcp_capability_sync,
-)
-from .browser import BrowserSession, browser_scope
-from .runtime import MCPRuntime, get_runtime
 
-__all__ = [
-    "ServerConfig", "ServerState",
-    "COMMAND_ALLOWLIST", "ALLOWED_BROWSERS",
-    "resolve_env", "build_playwright_config",
-    "StdioTransport", "TransportError",
-    "MCPServer", "MCPServerManager", "ToolSpec", "AuditEntry",
-    "execute_mcp_capability", "execute_mcp_capability_sync",
-    "BrowserSession", "browser_scope",
-    "MCPRuntime", "get_runtime",
-    "get_host", "ensure_loaded", "bootstrap_mcp",
-]
+class ServerConfig:
+    """Stub for ServerConfig."""
+    def __init__(self, name: str, command: str, args=None, env=None, enabled=True, permission_profile="default"):
+        self.name = name
+        self.command = command
+        self.args = args or []
+        self.env = env
+        self.enabled = enabled
+        self.permission_profile = permission_profile
+
+
+class ServerState:
+    """Stub enum for state machine."""
+    DISABLED = "disabled"
+    STOPPED = "stopped"
+    STARTING = "starting"
+    READY = "ready"
+    DEGRADED = "degraded"
+    ERROR = "error"
+
+
+def resolve_env(config):
+    return {}
+
+
+def build_playwright_config():
+    return []
+
+
+def ensure_loaded():
+    """No-op stub."""
+    pass
+
+
+def bootstrap_mcp(audit_path=None):
+    """No-op stub."""
+    pass
+
+
+def get_host():
+    """No-op stub."""
+    return None
+
+
+def get_runtime():
+    """No-op stub."""
+    return None
+
+
+def execute_mcp_capability_sync(*args, **kwargs):
+    """No-op stub."""
+    return None

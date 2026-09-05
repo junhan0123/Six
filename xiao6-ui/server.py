@@ -445,10 +445,477 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._send(200, json.dumps(get_sysmon(), ensure_ascii=False))
         if path == "/api/logs":
             return self._send(200, json.dumps(get_logs(), ensure_ascii=False))
-        if path.startswith("/api/notes"):
+        if path == "/api/observations":
+            try:
+                import observation_service
+                svc = observation_service.get_observation_service()
+                limit = int(qs.get("limit", ["20"])[0]) if "limit" in qs else 20
+                return self._send(200, json.dumps({
+                    "observations": svc.get_observations(limit),
+                    "stats": svc.get_stats()
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/suggestions":
+            try:
+                import suggestion_service
+                svc = suggestion_service.get_suggestion_service()
+                pending = svc.get_pending(limit=20)
+                pending.sort(key=lambda x: x.get("priority", 5))
+                return self._send(200, json.dumps({
+                    "suggestions": pending,
+                    "count": len(pending)
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        # /api/proposals/*
+        if path.startswith("/api/proposals"):
+            try:
+                import proposal_service
+                svc = proposal_service.get_proposal_service()
+                parts = path.split("/")
+                # GET /api/proposals → list pending
+                if len(parts) == 4:
+                    pending = svc.get_pending(limit=20)
+                    return self._send(200, json.dumps({
+                        "proposals": pending,
+                        "count": len(pending)
+                    }, ensure_ascii=False))
+                # POST /api/proposals/{id}/approve
+                if len(parts) == 5 and parts[4] == "approve":
+                    ok = svc.approve(parts[3])
+                    return self._send(200, json.dumps({"ok": ok}, ensure_ascii=False))
+                # POST /api/proposals/{id}/reject
+                if len(parts) == 5 and parts[4] == "reject":
+                    ok = svc.reject(parts[3])
+                    return self._send(200, json.dumps({"ok": ok}, ensure_ascii=False))
+                return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path.startswith("/api/proposals"):
+            try:
+                import proposal_service
+                parts = path.split("/")
+                # GET /api/proposals - 获取待处理提案
+                if len(parts) == 3:
+                    svc = proposal_service.get_proposal_service()
+                    proposals = svc.get_pending_proposals(limit=20)
+                    proposals.sort(key=lambda x: x.get("estimated_cost", 5))
+                    return self._send(200, json.dumps({
+                        "proposals": proposals,
+                        "count": len(proposals)
+                    }, ensure_ascii=False))
+                # POST /api/proposals/{id}/approve
+                if len(parts) == 4 and parts[3] == "approve":
+                    proposal_id = parts[2]
+                    svc = proposal_service.get_proposal_service()
+                    success = svc.approve_proposal(proposal_id)
+                    if success:
+                        return self._send(200, json.dumps({"ok": True}, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "approve failed"}, ensure_ascii=False))
+                # POST /api/proposals/{id}/reject
+                if len(parts) == 4 and parts[3] == "reject":
+                    proposal_id = parts[2]
+                    svc = proposal_service.get_proposal_service()
+                    success = svc.reject_proposal(proposal_id)
+                    if success:
+                        return self._send(200, json.dumps({"ok": True}, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "reject failed"}, ensure_ascii=False))
+                # POST /api/proposals/{id}/create-task
+                if len(parts) == 4 and parts[3] == "create-task":
+                    proposal_id = parts[2]
+                    try:
+                        import proposal_task_adapter
+                        svc = proposal_task_adapter.ProposalTaskAdapter()
+                        # 获取提案
+                        from proposal_service import get_proposal_service
+                        all_proposals = get_proposal_service().get_all_proposals()
+                        proposal = next((p for p in all_proposals if p.get("id") == proposal_id), None)
+                        if not proposal:
+                            return self._send(404, json.dumps({"error": "proposal not found"}, ensure_ascii=False))
+                        if proposal.get("status") != "approved":
+                            return self._send(400, json.dumps({"error": "proposal not approved"}, ensure_ascii=False))
+                        # 创建任务
+                        task = svc.create_task(proposal)
+                        if task:
+                            return self._send(200, json.dumps({"ok": True, "task_id": task["id"]}, ensure_ascii=False))
+                        return self._send(400, json.dumps({"error": "create task failed"}, ensure_ascii=False))
+                    except Exception as e:
+                        return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+                return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+
+        # PHASE 139: /api/gfe/sources/*
+        if path.startswith("/api/gfe/sources"):
+            try:
+                from gfe_sources import get_source_manager
+                manager = get_source_manager()
+                parts = path.split("/")
+                # GET /api/gfe/sources → list all or filtered
+                if len(parts) == 4 and path.endswith("/sources"):
+                    type_filter = qs.get("type", [None])[0] if qs.get("type") else None
+                    sources = manager.list_sources(type_filter=type_filter)
+                    return self._send(200, json.dumps({
+                        "sources": [s.to_frontend() for s in sources],
+                        "count": len(sources)
+                    }, ensure_ascii=False))
+                # POST /api/gfe/sources → register new source
+                if len(parts) == 4 and path.endswith("/sources"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    ds = manager.register_source(
+                        source_id=body.get("source_id"),
+                        name=body.get("name"),
+                        type=body.get("type"),
+                        authority=body.get("authority"),
+                        country=body.get("country"),
+                        provenance=body.get("provenance"),
+                        metadata=body.get("metadata"),
+                    )
+                    if ds:
+                        return self._send(200, json.dumps({"ok": True, "source": ds.to_frontend()}, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "registration failed"}, ensure_ascii=False))
+                # GET /api/gfe/sources/{source_id} → single source
+                if len(parts) == 5:
+                    ds = manager.get_source(parts[4])
+                    if ds:
+                        return self._send(200, json.dumps({"source": ds.to_frontend()}, ensure_ascii=False))
+                    return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+                return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+
             return self._handle_notes()
+        # PHASE 141: /api/gfe/events/*
+        if path.startswith("/api/gfe/events"):
+            try:
+                from gfe_events import get_event_intelligence_engine
+                engine = get_event_intelligence_engine()
+                parts = path.split("/")
+                # GET /api/gfe/events → list events
+                if len(parts) == 4 and path.endswith("/events"):
+                    events = engine.get_events(limit=50)
+                    return self._send(200, json.dumps({
+                        "events": [e.to_frontend() for e in events],
+                        "count": len(events)
+                    }, ensure_ascii=False))
+                # POST /api/gfe/events → create event
+                if len(parts) == 4 and path.endswith("/events"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    event = engine.ingest_event(
+                        title=body.get("title"),
+                        summary=body.get("summary", ""),
+                        category=body.get("category", "economy"),
+                        country_code=body.get("country_code", "CN"),
+                        provenance=body.get("provenance", "manual"),
+                        source_id=body.get("source_id"),
+                    )
+                    if event:
+                        return self._send(200, json.dumps({
+                            "ok": True,
+                            "event": event.to_frontend()
+                        }, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to create event"}, ensure_ascii=False))
+                # GET /api/gfe/events/{id} → single event
+                if len(parts) == 5:
+                    event = engine.get_event(parts[4])
+                    if event:
+                        return self._send(200, json.dumps({"event": event.to_frontend()}, ensure_ascii=False))
+                    return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+                # GET /api/gfe/risk-signals
+                if len(parts) == 4 and path.endswith("/risk-signals"):
+                    signals = engine.get_risk_signals(limit=50)
+                    return self._send(200, json.dumps({
+                        "signals": [s.to_frontend() for s in signals],
+                        "count": len(signals)
+                    }, ensure_ascii=False))
+                return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        # PHASE 142: /api/gfe/history/*
+        if path.startswith("/api/gfe/history"):
+            try:
+                from gfe_history import get_historical_comparison_engine
+                engine = get_historical_comparison_engine()
+                parts = path.split("/")
+                # GET /api/gfe/history/cases → list cases
+                if len(parts) == 5 and path.endswith("/cases"):
+                    cases = engine.get_cases(limit=50)
+                    return self._send(200, json.dumps({
+                        "cases": [c.to_frontend() for c in cases],
+                        "count": len(cases)
+                    }, ensure_ascii=False))
+                # POST /api/gfe/history/case → create case
+                if len(parts) == 5 and path.endswith("/case"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    case = engine.add_case(
+                        case_id=body.get("case_id"),
+                        title=body.get("title"),
+                        period_start=body.get("period_start"),
+                        period_end=body.get("period_end"),
+                        country_code=body.get("country_code"),
+                        category=body.get("category"),
+                        description=body.get("description", ""),
+                        state_snapshot=body.get("state_snapshot", "{}"),
+                        provenance=body.get("provenance", "historical_database"),
+                    )
+                    if case:
+                        return self._send(200, json.dumps({"ok": True, "case": case.to_frontend()}, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to create case"}, ensure_ascii=False))
+                # GET /api/gfe/history/compare/{country} → compare with history
+                if len(parts) == 6 and path.endswith("/compare"):
+                    country_code = parts[5]
+                    current_state = engine.world_state_engine.get_current_state(country_code) if engine.world_state_engine else None
+                    if not current_state:
+                        return self._send(404, json.dumps({"error": "country state not found"}, ensure_ascii=False))
+                    matches = engine.compare_state(country_code, current_state)
+                    return self._send(200, json.dumps({
+                        "country": country_code,
+                        "matches": matches
+                    }, ensure_ascii=False))
+                return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        # PHASE 143: /api/gfe/causal/*
+        if path.startswith("/api/gfe/causal"):
+            try:
+                from gfe_causal import get_causal_graph_engine
+                engine = get_causal_graph_engine()
+                parts = path.split("/")
+                # GET /api/gfe/causal/nodes → list nodes
+                if len(parts) == 5 and path.endswith("/nodes"):
+                    category = qs.get("category", [None])[0]
+                    nodes = engine.get_nodes(category=category, limit=100)
+                    return self._send(200, json.dumps({
+                        "nodes": [n.to_frontend() for n in nodes],
+                        "count": len(nodes)
+                    }, ensure_ascii=False))
+                # POST /api/gfe/causal/node → create node
+                if len(parts) == 5 and path.endswith("/node"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    node = engine.add_node(
+                        name=body.get("name"),
+                        category=body.get("category"),
+                        description=body.get("description"),
+                        entity_type=body.get("entity_type"),
+                        provenance=body.get("provenance")
+                    )
+                    if node:
+                        return self._send(200, json.dumps({"ok": True, "node": node.to_frontend()}, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to create node"}, ensure_ascii=False))
+                # POST /api/gfe/causal/edge → create edge
+                if len(parts) == 5 and path.endswith("/edge"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    edge = engine.add_edge(
+                        source_node=body.get("source_node"),
+                        target_node=body.get("target_node"),
+                        relationship_type=body.get("relationship_type"),
+                        strength=body.get("strength", 0.5),
+                        confidence=body.get("confidence", 0.5),
+                        time_delay=body.get("time_delay"),
+                        evidence_refs=body.get("evidence_refs"),
+                        provenance=body.get("provenance")
+                    )
+                    if edge:
+                        return self._send(200, json.dumps({"ok": True, "edge": edge.to_frontend()}, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to create edge"}, ensure_ascii=False))
+                # GET /api/gfe/causal/path/{node} → find impact path
+                if len(parts) == 6 and path.endswith("/path"):
+                    node_name = parts[4]
+                    path_result = engine.calculate_impact_path(node_name)
+                    if path_result:
+                        return self._send(200, json.dumps({
+                            "node": node_name,
+                            "path": path_result.to_frontend()
+                        }, ensure_ascii=False))
+                    return self._send(404, json.dumps({"error": "path not found"}, ensure_ascii=False))
+                return self._send(400, json.dumps({"error": "invalid causal path"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        # PHASE 147: /api/gfe/ledger/*
+        if path.startswith("/api/gfe/ledger"):
+            try:
+                from gfe_forecast_ledger import get_forecast_ledger
+                ledger = get_forecast_ledger()
+                parts = path.split("/")
+                # GET /api/gfe/ledger/records → list records
+                if len(parts) == 5 and path.endswith("/records"):
+                    forecast_id = qs.get("forecast_id", [None])[0]
+                    limit = int(qs.get("limit", ["50"])[0])
+                    records = ledger.get_ledgers(forecast_id=forecast_id, limit=limit)
+                    return self._send(200, json.dumps({
+                        "records": [r.to_frontend() for r in records],
+                        "count": len(records)
+                    }, ensure_ascii=False))
+                # POST /api/gfe/ledger/record → record prediction
+                if len(parts) == 5 and path.endswith("/record"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    record = ledger.record_prediction(
+                        forecast_id=body.get("forecast_id"),
+                        prediction=body.get("prediction"),
+                        probability=body.get("probability", 0.5)
+                    )
+                    if record:
+                        return self._send(200, json.dumps({
+                            "ok": True,
+                            "record": record.to_frontend()
+                        }, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to record prediction"}, ensure_ascii=False))
+                # POST /api/gfe/ledger/evaluate → evaluate prediction
+                if len(parts) == 5 and path.endswith("/evaluate"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    evaluated = ledger.evaluate_prediction(
+                        ledger_id=body.get("ledger_id"),
+                        actual_result=body.get("actual_result"),
+                        predicted_probability=body.get("predicted_probability", 0.5)
+                    )
+                    if evaluated:
+                        return self._send(200, json.dumps({
+                            "ok": True,
+                            "record": evaluated.to_frontend()
+                        }, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to evaluate prediction"}, ensure_ascii=False))
+                # GET /api/gfe/ledger/metrics → get metrics
+                if len(parts) == 5 and path.endswith("/metrics"):
+                    forecast_type = qs.get("forecast_type", [None])[0]
+                    metrics = ledger.get_metrics(forecast_type=forecast_type)
+                    return self._send(200, json.dumps({
+                        "metrics": [m.to_frontend() for m in metrics],
+                        "count": len(metrics)
+                    }, ensure_ascii=False))
+                # GET /api/gfe/ledger/analyst/{id} → get analyst accuracy
+                if len(parts) == 6 and path.endswith("/accuracy"):
+                    analyst_id = parts[4]
+                    accuracy = ledger.get_analyst_accuracy(analyst_id)
+                    return self._send(200, json.dumps(accuracy, ensure_ascii=False))
+                return self._send(400, json.dumps({"error": "invalid ledger path"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/audit":
+            return self._handle_audit()
+        # PHASE 148: /api/gfe/warnings/*
+        if path.startswith("/api/gfe/warnings"):
+            try:
+                from gfe_warning import get_early_warning_engine
+                engine = get_early_warning_engine()
+                parts = path.split("/")
+                # GET /api/gfe/warnings → list alerts
+                if len(parts) == 5 and "/warnings" in path:
+                    country_code = qs.get("country_code", [None])[0]
+                    status = qs.get("status", [None])[0]
+                    alerts = engine.get_alerts(country_code=country_code, status=status)
+                    return self._send(200, json.dumps({
+                        "alerts": [a.to_frontend() for a in alerts],
+                        "count": len(alerts)
+                    }, ensure_ascii=False))
+                # GET /api/gfe/warnings/rules → list rules
+                if len(parts) == 6 and "/warnings/rules" in path:
+                    category = qs.get("category", [None])[0]
+                    rules = engine.get_rules(category=category)
+                    return self._send(200, json.dumps({
+                        "rules": [r.to_frontend() for r in rules],
+                        "count": len(rules)
+                    }, ensure_ascii=False))
+                # POST /api/gfe/warnings/evaluate/{country} → evaluate risk
+                if len(parts) == 7 and "/warnings/evaluate/" in path:
+                    country_code = parts[5]
+                    result = engine.evaluate_risk(country_code)
+                    return self._send(200, json.dumps(result, ensure_ascii=False))
+                return self._send(400, json.dumps({"error": "invalid warnings path"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/tasks":
             return self._handle_tasks()
+        # PHASE 149: /api/gfe/calibration/*
+        if path.startswith("/api/gfe/calibration"):
+            try:
+                from gfe_calibration import get_calibration_engine
+                engine = get_calibration_engine()
+                parts = path.split("/")
+                # GET /api/gfe/calibration/report → calibration report
+                if len(parts) == 5 and path.endswith("/report"):
+                    report = engine.get_calibration_report()
+                    return self._send(200, json.dumps(report, ensure_ascii=False))
+                # POST /api/gfe/calibration/evaluate → record evaluation
+                if len(parts) == 5 and path.endswith("/evaluate"):
+                    body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    record = engine.record_evaluation(
+                        forecast_id=body.get("forecast_id"),
+                        analyst_id=body.get("analyst_id"),
+                        domain=body.get("domain"),
+                        predicted_probability=body.get("predicted_probability", 0.5),
+                        actual_result=body.get("actual_result", 0.5),
+                        confidence=body.get("confidence", 0.5)
+                    )
+                    if record:
+                        return self._send(200, json.dumps({
+                            "ok": True,
+                            "record": record.to_frontend()
+                        }, ensure_ascii=False))
+                    return self._send(400, json.dumps({"error": "failed to record evaluation"}))
+                # GET /api/gfe/calibration/analyst/{id} → analyst metrics
+                if len(parts) == 6 and path.endswith("/metrics"):
+                    analyst_id = parts[5]
+                    domain = qs.get("domain", [None])[0]
+                    metrics = engine.get_analyst_metrics(analyst_id=analyst_id, domain=domain)
+                    return self._send(200, json.dumps({
+                        "metrics": [m.to_frontend() for m in metrics],
+                        "count": len(metrics)
+                    }, ensure_ascii=False))
+                return self._send(400, json.dumps({"error": "invalid calibration path"}))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}))
+        # PHASE 150: /api/gfe/dashboard — 聚合接口
+        if path == "/api/gfe/dashboard":
+            try:
+                from gfe_events import get_event_intelligence_engine
+                from gfe_forecast import get_forecast_engine
+                from gfe_warning import get_early_warning_engine
+                from gfe_calibration import get_calibration_engine
+                import time
+
+                ev_engine = get_event_intelligence_engine()
+                fc_engine = get_forecast_engine()
+                ew_engine = get_early_warning_engine()
+                cal_engine = get_calibration_engine()
+
+                events = ev_engine.get_events(limit=20)
+                forecasts = fc_engine.get_forecasts(limit=10)
+                warnings = ew_engine.get_alerts(status="active")
+                cal_report = cal_engine.get_calibration_report()
+
+                # 计算风险概览
+                active_count = len([e for e in events if e.severity >= 0.5])
+                high_sev_count = len([e for e in events if e.severity >= 0.7])
+
+                total_risk = 0
+                if events:
+                    total_risk = sum(e.severity * (e.confidence or 0.5) for e in events) / len(events)
+
+                risk_summary = {
+                    "total_risk_index": round(total_risk, 4),
+                    "active_events_count": active_count,
+                    "high_severity_count": high_sev_count,
+                    "updated_at": time.time()
+                }
+
+                # 格式化数据
+                events_fmt = [e.to_frontend() for e in events[:10]]
+                forecasts_fmt = [f.to_frontend() for f in forecasts[:10]]
+                warnings_fmt = [w.to_frontend() for w in warnings[:10]]
+
+                result = {
+                    "risk_summary": risk_summary,
+                    "events": events_fmt,
+                    "forecasts": forecasts_fmt,
+                    "warnings": warnings_fmt,
+                    "calibration": cal_report,
+                    "timestamp": time.time()
+                }
+
+                return self._send(200, json.dumps(result, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}))
         if path.startswith("/api/goals"):
             # P0-B · 只读目标快照。复用 goals.py，不复制数据库逻辑。
             # 仅 GET；写操作一律经 Intent Gateway → Runtime，此处不暴露任何写/状态机。
@@ -1246,6 +1713,20 @@ def main():
         print("[Beta Boot] 就绪状态：BACKEND_READY / AI_READY（等待桌面 Avatar 上报 AVATAR_READY）。")
     except Exception as e:
         print(f"[Beta Boot] 状态推进失败（已忽略）: {e}")
+    # PHASE 130：观察服务（只读，不修改 Runtime）
+    try:
+        import observation_service
+        observation_service.init_observation_service()
+        print("[Observation Service] 观察层已初始化（监听 EventBus）。")
+    except Exception as e:
+        print(f"[Observation Service] 初始化失败（已跳过）: {e}")
+    # PHASE 131：提案服务（用户审批后才创建任务）
+    try:
+        import proposal_service
+        proposal_service.init_proposal_service()
+        print("[Proposal Service] 提案层已初始化。")
+    except Exception as e:
+        print(f"[Proposal Service] 初始化失败（已跳过）: {e}")
     httpd = http.server.ThreadingHTTPServer((bind_host, port), Handler)
     try:
         httpd.serve_forever()
