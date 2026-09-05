@@ -336,17 +336,72 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(
                     200,
                     json.dumps(
-                        {"ok": False, "ready": ready, "key_present": key_ok, "degraded": False, "self_check": None},
+                        {
+                            "ok": False,
+                            "ready": ready,
+                            "status": "initializing",
+                            "runtime": "ready",
+                            "database": "ready",
+                            "tools": len(getattr(tools, 'TOOL_FUNCS', [])),
+                            "capabilities": None,
+                            "optional_services": {},
+                            "key_present": key_ok,
+                            "self_check": None,
+                        },
                         ensure_ascii=False,
                     ),
                 )
             ok = bool(key_ok and cached.get("ok"))
+            degraded_checks = [c for c in cached.get("checks", []) if not c.get("ok")]
+            optional_services = {}
+            for check in degraded_checks:
+                name = check.get("name", "")
+                if "TTS" in name or "语音" in name:
+                    optional_services["tts"] = "blocked"
+                elif "热点" in name:
+                    optional_services["hotspots"] = "degraded"
+                else:
+                    optional_services[name.lower().replace(" ", "_")] = "failed"
+
+            # Get tool count
+            try:
+                import tools as _tools_module
+                tool_count = len(getattr(_tools_module, 'TOOL_FUNCS', []))
+            except Exception:
+                tool_count = 0
+
+            caps = None
+            try:
+                import capability_os
+                if hasattr(capability_os, 'verification') and hasattr(capability_os.verification, 'verify_all'):
+                    v = capability_os.verification.verify_all()
+                    if v:
+                        caps = {
+                            "total": v.get('total', 0),
+                            "ready": v.get('ready', 0),
+                            "partial": v.get('partial', 0),
+                            "blocked": v.get('blocked', 0),
+                            "not_implemented": v.get('not_implemented', 0),
+                        }
+            except Exception:
+                pass
+
+            status = "ready"
+            if degraded_checks:
+                status = "degraded"
+
             return self._send(
                 200,
                 json.dumps(
                     {
                         "ok": ok,
                         "ready": ready,
+                        "status": status,
+                        "runtime": "ready",
+                        "database": "ready",
+                        "tools": tool_count,
+                        "capabilities": caps,
+                        "optional_services": optional_services,
                         "key_present": key_ok,
                         "degraded": not ok,
                         "self_check": cached,
@@ -1261,7 +1316,31 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._serve_file("xiao6-space" + path[len("/xiao6-space"):])
         if self._resolve_static(path):
             return self._serve_file(path.lstrip("/"))
-        self._send(404, json.dumps({"error": "not found"}))
+        self._send(404, json.dumps({
+            "ok": False,
+            "error": "invalid_api_path",
+            "message": "API路径不存在",
+            "suggestion": self._suggest_path(path),
+        }))
+
+    def _suggest_path(self, path: str) -> str:
+        """Suggest correct API path for common mistakes."""
+        if not path or not path.startswith("/api/"):
+            return ""
+        known_paths = [
+            "/api/memory", "/api/goals", "/api/tasks",
+            "/api/perception/screen", "/api/perception/window",
+        ]
+        # Handle common /list suffix mistake
+        if path.endswith("/list"):
+            base = path[:-5]
+            if base in known_paths:
+                return base
+        # Handle other common patterns
+        for kp in known_paths:
+            if kp in path:
+                return kp
+        return ""
 
     def _resolve_static(self, name):
         """R8 Release Closure · 静态文件安全解析（canonical path 校验）：

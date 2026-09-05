@@ -90,17 +90,74 @@ def observe(scope: str = "all") -> Dict[str, Any]:
         return {"ok": False, "error": f"Unknown scope: {scope}"}
 
 
+class ScreenObserver:
+    """Screen observer providing screen metadata."""
+
+    def screen_info(self) -> Dict[str, Any]:
+        """Get current screen resolution and info."""
+        try:
+            import win32api
+            import win32con
+
+            width = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
+            height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
+
+            return {
+                "ok": True,
+                "width": width,
+                "height": height,
+                "refresh_rate": self._get_refresh_rate(),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def _get_refresh_rate(self) -> int:
+        """Get screen refresh rate in Hz."""
+        try:
+            import win32api
+            import win32con
+            mode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
+            return mode.VRefresh
+        except Exception:
+            return 60  # default
+
+
+class WindowDetector:
+    """Window detector providing window information."""
+
+    def active_window(self) -> Dict[str, Any]:
+        """Get the active/foreground window."""
+        return get_foreground_window()
+
+    def list_windows(self, limit: int = 40) -> Dict[str, Any]:
+        """List all visible windows."""
+        result = get_all_windows()
+        if result.get('ok'):
+            windows = result.get('windows', [])
+            result['windows'] = windows[:limit]
+            result['count'] = len(windows)
+        return result
+
+
+# Module-level singleton
+window_detector = WindowDetector()
+
+
+# Module-level singleton
+screen_observer = ScreenObserver()
+
+
 if __name__ == "__main__":
     # Test
     print("Testing perception module...")
-    
+
     # Test foreground window
     fg = get_foreground_window()
     print(f"Foreground OK: {fg.get('ok')}")
     if fg.get('ok'):
         print(f"  Title: {fg.get('title')}")
         print(f"  Size: {fg.get('width')}x{fg.get('height')}")
-    
+
     # Test all windows
     all_win = get_all_windows()
     print(f"All windows OK: {all_win.get('ok')}")
@@ -108,3 +165,9 @@ if __name__ == "__main__":
         print(f"  Total: {all_win.get('count')}")
         for w in all_win.get('windows', [])[:5]:
             print(f"    - {w['title']}: {w['width']}x{w['height']}")
+
+    # Test screen observer
+    screen = screen_observer.screen_info()
+    print(f"Screen OK: {screen.get('ok')}")
+    if screen.get('ok'):
+        print(f"  Resolution: {screen.get('width')}x{screen.get('height')}")
