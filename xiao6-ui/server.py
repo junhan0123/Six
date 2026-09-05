@@ -459,6 +459,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_memory_backfill()
         if path == "/api/memory/conversations":
             return self._handle_conversations_get()
+        if path == "/api/memory/intelligence/status":
+            try:
+                import memory_intelligence as mi
+                data = mi.get_intelligence_status()
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/chat/history":
             return self._handle_chat_history()
         if path == "/api/stream":
@@ -1578,6 +1585,17 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_memory_query()
         if ppath == "/api/memory/confirm":
             return self._handle_memory_confirm()
+        if ppath == "/api/memory/intelligence/analyze":
+            try:
+                import memory_intelligence as mi
+                dry_run = True
+                payload = self._read_json()
+                if "_error" not in payload:
+                    dry_run = payload.get("dry_run", True)
+                data = mi.analyze_intelligence(dry_run=dry_run)
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if ppath == "/api/data/import":
             return self._handle_data_import()
         if ppath == "/api/agent/goal":
