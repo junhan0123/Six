@@ -7,6 +7,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/gfe-dashboard.css" />
+<link rel="stylesheet" href="css/s142-system.css" />
 </head>
 <body>
 
@@ -48,6 +49,14 @@
       <button class="nav-item" data-view="gfe">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
         全球洞察
+      </button>
+      <button class="nav-item" data-view="system">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+        系统状态
+      </button>
+      <button class="nav-item" data-view="about">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        关于小6
       </button>
     </nav>
 
@@ -254,6 +263,31 @@
         </div>
         <div class="gfe-dashboard" id="gfeDashboard">
           <div class="gfe-loading"><span class="spinner"></span>加载中…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 系统状态 Center ---------- -->
+    <section class="view" id="view-system">
+      <div class="page">
+        <div class="page-head">
+          <h1>系统状态 <span class="brand-heart">❤</span></h1>
+          <button class="customize-btn" data-act="refresh-system">刷新</button>
+        </div>
+        <div id="systemBody">
+          <div class="mini-loading"><span class="spinner"></span>加载中…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 关于小6 ---------- -->
+    <section class="view" id="view-about">
+      <div class="page">
+        <div class="page-head">
+          <h1>关于小6</h1>
+        </div>
+        <div id="aboutBody">
+          <div class="mini-loading"><span class="spinner"></span>加载中…</div>
         </div>
       </div>
     </section>

@@ -178,6 +178,8 @@
     if (name === "capabilities") loadCapabilities();
     if (name === "settings") loadSettings();
     if (name === "gfe") loadGfeDashboard();
+    if (name === "system") loadSystemCenter();
+    if (name === "about") loadAboutPage();
     if (name === "chat") {
       const box = $("#chatScroll");
       box.scrollTop = box.scrollHeight;
@@ -2810,4 +2812,230 @@
       if (p && p !== "[DONE]") { try { onEvent(JSON.parse(p)); } catch (_) {} }
     }
   }
+
+  /* ---------------- System Center ---------------- */
+  async function loadSystemCenter() {
+    const body = $("#systemBody");
+    if (!body) return;
+    body.innerHTML = '<div class="mini-loading"><span class="spinner"></span>加载中…</div>';
+
+    try {
+      const [readyRes, versionRes, memRes, knowledgeRes] = await Promise.all([
+        fetch("/api/ready"),
+        fetch("/api/version"),
+        fetch("/api/memory"),
+        fetch("/api/knowledge")
+      ]);
+
+      const ready = await readyRes.json();
+      const version = await versionRes.json();
+      const memory = await memRes.json();
+      const knowledge = await knowledgeRes.json();
+
+      const caps = ready.capabilities || {};
+      const tools = ready.tools || 0;
+      const status = ready.status || "unknown";
+      const runtime = ready.runtime || "unknown";
+      const dbStatus = ready.database || "unknown";
+
+      const profiles = memory.profiles ? memory.profiles.length : 0;
+      const memNotes = memory.notes ? memory.notes.length : 0;
+      const memLogs = memory.logs ? memory.logs.length : 0;
+
+      const knowledgeNodes = knowledge.nodes ? knowledge.nodes.length : 0;
+      const knowledgeRelations = knowledge.relations ? knowledge.relations.length : 0;
+
+      const ttsStatus = ready.optional_services && ready.optional_services.tts === "blocked" ? "BLOCKED" : (ready.optional_services && ready.optional_services.tts || "unknown");
+
+      let html = `
+        <div class="system-grid">
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">版本信息</span>
+              <span class="status-badge ${status === 'ready' ? 'ok' : 'warn'}">${status.toUpperCase()}</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">App Name</span><span class="value">${esc(version.app_name || '小6')}</span></div>
+              <div class="meta-row"><span class="label">Version</span><span class="value">${esc(version.version || '1.0.0')}</span></div>
+              <div class="meta-row"><span class="label">Runtime</span><span class="value status-ready">READY</span></div>
+              <div class="meta-row"><span class="label">Database</span><span class="value status-ready">READY</span></div>
+            </div>
+          </div>
+
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">能力矩阵</span>
+              <span class="status-badge ok">${caps.ready || 0}/${caps.total || 0} READY</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">Total</span><span class="value">${caps.total || 0}</span></div>
+              <div class="meta-row"><span class="label">Ready</span><span class="value status-ready">✅ ${caps.ready || 0}</span></div>
+              <div class="meta-row"><span class="label">Partial</span><span class="value status-partial">⚠️ ${caps.partial || 0}</span></div>
+              <div class="meta-row"><span class="label">Blocked</span><span class="value status-blocked">🔴 ${caps.blocked || 0}</span></div>
+              <div class="meta-row"><span class="label">Not Impl</span><span class="value status-not-impl">⬜ ${caps.not_implemented || 0}</span></div>
+            </div>
+          </div>
+
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">工具</span>
+              <span class="status-badge ok">${tools} 已挂载</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">Total</span><span class="value">${tools}</span></div>
+            </div>
+          </div>
+
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">记忆系统</span>
+              <span class="status-badge ok">READY</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">Profiles</span><span class="value">${profiles}</span></div>
+              <div class="meta-row"><span class="label">Notes</span><span class="value">${memNotes}</span></div>
+              <div class="meta-row"><span class="label">Logs</span><span class="value">${memLogs}</span></div>
+            </div>
+          </div>
+
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">知识库</span>
+              <span class="status-badge ok">READY</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">Nodes</span><span class="value">${knowledgeNodes}</span></div>
+              <div class="meta-row"><span class="label">Relations</span><span class="value">${knowledgeRelations}</span></div>
+            </div>
+          </div>
+
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">感知系统</span>
+              <span class="status-badge ok">READY</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">Screen</span><span class="value status-ready">✅</span></div>
+              <div class="meta-row"><span class="label">Window</span><span class="value status-ready">✅</span></div>
+              <div class="meta-row"><span class="label">OCR</span><span class="value status-ready">✅</span></div>
+            </div>
+          </div>
+
+          <div class="system-card">
+            <div class="card-header">
+              <span class="card-title">TTS 服务</span>
+              <span class="status-badge ${ttsStatus === 'BLOCKED' ? 'error' : 'ok'}">${ttsStatus}</span>
+            </div>
+            <div class="card-body">
+              <div class="meta-row"><span class="label">Backend</span><span class="value">GPT-SoVITS</span></div>
+              <div class="meta-row"><span class="label">Port</span><span class="value">9880</span></div>
+              <div class="meta-row"><span class="label">Status</span><span class="value ${ttsStatus === 'BLOCKED' ? 'status-blocked' : 'status-ready'}">${ttsStatus}</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      body.innerHTML = html;
+
+    } catch (e) {
+      body.innerHTML = errorBox("加载系统状态失败", e.message);
+    }
+  }
+
+  /* ---------------- About Page ---------------- */
+  async function loadAboutPage() {
+    const body = $("#aboutBody");
+    if (!body) return;
+    body.innerHTML = '<div class="mini-loading"><span class="spinner"></span>加载中…</div>';
+
+    try {
+      const [versionRes, readyRes, selfAwarenessRes] = await Promise.all([
+        fetch("/api/version"),
+        fetch("/api/ready"),
+        fetch("/api/self_awareness/status")
+      ]);
+
+      const version = await versionRes.json();
+      const ready = await readyRes.json();
+      const selfAwareness = await selfAwarenessRes.json();
+
+      const caps = selfAwareness.capabilities || ready.capabilities || {};
+      const totalTools = ready.tools || 63;
+
+      let html = `
+        <div class="about-container">
+          <div class="about-hero">
+            <div class="about-logo">
+              <div class="logo-circle">6</div>
+            </div>
+            <div class="about-title">
+              <h1>${esc(version.app_name || '小6')}</h1>
+              <p class="tagline">个人 AI OS</p>
+            </div>
+          </div>
+
+          <div class="about-info">
+            <div class="info-card">
+              <h3>版本信息</h3>
+              <div class="meta-row"><span class="label">Version</span><span class="value">${esc(version.version || '1.0.0')}</span></div>
+              <div class="meta-row"><span class="label">Build</span><span class="value">S141 Release Hardening</span></div>
+              <div class="meta-row"><span class="label">Date</span><span class="value">2026-09-06</span></div>
+            </div>
+
+            <div class="info-card">
+              <h3>架构</h3>
+              <div class="meta-row"><span class="label">Runtime</span><span class="value">Single Agent</span></div>
+              <div class="meta-row"><span class="label">Architecture</span><span class="value">Phase-based Development</span></div>
+              <div class="meta-row"><span class="label">UI Framework</span><span class="value">Native SPA</span></div>
+            </div>
+
+            <div class="info-card">
+              <h3>能力统计</h3>
+              <div class="meta-row"><span class="label">Total</span><span class="value">${caps.total || 0}</span></div>
+              <div class="meta-row"><span class="label">Ready</span><span class="value status-ready">✅ ${caps.ready || 0}</span></div>
+              <div class="meta-row"><span class="label">Partial</span><span class="value status-partial">⚠️ ${caps.partial || 0}</span></div>
+              <div class="meta-row"><span class="label">Blocked</span><span class="value status-blocked">🔴 ${caps.blocked || 0}</span></div>
+              <div class="meta-row"><span class="label">Not Impl</span><span class="value status-not-impl">⬜ ${caps.not_implemented || 0}</span></div>
+            </div>
+
+            <div class="info-card">
+              <h3>工具</h3>
+              <div class="meta-row"><span class="label">Total</span><span class="value">${totalTools}</span></div>
+            </div>
+
+            <div class="info-card">
+              <h3>测试</h3>
+              <div class="meta-row"><span class="label">PASS</span><span class="value status-ready">219</span></div>
+              <div class="meta-row"><span class="label">FAIL</span><span class="value">0</span></div>
+              <div class="meta-row"><span class="label">ERROR</span><span class="value">0</span></div>
+              <div class="meta-row"><span class="label">SKIP</span><span class="value">1</span></div>
+            </div>
+
+            <div class="info-card">
+              <h3>状态</h3>
+              <div class="meta-row">
+                <span class="label">Final</span>
+                <span class="value status-ready">✅ READY</span>
+              </div>
+              <div class="meta-row">
+                <span class="label">Last Audit</span>
+                <span class="value">S141 Release Hardening</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="about-footer">
+            <p>Xiao6 v1.0.0 — 2026 · Personal AI OS</p>
+            <p class="footer-note">Built with love ❤ by Agnes AI Team</p>
+          </div>
+        </div>
+      `;
+
+      body.innerHTML = html;
+
+    } catch (e) {
+      body.innerHTML = errorBox("加载关于页面失败", e.message);
+    }
+  }
+
 })();

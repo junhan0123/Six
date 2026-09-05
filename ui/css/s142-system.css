@@ -1,0 +1,229 @@
+/* =========================================================
+   Xiao6 S142 — System Center & About Page
+   ========================================================= */
+
+/* ==================== System Center ==================== */
+.system-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.system-card {
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  transition: box-shadow .15s, transform .15s;
+}
+
+.system-card:hover {
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
+
+.system-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-soft);
+}
+
+.system-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.system-card .card-body {
+  padding: 12px 16px;
+}
+
+.system-card .meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.system-card .meta-row:last-child {
+  border-bottom: none;
+}
+
+.system-card .meta-row .label {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.system-card .meta-row .value {
+  color: var(--ink-1);
+  font-weight: 500;
+}
+
+/* Status colors */
+.value.status-ready { color: var(--ok); }
+.value.status-partial { color: var(--warn); }
+.value.status-blocked { color: var(--brand); }
+.value.status-not-impl { color: var(--ink-4); }
+
+/* ==================== About Page ==================== */
+.about-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 32px;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  margin-bottom: 24px;
+}
+
+.about-logo .logo-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), #ff7875);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.about-title h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--ink-1);
+}
+
+.about-title .tagline {
+  font-size: 16px;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.about-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-card {
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  padding: 20px;
+}
+
+.info-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--ink-2);
+}
+
+.info-card .meta-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.info-card .meta-row:last-child {
+  border-bottom: none;
+}
+
+.info-card .meta-row .label {
+  color: var(--ink-3);
+}
+
+.info-card .meta-row .value {
+  font-weight: 500;
+  color: var(--ink-1);
+}
+
+.about-footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--ink-4);
+  font-size: 12px;
+}
+
+.about-footer .footer-note {
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* ==================== Capability Matrix ==================== */
+.capability-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cap-item {
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-soft);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cap-item.cap-ready {
+  border-color: #d9f2c9;
+  background: #f6ffed;
+}
+
+.cap-item.cap-partial {
+  border-color: #ffe7ba;
+  background: #fffbe6;
+}
+
+.cap-item.cap-blocked {
+  border-color: #ffa39e;
+  background: #fff1f0;
+}
+
+.cap-item.cap-not-impl {
+  border-color: var(--line-soft);
+  background: var(--bg-soft);
+}
+
+.cap-status {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.cap-ready .cap-status { background: var(--ok); color: #fff; }
+.cap-partial .cap-status { background: var(--warn); color: #fff; }
+.cap-blocked .cap-status { background: var(--brand); color: #fff; }
+.cap-not-impl .cap-status { background: var(--ink-4); color: #fff; }
+
+.cap-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-1);
+}
