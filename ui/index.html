@@ -372,6 +372,7 @@
       const html = feed.map(item => {
         const icon = FEED_TYPES[item.type] || '•';
         const priorityClass = item.priority >= 8 ? 'priority-high' : (item.priority >= 5 ? 'priority-medium' : 'priority-low');
+        const scoreColor = item.score >= 10 ? '#ff6b6b' : (item.score >= 7 ? '#ffd93d' : '#6bcf7f');
         return '<div class="feed-item ' + priorityClass + '">' +
           '<span class="feed-icon">' + icon + '</span>' +
           '<div class="feed-content">' +
@@ -380,6 +381,10 @@
               '<span class="feed-source">' + escapeHtml(item.source) + '</span>' +
               '<span class="feed-time">' + escapeHtml(item.relative_time) + '</span>' +
             '</div>' +
+            (item.summary ? '<div class="feed-summary">' + escapeHtml(item.summary) + '</div>' : '') +
+            (item.impact ? '<div class="feed-impact">影响: ' + escapeHtml(item.impact) + '</div>' : '') +
+            (item.recommendation ? '<div class="feed-recommendation">建议: ' + escapeHtml(item.recommendation) + '</div>' : '') +
+            '<div class="feed-score">评分: <span style="color:' + scoreColor + '">' + item.score.toFixed(1) + '</span></div>' +
           '</div>' +
         '</div>';
       }).join('');

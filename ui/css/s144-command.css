@@ -257,9 +257,27 @@
   font-size: 13px;
 }
 
-.feed-empty {
-  text-align: center;
-  padding: 20px;
+.feed-score {
+  font-size: 11px;
   color: var(--text-tertiary, #999);
-  font-size: 13px;
+  margin-top: 4px;
+}
+
+.feed-summary {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.feed-impact {
+  font-size: 11px;
+  color: var(--text-tertiary, #999);
+  margin-top: 2px;
+}
+
+.feed-recommendation {
+  font-size: 11px;
+  color: var(--accent, #6366f1);
+  margin-top: 2px;
 }
