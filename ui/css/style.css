@@ -1416,6 +1416,66 @@ input, textarea { font: inherit; color: inherit; }
 }
 .agent-center .feed-tabs-mini { display: none; }
 
+/* UI-P3 · Intelligence Feed 样式 */
+.agent-center .intelligence-feed { padding: 8px 0; }
+.agent-center .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.agent-center .feed-title { font-size: 13px; font-weight: 600; color: var(--ink-1); display: flex; align-items: center; gap: 6px; }
+.agent-center .feed-icon-large { font-size: 14px; }
+.agent-center .feed-refresh { background: none; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; font-size: 13px; color: var(--ink-3); padding: 2px 8px; line-height: 1.4; }
+.agent-center .feed-refresh:hover { border-color: var(--brand); color: var(--brand); }
+.agent-center .feed-list { display: flex; flex-direction: column; gap: 6px; }
+.agent-center .feed-loading,
+.agent-center .feed-empty { text-align: center; color: var(--ink-3); font-size: 12px; padding: 16px 0; }
+
+.agent-center .feed-item { padding: 8px 10px; border-radius: var(--r-sm); border-left: 3px solid var(--line); background: var(--bg-soft); display: flex; gap: 8px; align-items: flex-start; }
+.agent-center .feed-item.priority-high { border-left-color: var(--danger); background: var(--danger-tint); }
+.agent-center .feed-item.priority-medium { border-left-color: var(--warn); }
+.agent-center .feed-item.priority-low { border-left-color: var(--ink-4); }
+
+.agent-center .feed-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.agent-center .feed-content { flex: 1; min-width: 0; }
+.agent-center .feed-title-text { font-size: 12px; font-weight: 500; color: var(--ink-1); margin-bottom: 3px; line-height: 1.4; }
+.agent-center .feed-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 10px; color: var(--ink-3); margin-bottom: 3px; }
+.agent-center .feed-source { background: var(--bg); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--line); }
+.agent-center .feed-time { }
+.agent-center .feed-status { padding: 1px 5px; border-radius: 3px; font-weight: 500; }
+.agent-center .status-new { background: #e3f2fd; color: #1976d2; }
+.agent-center .status-seen { background: #f3e5f5; color: #7b1fa2; }
+.agent-center .status-done { background: #e8f5e9; color: #388e3c; }
+
+.agent-center .feed-summary { font-size: 11px; color: var(--ink-2); margin: 2px 0; }
+.agent-center .feed-impact { font-size: 10px; color: var(--ink-3); }
+.agent-center .feed-recommendation { font-size: 10px; color: var(--brand); font-weight: 500; }
+.agent-center .feed-score { font-size: 10px; color: var(--ink-3); margin-top: 2px; }
+.agent-center .feed-actions { display: flex; gap: 3px; margin-top: 4px; }
+.agent-center .feed-btn { background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; font-size: 10px; cursor: pointer; color: var(--ink-3); }
+.agent-center .feed-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+/* UI-P3 · Foresight Panel 样式 */
+.agent-center .foresight-panel { padding: 8px 0; }
+.agent-center .foresight-tabs { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.agent-center .foresight-tab { background: none; border: none; padding: 4px 10px; font-size: 12px; color: var(--ink-3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -7px; transition: all 0.15s; }
+.agent-center .foresight-tab:hover { color: var(--ink-1); }
+.agent-center .foresight-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+.agent-center .foresight-content { display: flex; flex-direction: column; gap: 6px; }
+.agent-center .foresight-loading,
+.agent-center .foresight-empty { text-align: center; color: var(--ink-3); font-size: 12px; padding: 16px 0; }
+
+.agent-center .foresight-signal { padding: 8px 10px; background: var(--bg-soft); border-radius: var(--r-sm); border-left: 3px solid var(--info); }
+.agent-center .foresight-signal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.agent-center .foresight-trend { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.agent-center .foresight-confidence { font-size: 10px; color: var(--ink-3); }
+.agent-center .foresight-title { font-size: 12px; font-weight: 500; color: var(--ink-1); margin-bottom: 2px; }
+.agent-center .foresight-reason { font-size: 11px; color: var(--ink-2); }
+.agent-center .foresight-meta { font-size: 10px; color: var(--ink-3); margin-top: 3px; }
+
+.agent-center .foresight-warning { padding: 8px 10px; border-radius: var(--r-sm); display: flex; gap: 8px; align-items: flex-start; }
+.agent-center .warning-high { background: var(--danger-tint); border-left: 3px solid var(--danger); }
+.agent-center .warning-medium { background: #fff8e1; border-left: 3px solid var(--warn); }
+.agent-center .warning-low { background: var(--bg-soft); border-left: 3px solid var(--ink-4); }
+.agent-center .foresight-warning-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+.agent-center .foresight-warning-message { font-size: 12px; color: var(--ink-1); flex: 1; }
+
 /* 今日日程列表 */
 .sched-list { display: flex; flex-direction: column; gap: 6px; }
 .sched-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg-soft); border-radius: var(--r-sm); }

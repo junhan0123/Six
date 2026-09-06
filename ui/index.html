@@ -426,7 +426,7 @@
       const html = feed.map(item => {
         const icon = FEED_TYPES[item.type] || '•';
         const priorityClass = item.priority >= 8 ? 'priority-high' : (item.priority >= 5 ? 'priority-medium' : 'priority-low');
-        const scoreColor = item.score >= 10 ? '#ff6b6b' : (item.score >= 7 ? '#ffd93d' : '#6bcf7f');
+        const scoreColor = item.score >= 10 ? 'var(--danger)' : (item.score >= 7 ? 'var(--warn)' : 'var(--ok)');
         const statusLabel = item.status === 'new' ? 'NEW' : (item.status === 'acknowledged' ? '已关注' : (item.status === 'actioned' ? '已处理' : item.status));
         const statusClass = item.status === 'new' ? 'status-new' : (item.status === 'acknowledged' ? 'status-seen' : 'status-done');
         return '<div class="feed-item ' + priorityClass + '">' +
@@ -568,9 +568,9 @@
           html = '<div class="foresight-empty">暂无趋势信号</div>';
         } else {
           html = signals.map(s => {
-            const trendColor = s.type === 'rising' ? '#4caf50' : 
-                              s.type === 'falling' ? '#f44336' : 
-                              s.type === 'emerging' ? '#ff9800' : '#2196f3';
+            const trendColor = s.type === 'rising' ? 'var(--ok)' :
+                              s.type === 'falling' ? 'var(--danger)' :
+                              s.type === 'emerging' ? 'var(--warn)' : 'var(--info)';
             return '<div class="foresight-signal">' +
               '<div class="foresight-signal-header">' +
                 '<span class="foresight-trend" style="color:' + trendColor + '">' + s.type.toUpperCase() + '</span>' +
@@ -657,8 +657,8 @@
           html = '<div class="context-empty">暂无关联主题</div>';
         } else {
           html = contexts.map(c => {
-            const importanceColor = c.importance >= 0.7 ? '#f44336' : 
-                                   c.importance >= 0.5 ? '#ff9800' : '#2196f3';
+            const importanceColor = c.importance >= 0.7 ? 'var(--danger)' :
+                                   c.importance >= 0.5 ? 'var(--warn)' : 'var(--info)';
             return '<div class="context-topic">' +
               '<div class="context-topic-header">' +
                 '<span class="context-topic-name">' + escapeHtml(c.topic) + '</span>' +
@@ -725,8 +725,8 @@
       }
 
       content.innerHTML = reasonings.map(r => {
-        const confColor = r.confidence >= 0.8 ? '#4caf50' :
-                         r.confidence >= 0.6 ? '#ff9800' : '#f44336';
+        const confColor = r.confidence >= 0.8 ? 'var(--ok)' :
+                         r.confidence >= 0.6 ? 'var(--warn)' : 'var(--danger)';
         const evidenceHtml = r.evidence ? r.evidence.map(e =>
           '<div class="reasoning-evidence">' +
             '<span class="evidence-tag ' + e.type + '">' + e.type.toUpperCase() + '</span>' +
@@ -796,8 +796,8 @@
       }
 
       content.innerHTML = decisions.map(d => {
-        const confColor = d.confidence >= 0.8 ? '#4caf50' :
-                         d.confidence >= 0.6 ? '#ff9800' : '#f44336';
+        const confColor = d.confidence >= 0.8 ? 'var(--ok)' :
+                         d.confidence >= 0.6 ? 'var(--warn)' : 'var(--danger)';
         const snapshot = d.snapshot || {};
 
         // 选项列表
@@ -817,8 +817,8 @@
 
         // 风险分析
         const risksHtml = (d.risks || []).map(r => {
-          const levelColor = r.level === 'high' ? '#f44336' :
-                            r.level === 'medium' ? '#ff9800' : '#4caf50';
+          const levelColor = r.level === 'high' ? 'var(--danger)' :
+                            r.level === 'medium' ? 'var(--warn)' : 'var(--ok)';
           return '<div class="decision-risk-item">' +
             '<span class="decision-risk-level" style="color:' + levelColor + '">' +
               r.level.toUpperCase() + '</span>' +
@@ -903,14 +903,14 @@
       }
 
       const statusColor = {
-        'pending': '#9e9e9e',
-        'active': '#2196f3',
-        'resolved': '#4caf50',
-        'expired': '#ff9800'
+        'pending': 'var(--ink-3)',
+        'active': 'var(--info)',
+        'resolved': 'var(--ok)',
+        'expired': 'var(--warn)'
       };
 
       content.innerHTML = predictions.map(p => {
-        const color = statusColor[p.status] || '#9e9e9e';
+        const color = statusColor[p.status] || 'var(--ink-3)';
         return '<div class="prediction-item">' +
           '<div class="prediction-header">' +
             '<span class="prediction-topic">' + escapeHtml(p.topic) + '</span>' +
@@ -971,8 +971,8 @@
       }
 
       // 准确率显示
-      const accColor = overallAccuracy >= 0.8 ? '#4caf50' : 
-                       overallAccuracy >= 0.6 ? '#ff9800' : '#f44336';
+      const accColor = overallAccuracy >= 0.8 ? 'var(--ok)' :
+                       overallAccuracy >= 0.6 ? 'var(--warn)' : 'var(--danger)';
       const accuracyHtml = totalPredictions > 0 ? `
         <div class="learning-summary">
           <div class="learning-metric">
