@@ -622,6 +622,35 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                     return self._send(404, json.dumps({"error": "prediction not found"}, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/learning":
+            try:
+                import intelligence_prediction as ip
+                import intelligence_learning as il
+                pred_engine = ip.get_prediction_engine()
+                learn_engine = il.get_learning_engine()
+                # 获取预测和验证数据
+                predictions = pred_engine.get_predictions()
+                # 简化处理：返回学习分析结果
+                records = learn_engine.get_learning_records()
+                sources = learn_engine.get_source_reliability()
+                # 计算总体准确率
+                total_accuracy = sum(r.accuracy for r in records) / len(records) if records else 0.0
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "records": records,
+                    "sources": [s.to_dict() for s in sources],
+                    "overall_accuracy": round(total_accuracy, 2),
+                    "total_predictions": len(predictions)
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/learning/status":
+            try:
+                import intelligence_learning as il
+                engine = il.get_learning_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,

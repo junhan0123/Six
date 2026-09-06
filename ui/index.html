@@ -120,6 +120,7 @@
               <button class="feed-tab-mini" id="toggleReasoning">为什么</button>
               <button class="feed-tab-mini" id="toggleDecision">决策</button>
               <button class="feed-tab-mini" id="togglePrediction">预测</button>
+              <button class="feed-tab-mini" id="toggleLearning">学习</button>
             </div>
             <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
           </div>
@@ -198,6 +199,19 @@
             <button class="feed-refresh" id="predictionRefresh" title="刷新">↻</button>
           </div>
           <div class="reasoning-content" id="predictionContent">
+            <div class="reasoning-loading">加载中...</div>
+          </div>
+        </div>
+
+        <!-- Learning: Feedback -->
+        <div class="reasoning-panel" id="learningPanel" style="display:none;">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span class="feed-icon-large">📈</span> 学习反馈
+            </div>
+            <button class="feed-refresh" id="learningRefresh" title="刷新">↻</button>
+          </div>
+          <div class="reasoning-content" id="learningContent">
             <div class="reasoning-loading">加载中...</div>
           </div>
         </div>
@@ -526,8 +540,8 @@
   });
 
   // 面板切换
-  const panels = ['intelligenceFeed', 'foresightPanel', 'contextPanel', 'reasoningPanel', 'decisionPanel', 'predictionPanel'];
-  const toggles = ['toggleFeed', 'toggleReasoning', 'toggleDecision', 'togglePrediction'];
+  const panels = ['intelligenceFeed', 'foresightPanel', 'contextPanel', 'reasoningPanel', 'decisionPanel', 'predictionPanel', 'learningPanel'];
+  const toggles = ['toggleFeed', 'toggleReasoning', 'toggleDecision', 'togglePrediction', 'toggleLearning'];
 
   function showPanel(panelId) {
     panels.forEach(id => {
@@ -540,6 +554,7 @@
   document.getElementById('toggleReasoning')?.addEventListener('click', () => showPanel('reasoningPanel'));
   document.getElementById('toggleDecision')?.addEventListener('click', () => showPanel('decisionPanel'));
   document.getElementById('togglePrediction')?.addEventListener('click', () => showPanel('predictionPanel'));
+  document.getElementById('toggleLearning')?.addEventListener('click', () => showPanel('learningPanel'));
 
   // Foresight 面板
   const toggleForesightBtn = document.getElementById('toggleForesight');
@@ -948,6 +963,106 @@
 
     } catch (err) {
       console.error('[Prediction] 加载失败:', err);
+      content.innerHTML = '<div class="reasoning-empty">加载失败</div>';
+    }
+  }
+
+  // Learning 面板
+  const toggleLearningBtn = document.getElementById('toggleLearning');
+  const learningPanel = document.getElementById('learningPanel');
+
+  if (toggleLearningBtn) {
+    toggleLearningBtn.addEventListener('click', function() {
+      if (learningPanel.style.display === 'none') {
+        learningPanel.style.display = 'block';
+        this.classList.add('active');
+        loadLearning();
+      } else {
+        learningPanel.style.display = 'none';
+        this.classList.remove('active');
+      }
+    });
+  }
+
+  const learningRefreshBtn = document.getElementById('learningRefresh');
+  if (learningRefreshBtn) {
+    learningRefreshBtn.addEventListener('click', loadLearning);
+  }
+
+  async function loadLearning() {
+    const content = document.getElementById('learningContent');
+    if (!content) return;
+
+    try {
+      const resp = await fetch('/api/intelligence/learning');
+      const data = await resp.json();
+
+      if (!data.ok) throw new Error('加载失败');
+
+      const records = data.records || [];
+      const sources = data.sources || [];
+      const overallAccuracy = data.overall_accuracy || 0;
+      const totalPredictions = data.total_predictions || 0;
+
+      if (records.length === 0 && sources.length === 0) {
+        content.innerHTML = '<div class="reasoning-empty">暂无学习数据</div>';
+        return;
+      }
+
+      // 准确率显示
+      const accColor = overallAccuracy >= 0.8 ? '#4caf50' : 
+                       overallAccuracy >= 0.6 ? '#ff9800' : '#f44336';
+      const accuracyHtml = totalPredictions > 0 ? `
+        <div class="learning-summary">
+          <div class="learning-metric">
+            <span class="metric-label">总体准确率</span>
+            <span class="metric-value" style="color:${accColor}">${(overallAccuracy * 100).toFixed(0)}%</span>
+          </div>
+          <div class="learning-metric">
+            <span class="metric-label">预测总数</span>
+            <span class="metric-value">${totalPredictions}</span>
+          </div>
+        </div>
+      ` : '';
+
+      // 来源可靠性
+      const sourcesHtml = sources.length > 0 ? `
+        <div class="learning-section">
+          <div class="learning-section-title">来源可靠性</div>
+          ${sources.map(s => `
+            <div class="learning-source-item">
+              <span class="source-name">${s.source}</span>
+              <span class="source-accuracy" style="color:${accColor}">${(s.accuracy * 100).toFixed(0)}%</span>
+              <span class="source-count">${s.total_predictions} 次预测</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      // 学习记录
+      const recordsHtml = records.length > 0 ? `
+        <div class="learning-section">
+          <div class="learning-section-title">学习记录</div>
+          ${records.map(r => `
+            <div class="learning-record-item">
+              <div class="record-header">
+                <span class="record-topic">${r.topic}</span>
+                <span class="record-source">${r.source_type}</span>
+              </div>
+              <div class="record-stats">
+                <span>${r.prediction_count} 次预测</span>
+                <span>${r.correct_count} 正确 / ${r.failed_count} 失败</span>
+                <span class="record-accuracy" style="color:${accColor}">${(r.accuracy * 100).toFixed(0)}%</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      content.innerHTML = accuracyHtml + sourcesHtml + recordsHtml;
+
+    } catch (err) {
+      console.error('[Learning] 加载失败:', err);
       content.innerHTML = '<div class="reasoning-empty">加载失败</div>';
     }
   }
