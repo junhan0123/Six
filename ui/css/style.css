@@ -855,52 +855,117 @@ input, textarea { font: inherit; color: inherit; }
   height: 14px;
   background: var(--line);
 }
-.home-sys-status {
+/* UI-P6.1 · Runtime Status */
+.home-runtime-status {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   color: var(--ink-3);
   font-size: 12px;
+  font-weight: 500;
 }
-.sys-dot {
+.runtime-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #52c41a;
-  animation: sysPulse 2s ease-in-out infinite;
+  animation: runtimePulse 2s ease-in-out infinite;
 }
-@keyframes sysPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes runtimePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(82, 196, 26, 0); }
 }
 
-/* UI-P6 · Context Status Bar（语义化） */
+/* UI-P6.1 · Agent State Context Bar */
 .home-context-status {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 0;
-  margin-bottom: 8px;
-  background: var(--bg-soft);
-  border-radius: 8px;
+  gap: 20px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--bg-soft) 0%, rgba(99, 102, 241, 0.05) 100%);
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
 }
-.ctx-status-item {
+.agent-state-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--ink-2);
+  gap: 10px;
+  flex: 1;
 }
-.ctx-icon {
-  font-size: 15px;
+.state-icon {
+  font-size: 18px;
 }
-.ctx-label {
+.state-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--ink-3);
 }
-.ctx-status-divider {
+.state-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.agent-state-divider {
   width: 1px;
-  height: 12px;
+  height: 20px;
   background: var(--line);
+}
+
+/* UI-P6.1 · Current Session */
+.current-session {
+  margin-top: 12px;
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.session-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.session-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.session-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(82, 196, 26, 0.15);
+  color: #52c41a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.session-body {
+  padding: 12px 16px;
+}
+.session-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.session-row:last-child {
+  border-bottom: none;
+}
+.session-key {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.session-val {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
 }
 
 /* UI-P6 · Work Center */
@@ -1559,7 +1624,7 @@ input, textarea { font: inherit; color: inherit; }
    ============================================================ */
 .home-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1.2fr) 380px;
   gap: var(--sp-3);
   align-items: start;
   padding-bottom: var(--sp-3);

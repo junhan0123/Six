@@ -447,7 +447,7 @@
     _homeCollBound = true;
   }
 
-  /* UI-P5/P6 · Context Status Bar（语义化） */
+  /* UI-P5/P6/P6.1 · Agent State Context Bar */
   async function loadHomeContext() {
     const [goalsRes, memoryRes, capsRes] = await Promise.all([
       getJSON("/api/goals").catch(() => []),
@@ -455,29 +455,37 @@
       getJSON("/api/capability_os/catalog").catch(() => ({})),
     ]);
 
-    // Goals: 语义化展示
-    const goalsEl = document.getElementById('ctxGoals');
-    if (goalsEl) {
+    // Focus: active goals
+    const focusEl = document.getElementById('focusValue');
+    if (focusEl) {
       const goals = Array.isArray(goalsRes) ? goalsRes : [];
       const active = goals.filter(g => g.status === 'active' || g.status === 'in_progress').length;
-      goalsEl.innerHTML = '<span class="ctx-icon">🎯</span><span class="ctx-label">正在跟踪 ' + active + ' 个目标</span>';
+      focusEl.textContent = active > 0 ? active + ' 个目标' : '无';
     }
 
-    // Memory: 语义化展示
-    const memoryEl = document.getElementById('ctxMemory');
+    // Memory: synced status
+    const memoryEl = document.getElementById('agentMemory');
     if (memoryEl) {
       const notes = memoryRes.note_count || 0;
-      const hasMemory = notes > 0;
-      memoryEl.innerHTML = '<span class="ctx-icon">🧠</span><span class="ctx-label">' + (hasMemory ? '记忆已同步' : '记忆就绪') + '</span>';
+      const dot = memoryEl.querySelector('.state-icon');
+      if (dot) {
+        dot.textContent = notes > 0 ? '🧠' : '📝';
+      }
     }
 
-    // Capabilities: 语义化展示
-    const capsEl = document.getElementById('ctxCaps');
-    if (capsEl) {
+    // Capability: ready status
+    const capabEl = document.getElementById('capabValue');
+    if (capabEl) {
       const total = capsRes.total || 0;
       const available = capsRes.available || 0;
-      capsEl.innerHTML = '<span class="ctx-icon">🛠</span><span class="ctx-label">' + available + '/' + total + ' 能力已连接</span>';
+      capabEl.textContent = available + '/' + total;
     }
+
+    // UI-P6.1 · Current Session 占位
+    const sessionRunning = document.getElementById('sessionRunning');
+    const sessionNext = document.getElementById('sessionNext');
+    if (sessionRunning) sessionRunning.textContent = '-';
+    if (sessionNext) sessionNext.textContent = '-';
   }
 
   /* UI-P6 · Work Center：任务摘要 + 目标列表 */

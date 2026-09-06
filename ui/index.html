@@ -92,7 +92,7 @@
           <!-- ============ 左栏：Chat-first 主区 ============ -->
           <div class="home-main" id="homeMain">
 
-            <!-- UI-P6 · 顶部状态栏：天气 + 系统状态 -->
+            <!-- UI-P6.1 · 顶部状态栏：环境 + Runtime -->
             <div class="home-header" id="homeHeader">
               <div class="home-brand">小6 <span class="brand-version">v1.0.0</span></div>
               <div class="home-header-right">
@@ -100,9 +100,9 @@
                   <span class="weather-loading">☀️ 加载中...</span>
                 </div>
                 <div class="home-header-divider"></div>
-                <div class="home-sys-status" id="homeSysStatus">
-                  <span class="sys-dot"></span>
-                  <span>Online</span>
+                <div class="home-runtime-status" id="homeRuntimeStatus">
+                  <span class="runtime-dot"></span>
+                  <span>AI Runtime Online</span>
                 </div>
               </div>
             </div>
@@ -122,32 +122,53 @@
               <div class="home-quick" id="homeQuick"></div>
             </div>
 
-            <!-- UI-P6 · Context Status Bar（语义化） -->
+            <!-- UI-P6.1 · Context Status Bar（Agent State） -->
             <div class="home-context-status" id="homeContextStatus">
-              <div class="ctx-status-item" id="ctxGoals">
-                <span class="ctx-icon">🎯</span>
-                <span class="ctx-label">Agent 目标跟踪中</span>
+              <div class="agent-state-item" id="agentFocus">
+                <span class="state-icon">🎯</span>
+                <span class="state-label">Focus</span>
+                <span class="state-value" id="focusValue">跟踪中</span>
               </div>
-              <div class="ctx-status-divider"></div>
-              <div class="ctx-status-item" id="ctxMemory">
-                <span class="ctx-icon">🧠</span>
-                <span class="ctx-label">记忆已同步</span>
+              <div class="agent-state-divider"></div>
+              <div class="agent-state-item" id="agentMemory">
+                <span class="state-icon">🧠</span>
+                <span class="state-label">Memory</span>
+                <span class="state-value">Synced</span>
               </div>
-              <div class="ctx-status-divider"></div>
-              <div class="ctx-status-item" id="ctxCaps">
-                <span class="ctx-icon">🛠</span>
-                <span class="ctx-label">能力已连接</span>
+              <div class="agent-state-divider"></div>
+              <div class="agent-state-item" id="agentCapab">
+                <span class="state-icon">🛠</span>
+                <span class="state-label">Capability</span>
+                <span class="state-value" id="capabValue">Ready</span>
               </div>
             </div>
 
-            <!-- Work Center：今日任务 + 当前目标 -->
+            <!-- Work Center：Daily Work Dashboard -->
             <div class="work-center" id="workCenter">
               <div class="work-center-head">
-                <span class="work-center-title">📋 工作中心</span>
+                <span class="work-center-title">📋 今日工作</span>
                 <button class="customize-btn" data-act="reload-dashboard">刷新</button>
               </div>
               <div class="work-center-body" id="workCenterBody">
                 <div class="mini-loading full-width"><span class="spinner"></span>加载中...</div>
+              </div>
+            </div>
+
+            <!-- UI-P6.1 · Current Session（视觉占位） -->
+            <div class="current-session" id="currentSession">
+              <div class="session-head">
+                <span class="session-title">⚡ 当前会话</span>
+                <span class="session-badge">active</span>
+              </div>
+              <div class="session-body">
+                <div class="session-row">
+                  <span class="session-key">正在运行</span>
+                  <span class="session-val" id="sessionRunning">-</span>
+                </div>
+                <div class="session-row">
+                  <span class="session-key">下一步</span>
+                  <span class="session-val" id="sessionNext">-</span>
+                </div>
               </div>
             </div>
 
