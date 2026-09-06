@@ -96,6 +96,14 @@
     currentSid: null,
   };
 
+  /* UI-P1 · 首页 hero 与聊天 view 共用的快捷问句（QUICK 四词，集中定义一处，避免重复声明与作用域问题） */
+  const QUICK = [
+    "今天有什么值得关注的新闻",
+    "帮我整理一下今天要做的事",
+    "查一下现在的天气",
+    "帮我总结一下最近的工作",
+  ];
+
   /* UI-P0 · 当前会话：优先取 URL ?session=，恢复对话时更新（纯前端，不依赖后端） */
   try {
     const m = location.search.match(/[?&]session=([^&]+)/);
@@ -151,7 +159,8 @@
       dot.title = "服务未连接";
       const badge = $("#modelBadge");
       if (badge) badge.textContent = "离线";
-      $("#dashGrid").innerHTML = errorBox("小6 服务未连接", e.message);
+      const tb = $("#todayBody");
+      if (tb) tb.innerHTML = errorBox("小6 服务未连接", e.message);
       $("#recentList").innerHTML = errorBox("服务未连接", e.message);
       return false;
     }
@@ -242,10 +251,10 @@
   /* =========================================================
      首页 Dashboard（面向普通用户：天气 / 任务 / 热点 / 系统状态）
      ========================================================= */
+  /* UI-P1 · Chat-first 首页：左栏 Today Card + 右栏 Agent Activity Center */
   async function loadDashboard() {
-    const box = $("#dashGrid");
-    if (!box) return;
-    box.innerHTML = '<div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>';
+    const today = $("#todayBody");
+    if (today) today.innerHTML = '<div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>';
 
     const [w, t, h] = await Promise.all([
       getJSON("/api/weather").catch((e) => ({ __err: e.message })),
@@ -254,12 +263,105 @@
     ]);
     await ensureConfig();
 
-    let html = "";
-    html += weatherCard(w);
-    html += taskCard(t);
-    html += hotspotCard(h);
-    html += systemCard();
-    box.innerHTML = html;
+    // 左栏：Today Card（天气 / 任务 / 日程）
+    if (today) {
+      let html = "";
+      html += weatherCard(w);
+      html += taskCard(t);
+      html += scheduleCard(t);
+      today.innerHTML = html;
+    }
+
+    // 右栏：热点（迁移到洞察区）、系统健康、当前状态/运行任务
+    const hot = $("#acHotspot");
+    if (hot) hot.innerHTML = hotspotCard(h);
+    const health = $("#acHealthBody");
+    if (health) health.innerHTML = systemCard();
+    renderLiveCenter();
+
+    // 快捷动作 + 折叠交互
+    renderHomeQuick();
+    bindHomeQuick();
+    bindHomeCollapsibles();
+  }
+
+  /* UI-P1 · 今日日程：从 /api/tasks 派生（无独立 schedule 端点，不新增 API） */
+  function scheduleCard(t) {
+    const list = Array.isArray(t) ? t : [];
+    const day = todayStr();
+    const items = list.filter((x) => String(x.updated || x.created || "").slice(0, 10) === day).slice(0, 6);
+    let body;
+    if (!items.length) {
+      body = '<div class="dc-empty">今天还没有日程安排 · 告诉小6「提醒我…」就会自动出现在这里</div>';
+    } else {
+      body = '<div class="sched-list">' + items.map((x) => {
+        const tm = hhmm(x.updated || x.created || "");
+        return '<div class="sched-item">' +
+          '<span class="sched-time">' + esc(tm) + "</span>" +
+          '<span class="sched-title">' + esc(x.title || "(无标题)") + "</span>" +
+          '<span class="sched-status task-' + statusClass(x.status) + '">' + esc(statusLabel(x.status)) + "</span>" +
+          "</div>";
+      }).join("") + "</div>";
+    }
+    return dashCard("sched", "🗓 今日日程", body, "");
+  }
+
+  /* UI-P1 · 右栏「当前状态 / 运行任务」运行任务块 */
+  function renderLiveCenter() {
+    const box = $("#acTasksBody");
+    if (!box) return;
+    const tasks = S.tasks || [];
+    const RUNNING = ["open", "running", "in_progress", "active", "pending"];
+    const running = tasks.filter((x) => RUNNING.indexOf(String(x.status || "").toLowerCase()) >= 0).slice(0, 5);
+    if (!running.length) {
+      box.innerHTML = '<div class="ac-empty">暂无运行中的任务</div>';
+      return;
+    }
+    box.innerHTML = '<div class="ac-tasks">' + running.map((x) => {
+      const cls = statusClass(x.status) === "running" ? "run" : "pend";
+      return '<div class="ac-task">' +
+        '<span class="ac-task-dot ' + cls + '"></span>' +
+        '<span class="ac-task-title">' + esc(x.title || "(无标题)") + "</span>" +
+        '<span class="ac-task-st">' + esc(statusLabel(x.status)) + "</span>" +
+        "</div>";
+    }).join("") + "</div>";
+  }
+
+  /* UI-P1 · 首页 hero 快捷动作 chips（复用 QUICK） */
+  function renderHomeQuick() {
+    const box = $("#homeQuick");
+    if (!box) return;
+    box.innerHTML = QUICK.map((q) =>
+      '<button class="chip" data-q="' + esc(q) + '">' + esc(q) + "</button>"
+    ).join("");
+  }
+  let _homeQuickBound = false;
+  function bindHomeQuick() {
+    if (_homeQuickBound) return;
+    const box = $("#homeQuick");
+    if (!box) return;
+    box.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-q]");
+      if (!b) return;
+      const ci = $("#commandInput");
+      if (ci) { ci.value = b.dataset.q; ci.focus(); }
+      const send = $("#commandSend");
+      if (send) send.click();
+    });
+    _homeQuickBound = true;
+  }
+
+  /* UI-P1 · 右栏可折叠区块 */
+  let _homeCollBound = false;
+  function bindHomeCollapsibles() {
+    if (_homeCollBound) return;
+    document.querySelectorAll(".ac-sec-head[data-toggle]").forEach((h) => {
+      h.addEventListener("click", () => {
+        const sec = document.getElementById(h.dataset.toggle);
+        if (sec) sec.classList.toggle("collapsed");
+      });
+    });
+    _homeCollBound = true;
   }
 
   /* 首页视觉增强辅助：天气图标 / 平台图标 / 状态点 / 会话标签清洗 */
@@ -2329,12 +2431,6 @@
       if (e.dataTransfer && e.dataTransfer.files.length) attachPaths(e.dataTransfer.files);
     });
 
-    const QUICK = [
-      "今天有什么值得关注的新闻",
-      "帮我整理一下今天要做的事",
-      "查一下现在的天气",
-      "帮我总结一下最近的工作",
-    ];
     const qc = $("#quickChips");
     if (qc) {
       qc.innerHTML = QUICK.map((q) => '<button class="chip" data-q="' + esc(q) + '">' + esc(q) + "</button>").join("");

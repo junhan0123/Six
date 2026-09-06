@@ -87,152 +87,110 @@
     <!-- ---------- 首页 Dashboard ---------- -->
     <section class="view active" id="view-dashboard">
       <div class="page">
-        <div class="page-head">
-          <h1>你好，我是<span class="brand-text">小6</span> <span class="brand-heart">❤</span></h1>
-          <button class="customize-btn" data-act="reload-dashboard">刷新</button>
-        </div>
-        <div class="dash-grid" id="dashGrid">
-          <div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>
-        </div>
+        <div class="home-grid">
 
-        <!-- Agent Activity Center -->
-        <div class="activity-center" id="activityCenter">
-          <div class="activity-header">
-            <div class="activity-title">
-              <span>🤖</span>
-              <span>小6正在工作</span>
-            </div>
-            <span class="activity-count" id="activityCount">0 项活动</span>
-          </div>
-          <div class="activity-list" id="activityPanel">
-            <div class="activity-empty">暂无交互活动</div>
-          </div>
-        </div>
+          <!-- ============ 左栏：Chat-first 主区 ============ -->
+          <div class="home-main" id="homeMain">
 
-        <!-- Intelligence Feed -->
-        <div class="intelligence-feed" id="intelligenceFeed">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">🔮</span> AI Insight Center
+            <!-- Hero：问候 + 输入框 + 快捷动作 -->
+            <div class="home-hero">
+              <h1 class="home-greeting">你好，我是<span class="brand-text">小6</span> <span class="brand-heart">❤</span></h1>
+              <p class="home-sub">你的个人 AI OS · 今天想从哪儿开始？</p>
+              <div class="dashboard-command hero-command">
+                <div class="command-bar" id="commandBar">
+                  <span class="command-sparkle">✦</span>
+                  <input type="text" id="commandInput" placeholder="让小6帮我……" autocomplete="off" />
+                  <button class="round-btn command-voice" id="commandVoice" title="语音输入">🎙</button>
+                  <button class="command-send" id="commandSend" title="发送">↑</button>
+                </div>
+              </div>
+              <div class="home-quick" id="homeQuick"></div>
             </div>
-            <div class="feed-tabs-mini">
-              <button class="feed-tab-mini active" id="toggleFeed">洞察</button>
-              <button class="feed-tab-mini" id="toggleReasoning">为什么</button>
-              <button class="feed-tab-mini" id="toggleDecision">决策</button>
-              <button class="feed-tab-mini" id="togglePrediction">预测</button>
-              <button class="feed-tab-mini" id="toggleLearning">学习</button>
-            </div>
-            <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
-          </div>
-          <div class="feed-list" id="feedList">
-            <div class="feed-loading">加载中...</div>
-          </div>
-        </div>
 
-        <!-- Foresight: Future Focus -->
-        <div class="foresight-panel" id="foresightPanel" style="display:none;">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">📊</span> 未来关注
+            <!-- Today Card：天气 / 任务 / 日程 -->
+            <div class="today-card" id="todayCard">
+              <div class="today-head">
+                <span class="today-title">📅 今日</span>
+                <button class="customize-btn" data-act="reload-dashboard">刷新</button>
+              </div>
+              <div class="today-body" id="todayBody">
+                <div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>
+              </div>
             </div>
-            <button class="feed-refresh" id="foresightRefresh" title="刷新">↻</button>
-          </div>
-          <div class="foresight-tabs">
-            <button class="foresight-tab active" data-tab="signals">趋势信号</button>
-            <button class="foresight-tab" data-tab="warnings">早期预警</button>
-          </div>
-          <div class="foresight-content" id="foresightContent">
-            <div class="foresight-loading">加载中...</div>
-          </div>
-        </div>
 
-        <!-- Context: Related Insights -->
-        <div class="context-panel" id="contextPanel" style="display:none;">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">🕸</span> 关联洞察
+          </div>
+
+          <!-- ============ 右栏：Agent Activity Center ============ -->
+          <aside class="home-right" id="homeRight">
+            <div class="agent-center">
+
+              <!-- 当前状态 / 运行任务（常驻） -->
+              <section class="ac-section" id="acLive">
+                <div class="ac-sec-head"><span class="ac-ico">🤖</span><span>当前状态 / 运行任务</span></div>
+                <div class="ac-live-body">
+                  <div class="ac-sub-label">运行任务</div>
+                  <div id="acTasksBody"></div>
+                  <div class="ac-sub-label">当前状态</div>
+                  <div id="acActivitySlot">
+                    <div class="activity-center" id="activityCenter">
+                      <div class="activity-header">
+                        <div class="activity-title"><span>🤖</span><span>小6正在工作</span></div>
+                        <span class="activity-count" id="activityCount">0 项活动</span>
+                      </div>
+                      <div class="activity-list" id="activityPanel">
+                        <div class="activity-empty">暂无交互活动</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 主动洞察（可折叠）：热点 + Intelligence Feed -->
+              <section class="ac-section collapsible" id="acInsight">
+                <div class="ac-sec-head" data-toggle="acInsight"><span class="ac-ico">🔮</span><span>主动洞察</span><span class="ac-caret">▾</span></div>
+                <div class="ac-sec-body">
+                  <div class="ac-hotspot" id="acHotspot"></div>
+                  <div class="intelligence-feed" id="intelligenceFeed">
+                    <div class="feed-header">
+                      <div class="feed-title"><span class="feed-icon-large">🔮</span> AI Insight Center</div>
+                      <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
+                    </div>
+                    <div class="feed-list" id="feedList">
+                      <div class="feed-loading">加载中...</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 系统健康（可折叠） -->
+              <section class="ac-section collapsible" id="acHealth">
+                <div class="ac-sec-head" data-toggle="acHealth"><span class="ac-ico">⚙️</span><span>系统健康</span><span class="ac-caret">▾</span></div>
+                <div class="ac-sec-body" id="acHealthBody"></div>
+              </section>
+
+              <!-- 未来关注 Foresight（可折叠） -->
+              <section class="ac-section collapsible" id="acForesight">
+                <div class="ac-sec-head" data-toggle="acForesight"><span class="ac-ico">📊</span><span>未来关注</span><span class="ac-caret">▾</span></div>
+                <div class="ac-sec-body">
+                  <div class="foresight-panel" id="foresightPanel">
+                    <div class="feed-header">
+                      <div class="feed-title"><span class="feed-icon-large">📊</span> 未来关注</div>
+                      <button class="feed-refresh" id="foresightRefresh" title="刷新">↻</button>
+                    </div>
+                    <div class="foresight-tabs">
+                      <button class="foresight-tab active" data-tab="signals">趋势信号</button>
+                      <button class="foresight-tab" data-tab="warnings">早期预警</button>
+                    </div>
+                    <div class="foresight-content" id="foresightContent">
+                      <div class="foresight-loading">加载中...</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
             </div>
-            <button class="feed-refresh" id="contextRefresh" title="刷新">↻</button>
-          </div>
-          <div class="context-tabs">
-            <button class="context-tab active" data-tab="topics">主题关联</button>
-            <button class="context-tab" data-tab="relations">影响关系</button>
-            <button class="context-tab" data-tab="causal">因果链条</button>
-          </div>
-          <div class="context-content" id="contextContent">
-            <div class="context-loading">加载中...</div>
-          </div>
-        </div>
+          </aside>
 
-        <!-- Reasoning: Why Insights -->
-        <div class="reasoning-panel" id="reasoningPanel" style="display:none;">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">🧠</span> 为什么关注
-            </div>
-            <button class="feed-refresh" id="reasoningRefresh" title="刷新">↻</button>
-          </div>
-          <div class="reasoning-content" id="reasoningContent">
-            <div class="reasoning-loading">加载中...</div>
-          </div>
-        </div>
-
-        <!-- Decision: Support -->
-        <div class="reasoning-panel" id="decisionPanel" style="display:none;">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">🤝</span> 决策辅助
-            </div>
-            <button class="feed-refresh" id="decisionRefresh" title="刷新">↻</button>
-          </div>
-          <div class="reasoning-content" id="decisionContent">
-            <div class="reasoning-loading">加载中...</div>
-          </div>
-        </div>
-
-        <!-- Prediction: Ledger -->
-        <div class="reasoning-panel" id="predictionPanel" style="display:none;">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">📊</span> 预测账本
-            </div>
-            <button class="feed-refresh" id="predictionRefresh" title="刷新">↻</button>
-          </div>
-          <div class="reasoning-content" id="predictionContent">
-            <div class="reasoning-loading">加载中...</div>
-          </div>
-        </div>
-
-        <!-- Learning: Feedback -->
-        <div class="reasoning-panel" id="learningPanel" style="display:none;">
-          <div class="feed-header">
-            <div class="feed-title">
-              <span class="feed-icon-large">📈</span> 学习反馈
-            </div>
-            <button class="feed-refresh" id="learningRefresh" title="刷新">↻</button>
-          </div>
-          <div class="reasoning-content" id="learningContent">
-            <div class="reasoning-loading">加载中...</div>
-          </div>
-        </div>
-        </div>
-      </div>
-
-      <!-- ---------- 全局 Command Bar ---------- -->
-      <div class="dashboard-command-wrap">
-        <div class="dashboard-command">
-          <div class="command-bar" id="commandBar">
-            <span class="command-sparkle">✦</span>
-            <input type="text" id="commandInput" placeholder="让小6帮我……" autocomplete="off" />
-            <button class="round-btn command-voice" id="commandVoice" title="语音输入">🎙</button>
-            <button class="command-send" id="commandSend" title="发送">↑</button>
-          </div>
-          <div class="command-hints">
-            <span>试试：</span>
-            <button data-cmd="帮我总结今天热点">总结热点</button>
-            <button data-cmd="帮我创建一个任务">创建任务</button>
-            <button data-cmd="查询我的记忆">查询记忆</button>
-          </div>
         </div>
       </div>
     </section>
@@ -512,6 +470,7 @@
 
   // 初始加载
   loadFeed();
+  loadForesight();
 
   // 每 60 秒刷新
   setInterval(loadFeed, 60000);

@@ -1307,3 +1307,90 @@ input, textarea { font: inherit; color: inherit; }
 @media (max-width: 860px) {
   .wp-item { align-items: flex-start; }
 }
+
+/* ============================================================
+   UI-P1 · Chat-first 首页布局（hero + Today Card + Agent Activity Center）
+   ============================================================ */
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--sp-3);
+  align-items: start;
+  padding-bottom: var(--sp-3);
+}
+.home-main { min-width: 0; }
+
+.home-hero { text-align: center; padding: 8px 0 4px; }
+.home-greeting { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: .3px; }
+.home-sub { color: var(--ink-3); font-size: 14px; margin: 0 0 22px; }
+.hero-command { max-width: 680px; margin: 0 auto; }
+.hero-command .command-bar { box-shadow: var(--sh-md); }
+.home-quick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+
+.today-card {
+  margin-top: var(--sp-3);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  padding: var(--sp-2);
+}
+.today-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.today-title { font-size: 16px; font-weight: 700; }
+.today-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+.today-body .dash-card { box-shadow: none; border: 1px solid var(--line); }
+.today-body .dash-card-body { padding: 14px; }
+
+/* 右栏：Agent Activity Center */
+.home-right { min-width: 0; }
+.agent-center { display: flex; flex-direction: column; gap: 14px; }
+.ac-section {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  overflow: hidden;
+}
+.ac-sec-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; font-size: 14px; font-weight: 600; color: var(--ink-1);
+}
+.ac-sec-head[data-toggle] { cursor: pointer; user-select: none; }
+.ac-ico { font-size: 15px; }
+.ac-caret { margin-left: auto; font-size: 12px; color: var(--ink-3); transition: transform .2s; }
+.ac-section.collapsed .ac-caret { transform: rotate(-90deg); }
+.ac-section.collapsed .ac-sec-body { display: none; }
+.ac-sec-body { padding: 0 14px 14px; }
+.ac-sub-label { font-size: 12px; font-weight: 600; color: var(--ink-3); margin: 10px 0 6px; letter-spacing: .3px; }
+.ac-sub-label:first-child { margin-top: 0; }
+
+.ac-tasks { display: flex; flex-direction: column; gap: 6px; }
+.ac-task { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg-soft); border-radius: var(--r-sm); font-size: 13px; }
+.ac-task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--brand); }
+.ac-task-dot.pend { background: var(--ink-3); }
+.ac-task-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-1); }
+.ac-task-st { color: var(--ink-3); font-size: 12px; flex-shrink: 0; }
+.ac-empty { color: var(--ink-3); font-size: 13px; padding: 6px 0; }
+
+/* 热点 / 洞察 在右栏内降噪：去掉嵌套卡片外框，避免卡片套卡片 */
+.agent-center .ac-hotspot .dash-card { box-shadow: none; border: 1px solid var(--line); margin-bottom: 12px; }
+.agent-center .activity-center { background: transparent; border: 0; box-shadow: none; padding: 0; margin-top: 0; }
+.agent-center .intelligence-feed,
+.agent-center .foresight-panel {
+  background: transparent; border: 0; box-shadow: none; padding: 0; margin: 0; border-radius: 0;
+}
+.agent-center .feed-tabs-mini { display: none; }
+
+/* 今日日程列表 */
+.sched-list { display: flex; flex-direction: column; gap: 6px; }
+.sched-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg-soft); border-radius: var(--r-sm); }
+.sched-time { font-size: 12px; font-weight: 600; color: var(--brand); flex-shrink: 0; min-width: 38px; }
+.sched-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--ink-1); }
+.sched-status { font-size: 11px; flex-shrink: 0; color: var(--ink-3); }
+.sched-status.task-running { color: var(--brand); }
+.sched-status.task-done { color: var(--ok); }
+
+@media (max-width: 1100px) {
+  .home-grid { grid-template-columns: 1fr; }
+  .today-body { grid-template-columns: 1fr; }
+}
