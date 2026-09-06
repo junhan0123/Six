@@ -484,6 +484,32 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/context":
+            try:
+                import intelligence_context as ic
+                engine = ic.get_context_engine()
+                # 刷新数据
+                engine.refresh_from_intelligence(
+                    {"total": 35},
+                    {"total": 330},
+                    {"events": [], "risk_level": "medium"},
+                    {"signals": [], "warnings": []}
+                )
+                contexts = engine.get_contexts(20)
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "contexts": contexts.get("contexts", []),
+                    "total": len(contexts.get("contexts", []))
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/context/status":
+            try:
+                import intelligence_context as ic
+                engine = ic.get_context_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,

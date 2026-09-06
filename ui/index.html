@@ -138,6 +138,24 @@
             <div class="foresight-loading">加载中...</div>
           </div>
         </div>
+
+        <!-- Context: Related Insights -->
+        <div class="context-panel" id="contextPanel" style="display:none;">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span class="feed-icon-large">🕸</span> 关联洞察
+            </div>
+            <button class="feed-refresh" id="contextRefresh" title="刷新">↻</button>
+          </div>
+          <div class="context-tabs">
+            <button class="context-tab active" data-tab="topics">主题关联</button>
+            <button class="context-tab" data-tab="relations">影响关系</button>
+            <button class="context-tab" data-tab="causal">因果链条</button>
+          </div>
+          <div class="context-content" id="contextContent">
+            <div class="context-loading">加载中...</div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -548,6 +566,85 @@
     } catch (err) {
       console.error('[Foresight] 加载失败:', err);
       content.innerHTML = '<div class="foresight-empty">加载失败</div>';
+    }
+  }
+
+  // Context 面板
+  const toggleContextBtn = document.getElementById('toggleContext');
+  const contextPanel = document.getElementById('contextPanel');
+  
+  if (toggleContextBtn) {
+    toggleContextBtn.addEventListener('click', function() {
+      if (contextPanel.style.display === 'none') {
+        contextPanel.style.display = 'block';
+        this.classList.add('active');
+        loadContext();
+      } else {
+        contextPanel.style.display = 'none';
+        this.classList.remove('active');
+      }
+    });
+  }
+  
+  // Context 标签切换
+  document.addEventListener('click', function(e) {
+    const tab = e.target.closest('.context-tab');
+    if (!tab) return;
+    
+    document.querySelectorAll('.context-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadContext(tab.dataset.tab);
+  });
+  
+  // Context 刷新
+  const contextRefreshBtn = document.getElementById('contextRefresh');
+  if (contextRefreshBtn) {
+    contextRefreshBtn.addEventListener('click', loadContext);
+  }
+  
+  async function loadContext(tab = 'topics') {
+    const content = document.getElementById('contextContent');
+    if (!content) return;
+    
+    try {
+      const resp = await fetch('/api/intelligence/context');
+      const data = await resp.json();
+      
+      if (!data.ok) throw new Error('加载失败');
+      
+      let html = '';
+      
+      if (tab === 'topics') {
+        const contexts = data.contexts || [];
+        if (contexts.length === 0) {
+          html = '<div class="context-empty">暂无关联主题</div>';
+        } else {
+          html = contexts.map(c => {
+            const importanceColor = c.importance >= 0.7 ? '#f44336' : 
+                                   c.importance >= 0.5 ? '#ff9800' : '#2196f3';
+            return '<div class="context-topic">' +
+              '<div class="context-topic-header">' +
+                '<span class="context-topic-name">' + escapeHtml(c.topic) + '</span>' +
+                '<span class="context-importance" style="color:' + importanceColor + '">' + 
+                  (c.importance * 100).toFixed(0) + '%</span>' +
+              '</div>' +
+              '<div class="context-entities">' +
+                c.entities.map(e => '<span class="context-entity">' + escapeHtml(e.name) + '</span>').join('') +
+              '</div>' +
+              '<div class="context-meta"><span>' + escapeHtml(c.source) + '</span></div>' +
+            '</div>';
+          }).join('');
+        }
+      } else if (tab === 'relations') {
+        html = '<div class="context-empty">关系映射中...</div>';
+      } else if (tab === 'causal') {
+        html = '<div class="context-empty">因果分析中...</div>';
+      }
+      
+      content.innerHTML = html;
+    } catch (err) {
+      console.error('[Context] 加载失败:', err);
+      content.innerHTML = '<div class="context-empty">加载失败</div>';
     }
   }
 })();

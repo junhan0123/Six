@@ -436,6 +436,90 @@
   font-size: 13px;
 }
 
+/* ==================== Context Panel ==================== */
+.context-panel {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.context-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.context-tab {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.context-tab.active {
+  background: var(--accent, #6366f1);
+  color: white;
+  border-color: var(--accent, #6366f1);
+}
+
+.context-content {
+  min-height: 100px;
+}
+
+.context-topic {
+  background: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.context-topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.context-topic-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.context-importance {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.context-entities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.context-entity {
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+}
+
+.context-empty {
+  text-align: center;
+  color: var(--text-tertiary, #999);
+  padding: 20px;
+  font-size: 13px;
+}
+
 .feed-summary {
   font-size: 12px;
   color: var(--text-secondary, #666);
