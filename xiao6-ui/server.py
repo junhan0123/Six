@@ -1174,6 +1174,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                     200,
                     json.dumps({"docs": [], "stats": {}, "error": str(e)}, ensure_ascii=False),
                 )
+        if path == "/api/knowledge/intelligence/status":
+            try:
+                import knowledge_intelligence as ki
+                data = ki.get_status()
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/devices":
             if not getattr(config, "FEATURE_MULTI_DEVICE", True):
                 return self._send(404, json.dumps({"ok": False, "disabled": True, "error": "多端同步未启用"}))
@@ -1535,6 +1542,17 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_activity_get()
         if ppath == "/api/knowledge":
             return self._handle_knowledge()
+        if ppath == "/api/knowledge/intelligence/analyze":
+            try:
+                import knowledge_intelligence as ki
+                dry_run = True
+                payload = self._read_json()
+                if "_error" not in payload:
+                    dry_run = payload.get("dry_run", True)
+                data = ki.analyze(dry_run=dry_run)
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if ppath == "/api/devices":
             if not getattr(config, "FEATURE_MULTI_DEVICE", True):
                 return self._send(404, json.dumps({"ok": False, "disabled": True, "error": "多端同步未启用"}))
