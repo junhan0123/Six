@@ -422,6 +422,19 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(data, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/interaction/activity":
+            try:
+                import interaction_activity as ia
+                manager = ia.get_activity_manager()
+                activities = manager.get_activities(limit=20)
+                stats = manager.get_stats()
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "activities": [a.to_dict() for a in activities],
+                    "stats": stats
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,
@@ -1557,6 +1570,19 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 text = payload.get("text", "") if "_error" not in payload else ""
                 data = ins.parse_interaction(text)
                 return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if ppath == "/api/interaction/activity":
+            try:
+                import interaction_activity as ia
+                manager = ia.get_activity_manager()
+                activities = manager.get_activities(limit=20)
+                stats = manager.get_stats()
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "activities": [a.to_dict() for a in activities],
+                    "stats": stats
+                }, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if ppath == "/api/alert-config":
