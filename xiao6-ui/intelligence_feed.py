@@ -195,6 +195,14 @@ class FeedItem:
 
 def get_feed(limit: int = 20, feed_types: Optional[List[str]] = None) -> Dict[str, Any]:
     """获取增强版智能 Feed。"""
+    # 获取反馈状态
+    try:
+        from intelligence_memory_loop import get_memory_loop
+        memory_loop = get_memory_loop()
+        feedbacks = {f["item_id"]: f for f in memory_loop.get_all_feedbacks()}
+    except Exception:
+        feedbacks = {}
+    
     feed_items: List[FeedItem] = []
     
     # 收集所有来源数据
@@ -224,9 +232,23 @@ def get_feed(limit: int = 20, feed_types: Optional[List[str]] = None) -> Dict[st
         "low_priority": len([i for i in feed_items if i.score < 7])
     }
     
+    # 构建响应，包含反馈状态
+    feed_data = []
+    for item in feed_items:
+        item_dict = item.to_dict()
+        # 添加反馈状态
+        fb = feedbacks.get(item.item_id)
+        if fb:
+            item_dict["status"] = fb["status"]
+            item_dict["feedback"] = fb["feedback"]
+        else:
+            item_dict["status"] = "new"
+            item_dict["feedback"] = None
+        feed_data.append(item_dict)
+    
     return {
         "ok": True,
-        "feed": [item.to_dict() for item in feed_items],
+        "feed": feed_data,
         "stats": stats,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }

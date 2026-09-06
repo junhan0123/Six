@@ -263,6 +263,61 @@
   margin-top: 4px;
 }
 
+.feed-status {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.feed-status.status-new {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.feed-status.status-seen {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.feed-status.status-done {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.feed-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.feed-btn {
+  background: none;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.feed-btn:hover {
+  background: var(--bg-hover, #f5f5f7);
+  border-color: var(--accent, #6366f1);
+}
+
+.feed-btn.useful:hover {
+  border-color: #4caf50;
+}
+
+.feed-btn.processed:hover {
+  border-color: #2196f3;
+}
+
+.feed-btn.ignore:hover {
+  border-color: #f44336;
+}
+
 .feed-summary {
   font-size: 12px;
   color: var(--text-secondary, #666);

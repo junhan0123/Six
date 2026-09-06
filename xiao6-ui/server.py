@@ -444,6 +444,18 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(data, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/feedback":
+            try:
+                import intelligence_memory_loop as iml
+                raw = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                payload = json.loads(raw.decode("utf-8", "replace") or "{}")
+                item_id = payload.get("id", "")
+                feedback = payload.get("feedback", "")
+                insight = payload.get("insight", "")
+                result = iml.handle_feedback(item_id, feedback, insight)
+                return self._send(200, json.dumps(result, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,

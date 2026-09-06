@@ -373,6 +373,8 @@
         const icon = FEED_TYPES[item.type] || '•';
         const priorityClass = item.priority >= 8 ? 'priority-high' : (item.priority >= 5 ? 'priority-medium' : 'priority-low');
         const scoreColor = item.score >= 10 ? '#ff6b6b' : (item.score >= 7 ? '#ffd93d' : '#6bcf7f');
+        const statusLabel = item.status === 'new' ? 'NEW' : (item.status === 'acknowledged' ? '已关注' : (item.status === 'actioned' ? '已处理' : item.status));
+        const statusClass = item.status === 'new' ? 'status-new' : (item.status === 'acknowledged' ? 'status-seen' : 'status-done');
         return '<div class="feed-item ' + priorityClass + '">' +
           '<span class="feed-icon">' + icon + '</span>' +
           '<div class="feed-content">' +
@@ -380,11 +382,17 @@
             '<div class="feed-meta">' +
               '<span class="feed-source">' + escapeHtml(item.source) + '</span>' +
               '<span class="feed-time">' + escapeHtml(item.relative_time) + '</span>' +
+              '<span class="feed-status ' + statusClass + '">' + statusLabel + '</span>' +
             '</div>' +
             (item.summary ? '<div class="feed-summary">' + escapeHtml(item.summary) + '</div>' : '') +
             (item.impact ? '<div class="feed-impact">影响: ' + escapeHtml(item.impact) + '</div>' : '') +
             (item.recommendation ? '<div class="feed-recommendation">建议: ' + escapeHtml(item.recommendation) + '</div>' : '') +
             '<div class="feed-score">评分: <span style="color:' + scoreColor + '">' + item.score.toFixed(1) + '</span></div>' +
+            '<div class="feed-actions">' +
+              '<button class="feed-btn useful" data-id="' + escapeHtml(item.id) + '" title="有用">👍</button>' +
+              '<button class="feed-btn processed" data-id="' + escapeHtml(item.id) + '" title="已处理">✓</button>' +
+              '<button class="feed-btn ignore" data-id="' + escapeHtml(item.id) + '" title="忽略">✗</button>' +
+            '</div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -413,6 +421,29 @@
 
   // 每 60 秒刷新
   setInterval(loadFeed, 60000);
+  
+  // 绑定反馈按钮
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.feed-btn');
+    if (!btn) return;
+    
+    const itemId = btn.dataset.id;
+    const feedback = btn.classList.contains('useful') ? 'useful' : 
+                     btn.classList.contains('processed') ? 'processed' : 'ignore';
+    
+    fetch('/api/intelligence/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: itemId, feedback: feedback })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        loadFeed(); // 刷新显示状态
+      }
+    })
+    .catch(err => console.error('[Feed] 反馈失败:', err));
+  });
 })();
 </script>
 </body>
