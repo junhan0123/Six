@@ -651,6 +651,21 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/center":
+            try:
+                import intelligence_center as ic
+                engine = ic.get_center_engine()
+                snapshot = engine.get_snapshot()
+                return self._send(200, json.dumps({"ok": True, "snapshot": snapshot}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/center/status":
+            try:
+                import intelligence_center as ic
+                engine = ic.get_center_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,
