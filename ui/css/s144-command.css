@@ -520,6 +520,120 @@
   font-size: 13px;
 }
 
+/* ==================== Reasoning Panel ==================== */
+.reasoning-panel {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.reasoning-content {
+  min-height: 100px;
+}
+
+.reasoning-item {
+  background: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.reasoning-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reasoning-topic {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.reasoning-confidence {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reasoning-explanation {
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.reasoning-why {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent, #6366f1);
+}
+
+.reasoning-impact {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 8px;
+  padding-left: 8px;
+  border-left: 2px solid #ff9800;
+}
+
+.reasoning-evidence-list {
+  margin-bottom: 8px;
+}
+
+.reasoning-evidence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-primary, #fff);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.evidence-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  min-width: 50px;
+  text-align: center;
+}
+
+.evidence-tag.world { background: #e3f2fd; color: #1976d2; }
+.evidence-tag.knowledge { background: #e8f5e9; color: #388e3c; }
+.evidence-tag.memory { background: #fff3e0; color: #f57c00; }
+.evidence-tag.foresight { background: #fce4ec; color: #c2185b; }
+
+.evidence-content {
+  flex: 1;
+  color: var(--text-secondary, #666);
+}
+
+.evidence-conf {
+  font-size: 11px;
+  color: var(--text-tertiary, #999);
+}
+
+.reasoning-meta {
+  font-size: 11px;
+  color: var(--text-tertiary, #999);
+}
+
+.reasoning-empty {
+  text-align: center;
+  color: var(--text-tertiary, #999);
+  padding: 20px;
+  font-size: 13px;
+}
+
 .feed-summary {
   font-size: 12px;
   color: var(--text-secondary, #666);

@@ -510,6 +510,33 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/reasoning":
+            try:
+                import intelligence_reasoning as ir
+                engine = ir.get_reasoning_engine()
+                # 刷新数据
+                engine.refresh_from_intelligence(
+                    {"total": 35},
+                    {"total": 330},
+                    {"events": [], "risk_level": "medium"},
+                    {"signals": [], "warnings": []},
+                    {"contexts": []}
+                )
+                reasonings = engine.get_reasonings(20)
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "reasonings": reasonings.get("reasonings", []),
+                    "total": len(reasonings.get("reasonings", []))
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/reasoning/status":
+            try:
+                import intelligence_reasoning as ir
+                engine = ir.get_reasoning_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,

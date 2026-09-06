@@ -156,6 +156,19 @@
             <div class="context-loading">加载中...</div>
           </div>
         </div>
+
+        <!-- Reasoning: Why Insights -->
+        <div class="reasoning-panel" id="reasoningPanel" style="display:none;">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span class="feed-icon-large">🧠</span> 为什么关注
+            </div>
+            <button class="feed-refresh" id="reasoningRefresh" title="刷新">↻</button>
+          </div>
+          <div class="reasoning-content" id="reasoningContent">
+            <div class="reasoning-loading">加载中...</div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -645,6 +658,77 @@
     } catch (err) {
       console.error('[Context] 加载失败:', err);
       content.innerHTML = '<div class="context-empty">加载失败</div>';
+    }
+  }
+
+  // Reasoning 面板
+  const toggleReasoningBtn = document.getElementById('toggleReasoning');
+  const reasoningPanel = document.getElementById('reasoningPanel');
+  
+  if (toggleReasoningBtn) {
+    toggleReasoningBtn.addEventListener('click', function() {
+      if (reasoningPanel.style.display === 'none') {
+        reasoningPanel.style.display = 'block';
+        this.classList.add('active');
+        loadReasoning();
+      } else {
+        reasoningPanel.style.display = 'none';
+        this.classList.remove('active');
+      }
+    });
+  }
+  
+  // Reasoning 刷新
+  const reasoningRefreshBtn = document.getElementById('reasoningRefresh');
+  if (reasoningRefreshBtn) {
+    reasoningRefreshBtn.addEventListener('click', loadReasoning);
+  }
+  
+  async function loadReasoning() {
+    const content = document.getElementById('reasoningContent');
+    if (!content) return;
+    
+    try {
+      const resp = await fetch('/api/intelligence/reasoning');
+      const data = await resp.json();
+      
+      if (!data.ok) throw new Error('加载失败');
+      
+      const reasonings = data.reasonings || [];
+      if (reasonings.length === 0) {
+        content.innerHTML = '<div class="reasoning-empty">暂无推理分析</div>';
+        return;
+      }
+      
+      content.innerHTML = reasonings.map(r => {
+        const confColor = r.confidence >= 0.8 ? '#4caf50' : 
+                         r.confidence >= 0.6 ? '#ff9800' : '#f44336';
+        const evidenceHtml = r.evidence ? r.evidence.map(e => 
+          '<div class="reasoning-evidence">' +
+            '<span class="evidence-tag ' + e.type + '">' + e.type.toUpperCase() + '</span>' +
+            '<span class="evidence-content">' + escapeHtml(e.content) + '</span>' +
+            '<span class="evidence-conf">' + (e.confidence * 100).toFixed(0) + '%</span>' +
+          '</div>'
+        ).join('') : '';
+        
+        const snapshot = r.snapshot || {};
+        return '<div class="reasoning-item">' +
+          '<div class="reasoning-header">' +
+            '<span class="reasoning-topic">' + escapeHtml(r.topic) + '</span>' +
+            '<span class="reasoning-confidence" style="color:' + confColor + '">' + 
+              (r.confidence * 100).toFixed(0) + '%</span>' +
+          '</div>' +
+          '<div class="reasoning-explanation">' + escapeHtml(r.explanation) + '</div>' +
+          (snapshot.why ? '<div class="reasoning-why"><strong>为什么：</strong>' + escapeHtml(snapshot.why) + '</div>' : '') +
+          (snapshot.impact ? '<div class="reasoning-impact"><strong>影响：</strong>' + escapeHtml(snapshot.impact) + '</div>' : '') +
+          (evidenceHtml ? '<div class="reasoning-evidence-list">' + evidenceHtml + '</div>' : '') +
+          '<div class="reasoning-meta"><span>' + escapeHtml(r.source) + '</span></div>' +
+        '</div>';
+      }).join('');
+      
+    } catch (err) {
+      console.error('[Reasoning] 加载失败:', err);
+      content.innerHTML = '<div class="reasoning-empty">加载失败</div>';
     }
   }
 })();
