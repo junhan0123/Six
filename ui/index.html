@@ -108,6 +108,20 @@
             <div class="activity-empty">暂无交互活动</div>
           </div>
         </div>
+
+        <!-- Intelligence Feed -->
+        <div class="intelligence-feed" id="intelligenceFeed">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span>💡</span>
+              <span>小6智能洞察</span>
+            </div>
+            <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
+          </div>
+          <div class="feed-list" id="feedList">
+            <div class="feed-loading">加载中...</div>
+          </div>
+        </div>
       </div>
 
       <!-- ---------- 全局 Command Bar ---------- -->
@@ -324,9 +338,77 @@
   </div>
 </div>
 
-<script src="js/work_health.js"></script>
+<script src="js/command_bar.js"></script>
 <script src="js/work_filters.js"></script>
+<script src="js/work_health.js"></script>
 <script src="js/gfe-dashboard.js"></script>
 <script src="js/app.js"></script>
+<script>
+// Intelligence Feed
+(function() {
+  const FEED_TYPES = {
+    'memory': '🧠',
+    'knowledge': '📚',
+    'world': '🌍',
+    'proactive': '⚡'
+  };
+
+  async function loadFeed() {
+    const list = document.getElementById('feedList');
+    if (!list) return;
+
+    try {
+      const resp = await fetch('/api/intelligence/feed');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      const data = await resp.json();
+      const feed = data.feed || [];
+
+      if (feed.length === 0) {
+        list.innerHTML = '<div class="feed-empty">暂无智能洞察</div>';
+        return;
+      }
+
+      const html = feed.map(item => {
+        const icon = FEED_TYPES[item.type] || '•';
+        const priorityClass = item.priority >= 8 ? 'priority-high' : (item.priority >= 5 ? 'priority-medium' : 'priority-low');
+        return '<div class="feed-item ' + priorityClass + '">' +
+          '<span class="feed-icon">' + icon + '</span>' +
+          '<div class="feed-content">' +
+            '<div class="feed-title-text">' + escapeHtml(item.title) + '</div>' +
+            '<div class="feed-meta">' +
+              '<span class="feed-source">' + escapeHtml(item.source) + '</span>' +
+              '<span class="feed-time">' + escapeHtml(item.relative_time) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      list.innerHTML = html;
+    } catch (err) {
+      console.error('[Feed] 加载失败:', err);
+      list.innerHTML = '<div class="feed-empty">加载失败</div>';
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
+  // 绑定刷新按钮
+  const refreshBtn = document.getElementById('feedRefresh');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', loadFeed);
+  }
+
+  // 初始加载
+  loadFeed();
+
+  // 每 60 秒刷新
+  setInterval(loadFeed, 60000);
+})();
+</script>
 </body>
 </html>

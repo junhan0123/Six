@@ -435,6 +435,15 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 }, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/feed":
+            try:
+                import intelligence_feed as ifeed
+                limit = 20
+                feed_types = None
+                data = ifeed.get_feed(limit=limit, feed_types=feed_types)
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,
