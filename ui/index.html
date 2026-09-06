@@ -113,14 +113,31 @@
         <div class="intelligence-feed" id="intelligenceFeed">
           <div class="feed-header">
             <div class="feed-title">
-              <span>💡</span>
-              <span>小6智能洞察</span>
+              <span class="feed-icon-large">🔮</span> AI Insight Center
             </div>
             <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
           </div>
           <div class="feed-list" id="feedList">
             <div class="feed-loading">加载中...</div>
           </div>
+        </div>
+
+        <!-- Foresight: Future Focus -->
+        <div class="foresight-panel" id="foresightPanel" style="display:none;">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span class="feed-icon-large">📊</span> 未来关注
+            </div>
+            <button class="feed-refresh" id="foresightRefresh" title="刷新">↻</button>
+          </div>
+          <div class="foresight-tabs">
+            <button class="foresight-tab active" data-tab="signals">趋势信号</button>
+            <button class="foresight-tab" data-tab="warnings">早期预警</button>
+          </div>
+          <div class="foresight-content" id="foresightContent">
+            <div class="foresight-loading">加载中...</div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -444,6 +461,95 @@
     })
     .catch(err => console.error('[Feed] 反馈失败:', err));
   });
+
+  // Foresight 面板
+  const toggleForesightBtn = document.getElementById('toggleForesight');
+  const foresightPanel = document.getElementById('foresightPanel');
+  
+  if (toggleForesightBtn) {
+    toggleForesightBtn.addEventListener('click', function() {
+      if (foresightPanel.style.display === 'none') {
+        foresightPanel.style.display = 'block';
+        this.classList.add('active');
+        loadForesight();
+      } else {
+        foresightPanel.style.display = 'none';
+        this.classList.remove('active');
+      }
+    });
+  }
+  
+  // Foresight 标签切换
+  document.addEventListener('click', function(e) {
+    const tab = e.target.closest('.foresight-tab');
+    if (!tab) return;
+    
+    document.querySelectorAll('.foresight-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadForesight(tab.dataset.tab);
+  });
+  
+  // Foresight 刷新
+  const foresightRefreshBtn = document.getElementById('foresightRefresh');
+  if (foresightRefreshBtn) {
+    foresightRefreshBtn.addEventListener('click', loadForesight);
+  }
+  
+  async function loadForesight(tab = 'signals') {
+    const content = document.getElementById('foresightContent');
+    if (!content) return;
+    
+    try {
+      const resp = await fetch('/api/intelligence/foresight');
+      const data = await resp.json();
+      
+      if (!data.ok) throw new Error('加载失败');
+      
+      let html = '';
+      
+      if (tab === 'signals') {
+        const signals = data.signals || [];
+        if (signals.length === 0) {
+          html = '<div class="foresight-empty">暂无趋势信号</div>';
+        } else {
+          html = signals.map(s => {
+            const trendColor = s.type === 'rising' ? '#4caf50' : 
+                              s.type === 'falling' ? '#f44336' : 
+                              s.type === 'emerging' ? '#ff9800' : '#2196f3';
+            return '<div class="foresight-signal">' +
+              '<div class="foresight-signal-header">' +
+                '<span class="foresight-trend" style="color:' + trendColor + '">' + s.type.toUpperCase() + '</span>' +
+                '<span class="foresight-confidence">' + (s.confidence * 100).toFixed(0) + '%</span>' +
+              '</div>' +
+              '<div class="foresight-title">' + escapeHtml(s.title) + '</div>' +
+              '<div class="foresight-reason">' + escapeHtml(s.reason) + '</div>' +
+              '<div class="foresight-meta"><span>' + escapeHtml(s.source) + '</span></div>' +
+            '</div>';
+          }).join('');
+        }
+      } else if (tab === 'warnings') {
+        const warnings = data.warnings || [];
+        if (warnings.length === 0) {
+          html = '<div class="foresight-empty">暂无预警</div>';
+        } else {
+          html = warnings.map(w => {
+            const warnClass = w.level === 'high' ? 'warning-high' : 
+                             w.level === 'medium' ? 'warning-medium' : 'warning-low';
+            return '<div class="foresight-warning ' + warnClass + '">' +
+              '<div class="foresight-warning-icon">' + (w.level === 'high' ? '🔴' : w.level === 'medium' ? '🟡' : '🟢') + '</div>' +
+              '<div class="foresight-warning-message">' + escapeHtml(w.message) + '</div>' +
+              '<div class="foresight-meta"><span>' + escapeHtml(w.source) + '</span></div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+      
+      content.innerHTML = html;
+    } catch (err) {
+      console.error('[Foresight] 加载失败:', err);
+      content.innerHTML = '<div class="foresight-empty">加载失败</div>';
+    }
+  }
 })();
 </script>
 </body>

@@ -318,6 +318,124 @@
   border-color: #f44336;
 }
 
+/* ==================== Foresight Panel ==================== */
+.foresight-panel {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.foresight-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.foresight-tab {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.foresight-tab.active {
+  background: var(--accent, #6366f1);
+  color: white;
+  border-color: var(--accent, #6366f1);
+}
+
+.foresight-content {
+  min-height: 100px;
+}
+
+.foresight-signal {
+  background: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.foresight-signal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.foresight-trend {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.foresight-confidence {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+}
+
+.foresight-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.foresight-reason {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  margin-bottom: 4px;
+}
+
+.foresight-warning {
+  background: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border, #e0e0e0);
+  border-left: 3px solid;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.foresight-warning.warning-high {
+  border-left-color: #f44336;
+  background: #fff5f5;
+}
+
+.foresight-warning.warning-medium {
+  border-left-color: #ff9800;
+  background: #fff8e1;
+}
+
+.foresight-warning.warning-low {
+  border-left-color: #4caf50;
+  background: #e8f5e9;
+}
+
+.foresight-warning-icon {
+  font-size: 20px;
+}
+
+.foresight-warning-message {
+  flex: 1;
+  font-size: 13px;
+}
+
+.foresight-empty {
+  text-align: center;
+  color: var(--text-tertiary, #999);
+  padding: 20px;
+  font-size: 13px;
+}
+
 .feed-summary {
   font-size: 12px;
   color: var(--text-secondary, #666);

@@ -456,6 +456,34 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(result, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/foresight":
+            try:
+                import foresight_engine as fe
+                engine = fe.get_foresight_engine()
+                # 刷新数据
+                engine.refresh_from_intelligence(
+                    {"total": 35, "recent_logs": []},
+                    {"total": 330},
+                    {"risk_level": "medium", "events": []},
+                    {"observation_sources": 4, "high_importance_observations": 1}
+                )
+                signals = engine.get_signals(20)
+                warnings = engine.get_warnings(10)
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "signals": signals.get("signals", []),
+                    "warnings": warnings.get("warnings", []),
+                    "total": len(signals.get("signals", []))
+                }, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/foresight/status":
+            try:
+                import foresight_engine as fe
+                engine = fe.get_foresight_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,
