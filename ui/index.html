@@ -92,18 +92,25 @@
           <!-- ============ 左栏：Chat-first 主区 ============ -->
           <div class="home-main" id="homeMain">
 
-            <!-- Hero：问候 + 输入框 + 快捷动作 -->
-            <div class="home-hero">
-              <h1 class="home-greeting">你好，我是<span class="brand-text">小6</span> <span class="brand-heart">❤</span></h1>
-              <p class="home-sub">你的个人 AI OS · 今天想从哪儿开始？</p>
-              <!-- UI-P5 · Home Context Bar -->
-              <div class="home-context-bar" id="homeContextBar">
-                <div class="context-item" id="contextGoals"><span class="ctx-ico">🎯</span><span class="ctx-text">加载中...</span></div>
-                <div class="context-divider"></div>
-                <div class="context-item" id="contextMemory"><span class="ctx-ico">🧠</span><span class="ctx-text">加载中...</span></div>
-                <div class="context-divider"></div>
-                <div class="context-item" id="contextCaps"><span class="ctx-ico">🛠️</span><span class="ctx-text">加载中...</span></div>
+            <!-- UI-P6 · 顶部状态栏：天气 + 系统状态 -->
+            <div class="home-header" id="homeHeader">
+              <div class="home-brand">小6 <span class="brand-version">v1.0.0</span></div>
+              <div class="home-header-right">
+                <div class="home-weather-status" id="homeWeatherStatus">
+                  <span class="weather-loading">☀️ 加载中...</span>
+                </div>
+                <div class="home-header-divider"></div>
+                <div class="home-sys-status" id="homeSysStatus">
+                  <span class="sys-dot"></span>
+                  <span>Online</span>
+                </div>
               </div>
+            </div>
+
+            <!-- Hero：纯 Chat-first -->
+            <div class="home-hero">
+              <h1 class="home-greeting">欢迎回来，老板</h1>
+              <p class="home-sub">今天有什么计划？</p>
               <div class="dashboard-command hero-command">
                 <div class="command-bar" id="commandBar">
                   <span class="command-sparkle">✦</span>
@@ -115,14 +122,32 @@
               <div class="home-quick" id="homeQuick"></div>
             </div>
 
-            <!-- Today Card：天气 / 任务 / 日程 -->
-            <div class="today-card" id="todayCard">
-              <div class="today-head">
-                <span class="today-title">📅 今日</span>
+            <!-- UI-P6 · Context Status Bar（语义化） -->
+            <div class="home-context-status" id="homeContextStatus">
+              <div class="ctx-status-item" id="ctxGoals">
+                <span class="ctx-icon">🎯</span>
+                <span class="ctx-label">Agent 目标跟踪中</span>
+              </div>
+              <div class="ctx-status-divider"></div>
+              <div class="ctx-status-item" id="ctxMemory">
+                <span class="ctx-icon">🧠</span>
+                <span class="ctx-label">记忆已同步</span>
+              </div>
+              <div class="ctx-status-divider"></div>
+              <div class="ctx-status-item" id="ctxCaps">
+                <span class="ctx-icon">🛠</span>
+                <span class="ctx-label">能力已连接</span>
+              </div>
+            </div>
+
+            <!-- Work Center：今日任务 + 当前目标 -->
+            <div class="work-center" id="workCenter">
+              <div class="work-center-head">
+                <span class="work-center-title">📋 工作中心</span>
                 <button class="customize-btn" data-act="reload-dashboard">刷新</button>
               </div>
-              <div class="today-body" id="todayBody">
-                <div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>
+              <div class="work-center-body" id="workCenterBody">
+                <div class="mini-loading full-width"><span class="spinner"></span>加载中...</div>
               </div>
             </div>
 

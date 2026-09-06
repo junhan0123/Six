@@ -807,6 +807,217 @@ input, textarea { font: inherit; color: inherit; }
 
 /* 系统状态增强：状态点 + 异常行动入口 */
 .status-item.status-warn { cursor: pointer; }
+
+/* UI-P6 · 顶部状态栏 */
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.home-brand {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.home-brand .brand-version {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-2);
+  margin-left: 6px;
+}
+.home-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.home-weather-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+}
+.weather-emoji {
+  font-size: 16px;
+}
+.weather-temp-temp {
+  font-weight: 500;
+  color: var(--ink);
+}
+.weather-cond {
+  color: var(--ink-3);
+}
+.home-header-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--line);
+}
+.home-sys-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.sys-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #52c41a;
+  animation: sysPulse 2s ease-in-out infinite;
+}
+@keyframes sysPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* UI-P6 · Context Status Bar（语义化） */
+.home-context-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+  margin-bottom: 8px;
+  background: var(--bg-soft);
+  border-radius: 8px;
+}
+.ctx-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.ctx-icon {
+  font-size: 15px;
+}
+.ctx-label {
+  color: var(--ink-3);
+}
+.ctx-status-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--line);
+}
+
+/* UI-P6 · Work Center */
+.work-center {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.work-center-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.work-center-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.work-center-body {
+  padding: 12px;
+}
+.wc-section {
+  margin-bottom: 16px;
+}
+.wc-section:last-child {
+  margin-bottom: 0;
+}
+.wc-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+.wc-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wc-task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg);
+  border-left: 3px solid transparent;
+}
+.wc-task-item.task-running {
+  border-left-color: var(--warn);
+  background: rgba(250, 173, 20, 0.06);
+}
+.wc-task-item.task-done {
+  border-left-color: var(--ok);
+  background: rgba(82, 196, 26, 0.06);
+}
+.wc-task-item.task-pending {
+  border-left-color: var(--ink-4);
+}
+.wc-task-status {
+  font-size: 12px;
+}
+.wc-task-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wc-task-label {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.wc-empty {
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 20px 0;
+}
+.wc-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.wc-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wc-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.wc-btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.wc-btn-primary:hover {
+  background: #5558e6;
+  border-color: #5558e6;
+  color: #fff;
+}
 .status-fix { font-size: 11px; color: var(--brand); margin-left: 5px; font-weight: 600; }
 
 /* 最近对话增强：图标 + 空状态 */

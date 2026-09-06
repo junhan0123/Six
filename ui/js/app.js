@@ -253,9 +253,6 @@
      ========================================================= */
   /* UI-P1 · Chat-first 首页：左栏 Today Card + 右栏 Agent Activity Center */
   async function loadDashboard() {
-    const today = $("#todayBody");
-    if (today) today.innerHTML = '<div class="mini-loading full-width"><span class="spinner"></span>正在为你准备今日信息…</div>';
-
     const [w, t, h] = await Promise.all([
       getJSON("/api/weather").catch((e) => ({ __err: e.message })),
       getJSON("/api/tasks").catch((e) => ({ __err: e.message })),
@@ -263,13 +260,22 @@
     ]);
     await ensureConfig();
 
-    // 左栏：Today Card（天气 / 任务 / 日程）
-    if (today) {
-      let html = "";
-      html += weatherCard(w);
-      html += taskCard(t);
-      html += scheduleCard(t);
-      today.innerHTML = html;
+    // UI-P6 · 顶部天气状态栏
+    const weatherEl = document.getElementById('homeWeatherStatus');
+    if (weatherEl && !w.__err) {
+      const c = w.card || {};
+      const cond = c.condition || '';
+      const temp = c.temp != null ? c.temp + '°' : '—';
+      const wi = weatherIcon(cond);
+      weatherEl.innerHTML = '<span class="weather-emoji">' + wi.emoji + '</span><span class="weather-temp-temp">' + esc(temp) + '</span><span class="weather-cond">' + esc(cond) + '</span>';
+    } else if (weatherEl) {
+      weatherEl.innerHTML = '<span class="weather-loading">天气暂不可用</span>';
+    }
+
+    // UI-P6 · Work Center（任务 + 目标摘要）
+    const workBody = document.getElementById('workCenterBody');
+    if (workBody) {
+      renderWorkCenter(t);
     }
 
     // 右栏：热点（迁移到洞察区）、系统健康、当前状态/运行任务
@@ -441,7 +447,7 @@
     _homeCollBound = true;
   }
 
-  /* UI-P5 · Home Context Bar */
+  /* UI-P5/P6 · Context Status Bar（语义化） */
   async function loadHomeContext() {
     const [goalsRes, memoryRes, capsRes] = await Promise.all([
       getJSON("/api/goals").catch(() => []),
@@ -449,34 +455,94 @@
       getJSON("/api/capability_os/catalog").catch(() => ({})),
     ]);
 
-    // Goals
-    const goalsBox = document.getElementById('contextGoals');
-    if (goalsBox) {
+    // Goals: 语义化展示
+    const goalsEl = document.getElementById('ctxGoals');
+    if (goalsEl) {
       const goals = Array.isArray(goalsRes) ? goalsRes : [];
-      const active = goals.filter(g => g.status === 'active' || g.status === 'in_progress').slice(0, 3);
-      if (active.length) {
-        const titles = active.map(g => g.title || '未命名目标').slice(0, 2).join('、');
-        goalsBox.innerHTML = '<span class="ctx-ico">🎯</span><span class="ctx-text">' + esc(active.length) + ' 个活跃目标 · ' + esc(titles) + '</span>';
-      } else {
-        goalsBox.innerHTML = '<span class="ctx-ico">🎯</span><span class="ctx-text">暂无活跃目标</span>';
-      }
+      const active = goals.filter(g => g.status === 'active' || g.status === 'in_progress').length;
+      goalsEl.innerHTML = '<span class="ctx-icon">🎯</span><span class="ctx-label">正在跟踪 ' + active + ' 个目标</span>';
     }
 
-    // Memory
-    const memoryBox = document.getElementById('contextMemory');
-    if (memoryBox) {
+    // Memory: 语义化展示
+    const memoryEl = document.getElementById('ctxMemory');
+    if (memoryEl) {
       const notes = memoryRes.note_count || 0;
-      const logs = memoryRes.log_count || 0;
-      memoryBox.innerHTML = '<span class="ctx-ico">🧠</span><span class="ctx-text">' + notes + ' 条记忆 · ' + logs + ' 条日志</span>';
+      const hasMemory = notes > 0;
+      memoryEl.innerHTML = '<span class="ctx-icon">🧠</span><span class="ctx-label">' + (hasMemory ? '记忆已同步' : '记忆就绪') + '</span>';
     }
 
-    // Capabilities
-    const capsBox = document.getElementById('contextCaps');
-    if (capsBox) {
+    // Capabilities: 语义化展示
+    const capsEl = document.getElementById('ctxCaps');
+    if (capsEl) {
       const total = capsRes.total || 0;
       const available = capsRes.available || 0;
-      capsBox.innerHTML = '<span class="ctx-ico">🛠️</span><span class="ctx-text">' + available + '/' + total + ' 能力就绪</span>';
+      capsEl.innerHTML = '<span class="ctx-icon">🛠</span><span class="ctx-label">' + available + '/' + total + ' 能力已连接</span>';
     }
+  }
+
+  /* UI-P6 · Work Center：任务摘要 + 目标列表 */
+  function renderWorkCenter(tasks) {
+    const body = document.getElementById('workCenterBody');
+    if (!body) return;
+
+    if (!Array.isArray(tasks) || !tasks.length) {
+      body.innerHTML = '<div class="wc-empty">暂无任务安排 · 告诉小6你的计划</div>';
+      return;
+    }
+
+    // 分组：进行中和今日任务
+    const RUNNING = ['open', 'running', 'in_progress', 'active', 'pending'];
+    const today = todayStr();
+    const running = tasks.filter(x => RUNNING.indexOf(String(x.status || '').toLowerCase()) >= 0);
+    const todayTasks = tasks.filter(x => String(x.updated || x.created || '').slice(0, 10) === today).slice(0, 5);
+
+    let html = '';
+
+    // 今日任务
+    if (todayTasks.length) {
+      html += '<div class="wc-section"><div class="wc-section-title">📋 今日任务</div><div class="wc-task-list">';
+      html += todayTasks.map(t => {
+        const sc = statusClass(t.status);
+        const glyph = sc === 'done' ? '✅' : sc === 'running' ? '🔄' : '⏳';
+        return '<div class="wc-task-item task-' + sc + '">' +
+          '<span class="wc-task-status">' + glyph + '</span>' +
+          '<span class="wc-task-title">' + esc(t.title || '(无标题)') + '</span>' +
+          '<span class="wc-task-label task-' + sc + '">' + esc(statusLabel(t.status)) + '</span>' +
+          '</div>';
+      }).join('');
+      html += '</div></div>';
+    }
+
+    // 活跃目标
+    if (running.length) {
+      html += '<div class="wc-section"><div class="wc-section-title">🎯 进行中</div><div class="wc-task-list">';
+      html += running.slice(0, 4).map(t => {
+        const sc = statusClass(t.status);
+        const glyph = sc === 'done' ? '✅' : sc === 'running' ? '🔄' : '⏳';
+        return '<div class="wc-task-item task-' + sc + '">' +
+          '<span class="wc-task-status">' + glyph + '</span>' +
+          '<span class="wc-task-title">' + esc(t.title || '(无标题)') + '</span>' +
+          '<span class="wc-task-label task-' + sc + '">' + esc(statusLabel(t.status)) + '</span>' +
+          '</div>';
+      }).join('');
+      html += '</div></div>';
+    }
+
+    // 底部入口
+    html += '<div class="wc-actions"><button class="wc-btn wc-btn-primary" data-view="tasks">查看全部任务</button><button class="wc-btn" data-view="goals">查看目标</button></div>';
+
+    body.innerHTML = html;
+    bindWorkCenterActions(body);
+  }
+
+  function bindWorkCenterActions(body) {
+    if (!body) return;
+    body.querySelectorAll('.wc-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        if (view) navigateTo(view);
+      });
+    });
   }
 
   /* 首页视觉增强辅助：天气图标 / 平台图标 / 状态点 / 会话标签清洗 */
