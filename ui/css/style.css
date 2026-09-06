@@ -910,6 +910,12 @@ input, textarea { font: inherit; color: inherit; }
   border-radius: var(--r-md); flex-shrink: 0;
   transition: background .25s, border-color .25s;
 }
+/* UI-P4 · Chat 消息淡入动画 */
+.bubble { animation: msgFadeIn .25s ease-out; }
+@keyframes msgFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .agent-activity .aa-side { padding-top: 3px; }
 .aa-pulse {
   width: 9px; height: 9px; border-radius: 50%; display: inline-block;
