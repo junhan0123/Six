@@ -1201,6 +1201,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(data, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/status":
+            try:
+                import intelligence_registry as ir
+                data = ir.get_status()
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/devices":
             if not getattr(config, "FEATURE_MULTI_DEVICE", True):
                 return self._send(404, json.dumps({"ok": False, "disabled": True, "error": "多端同步未启用"}))
