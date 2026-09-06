@@ -145,6 +145,34 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+.feed-tabs-mini {
+  display: flex;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.feed-tab-mini {
+  padding: 3px 10px;
+  font-size: 11px;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feed-tab-mini:hover {
+  border-color: var(--brand-color, #6366f1);
+  color: var(--brand-color, #6366f1);
+}
+
+.feed-tab-mini.active {
+  background: var(--brand-color, #6366f1);
+  border-color: var(--brand-color, #6366f1);
+  color: #fff;
+}
+
 .feed-header {
   display: flex;
   align-items: center;

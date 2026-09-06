@@ -115,6 +115,11 @@
             <div class="feed-title">
               <span class="feed-icon-large">🔮</span> AI Insight Center
             </div>
+            <div class="feed-tabs-mini">
+              <button class="feed-tab-mini active" id="toggleFeed">洞察</button>
+              <button class="feed-tab-mini" id="toggleReasoning">为什么</button>
+              <button class="feed-tab-mini" id="toggleDecision">决策</button>
+            </div>
             <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
           </div>
           <div class="feed-list" id="feedList">
@@ -166,6 +171,19 @@
             <button class="feed-refresh" id="reasoningRefresh" title="刷新">↻</button>
           </div>
           <div class="reasoning-content" id="reasoningContent">
+            <div class="reasoning-loading">加载中...</div>
+          </div>
+        </div>
+
+        <!-- Decision: Support -->
+        <div class="reasoning-panel" id="decisionPanel" style="display:none;">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span class="feed-icon-large">🤝</span> 决策辅助
+            </div>
+            <button class="feed-refresh" id="decisionRefresh" title="刷新">↻</button>
+          </div>
+          <div class="reasoning-content" id="decisionContent">
             <div class="reasoning-loading">加载中...</div>
           </div>
         </div>
@@ -493,6 +511,21 @@
     .catch(err => console.error('[Feed] 反馈失败:', err));
   });
 
+  // 面板切换
+  const panels = ['intelligenceFeed', 'foresightPanel', 'contextPanel', 'reasoningPanel', 'decisionPanel'];
+  const toggles = ['toggleFeed', 'toggleReasoning', 'toggleDecision'];
+
+  function showPanel(panelId) {
+    panels.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = id === panelId ? 'block' : 'none';
+    });
+  }
+
+  document.getElementById('toggleFeed')?.addEventListener('click', () => showPanel('intelligenceFeed'));
+  document.getElementById('toggleReasoning')?.addEventListener('click', () => showPanel('reasoningPanel'));
+  document.getElementById('toggleDecision')?.addEventListener('click', () => showPanel('decisionPanel'));
+
   // Foresight 面板
   const toggleForesightBtn = document.getElementById('toggleForesight');
   const foresightPanel = document.getElementById('foresightPanel');
@@ -664,7 +697,7 @@
   // Reasoning 面板
   const toggleReasoningBtn = document.getElementById('toggleReasoning');
   const reasoningPanel = document.getElementById('reasoningPanel');
-  
+
   if (toggleReasoningBtn) {
     toggleReasoningBtn.addEventListener('click', function() {
       if (reasoningPanel.style.display === 'none') {
@@ -677,45 +710,45 @@
       }
     });
   }
-  
+
   // Reasoning 刷新
   const reasoningRefreshBtn = document.getElementById('reasoningRefresh');
   if (reasoningRefreshBtn) {
     reasoningRefreshBtn.addEventListener('click', loadReasoning);
   }
-  
+
   async function loadReasoning() {
     const content = document.getElementById('reasoningContent');
     if (!content) return;
-    
+
     try {
       const resp = await fetch('/api/intelligence/reasoning');
       const data = await resp.json();
-      
+
       if (!data.ok) throw new Error('加载失败');
-      
+
       const reasonings = data.reasonings || [];
       if (reasonings.length === 0) {
         content.innerHTML = '<div class="reasoning-empty">暂无推理分析</div>';
         return;
       }
-      
+
       content.innerHTML = reasonings.map(r => {
-        const confColor = r.confidence >= 0.8 ? '#4caf50' : 
+        const confColor = r.confidence >= 0.8 ? '#4caf50' :
                          r.confidence >= 0.6 ? '#ff9800' : '#f44336';
-        const evidenceHtml = r.evidence ? r.evidence.map(e => 
+        const evidenceHtml = r.evidence ? r.evidence.map(e =>
           '<div class="reasoning-evidence">' +
             '<span class="evidence-tag ' + e.type + '">' + e.type.toUpperCase() + '</span>' +
             '<span class="evidence-content">' + escapeHtml(e.content) + '</span>' +
             '<span class="evidence-conf">' + (e.confidence * 100).toFixed(0) + '%</span>' +
           '</div>'
         ).join('') : '';
-        
+
         const snapshot = r.snapshot || {};
         return '<div class="reasoning-item">' +
           '<div class="reasoning-header">' +
             '<span class="reasoning-topic">' + escapeHtml(r.topic) + '</span>' +
-            '<span class="reasoning-confidence" style="color:' + confColor + '">' + 
+            '<span class="reasoning-confidence" style="color:' + confColor + '">' +
               (r.confidence * 100).toFixed(0) + '%</span>' +
           '</div>' +
           '<div class="reasoning-explanation">' + escapeHtml(r.explanation) + '</div>' +
@@ -725,10 +758,118 @@
           '<div class="reasoning-meta"><span>' + escapeHtml(r.source) + '</span></div>' +
         '</div>';
       }).join('');
-      
+
     } catch (err) {
       console.error('[Reasoning] 加载失败:', err);
       content.innerHTML = '<div class="reasoning-empty">加载失败</div>';
+    }
+  }
+
+  // Decision 面板
+  const toggleDecisionBtn = document.getElementById('toggleDecision');
+  const decisionPanel = document.getElementById('decisionPanel');
+
+  if (toggleDecisionBtn) {
+    toggleDecisionBtn.addEventListener('click', function() {
+      if (decisionPanel.style.display === 'none') {
+        decisionPanel.style.display = 'block';
+        this.classList.add('active');
+        loadDecision();
+      } else {
+        decisionPanel.style.display = 'none';
+        this.classList.remove('active');
+      }
+    });
+  }
+
+  // Decision 刷新
+  const decisionRefreshBtn = document.getElementById('decisionRefresh');
+  if (decisionRefreshBtn) {
+    decisionRefreshBtn.addEventListener('click', loadDecision);
+  }
+
+  async function loadDecision() {
+    const content = document.getElementById('decisionContent');
+    if (!content) return;
+
+    try {
+      const resp = await fetch('/api/intelligence/decision');
+      const data = await resp.json();
+
+      if (!data.ok) throw new Error('加载失败');
+
+      const decisions = data.decisions || [];
+      if (decisions.length === 0) {
+        content.innerHTML = '<div class="decision-empty">暂无决策分析</div>';
+        return;
+      }
+
+      content.innerHTML = decisions.map(d => {
+        const confColor = d.confidence >= 0.8 ? '#4caf50' :
+                         d.confidence >= 0.6 ? '#ff9800' : '#f44336';
+        const snapshot = d.snapshot || {};
+
+        // 选项列表
+        const optionsHtml = (d.options || []).map(opt => {
+          const advHtml = (opt.advantages || []).length > 0
+            ? '<div class="decision-opt-adv">优势: ' + opt.advantages.map(a => escapeHtml(a)).join(', ') + '</div>'
+            : '';
+          const riskHtml = (opt.risks || []).length > 0
+            ? '<div class="decision-opt-risk">风险: ' + opt.risks.map(r => escapeHtml(r)).join(', ') + '</div>'
+            : '';
+          return '<div class="decision-option">' +
+            '<div class="decision-opt-name">' + escapeHtml(opt.name) + '</div>' +
+            advHtml + riskHtml +
+            (opt.impact ? '<div class="decision-opt-impact">影响: ' + escapeHtml(opt.impact) + '</div>' : '') +
+          '</div>';
+        }).join('');
+
+        // 风险分析
+        const risksHtml = (d.risks || []).map(r => {
+          const levelColor = r.level === 'high' ? '#f44336' :
+                            r.level === 'medium' ? '#ff9800' : '#4caf50';
+          return '<div class="decision-risk-item">' +
+            '<span class="decision-risk-level" style="color:' + levelColor + '">' +
+              r.level.toUpperCase() + '</span>' +
+            '<span class="decision-risk-text">' + escapeHtml(r.risk) + '</span>' +
+          '</div>';
+        }).join('');
+
+        // 收益分析
+        const benefitsHtml = (d.benefits || []).map(b =>
+          '<div class="decision-benefit-item">' +
+            '<span class="decision-benefit-text">' + escapeHtml(b.benefit) + '</span>' +
+          '</div>'
+        ).join('');
+
+        // 影响因素
+        const factorsHtml = (d.factors || []).map(f =>
+          '<span class="decision-factor">' + escapeHtml(f) + '</span>'
+        ).join('');
+
+        return '<div class="decision-item">' +
+          '<div class="decision-header">' +
+            '<span class="decision-topic">' + escapeHtml(d.topic) + '</span>' +
+            '<span class="decision-confidence" style="color:' + confColor + '">' +
+              (d.confidence * 100).toFixed(0) + '%</span>' +
+          '</div>' +
+          (snapshot.summary ? '<div class="decision-summary">' + escapeHtml(snapshot.summary) + '</div>' : '') +
+          '<div class="decision-options">' + optionsHtml + '</div>' +
+          (risksHtml ? '<div class="decision-risks"><strong>风险:</strong>' + risksHtml + '</div>' : '') +
+          (benefitsHtml ? '<div class="decision-benefits"><strong>收益:</strong>' + benefitsHtml + '</div>' : '') +
+          (factorsHtml ? '<div class="decision-factors">因素: ' + factorsHtml + '</div>' : '') +
+          (snapshot.recommended_analysis ?
+            '<div class="decision-recommendation">' +
+              '<strong>分析建议:</strong>' +
+              '<div class="decision-reco-text">' + escapeHtml(snapshot.recommended_analysis) + '</div>' +
+            '</div>' : '') +
+          '<div class="decision-meta"><span>' + escapeHtml(d.source) + '</span></div>' +
+        '</div>';
+      }).join('');
+
+    } catch (err) {
+      console.error('[Decision] 加载失败:', err);
+      content.innerHTML = '<div class="decision-empty">加载失败</div>';
     }
   }
 })();

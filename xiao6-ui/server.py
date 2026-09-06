@@ -537,6 +537,58 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/decision":
+            try:
+                import intelligence_decision as idc
+                engine = idc.get_decision_engine()
+                decisions = []
+                decisions.append(engine.analyze_decision(
+                    topic="记忆管理策略",
+                    options=[
+                        {
+                            "name": "定期归档",
+                            "advantages": ["保持数据库轻量", "提升查询性能"],
+                            "risks": ["可能丢失历史数据", "归档后难以回溯"],
+                            "impact": "影响长期记忆存储"
+                        },
+                        {
+                            "name": "增量更新",
+                            "advantages": ["保留完整历史", "实时性更好"],
+                            "risks": ["数据量持续增长", "查询变慢"],
+                            "impact": "存储压力递增"
+                        }
+                    ],
+                    factors=["用户偏好", "系统性能", "存储成本"]
+                ))
+                decisions.append(engine.analyze_decision(
+                    topic="知识更新频率",
+                    options=[
+                        {
+                            "name": "实时同步",
+                            "advantages": ["知识最新鲜", "上下文准确"],
+                            "risks": ["更新频繁", "一致性风险"],
+                            "impact": "提升回答质量"
+                        },
+                        {
+                            "name": "定期批量",
+                            "advantages": ["系统稳定", "一致性高"],
+                            "risks": ["知识滞后", "过时信息"],
+                            "impact": "可能影响准确性"
+                        }
+                    ],
+                    factors=["数据时效性", "系统稳定性", "用户期望"]
+                ))
+                result = [d.to_dict() for d in decisions]
+                return self._send(200, json.dumps({"ok": True, "decisions": result, "total": len(result)}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/decision/status":
+            try:
+                import intelligence_decision as idc
+                engine = idc.get_decision_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,
