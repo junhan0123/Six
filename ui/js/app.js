@@ -2838,10 +2838,15 @@
     ta.value = ""; ta.style.height = "auto";
     S.conversation.push({ role: "user", content: payload });
 
-    S.busy = true;
+  S.busy = true;
     clearAgentSteps();
     setAgentState("thinking", "小6正在思考…");
     $("#btnSend").disabled = true;
+    // 同步首页 Command Bar 状态
+    const homeCmd = document.getElementById('commandBar');
+    if (homeCmd) { homeCmd.classList.add('sending'); }
+    const homeSend = document.getElementById('commandSend');
+    if (homeSend) { homeSend.disabled = true; homeSend.classList.add('loading'); }
     const bubble = addMsg("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
     let acc = "", gotAny = false;
 
@@ -2867,22 +2872,30 @@
       });
 
       if (!gotAny) {
-        bubble.innerHTML = '<span style="color:#8a8a8a">（这次没有返回文字内容）</span>';
+        bubble.innerHTML = '<span style="color:var(--ink-3)">（这次没有返回文字内容）</span>';
       } else {
         S.conversation.push({ role: "assistant", content: acc });
         attachSpeak(bubble, acc);
       }
       loadRecent();
     } catch (e) {
-      bubble.innerHTML = '<div class="error-state" style="text-align:left">' +
-        "<div>小6暂时没能完成这个请求</div>" +
-        '<div class="detail" style="text-align:left">' + esc(e.message) + "</div>" +
-        '<button class="customize-btn" style="margin-top:10px" data-retry="1">重试</button></div>';
-      toast("请求失败：" + e.message, true);
-      } finally {
+    bubble.innerHTML = '<div class="error-state" style="text-align:left">' +
+      "<div>小6暂时没能完成这个请求</div>" +
+      '<div class="detail" style="text-align:left">' + esc(e.message) + "</div>" +
+      '<button class="customize-btn" style="margin-top:10px" data-retry="1">重试</button></div>';
+    toast("请求失败：" + e.message, true);
+    // 错误状态同步到 Command Bar
+    const homeCmd = document.getElementById('commandBar');
+    if (homeCmd) { homeCmd.classList.add('error'); setTimeout(() => homeCmd.classList.remove('error'), 3000); }
+    } finally {
         S.busy = false;
         $("#btnSend").disabled = false;
         setAgentState("idle");
+        // 同步首页 Command Bar 状态恢复
+        const homeCmd = document.getElementById('commandBar');
+        if (homeCmd) { homeCmd.classList.remove('sending', 'error'); }
+        const homeSend = document.getElementById('commandSend');
+        if (homeSend) { homeSend.disabled = false; homeSend.classList.remove('loading'); }
       }
   }
 

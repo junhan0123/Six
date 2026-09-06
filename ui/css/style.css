@@ -881,9 +881,13 @@ input, textarea { font: inherit; color: inherit; }
   box-shadow: 0 4px 12px var(--brand-shadow);
   transition: background .15s, transform .12s;
 }
-.command-send:hover { background: #ff7875; }
+.command-send:hover { background: var(--brand-grad); }
 .command-send:active { transform: scale(.95); }
 .command-send:disabled { background: #ffc9c9; box-shadow: none; cursor: not-allowed; }
+.command-send.loading { animation: cmdSpin .6s linear infinite; }
+@keyframes cmdSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.command-bar.sending { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-shadow-soft); }
+.command-bar.error { border-color: var(--danger); }
 .command-hints {
   display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
   gap: 6px 10px; margin-top: 10px; font-size: 12px; color: var(--ink-3);
