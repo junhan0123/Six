@@ -93,7 +93,14 @@
     conversation: [],
     busy: false,
     sessions: [],
+    currentSid: null,
   };
+
+  /* UI-P0 · 当前会话：优先取 URL ?session=，恢复对话时更新（纯前端，不依赖后端） */
+  try {
+    const m = location.search.match(/[?&]session=([^&]+)/);
+    if (m) S.currentSid = decodeURIComponent(m[1]);
+  } catch (e) { /* 无 session 参数时保持为空 */ }
 
   const CAPS = () => S.caps;
 
@@ -530,36 +537,24 @@
     "已注册设备": "设备同步",
   };
 
+  /* UI-P0 · Task1：首页只保留「状态点 + 系统状态入口」。
+     模型名 / self_check 明细 / 开发提示一律下沉到「系统状态」页。
+     /api/health、/api/ready、/api/config 的调用与契约保持不变。 */
   function systemCard() {
     const h = S.health || {};
     const checks = (h.self_check && h.self_check.checks) || [];
-    const ttsCheck = checks.find((c) => /TTS|语音/.test(String(c.name || "")));
-    const failed = checks.filter((c) => !c.ok);
-
+    const failed = checks.filter((c) => !c.ok).length;
     const serviceOK = h.status === "alive" && (!S.ready || S.ready.ready !== false);
-    const cfg = S.config || {};
-    const llm = cfg.llm || {};
-    const modelName = llm.model || h.model || "—";
-    const modelOK = !!llm.key_present;
+    const ok = serviceOK && !failed;
+    const cls = ok ? "ok" : "warn";
+    const text = !serviceOK ? "服务未就绪" : (failed ? "需要关注" : "系统正常");
 
-    const ttsOK = ttsCheck ? !!ttsCheck.ok : false;
-    const ttsLabel = ttsCheck ? (ttsOK ? "可用" : "不可用") : (h.tts_backend ? String(h.tts_backend) : "未配置");
-
-    const items = [
-      { label: "服务状态", value: serviceOK ? "服务正常" : "需要检查", cls: serviceOK ? "ok" : "warn" },
-      { label: "模型状态", value: modelName, cls: modelOK ? "ok" : "warn" },
-      { label: "语音状态", value: ttsOK ? "语音正常" : "需要检查", cls: ttsOK ? "ok" : "warn" },
-      { label: "小6 状态", value: failed.length ? "需要关注" : "一切正常", cls: failed.length ? "warn" : "ok" },
-    ];
-    const body = '<div class="status-grid">' + items.map((it) =>
-      '<div class="status-item' + (it.cls === "warn" ? " status-warn" : "") + '"' +
-      (it.cls === "warn" ? ' data-view="settings" title="点击查看并处理"' : "") + ">" +
-      '<div class="status-label">' + statusDot(it.cls) + " " + esc(it.label) + "</div>" +
-      '<div class="status-value ' + it.cls + '">' + esc(it.value) +
-      (it.cls === "warn" ? ' <span class="status-fix">[查看]</span>' : "") +
-      "</div></div>").join("") + "</div>";
-    const foot = '<button class="customize-btn" data-view="settings" style="margin-top:2px">查看详情</button>';
-    return dashCard("sys", "⚙️ 系统状态", body, foot);
+    const body = '<button class="sys-health-entry" data-view="system" title="查看系统状态">' +
+      '<span class="sys-health-dot ' + cls + '"></span>' +
+      '<span class="sys-health-text">' + esc(text) + "</span>" +
+      '<span class="sys-health-link">系统状态 →</span>' +
+      "</button>";
+    return dashCard("sys", "⚙️ 系统状态", body, "");
   }
 
   function statusItem(label, value, cls) {
@@ -578,34 +573,160 @@
   /* =========================================================
      最近对话
      ========================================================= */
+  /* =========================================================
+     UI-P0 · Task2：会话列表前端覆盖层（localStorage）
+     重命名 / 置顶 / 隐藏 全部本地生效，不新增 API、不改动数据库
+     ========================================================= */
+  const SESSION_META_KEY = "x6.session.meta.v1";
+  function loadSessionMeta() {
+    try { return JSON.parse(localStorage.getItem(SESSION_META_KEY) || "{}") || {}; }
+    catch (e) { return {}; }
+  }
+  function saveSessionMeta(meta) {
+    try { localStorage.setItem(SESSION_META_KEY, JSON.stringify(meta || {})); }
+    catch (e) { /* 隐私模式等场景静默降级，不影响列表渲染 */ }
+  }
+  function sessionMeta(sid) { return loadSessionMeta()[sid] || {}; }
+  function patchSessionMeta(sid, patch) {
+    const m = loadSessionMeta();
+    m[sid] = Object.assign({}, m[sid], patch);
+    saveSessionMeta(m);
+  }
+  function isPinned(sid) { return !!sessionMeta(sid).pinned; }
+  function isHidden(sid) { return !!sessionMeta(sid).hidden; }
+  function overlayTitle(sid) { return sessionMeta(sid).title || ""; }
+
+  const GROUP_LABEL = { pinned: "置顶", today: "Today", d7: "7 Days", earlier: "Earlier" };
+  function sessionGroupOf(ts) {
+    const t = new Date(ts).getTime();
+    if (!t) return "earlier";
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    if (t >= todayStart) return "today";
+    if (t >= todayStart - 7 * 86400000) return "d7";
+    return "earlier";
+  }
+
   async function loadRecent() {
     const box = $("#recentList");
+    if (!box) return;
     try {
       const r = await getJSON("/api/sessions");
       const list = (r && r.sessions) || [];
       S.sessions = list;
-      if (!list.length) {
+      const visible = list.filter((s) => !isHidden(s.session_id || s.id || ""));
+      const hiddenCount = list.length - visible.length;
+
+      if (!visible.length) {
         box.innerHTML = '<div class="recent-empty">' +
           '<div class="re-ico">💬</div><div>还没有对话记录</div>' +
-          '<button class="customize-btn" data-view="chat">开始对话</button></div>';
+          '<button class="customize-btn" data-view="chat">开始对话</button></div>' +
+          (hiddenCount ? restoreHiddenHTML(hiddenCount) : "");
+        bindSessionActions(box);
         return;
       }
-      const items = list.slice(0, 6).map((s) => {
+
+      const items = visible.map((s) => {
         const sid = s.session_id || s.id || "";
-        const label = cleanSessionLabel(sid);
-        const time = relTime(s.updated_at || s.created_at);
-        return { sid, label, time };
+        const ts = s.updated_at || s.created_at || "";
+        return {
+          sid, ts, time: relTime(ts), pinned: isPinned(sid),
+          label: overlayTitle(sid) || cleanSessionLabel(sid),
+        };
       });
-      box.innerHTML = items.map((it) =>
-        '<button class="recent-item" data-session="' + esc(it.sid) + '" title="' + esc(it.sid) + '">' +
-        '<span class="ri-ico">💬</span>' +
-        '<span class="title">' + esc(it.label) + '<span class="menu-icon" title="右键菜单">⋮</span></span>' +
-        '<span class="time">' + esc(it.time) + '</span></button>').join("");
-      // 渐进增强：用已有会话详情补全可读摘要（零后端改动；取不到就保留清洗后的标签）
-      items.forEach((it) => enrichRecent(it, box));
+      box.innerHTML = renderSessionGroups(items, hiddenCount);
+      bindSessionActions(box);
+      // 渐进增强：未手动命名的会话，用会话详情首条用户消息自动补全标题（零后端改动）
+      items.forEach((it) => { if (!overlayTitle(it.sid)) enrichRecent(it, box); });
     } catch (e) {
       box.innerHTML = errorBox("对话列表读取失败", e.message);
     }
+  }
+
+  function restoreHiddenHTML(n) {
+    return '<div class="recent-restore"><button class="recent-restore-btn" data-act="restore-hidden">显示 ' +
+      n + " 个已隐藏会话</button></div>";
+  }
+
+  function renderSessionGroups(items, hiddenCount) {
+    const buckets = [["pinned", []], ["today", []], ["d7", []], ["earlier", []]];
+    items.forEach((it) => {
+      const key = it.pinned ? "pinned" : sessionGroupOf(it.ts);
+      const b = buckets.find((x) => x[0] === key) || buckets[3];
+      b[1].push(it);
+    });
+    let html = "";
+    buckets.forEach((b) => {
+      if (!b[1].length) return;
+      html += '<div class="recent-group"><span class="recent-group-title">' + esc(GROUP_LABEL[b[0]]) +
+        '<span class="recent-group-count">' + b[1].length + "</span></span></div>";
+      html += b[1].map(sessionItemHTML).join("");
+    });
+    if (hiddenCount) html += restoreHiddenHTML(hiddenCount);
+    return html;
+  }
+
+  function sessionItemHTML(it) {
+    const active = it.sid && it.sid === S.currentSid ? " active" : "";
+    return '<button class="recent-item' + active + '" data-session="' + esc(it.sid) + '" title="' + esc(it.sid) + '">' +
+      '<span class="ri-ico">💬</span>' +
+      '<span class="title">' + (it.pinned ? '<span class="pin-flag" title="已置顶">📌</span>' : "") +
+      '<span class="ri-label">' + esc(it.label) + "</span></span>" +
+      '<span class="time">' + esc(it.time) + "</span>" +
+      '<span class="recent-actions">' +
+      '<span class="recent-action" data-act="rename" title="重命名">✏️</span>' +
+      '<span class="recent-action" data-act="pin" title="置顶 / 取消置顶">📌</span>' +
+      '<span class="recent-action danger" data-act="hide" title="隐藏会话">✕</span>' +
+      "</span></button>";
+  }
+
+  function bindSessionActions(box) {
+    box.querySelectorAll("[data-act]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const act = btn.dataset.act;
+        if (act === "restore-hidden") { restoreHiddenSessions(); return; }
+        const item = btn.closest(".recent-item");
+        if (!item) return;
+        const sid = item.dataset.session || "";
+        if (act === "rename") doRenameSession(sid);
+        else if (act === "pin") doTogglePinSession(sid);
+        else if (act === "hide") doHideSession(sid);
+      });
+    });
+  }
+
+  function doRenameSession(sid) {
+    const cur = overlayTitle(sid) || cleanSessionLabel(sid);
+    const next = window.prompt("重命名会话：", cur);
+    if (next == null) return;
+    const v = String(next).trim().slice(0, 40);
+    if (!v) { toast("名称不能为空", true); return; }
+    patchSessionMeta(sid, { title: v });
+    toast("已重命名");
+    loadRecent();
+  }
+
+  function doTogglePinSession(sid) {
+    patchSessionMeta(sid, { pinned: !isPinned(sid) });
+    toast(isPinned(sid) ? "已置顶" : "已取消置顶");
+    loadRecent();
+  }
+
+  function doHideSession(sid) {
+    if (!window.confirm("隐藏这个会话？数据不会删除，可随时恢复显示。")) return;
+    patchSessionMeta(sid, { hidden: true });
+    toast("已隐藏会话");
+    loadRecent();
+  }
+
+  function restoreHiddenSessions() {
+    const m = loadSessionMeta();
+    Object.keys(m).forEach((k) => { if (m[k] && m[k].hidden) m[k].hidden = false; });
+    saveSessionMeta(m);
+    toast("已恢复显示隐藏会话");
+    loadRecent();
   }
 
   function deriveSessionTitle(sess) {
@@ -630,7 +751,7 @@
       if (!title) return;
       box.querySelectorAll(".recent-item").forEach((el) => {
         if (el.dataset.session !== it.sid) return;
-        const t = el.querySelector(".title");
+        const t = el.querySelector(".ri-label");
         if (t) { t.textContent = title; el.title = it.sid + " · " + title; }
       });
     } catch (e) { /* 详情不可用不影响列表，静默降级 */ }
@@ -640,7 +761,9 @@
     try {
       const d = await postJSON("/api/session/resume", { session_id: sid });
       if (d && d.ok) {
+        S.currentSid = sid;
         toast("已恢复对话");
+        loadRecent();
         await renderHistoryIntoChat();
         switchView("chat");
       } else {
@@ -651,175 +774,6 @@
     }
   }
 
-  /* =========================================================
-     右键上下文菜单
-     ========================================================= */
-  let _ctxMenuTarget = null;
-  let _ctxMenuEl = null;
-
-  function createContextMenu() {
-    if (_ctxMenuEl) return _ctxMenuEl;
-    const el = document.createElement('div');
-    el.className = 'context-menu';
-    el.innerHTML = `
-      <div class="context-menu-label">会话操作</div>
-      <div class="context-menu-item" data-action="new-tab"><span class="ico">📑</span><span class="label">在新标签页中打开</span></div>
-      <div class="context-menu-item" data-action="new-window"><span class="ico">🪟</span><span class="label">新窗口</span></div>
-      <div class="context-menu-item" data-action="open-terminal"><span class="ico">⌨</span><span class="label">在终端中打开</span></div>
-      <div class="context-menu-divider"></div>
-      <div class="context-menu-item" data-action="rename"><span class="ico">✏️</span><span class="label">重命名...</span></div>
-      <div class="context-menu-item" data-action="pin"><span class="ico">📌</span><span class="label">置顶</span></div>
-      <div class="context-menu-item" data-action="mark-unread"><span class="ico">✉️</span><span class="label">标记为未读</span></div>
-      <div class="context-menu-item" data-action="appearance"><span class="ico">👁️</span><span class="label">外观</span><span class="arrow">›</span></div>
-      <div class="context-menu-item" data-action="copy-id"><span class="ico">🆔</span><span class="label">复制 ID</span></div>
-      <div class="context-menu-divider"></div>
-      <div class="context-menu-item" data-action="branch"><span class="ico">🌿</span><span class="label">分支</span><span class="arrow">›</span></div>
-      <div class="context-menu-item" data-action="export"><span class="ico">⬇️</span><span class="label">导出</span></div>
-      <div class="context-menu-item" data-action="move-to-project"><span class="ico">📁</span><span class="label">移动到项目</span><span class="arrow">›</span></div>
-      <div class="context-menu-divider"></div>
-      <div class="context-menu-item" data-action="archive"><span class="ico">🗄️</span><span class="label">归档</span></div>
-      <div class="context-menu-item danger" data-action="delete"><span class="ico">🗑️</span><span class="label">删除</span></div>
-    `;
-    document.body.appendChild(el);
-    _ctxMenuEl = el;
-
-    // 点击菜单项
-    el.addEventListener('click', (e) => {
-      const item = e.target.closest('.context-menu-item');
-      if (!item || !_ctxMenuTarget) return;
-      const action = item.dataset.action;
-      const sid = _ctxMenuTarget.dataset.session;
-      handleContextMenuAction(action, sid, _ctxMenuTarget);
-      hideContextMenu();
-    });
-
-    // 阻止默认右键菜单
-    el.addEventListener('contextmenu', (e) => e.stopPropagation());
-    return el;
-  }
-
-  function showContextMenu(x, y, target) {
-    const el = createContextMenu();
-    _ctxMenuTarget = target;
-
-    // 定位
-    const rect = el.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    let left = x;
-    let top = y;
-    if (left + rect.width > vw) left = vw - rect.width - 8;
-    if (top + rect.height > vh) top = vh - rect.height - 8;
-
-    el.style.left = left + 'px';
-    el.style.top = top + 'px';
-    el.classList.add('show');
-  }
-
-  function hideContextMenu() {
-    if (_ctxMenuEl) _ctxMenuEl.classList.remove('show');
-    _ctxMenuTarget = null;
-  }
-
-  async function handleContextMenuAction(action, sid, target) {
-    switch (action) {
-      case 'new-tab':
-        window.open('/?session=' + encodeURIComponent(sid), '_blank');
-        break;
-      case 'new-window':
-        window.open('/?session=' + encodeURIComponent(sid), 'newWindow', 'width=900,height=700');
-        break;
-      case 'open-terminal':
-        toast('请在终端中打开', true);
-        break;
-      case 'rename':
-        const newTitle = prompt('重命名会话:', target.querySelector('.title').textContent);
-        if (newTitle && newTitle.trim()) {
-          try {
-            await postJSON('/api/session/rename', { session_id: sid, title: newTitle.trim() });
-            target.querySelector('.title').textContent = newTitle.trim();
-            toast('已重命名');
-          } catch (e) {
-            toast('重命名失败：' + e.message, true);
-          }
-        }
-        break;
-      case 'pin':
-        toast('已置顶');
-        break;
-      case 'mark-unread':
-        toast('已标记为未读');
-        break;
-      case 'appearance':
-        toast('外观设置', true);
-        break;
-      case 'copy-id':
-        navigator.clipboard.writeText(sid).then(() => toast('已复制 ID'));
-        break;
-      case 'branch':
-        toast('分支功能', true);
-        break;
-      case 'export':
-        try {
-          const d = await getJSON('/api/session?session_id=' + encodeURIComponent(sid));
-          const sess = d && d.session;
-          if (sess) {
-            const blob = new Blob([JSON.stringify(sess, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'session_' + sid.slice(0, 8) + '.json';
-            a.click();
-            URL.revokeObjectURL(url);
-            toast('已导出');
-          }
-        } catch (e) {
-          toast('导出失败：' + e.message, true);
-        }
-        break;
-      case 'move-to-project':
-        toast('移动到项目', true);
-        break;
-      case 'archive':
-        try {
-          await postJSON('/api/session/archive', { session_id: sid });
-          target.remove();
-          toast('已归档');
-        } catch (e) {
-          toast('归档失败：' + e.message, true);
-        }
-        break;
-      case 'delete':
-        if (confirm('确定要删除这个对话吗？此操作不可恢复。')) {
-          try {
-            await postJSON('/api/session/delete', { session_id: sid });
-            target.remove();
-            toast('已删除');
-            // 刷新列表
-            loadRecent();
-          } catch (e) {
-            toast('删除失败：' + e.message, true);
-          }
-        }
-        break;
-    }
-  }
-
-  // 绑定右键事件
-  document.addEventListener('contextmenu', (e) => {
-    const item = e.target.closest('.recent-item');
-    if (item) {
-      e.preventDefault();
-      showContextMenu(e.clientX, e.clientY, item);
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.context-menu')) {
-      hideContextMenu();
-    }
-  });
 
   async function renderHistoryIntoChat() {
     try {
