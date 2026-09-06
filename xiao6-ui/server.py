@@ -1645,6 +1645,17 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(data, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if ppath == "/api/proactive/analyze":
+            try:
+                import proactive_intelligence as pi
+                payload = self._read_json()
+                dry_run = True
+                if "_error" not in payload:
+                    dry_run = payload.get("dry_run", True)
+                data = pi.analyze(dry_run=dry_run)
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if ppath == "/api/data/import":
             return self._handle_data_import()
         if ppath == "/api/agent/goal":
