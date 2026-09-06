@@ -291,6 +291,8 @@
     bindHomeCollapsibles();
     // UI-P5 · Home Context Bar
     loadHomeContext();
+    // UI-P7 · Proactive Intelligence Center
+    loadProactiveIntelligence();
   }
 
   /* UI-P1 · 今日日程：从 /api/tasks 派生（无独立 schedule 端点，不新增 API） */
@@ -486,6 +488,122 @@
     const sessionNext = document.getElementById('sessionNext');
     if (sessionRunning) sessionRunning.textContent = '-';
     if (sessionNext) sessionNext.textContent = '-';
+  }
+
+  /* UI-P7 · Proactive Intelligence Center */
+  async function loadProactiveIntelligence() {
+    // 并行加载所有 Intelligence 数据
+    const [feedRes, foresightRes, hotspotRes] = await Promise.all([
+      getJSON("/api/intelligence/feed").catch(() => ({ items: [] })),
+      getJSON("/api/intelligence/foresight").catch(() => ({ signals: [], warnings: [] })),
+      getJSON("/api/hotspots").catch(() => ({ hotspots: [] })),
+    ]);
+
+    const feedItems = Array.isArray(feedRes.items) ? feedRes.items : [];
+    const signals = Array.isArray(foresightRes.signals) ? foresightRes.signals : [];
+    const warnings = Array.isArray(foresightRes.warnings) ? foresightRes.warnings : [];
+    const hotspots = Array.isArray(hotspotRes.hotspots) ? hotspotRes.hotspots : [];
+
+    // 更新主动情报摘要
+    const feedCountEl = document.getElementById('feedCount');
+    const warningCountEl = document.getElementById('warningCount');
+    const signalCountEl = document.getElementById('signalCount');
+    const insightBadge = document.getElementById('insightBadge');
+    const foresightBadge = document.getElementById('foresightBadge');
+
+    if (feedCountEl) feedCountEl.textContent = feedItems.length;
+    if (warningCountEl) warningCountEl.textContent = warnings.length;
+    if (signalCountEl) signalCountEl.textContent = signals.length;
+
+    // 有数据时显示 Badge
+    const totalIntelligence = feedItems.length + warnings.length + signals.length;
+    if (totalIntelligence > 0) {
+      if (insightBadge) insightBadge.style.display = 'inline';
+      if (foresightBadge) foresightBadge.style.display = warnings.length > 0 ? 'inline' : 'none';
+    }
+
+    // 渲染 Feed（仅显示高优先级）
+    const feedList = document.getElementById('feedList');
+    if (feedList) {
+      const priorityItems = feedItems.filter(item => item.priority === 'high' || item.priority === 'medium').slice(0, 3);
+      if (priorityItems.length === 0 && feedItems.length > 0) {
+        feedList.innerHTML = '<div class="feed-empty">暂无重要情报</div>';
+      } else {
+        feedList.innerHTML = priorityItems.map((item, idx) => renderFeedItem(item, idx)).join('');
+      }
+    }
+
+    // 渲染 Foresight
+    renderForesight(signals, warnings);
+  }
+
+  function renderFeedItem(item, idx) {
+    const title = esc(item.title || '(无标题)');
+    const summary = esc((item.summary || item.content || '').slice(0, 80));
+    const priority = item.priority || 'medium';
+    const score = item.score != null ? item.score.toFixed(2) : '—';
+    const time = item.created_at ? hhmm(item.created_at) : '—';
+    const priCls = priority === 'high' ? 'feed-pri-high' : 'feed-pri-medium';
+    return '<div class="feed-item ' + priCls + '" data-idx="' + idx + '">' +
+      '<div class="feed-priority">' + (priority === 'high' ? '🔴' : '🟡') + '</div>' +
+      '<div class="feed-content">' +
+        '<div class="feed-item-title">' + title + '</div>' +
+        '<div class="feed-item-summary">' + (summary || '点击查看详情') + '</div>' +
+      '</div>' +
+      '<div class="feed-meta">' +
+        '<span class="feed-score">评分 ' + score + '</span>' +
+        '<span class="feed-time">' + time + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderForesight(signals, warnings) {
+    const content = document.getElementById('foresightContent');
+    if (!content) return;
+
+    if (signals.length === 0 && warnings.length === 0) {
+      content.innerHTML = '<div class="foresight-empty">暂无趋势信号或预警</div>';
+      return;
+    }
+
+    let html = '';
+
+    // 趋势信号
+    if (signals.length > 0) {
+      html += '<div class="foresight-group">';
+      html += '<div class="foresight-group-title">📈 趋势信号 (' + signals.length + ')</div>';
+      html += signals.slice(0, 3).map(s => {
+        const title = esc(s.title || '(无标题)');
+        const trend = esc(s.trend || '');
+        const confidence = s.confidence != null ? (s.confidence * 100).toFixed(0) + '%' : '—';
+        return '<div class="foresight-signal">' +
+          '<div class="signal-title">' + title + '</div>' +
+          '<div class="signal-meta">' +
+            '<span class="signal-trend">' + trend + '</span>' +
+            '<span class="signal-confidence">置信度 ' + confidence + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      html += '</div>';
+    }
+
+    // 早期预警
+    if (warnings.length > 0) {
+      html += '<div class="foresight-group">';
+      html += '<div class="foresight-group-title">⚠️ 早期预警 (' + warnings.length + ')</div>';
+      html += warnings.slice(0, 3).map(w => {
+        const title = esc(w.title || w.message || '(无标题)');
+        const risk = w.risk_level || w.severity || 'medium';
+        const riskCls = risk === 'high' || risk === 'critical' ? 'risk-high' : 'risk-medium';
+        return '<div class="foresight-warning ' + riskCls + '">' +
+          '<div class="warning-title">' + title + '</div>' +
+          '<div class="warning-risk">风险等级: ' + esc(risk) + '</div>' +
+        '</div>';
+      }).join('');
+      html += '</div>';
+    }
+
+    content.innerHTML = html;
   }
 
   /* UI-P6 · Work Center：任务摘要 + 目标列表 */

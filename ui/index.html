@@ -203,12 +203,37 @@
 
               <!-- 主动洞察（可折叠）：热点 + Intelligence Feed -->
               <section class="ac-section collapsible" id="acInsight">
-                <div class="ac-sec-head" data-toggle="acInsight"><span class="ac-ico">🔮</span><span>主动洞察</span><span class="ac-caret">▾</span></div>
+                <div class="ac-sec-head" data-toggle="acInsight">
+                  <span class="ac-ico">🔮</span>
+                  <span>主动洞察</span>
+                  <span class="ac-badge ac-badge-warning" id="insightBadge" style="display:none;">!</span>
+                  <span class="ac-caret">▾</span>
+                </div>
                 <div class="ac-sec-body">
+                  <!-- UI-P7 · 主动情报摘要 -->
+                  <div class="proactive-summary" id="proactiveSummary">
+                    <div class="proactive-item">
+                      <span class="proactive-icon">📰</span>
+                      <span class="proactive-label">情报条目</span>
+                      <span class="proactive-value" id="feedCount">0</span>
+                    </div>
+                    <div class="proactive-divider"></div>
+                    <div class="proactive-item">
+                      <span class="proactive-icon">⚠️</span>
+                      <span class="proactive-label">风险预警</span>
+                      <span class="proactive-value" id="warningCount">0</span>
+                    </div>
+                    <div class="proactive-divider"></div>
+                    <div class="proactive-item">
+                      <span class="proactive-icon">📈</span>
+                      <span class="proactive-label">趋势信号</span>
+                      <span class="proactive-value" id="signalCount">0</span>
+                    </div>
+                  </div>
                   <div class="ac-hotspot" id="acHotspot"></div>
                   <div class="intelligence-feed" id="intelligenceFeed">
                     <div class="feed-header">
-                      <div class="feed-title"><span class="feed-icon-large">🔮</span> AI Insight Center</div>
+                      <div class="feed-title"><span class="feed-icon-large">🔮</span> AI 主动发现</div>
                       <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
                     </div>
                     <div class="feed-list" id="feedList">
@@ -226,11 +251,16 @@
 
               <!-- 未来关注 Foresight（可折叠） -->
               <section class="ac-section collapsible" id="acForesight">
-                <div class="ac-sec-head" data-toggle="acForesight"><span class="ac-ico">📊</span><span>未来关注</span><span class="ac-caret">▾</span></div>
+                <div class="ac-sec-head" data-toggle="acForesight">
+                  <span class="ac-ico">📊</span>
+                  <span>未来关注</span>
+                  <span class="ac-badge ac-badge-danger" id="foresightBadge" style="display:none;">!</span>
+                  <span class="ac-caret">▾</span>
+                </div>
                 <div class="ac-sec-body">
                   <div class="foresight-panel" id="foresightPanel">
                     <div class="feed-header">
-                      <div class="feed-title"><span class="feed-icon-large">📊</span> 未来关注</div>
+                      <div class="feed-title"><span class="feed-icon-large">📊</span> 趋势预警</div>
                       <button class="feed-refresh" id="foresightRefresh" title="刷新">↻</button>
                     </div>
                     <div class="foresight-tabs">
