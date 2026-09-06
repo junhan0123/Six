@@ -794,6 +794,26 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(400, json.dumps({"error": "invalid causal path"}, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        # S143.3: /api/gfe/intelligence/*
+        if path.startswith("/api/gfe/intelligence"):
+            try:
+                import gfe_intelligence as gi
+                parts = path.split("/")
+                # GET /api/gfe/intelligence/status
+                if len(parts) == 5 and path.endswith("/status"):
+                    data = gi.status()
+                    return self._send(200, json.dumps(data, ensure_ascii=False))
+                # POST /api/gfe/intelligence/analyze
+                if len(parts) == 5 and path.endswith("/analyze"):
+                    body = self._read_json()
+                    dry_run = True
+                    if "_error" not in body:
+                        dry_run = body.get("dry_run", True)
+                    data = gi.analyze(dry_run=dry_run)
+                    return self._send(200, json.dumps(data, ensure_ascii=False))
+                return self._send(404, json.dumps({"error": "not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         # PHASE 147: /api/gfe/ledger/*
         if path.startswith("/api/gfe/ledger"):
             try:
@@ -1611,6 +1631,17 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 if "_error" not in payload:
                     dry_run = payload.get("dry_run", True)
                 data = mi.analyze_intelligence(dry_run=dry_run)
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if ppath == "/api/gfe/intelligence/analyze":
+            try:
+                import gfe_intelligence as gi
+                payload = self._read_json()
+                dry_run = True
+                if "_error" not in payload:
+                    dry_run = payload.get("dry_run", True)
+                data = gi.analyze(dry_run=dry_run)
                 return self._send(200, json.dumps(data, ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
