@@ -1372,6 +1372,41 @@ input, textarea { font: inherit; color: inherit; }
 .ac-task-st { color: var(--ink-3); font-size: 12px; flex-shrink: 0; }
 .ac-empty { color: var(--ink-3); font-size: 13px; padding: 6px 0; }
 
+/* UI-P2 · Agent Status */
+.ac-status { display: flex; align-items: center; gap: 10px; padding: 10px 0 6px; border-bottom: 1px solid var(--line-soft); margin-bottom: 8px; }
+.ac-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--ok); transition: background .2s; }
+.ac-status-dot.idle { background: var(--ok); }
+.ac-status-dot.run { background: var(--brand); animation: acPulse 1.2s ease-in-out infinite; }
+.ac-status-dot.wait { background: var(--warn); }
+@keyframes acPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.7); } }
+.ac-status-text { font-size: 14px; font-weight: 600; color: var(--ink-1); }
+.ac-status-meta { font-size: 12px; color: var(--ink-3); margin-left: auto; }
+
+/* UI-P2 · Activity Tasks */
+.ac-task-item { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; background: var(--bg-soft); border-radius: var(--r-sm); }
+.ac-task-info { display: flex; flex-direction: column; gap: 2px; }
+.ac-task-title { font-size: 13px; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-task-meta { font-size: 11px; color: var(--ink-3); }
+.ac-task-progress { height: 3px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
+.ac-task-progress.indeterminate .ac-progress-bar { height: 100%; background: var(--brand); animation: acIndeterminate 1.5s ease-in-out infinite; width: 40%; }
+@keyframes acIndeterminate { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+.ac-task-status-tag { font-size: 11px; padding: 2px 6px; border-radius: 3px; align-self: flex-end; }
+.ac-task-status-tag.running { background: var(--brand-tint); color: var(--brand); }
+.ac-task-status-tag.completed { background: var(--ok-tint); color: var(--ok); }
+.ac-task-status-tag.error { background: var(--danger-tint); color: var(--danger); }
+
+/* UI-P2 · Activity Timeline */
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.activity-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--r-sm); font-size: 13px; }
+.activity-item.done { opacity: .7; }
+.activity-item.error { background: var(--danger-tint); }
+.activity-ico { font-size: 14px; flex-shrink: 0; }
+.activity-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.activity-title { color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity-meta { font-size: 11px; color: var(--ink-3); }
+.activity-time { font-size: 11px; color: var(--ink-3); flex-shrink: 0; }
+.activity-empty { color: var(--ink-3); font-size: 12px; padding: 8px 0; }
+
 /* 热点 / 洞察 在右栏内降噪：去掉嵌套卡片外框，避免卡片套卡片 */
 .agent-center .ac-hotspot .dash-card { box-shadow: none; border: 1px solid var(--line); margin-bottom: 12px; }
 .agent-center .activity-center { background: transparent; border: 0; box-shadow: none; padding: 0; margin-top: 0; }

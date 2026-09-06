@@ -308,23 +308,98 @@
 
   /* UI-P1 · 右栏「当前状态 / 运行任务」运行任务块 */
   function renderLiveCenter() {
+    renderAgentStatus();
+    renderActivityTasks();
+    renderActivityTimeline();
+  }
+
+  /* UI-P2 · Agent Status 区块 */
+  async function renderAgentStatus() {
+    const box = $("#acStatusBox");
+    const dot = $("#acStatusDot");
+    const text = $("#acStatusText");
+    const meta = $("#acStatusMeta");
+    if (!box) return;
+    try {
+      const r = await getJSON("/api/interaction/activity");
+      const stats = (r && r.stats) || { total: 0, active: 0, completed: 0 };
+      const active = stats.active || 0;
+      const completed = stats.completed || 0;
+      const total = stats.total || 0;
+      if (active > 0) {
+        dot.className = "ac-status-dot run";
+        text.textContent = "运行中";
+      } else {
+        dot.className = "ac-status-dot idle";
+        text.textContent = "空闲";
+      }
+      meta.textContent = total > 0 ? `· ${completed} 已完成` : "";
+    } catch (e) {
+      dot.className = "ac-status-dot idle";
+      text.textContent = "空闲";
+      meta.textContent = "";
+    }
+  }
+
+  /* UI-P2 · Current Tasks 改为使用 activity 数据 */
+  async function renderActivityTasks() {
     const box = $("#acTasksBody");
     if (!box) return;
-    const tasks = S.tasks || [];
-    const RUNNING = ["open", "running", "in_progress", "active", "pending"];
-    const running = tasks.filter((x) => RUNNING.indexOf(String(x.status || "").toLowerCase()) >= 0).slice(0, 5);
-    if (!running.length) {
-      box.innerHTML = '<div class="ac-empty">暂无运行中的任务</div>';
-      return;
+    try {
+      const r = await getJSON("/api/interaction/activity");
+      const activities = (r && Array.isArray(r.activities)) ? r.activities : [];
+      const active = activities.filter((a) => a.status === "running");
+      if (!active.length) {
+        box.innerHTML = '<div class="ac-empty">暂无运行中的任务</div>';
+        return;
+      }
+      box.innerHTML = '<div class="ac-tasks">' + active.map((a) => {
+        const title = esc(a.title || "(无标题)");
+        const intent = esc(a.intent_type || a.type || "");
+        const rel = esc(a.relative_time || "");
+        return '<div class="ac-task-item">' +
+          '<div class="ac-task-info">' +
+            '<span class="ac-task-title">' + title + '</span>' +
+            '<span class="ac-task-meta">' + intent + (intent && rel ? ' · ' : '') + rel + '</span>' +
+          '</div>' +
+          '<div class="ac-task-progress indeterminate"><div class="ac-progress-bar"></div></div>' +
+          '<span class="ac-task-status-tag running">运行中</span>' +
+        '</div>';
+      }).join("") + '</div>';
+    } catch (e) {
+      box.innerHTML = '<div class="ac-empty">加载失败</div>';
     }
-    box.innerHTML = '<div class="ac-tasks">' + running.map((x) => {
-      const cls = statusClass(x.status) === "running" ? "run" : "pend";
-      return '<div class="ac-task">' +
-        '<span class="ac-task-dot ' + cls + '"></span>' +
-        '<span class="ac-task-title">' + esc(x.title || "(无标题)") + "</span>" +
-        '<span class="ac-task-st">' + esc(statusLabel(x.status)) + "</span>" +
-        "</div>";
-    }).join("") + "</div>";
+  }
+
+  /* UI-P2 · Activity Timeline 显示最近活动 */
+  async function renderActivityTimeline() {
+    const panel = $("#activityPanel");
+    if (!panel) return;
+    try {
+      const r = await getJSON("/api/interaction/activity");
+      const activities = (r && Array.isArray(r.activities)) ? r.activities : [];
+      if (!activities.length) {
+        panel.innerHTML = '<div class="activity-empty">暂无交互活动</div>';
+        return;
+      }
+      panel.innerHTML = activities.map((a) => {
+        const icon = a.type === "parse" ? "⌨️" : a.type === "intent" ? "🎯" : a.type === "analysis" ? "🔍" : "💬";
+        const title = esc(a.title || "(无标题)");
+        const intent = esc(a.intent_type || a.type || "");
+        const rel = esc(a.relative_time || "");
+        const statusCls = a.status === "completed" ? "done" : a.status === "error" ? "error" : "";
+        return '<div class="activity-item ' + statusCls + '">' +
+          '<span class="activity-ico">' + icon + '</span>' +
+          '<div class="activity-info">' +
+            '<span class="activity-title">' + title + '</span>' +
+            (intent ? '<span class="activity-meta">' + intent + '</span>' : '') +
+          '</div>' +
+          '<span class="activity-time">' + rel + '</span>' +
+        '</div>';
+      }).join("");
+    } catch (e) {
+      panel.innerHTML = '<div class="activity-empty">加载失败</div>';
+    }
   }
 
   /* UI-P1 · 首页 hero 快捷动作 chips（复用 QUICK） */

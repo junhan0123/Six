@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>右键菜单测试</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  .recent-item { 
+    display: flex; align-items: center; justify-content: space-between; 
+    padding: 10px 14px; border-radius: 10px; cursor: pointer; 
+    margin: 5px 0; background: #f7f7f9;
+  }
+  .recent-item:hover { background: #e8e8e8; }
+  
+  /* 右键菜单样式 */
+  .context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ececef;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    padding: 6px 0;
+    min-width: 200px;
+    z-index: 9999;
+    display: none;
+  }
+  .context-menu.show { display: block; }
+  .context-menu-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+    color: #4a4a4a;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .context-menu-item:hover { background: #fff1f0; color: #ff4d4f; }
+  .context-menu-item.danger { color: #ff4d4f; }
+  .context-menu-item.danger:hover { background: #ffe7e7; }
+  .context-menu-divider { height: 1px; background: #ececef; margin: 6px 0; }
+  .context-menu-label {
+    padding: 6px 16px;
+    font-size: 11px;
+    color: #b0b0b0;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<h2>右键菜单测试</h2>
+<p>在下面的对话列表项上右键点击，查看上下文菜单。</p>
+
+<div id="recentList">
+  <div class="recent-item" data-session="test-123">
+    <span class="ri-ico">💬</span>
+    <span class="title">测试对话1</span>
+    <span class="time">09-04 15:30</span>
+  </div>
+  <div class="recent-item" data-session="test-456">
+    <span class="ri-ico">💬</span>
+    <span class="title">测试对话2</span>
+    <span class="time">09-04 14:20</span>
+  </div>
+  <div class="recent-item" data-session="test-789">
+    <span class="ri-ico">💬</span>
+    <span class="title">测试对话3</span>
+    <span class="time">09-04 13:10</span>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// 右键菜单逻辑
+let _ctxMenuTarget = null;
+let _ctxMenuEl = null;
+
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(() => { t.className = 'toast'; }, isErr ? 4200 : 2400);
+}
+
+function createContextMenu() {
+  if (_ctxMenuEl) return _ctxMenuEl;
+  const el = document.createElement('div');
+  el.className = 'context-menu';
+  el.innerHTML = `
+    <div class="context-menu-label">会话操作</div>
+    <div class="context-menu-item" data-action="new-tab"><span class="ico">📑</span><span class="label">在新标签页中打开</span></div>
+    <div class="context-menu-item" data-action="new-window"><span class="ico">🪟</span><span class="label">新窗口</span></div>
+    <div class="context-menu-item" data-action="open-terminal"><span class="ico">⌨</span><span class="label">在终端中打开</span></div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="rename"><span class="ico">✏️</span><span class="label">重命名...</span></div>
+    <div class="context-menu-item" data-action="pin"><span class="ico">📌</span><span class="label">置顶</span></div>
+    <div class="context-menu-item" data-action="mark-unread"><span class="ico">✉️</span><span class="label">标记为未读</span></div>
+    <div class="context-menu-item" data-action="appearance"><span class="ico">👁️</span><span class="label">外观</span><span class="arrow">›</span></div>
+    <div class="context-menu-item" data-action="copy-id"><span class="ico">🆔</span><span class="label">复制 ID</span></div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="branch"><span class="ico">🌿</span><span class="label">分支</span><span class="arrow">›</span></div>
+    <div class="context-menu-item" data-action="export"><span class="ico">⬇️</span><span class="label">导出</span></div>
+    <div class="context-menu-item" data-action="move-to-project"><span class="ico">📁</span><span class="label">移动到项目</span><span class="arrow">›</span></div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="archive"><span class="ico">🗄️</span><span class="label">归档</span></div>
+    <div class="context-menu-item danger" data-action="delete"><span class="ico">🗑️</span><span class="label">删除</span></div>
+  `;
+  document.body.appendChild(el);
+  _ctxMenuEl = el;
+
+  el.addEventListener('click', (e) => {
+    const item = e.target.closest('.context-menu-item');
+    if (!item || !_ctxMenuTarget) return;
+    const action = item.dataset.action;
+    const sid = _ctxMenuTarget.dataset.session;
+    handleContextMenuAction(action, sid, _ctxMenuTarget);
+    hideContextMenu();
+  });
+
+  el.addEventListener('contextmenu', (e) => e.stopPropagation());
+  return el;
+}
+
+function showContextMenu(x, y, target) {
+  const el = createContextMenu();
+  _ctxMenuTarget = target;
+  const rect = el.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let left = x;
+  let top = y;
+  if (left + rect.width > vw) left = vw - rect.width - 8;
+  if (top + rect.height > vh) top = vh - rect.height - 8;
+  el.style.left = left + 'px';
+  el.style.top = top + 'px';
+  el.classList.add('show');
+}
+
+function hideContextMenu() {
+  if (_ctxMenuEl) _ctxMenuEl.classList.remove('show');
+  _ctxMenuTarget = null;
+}
+
+async function handleContextMenuAction(action, sid, target) {
+  const title = target.querySelector('.title').textContent;
+  const actions = {
+    'new-tab': () => window.open('/?session=' + encodeURIComponent(sid), '_blank'),
+    'new-window': () => window.open('/?session=' + encodeURIComponent(sid), 'newWindow', 'width=900,height=700'),
+    'open-terminal': () => showToast('请在终端中打开', true),
+    'rename': async () => {
+      const newTitle = prompt('重命名会话:', title);
+      if (newTitle && newTitle.trim()) {
+        target.querySelector('.title').textContent = newTitle.trim();
+        showToast('已重命名为: ' + newTitle.trim());
+      }
+    },
+    'pin': () => showToast('已置顶: ' + title),
+    'mark-unread': () => showToast('已标记为未读: ' + title),
+    'appearance': () => showToast('外观设置', true),
+    'copy-id': () => {
+      navigator.clipboard.writeText(sid).then(() => showToast('已复制 ID'));
+    },
+    'branch': () => showToast('分支功能', true),
+    'export': () => {
+      const data = { session_id: sid, title: title };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'session_' + sid + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已导出');
+    },
+    'move-to-project': () => showToast('移动到项目', true),
+    'archive': () => {
+      target.style.opacity = '0.5';
+      showToast('已归档: ' + title);
+    },
+    'delete': () => {
+      if (confirm('确定要删除 "' + title + '" 吗？')) {
+        target.remove();
+        showToast('已删除');
+      }
+    }
+  };
+  if (actions[action]) actions[action]();
+}
+
+// 绑定事件
+document.addEventListener('contextmenu', (e) => {
+  const item = e.target.closest('.recent-item');
+  if (item) {
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, item);
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.context-menu')) {
+    hideContextMenu();
+  }
+});
+</script>
+
+<style>
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 10000;
+}
+.toast.show { opacity: 1; }
+.toast.err { background: #ff4d4f; }
+</style>
+</body>
+</html>

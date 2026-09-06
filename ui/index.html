@@ -128,15 +128,17 @@
               <section class="ac-section" id="acLive">
                 <div class="ac-sec-head"><span class="ac-ico">🤖</span><span>当前状态 / 运行任务</span></div>
                 <div class="ac-live-body">
+                  <!-- Agent Status -->
+                  <div class="ac-status" id="acStatusBox">
+                    <span class="ac-status-dot idle" id="acStatusDot"></span>
+                    <span class="ac-status-text" id="acStatusText">加载中...</span>
+                    <span class="ac-status-meta" id="acStatusMeta"></span>
+                  </div>
                   <div class="ac-sub-label">运行任务</div>
                   <div id="acTasksBody"></div>
-                  <div class="ac-sub-label">当前状态</div>
+                  <div class="ac-sub-label">最近活动</div>
                   <div id="acActivitySlot">
                     <div class="activity-center" id="activityCenter">
-                      <div class="activity-header">
-                        <div class="activity-title"><span>🤖</span><span>小6正在工作</span></div>
-                        <span class="activity-count" id="activityCount">0 项活动</span>
-                      </div>
                       <div class="activity-list" id="activityPanel">
                         <div class="activity-empty">暂无交互活动</div>
                       </div>

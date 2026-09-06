@@ -1,0 +1,367 @@
+/* ============================================================
+   全球洞察 GFE Dashboard 样式
+   Xiao6 v1.0.0 Design System
+   ============================================================ */
+
+.gfe-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  padding: 8px 0 24px;
+}
+
+.gfe-section {
+  background: var(--bg);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 16px;
+  box-shadow: var(--sh-sm);
+}
+
+.gfe-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.gfe-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gfe-section-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  color: var(--ink-3);
+}
+
+/* 风险概览 */
+.gfe-risk-overview {
+  grid-column: span 2;
+}
+
+.gfe-risk-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.gfe-risk-index {
+  text-align: center;
+  min-width: 100px;
+}
+
+.gfe-risk-index-value {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--brand);
+  line-height: 1;
+}
+
+.gfe-risk-index-label {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.gfe-risk-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.gfe-risk-stat {
+  text-align: center;
+}
+
+.gfe-risk-stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.gfe-risk-stat-label {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.gfe-risk-high-list {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gfe-country-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: 1px solid var(--brand);
+}
+
+.gfe-country-tag.warn {
+  background: #fff7e6;
+  color: #d48806;
+  border-color: #ffd591;
+}
+
+.gfe-country-tag.low {
+  background: #f6ffed;
+  color: #389e0d;
+  border-color: #b7eb8f;
+}
+
+/* 事件列表 */
+.gfe-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.gfe-event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-soft);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--info);
+}
+
+.gfe-event-item.severity-high {
+  border-left-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.gfe-event-item.severity-medium {
+  border-left-color: var(--warn);
+}
+
+.gfe-event-item.severity-low {
+  border-left-color: var(--ok);
+}
+
+.gfe-event-severity {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.gfe-event-severity.high { background: var(--brand); color: #fff; }
+.gfe-event-severity.medium { background: var(--warn); color: #fff; }
+.gfe-event-severity.low { background: var(--ok); color: #fff; }
+
+.gfe-event-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.gfe-event-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-1);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gfe-event-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: flex;
+  gap: 8px;
+}
+
+/* 预测卡片 */
+.gfe-forecast-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.gfe-forecast-item {
+  padding: 10px;
+  background: var(--bg-soft);
+  border-radius: var(--r-sm);
+}
+
+.gfe-forecast-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-1);
+  margin-bottom: 6px;
+}
+
+.gfe-forecast-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.gfe-forecast-stat-value {
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+/* 校准面板 */
+.gfe-calibration-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.gfe-calc-item {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-soft);
+  border-radius: var(--r-sm);
+}
+
+.gfe-calc-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.gfe-calc-label {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+/* 预警面板 */
+.gfe-warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.gfe-warning-item {
+  padding: 10px;
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--brand);
+  background: var(--brand-tint);
+}
+
+.gfe-warning-item.status-acknowledged {
+  border-left-color: var(--warn);
+  background: #fffbe6;
+}
+
+.gfe-warning-item.status-resolved {
+  border-left-color: var(--ok);
+  background: #f6ffed;
+}
+
+.gfe-warning-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-1);
+  margin-bottom: 4px;
+}
+
+.gfe-warning-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: flex;
+  gap: 10px;
+}
+
+.gfe-warning-evidence {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* 加载与空状态 */
+.gfe-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+.gfe-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* 分析师列表 */
+.gfe-analyst-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.gfe-analyst-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-soft);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+}
+
+.gfe-analyst-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--ink-1);
+}
+
+.gfe-analyst-brier {
+  color: var(--ink-3);
+}
+
+.gfe-analyst-brier strong {
+  color: var(--ink-1);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .gfe-risk-overview {
+    grid-column: span 1;
+  }
+  .gfe-risk-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .gfe-risk-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
