@@ -589,6 +589,39 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
                 return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/predictions":
+            try:
+                import intelligence_prediction as ip
+                engine = ip.get_prediction_engine()
+                predictions = engine.get_predictions()
+                return self._send(200, json.dumps({"ok": True, "predictions": predictions, "total": len(predictions)}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/predictions/status":
+            try:
+                import intelligence_prediction as ip
+                engine = ip.get_prediction_engine()
+                return self._send(200, json.dumps(engine.get_status(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
+        if path == "/api/intelligence/predictions/verify":
+            try:
+                import intelligence_prediction as ip
+                engine = ip.get_prediction_engine()
+                data = json.loads(self._r.read(int(self._r.headers.get("Content-Length", 0))))
+                prediction_id = data.get("prediction_id", "")
+                outcome = data.get("outcome", "")
+                result = data.get("result", "")
+                confidence_delta = data.get("confidence_delta", 0.0)
+                if not prediction_id or not outcome:
+                    return self._send(400, json.dumps({"error": "missing prediction_id or outcome"}, ensure_ascii=False))
+                verification = engine.verify_outcome(prediction_id, outcome, result, confidence_delta)
+                if verification:
+                    return self._send(200, json.dumps({"ok": True, "verification": verification.to_dict()}, ensure_ascii=False))
+                else:
+                    return self._send(404, json.dumps({"error": "prediction not found"}, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,

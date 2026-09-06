@@ -119,6 +119,7 @@
               <button class="feed-tab-mini active" id="toggleFeed">洞察</button>
               <button class="feed-tab-mini" id="toggleReasoning">为什么</button>
               <button class="feed-tab-mini" id="toggleDecision">决策</button>
+              <button class="feed-tab-mini" id="togglePrediction">预测</button>
             </div>
             <button class="feed-refresh" id="feedRefresh" title="刷新">↻</button>
           </div>
@@ -184,6 +185,19 @@
             <button class="feed-refresh" id="decisionRefresh" title="刷新">↻</button>
           </div>
           <div class="reasoning-content" id="decisionContent">
+            <div class="reasoning-loading">加载中...</div>
+          </div>
+        </div>
+
+        <!-- Prediction: Ledger -->
+        <div class="reasoning-panel" id="predictionPanel" style="display:none;">
+          <div class="feed-header">
+            <div class="feed-title">
+              <span class="feed-icon-large">📊</span> 预测账本
+            </div>
+            <button class="feed-refresh" id="predictionRefresh" title="刷新">↻</button>
+          </div>
+          <div class="reasoning-content" id="predictionContent">
             <div class="reasoning-loading">加载中...</div>
           </div>
         </div>
@@ -512,8 +526,8 @@
   });
 
   // 面板切换
-  const panels = ['intelligenceFeed', 'foresightPanel', 'contextPanel', 'reasoningPanel', 'decisionPanel'];
-  const toggles = ['toggleFeed', 'toggleReasoning', 'toggleDecision'];
+  const panels = ['intelligenceFeed', 'foresightPanel', 'contextPanel', 'reasoningPanel', 'decisionPanel', 'predictionPanel'];
+  const toggles = ['toggleFeed', 'toggleReasoning', 'toggleDecision', 'togglePrediction'];
 
   function showPanel(panelId) {
     panels.forEach(id => {
@@ -525,6 +539,7 @@
   document.getElementById('toggleFeed')?.addEventListener('click', () => showPanel('intelligenceFeed'));
   document.getElementById('toggleReasoning')?.addEventListener('click', () => showPanel('reasoningPanel'));
   document.getElementById('toggleDecision')?.addEventListener('click', () => showPanel('decisionPanel'));
+  document.getElementById('togglePrediction')?.addEventListener('click', () => showPanel('predictionPanel'));
 
   // Foresight 面板
   const toggleForesightBtn = document.getElementById('toggleForesight');
@@ -870,6 +885,70 @@
     } catch (err) {
       console.error('[Decision] 加载失败:', err);
       content.innerHTML = '<div class="decision-empty">加载失败</div>';
+    }
+  }
+
+  // Prediction 面板
+  const togglePredictionBtn = document.getElementById('togglePrediction');
+  const predictionPanel = document.getElementById('predictionPanel');
+
+  if (togglePredictionBtn) {
+    togglePredictionBtn.addEventListener('click', function() {
+      if (predictionPanel.style.display === 'none') {
+        predictionPanel.style.display = 'block';
+        this.classList.add('active');
+        loadPrediction();
+      } else {
+        predictionPanel.style.display = 'none';
+        this.classList.remove('active');
+      }
+    });
+  }
+
+  const predictionRefreshBtn = document.getElementById('predictionRefresh');
+  if (predictionRefreshBtn) {
+    predictionRefreshBtn.addEventListener('click', loadPrediction);
+  }
+
+  async function loadPrediction() {
+    const content = document.getElementById('predictionContent');
+    if (!content) return;
+
+    try {
+      const resp = await fetch('/api/intelligence/predictions');
+      const data = await resp.json();
+
+      if (!data.ok) throw new Error('加载失败');
+
+      const predictions = data.predictions || [];
+      if (predictions.length === 0) {
+        content.innerHTML = '<div class="reasoning-empty">暂无预测记录</div>';
+        return;
+      }
+
+      const statusColor = {
+        'pending': '#9e9e9e',
+        'active': '#2196f3',
+        'resolved': '#4caf50',
+        'expired': '#ff9800'
+      };
+
+      content.innerHTML = predictions.map(p => {
+        const color = statusColor[p.status] || '#9e9e9e';
+        return '<div class="prediction-item">' +
+          '<div class="prediction-header">' +
+            '<span class="prediction-topic">' + escapeHtml(p.topic) + '</span>' +
+            '<span class="prediction-status" style="color:' + color + '">' + p.status.toUpperCase() + '</span>' +
+            '<span class="prediction-confidence">' + (p.confidence * 100).toFixed(0) + '%</span>' +
+          '</div>' +
+          '<div class="prediction-hypothesis">' + escapeHtml(p.hypothesis) + '</div>' +
+          '<div class="prediction-meta"><span>创建于 ' + new Date(p.created_at * 1000).toLocaleString('zh-CN') + '</span></div>' +
+        '</div>';
+      }).join('');
+
+    } catch (err) {
+      console.error('[Prediction] 加载失败:', err);
+      content.innerHTML = '<div class="reasoning-empty">加载失败</div>';
     }
   }
 })();

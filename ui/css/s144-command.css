@@ -173,6 +173,52 @@
   color: #fff;
 }
 
+/* ==================== Prediction Panel ==================== */
+.prediction-item {
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--card-bg, #fff);
+}
+
+.prediction-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.prediction-topic {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary, #333);
+}
+
+.prediction-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.prediction-confidence {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+}
+
+.prediction-hypothesis {
+  font-size: 13px;
+  color: var(--text-secondary, #555);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.prediction-meta {
+  font-size: 11px;
+  color: var(--text-tertiary, #999);
+}
+
 .feed-header {
   display: flex;
   align-items: center;
