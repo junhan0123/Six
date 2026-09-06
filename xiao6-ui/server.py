@@ -415,6 +415,13 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_providers_probe_get()
         if path == "/api/proactive/status":
             return self._handle_proactive_status()
+        if path == "/api/interaction/status":
+            try:
+                import interaction_system as ins
+                data = ins.get_status()
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if path == "/api/version":
             return self._send(
                 200,
@@ -1543,6 +1550,15 @@ class Handler(BaseHTTPRequestHandler, SystemMixin, MemoryMixin, TasksMixin, Chat
             return self._handle_providers_probe_post()
         if ppath == "/api/proactive/dnd":
             return self._handle_proactive_dnd()
+        if ppath == "/api/interaction/parse":
+            try:
+                import interaction_system as ins
+                payload = self._read_json()
+                text = payload.get("text", "") if "_error" not in payload else ""
+                data = ins.parse_interaction(text)
+                return self._send(200, json.dumps(data, ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)}, ensure_ascii=False))
         if ppath == "/api/alert-config":
             return self._handle_alert_config_post()
         if ppath == "/api/models":
