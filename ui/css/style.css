@@ -857,6 +857,31 @@ input, textarea { font: inherit; color: inherit; }
   border-top: 1px solid var(--line-soft);
 }
 .dashboard-command { max-width: 780px; margin: 0 auto; padding-top: 18px; }
+
+/* UI-P5 · Home Context Bar */
+.home-context-bar {
+  display: flex; align-items: center; gap: 16px;
+  max-width: 780px; margin: 0 auto 12px;
+  padding: 8px 16px;
+  background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: var(--r-md); font-size: 12px;
+}
+.home-context-bar .context-item {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--ink-2); flex: 1; min-width: 0;
+}
+.home-context-bar .ctx-ico { font-size: 13px; flex-shrink: 0; }
+.home-context-bar .ctx-text {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-2);
+}
+.home-context-bar .context-divider {
+  width: 1px; height: 14px; background: var(--line); flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .home-context-bar { display: none; }
+}
+
 .command-bar {
   display: flex; align-items: center; gap: 10px;
   background: #fff; border: 1px solid var(--line); border-radius: 18px;

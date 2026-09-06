@@ -283,6 +283,8 @@
     renderHomeQuick();
     bindHomeQuick();
     bindHomeCollapsibles();
+    // UI-P5 · Home Context Bar
+    loadHomeContext();
   }
 
   /* UI-P1 · 今日日程：从 /api/tasks 派生（无独立 schedule 端点，不新增 API） */
@@ -437,6 +439,44 @@
       });
     });
     _homeCollBound = true;
+  }
+
+  /* UI-P5 · Home Context Bar */
+  async function loadHomeContext() {
+    const [goalsRes, memoryRes, capsRes] = await Promise.all([
+      getJSON("/api/goals").catch(() => []),
+      getJSON("/api/memory").catch(() => ({})),
+      getJSON("/api/capability_os/catalog").catch(() => ({})),
+    ]);
+
+    // Goals
+    const goalsBox = document.getElementById('contextGoals');
+    if (goalsBox) {
+      const goals = Array.isArray(goalsRes) ? goalsRes : [];
+      const active = goals.filter(g => g.status === 'active' || g.status === 'in_progress').slice(0, 3);
+      if (active.length) {
+        const titles = active.map(g => g.title || '未命名目标').slice(0, 2).join('、');
+        goalsBox.innerHTML = '<span class="ctx-ico">🎯</span><span class="ctx-text">' + esc(active.length) + ' 个活跃目标 · ' + esc(titles) + '</span>';
+      } else {
+        goalsBox.innerHTML = '<span class="ctx-ico">🎯</span><span class="ctx-text">暂无活跃目标</span>';
+      }
+    }
+
+    // Memory
+    const memoryBox = document.getElementById('contextMemory');
+    if (memoryBox) {
+      const notes = memoryRes.note_count || 0;
+      const logs = memoryRes.log_count || 0;
+      memoryBox.innerHTML = '<span class="ctx-ico">🧠</span><span class="ctx-text">' + notes + ' 条记忆 · ' + logs + ' 条日志</span>';
+    }
+
+    // Capabilities
+    const capsBox = document.getElementById('contextCaps');
+    if (capsBox) {
+      const total = capsRes.total || 0;
+      const available = capsRes.available || 0;
+      capsBox.innerHTML = '<span class="ctx-ico">🛠️</span><span class="ctx-text">' + available + '/' + total + ' 能力就绪</span>';
+    }
   }
 
   /* 首页视觉增强辅助：天气图标 / 平台图标 / 状态点 / 会话标签清洗 */
