@@ -4,6 +4,20 @@ All notable changes to Xiao6 will be documented in this file.
 
 ---
 
+## [1.1.1] - 2026-09-08
+
+### Added
+
+- Self-awareness module (`xiao6-ui/self_awareness.py`) — 认知循环引擎，支持 `/api/self_awareness/status`, `/api/self_awareness/run`, `/api/self_awareness/decide`
+- Suggestion service module (`xiao6-ui/suggestion_service.py`) — 建议服务，支持 `/api/suggestions`
+- Self-awareness test suite (`test_self_awareness.py`)
+
+### Changed
+
+- VERSION bumped to 1.1.1
+
+---
+
 ## [1.1.0] - 2026-09-08
 
 ### Added
