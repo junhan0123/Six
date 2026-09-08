@@ -17,7 +17,12 @@ echo "[4] DB readable:"
 DB_PATH="${DATABASE_PATH:-./xiao6-ui/data/xiao6.db}"
 if [ -f "$DB_PATH" ]; then
   # Use Python instead of sqlite3 CLI (not available on Windows)
-  python -c "import sqlite3; conn=sqlite3.connect('$DB_PATH'); print(conn.execute('SELECT COUNT(*) FROM memory').fetchone()[0]); conn.close()" 2>/dev/null && echo " OK" || echo " FAIL (DB exists but query failed)"
+  TABLES=$(python -c "import sqlite3; conn=sqlite3.connect('$DB_PATH'); tables=[r[0] for r in conn.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()]; print(','.join(tables)); conn.close()" 2>/dev/null || echo "")
+  if [ -n "$TABLES" ]; then
+    echo " OK (tables: $TABLES)"
+  else
+    echo " FAIL (DB exists but query failed)"
+  fi
 else
   echo " ⚠️ WARN: DB not found at $DB_PATH"
 fi
