@@ -100,14 +100,16 @@ D:\WorkBuddy\.workbuddy\binaries\node\versions\22.22.2-2\node.exe --check G:\Xia
 
 ## 9. Git 提交
 
-待执行：
+已执行：
 ```bash
 cd G:\Xiao6
-git add ui/index.html ui/js/app.js ui/css/style.css UI-P1_COMPONENT_AUDIT.md
+git add ui/index.html ui/js/app.js ui/css/style.css UI-P1_COMPONENT_AUDIT.md UI-P1-COMPLETION-REPORT.md
 git commit -m "[UI-P1] Xiao6 v1.0.0 homepage -> Chat-first AI Command Home (zero API/backend change)"
 ```
 
-提交后版本仍保持 **Xiao6 v1.0.0**。
+- Commit hash: `092a43a`
+- 5 files changed, 550 insertions(+), 153 deletions(-)
+- 版本仍保持 **Xiao6 v1.0.0**，未 amend / 未 force push
 
 ---
 
