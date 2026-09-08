@@ -105,3 +105,9 @@ logs/execution_trace/
 *.jsonl
 third_party/UFO/
 /third_party/UFO/
+
+# Knowledge inbox (runtime temp storage)
+knowledge/inbox/
+
+# UI test screenshots
+ui/test/
